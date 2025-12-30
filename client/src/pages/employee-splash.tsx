@@ -17,11 +17,11 @@ export default function EmployeeSplash() {
   }, [setLocation]);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-amber-950 to-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden relative">
+    <div className="min-h-screen w-full bg-gradient-to-br from-background via-primary/5 to-background flex flex-col items-center justify-center p-4 overflow-hidden relative">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute top-10 left-10 w-64 h-64 rounded-full bg-amber-900/20 blur-3xl"
+          className="absolute top-10 left-10 w-64 h-64 rounded-full bg-primary/10 blur-3xl"
           animate={{
             scale: [1, 1.2, 1],
             x: [0, 20, 0],
@@ -30,7 +30,7 @@ export default function EmployeeSplash() {
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-amber-800/10 blur-3xl"
+          className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-accent/10 blur-3xl"
           animate={{
             scale: [1, 1.1, 1],
             x: [0, -30, 0],
@@ -55,15 +55,15 @@ export default function EmployeeSplash() {
           }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-amber-600 to-amber-900 p-2 shadow-2xl shadow-amber-500/50">
+          <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-primary to-primary/80 p-2 shadow-2xl shadow-primary/50">
             <img
               src="/logo.png"
-              alt="CLUNY CAFE"
-              className="w-full h-full object-contain rounded-full bg-slate-900"
+              alt="CLUNY SYSTEMS"
+              className="w-full h-full object-contain rounded-full bg-background"
             />
           </div>
           <motion.div
-            className="absolute -top-4 -right-4 bg-amber-500 text-slate-900 rounded-full p-2 shadow-lg"
+            className="absolute -top-4 -right-4 bg-accent text-background rounded-full p-2 shadow-lg"
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
@@ -78,10 +78,10 @@ export default function EmployeeSplash() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-amber-50 mb-2 font-playfair">
-            CLUNY CAFE
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2 font-playfair">
+            CLUNY SYSTEMS
           </h1>
-          <p className="text-amber-200/80 text-lg font-cairo">نظام إدارة الموظفين</p>
+          <p className="text-muted text-lg font-cairo">نظام إدارة الموظفين</p>
         </motion.div>
 
         {/* Loading indicator */}
@@ -94,7 +94,7 @@ export default function EmployeeSplash() {
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="w-3 h-3 rounded-full bg-amber-500"
+              className="w-3 h-3 rounded-full bg-primary"
               animate={{
                 scale: [1, 1.2, 1],
                 opacity: [0.5, 1, 0.5],
@@ -110,7 +110,7 @@ export default function EmployeeSplash() {
 
         {/* Status text */}
         <motion.p
-          className="text-amber-200/60 text-sm font-mono tracking-wider"
+          className="text-muted text-sm font-mono tracking-wider"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.8 }}
@@ -126,7 +126,7 @@ export default function EmployeeSplash() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.2, duration: 0.8 }}
       >
-        <p className="text-amber-100/70 font-cairo text-sm">
+        <p className="text-muted/70 font-cairo text-sm">
           أهلاً وسهلاً بك في نظام الموظفين
         </p>
       </motion.div>
