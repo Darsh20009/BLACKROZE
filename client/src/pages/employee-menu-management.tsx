@@ -68,7 +68,14 @@ export default function EmployeeMenuManagement() {
    branchAvailability?: BranchAvailability[];
    isGiftable?: boolean;
    availableSizes?: any[];
+   addons?: any[];
  } | null>(null);
+ 
+ const [sizeImages, setSizeImages] = useState<{[key: string]: string}>({});
+ const [sizeFileInputs, setSizeFileInputs] = useState<{[key: string]: HTMLInputElement | null}>({});
+ const [addonImages, setAddonImages] = useState<{[key: string]: string}>({});
+ const [addonFileInputs, setAddonFileInputs] = useState<{[key: string]: HTMLInputElement | null}>({});
+ const [addonFreeStatus, setAddonFreeStatus] = useState<{[key: string]: boolean}>({});
 
  useEffect(() => {
  const storedEmployee = localStorage.getItem("currentEmployee");
