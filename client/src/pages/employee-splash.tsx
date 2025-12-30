@@ -1,144 +1,135 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
-import { Zap } from "lucide-react";
+import { motion } from "framer-motion";
+import { Coffee, Zap } from "lucide-react";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();
-  const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Play creative system start sound - more welcoming and higher quality
-    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3");
-    audio.volume = 0.4;
-    
-    const playSound = async () => {
-      try {
-        await audio.play();
-      } catch (err) {
-        console.log("Audio playback requires interaction first");
-      }
-    };
-
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(progressInterval);
-          return 100;
-        }
-        return prev + Math.random() * 20;
-      });
-    }, 200);
-
     const timer = setTimeout(() => {
-      setLoading(false);
-      setTimeout(() => setLocation("/employee/gateway"), 800);
-    }, 3500);
+      setIsLoading(false);
+      setTimeout(() => setLocation("/employee/gateway"), 600);
+    }, 4000);
 
-    playSound();
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(progressInterval);
-    };
+    return () => clearTimeout(timer);
   }, [setLocation]);
 
   return (
-    <div className="h-screen w-full flex flex-col items-center justify-center bg-black overflow-hidden relative">
-      <AnimatePresence>
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.2 }}
-            transition={{ duration: 0.8 }}
-            className="z-10 flex flex-col items-center"
-          >
-            <div className="relative mb-8">
-              <motion.div
-                animate={{ 
-                  rotate: 360,
-                  boxShadow: ["0 0 20px #8B5A2B", "0 0 50px #D2691E", "0 0 20px #8B5A2B"]
-                }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="w-32 h-32 rounded-full border-2 border-[#8B5A2B] flex items-center justify-center overflow-hidden"
-              >
-                <img src="/logo.png" alt="Logo" className="w-24 h-24 object-contain animate-pulse" />
-              </motion.div>
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute -top-2 -right-2"
-              >
-                <Zap className="w-8 h-8 text-yellow-500 fill-yellow-500" />
-              </motion.div>
-            </div>
-            
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-4"
-            >
-              <h2 className="text-xl font-medium text-amber-500/80 tracking-widest text-center">
-                {"CLUNY CAFE Systems".split("").map((char, i) => (
-                  <motion.span
-                    key={i}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{
-                      duration: 0.1,
-                      delay: 0.5 + i * 0.05,
-                      ease: "easeIn"
-                    }}
-                  >
-                    {char}
-                  </motion.span>
-                ))}
-              </h2>
-            </motion.div>
-            
-            <motion.h1 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 1.5 }}
-              className="text-4xl font-bold text-amber-500 tracking-widest uppercase text-center"
-            >
-              OS
-            </motion.h1>
-            
-            <div className="mt-8 w-48 h-1 bg-gray-800 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-full bg-amber-500"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-              />
-            </div>
-            
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5 }}
-              className="mt-6 text-gray-500 text-xs font-mono"
-            >
-              SYSTEM_INIT_COMPLETED: {Math.round(progress)}%
-            </motion.p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-amber-950 to-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden relative">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-10 left-10 w-64 h-64 rounded-full bg-amber-900/20 blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            x: [0, 20, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-amber-800/10 blur-3xl"
+          animate={{
+            scale: [1, 1.1, 1],
+            x: [0, -30, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
 
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="grid grid-cols-12 h-full w-full">
-          {Array.from({ length: 12 }).map((_, i) => (
+      {/* Main content */}
+      <motion.div
+        className="z-10 flex flex-col items-center gap-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        {/* Logo */}
+        <motion.div
+          className="relative"
+          animate={{
+            y: [0, -10, 0],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-amber-600 to-amber-900 p-2 shadow-2xl shadow-amber-500/50">
+            <img
+              src="/logo.png"
+              alt="CLUNY CAFE"
+              className="w-full h-full object-contain rounded-full bg-slate-900"
+            />
+          </div>
+          <motion.div
+            className="absolute -top-4 -right-4 bg-amber-500 text-slate-900 rounded-full p-2 shadow-lg"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Zap className="w-6 h-6 fill-current" />
+          </motion.div>
+        </motion.div>
+
+        {/* Title */}
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.8 }}
+        >
+          <h1 className="text-4xl md:text-5xl font-bold text-amber-50 mb-2 font-playfair">
+            CLUNY CAFE
+          </h1>
+          <p className="text-amber-200/80 text-lg font-cairo">نظام إدارة الموظفين</p>
+        </motion.div>
+
+        {/* Loading indicator */}
+        <motion.div
+          className="flex gap-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.8 }}
+        >
+          {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              animate={{ y: ["-100%", "100%"] }}
-              transition={{ duration: 5 + Math.random() * 5, repeat: Infinity, ease: "linear" }}
-              className="border-r border-[#8B5A2B] h-full"
+              className="w-3 h-3 rounded-full bg-amber-500"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                delay: i * 0.2,
+              }}
             />
           ))}
-        </div>
-      </div>
+        </motion.div>
+
+        {/* Status text */}
+        <motion.p
+          className="text-amber-200/60 text-sm font-mono tracking-wider"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9, duration: 0.8 }}
+        >
+          {isLoading ? "جاري التحضير..." : "جاهز للعمل"}
+        </motion.p>
+      </motion.div>
+
+      {/* Welcome message */}
+      <motion.div
+        className="absolute bottom-8 text-center z-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
+      >
+        <p className="text-amber-100/70 font-cairo text-sm">
+          أهلاً وسهلاً بك في نظام الموظفين
+        </p>
+      </motion.div>
     </div>
   );
 }

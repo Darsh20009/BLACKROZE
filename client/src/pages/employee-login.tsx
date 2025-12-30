@@ -9,8 +9,6 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
 
-import logoImg from "@assets/Elegant Coffee Culture Design_1757428233689.png";
-
 export default function EmployeeLogin() {
   const [, setLocation] = useLocation();
   const [username, setUsername] = useState("");
@@ -111,7 +109,7 @@ export default function EmployeeLogin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
-            <img src={logoImg} alt="CLUNY CAFE" className="w-full h-full object-contain" />
+            <img src="/logo.png" alt="CLUNY CAFE" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">CLUNY CAFE</h1>
           <p className="text-muted-foreground">تسجيل دخول الموظف</p>
