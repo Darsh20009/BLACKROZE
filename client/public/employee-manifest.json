@@ -1,0 +1,29 @@
+{
+  "name": "CLUNY SYSTEMS - نظام إدارة الموظفين",
+  "short_name": "CLUNY SYSTEMS",
+  "description": "نظام إدارة الموظفين والعمليات في CLUNY CAFE",
+  "start_url": "/employee",
+  "display": "standalone",
+  "background_color": "#F7F8F8",
+  "theme_color": "#9FB2B3",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/employee",
+  "id": "/employee",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/employee-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/employee-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
