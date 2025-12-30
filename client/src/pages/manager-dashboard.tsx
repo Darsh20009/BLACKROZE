@@ -996,7 +996,7 @@ export default function ManagerDashboard() {
  إضافة فرع
  </Button>
  <Dialog open={isAddBranchOpen} onOpenChange={setIsAddBranchOpen}>
- <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+ <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[#708f87]">
  <DialogHeader>
  <DialogTitle className="text-primary text-xl">إضافة فرع جديد</DialogTitle>
  </DialogHeader>
@@ -1195,8 +1195,8 @@ export default function ManagerDashboard() {
  />
  </div>
  <div className="flex gap-4 text-xs text-muted-foreground">
- <span>خط العرض: {branchForm.latitude.toFixed(6)}</span>
- <span>خط الطول: {branchForm.longitude.toFixed(6)}</span>
+ <span>خط العرض: 24.713600</span>
+ <span>خط الطول: 46.675300</span>
  </div>
  </div>
  </div>
