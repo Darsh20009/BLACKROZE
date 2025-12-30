@@ -15,13 +15,6 @@ export default function WelcomePage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLocation("/menu");
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [setLocation]);
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
       {/* Navigation */}
@@ -38,25 +31,16 @@ export default function WelcomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section 
-        className="relative h-screen flex items-center justify-center overflow-hidden pt-20"
-        style={{
-          backgroundImage: 'url(/logo.png)',
-          backgroundSize: '40%',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed',
-          backgroundBlendMode: 'screen',
-          opacity: 1
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-primary/5 to-accent/5 pointer-events-none"></div>
+      <section className="relative h-screen flex items-center justify-center overflow-hidden pt-20">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/15 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
         </div>
 
-        <div className="relative z-10 text-center max-w-2xl mx-auto px-4 pt-32">
+        <div className="relative z-10 text-center max-w-2xl mx-auto px-4">
+          <div className="mb-8 animate-fade-in">
+            <img src="/logo.png" alt="CLUNY CAFE Logo" className="w-40 h-40 mx-auto mb-6 drop-shadow-2xl" />
+          </div>
           <h1 className="text-5xl md:text-7xl font-playfair font-light text-foreground mb-4 animate-slide-up">
             CLUNY CAFE
           </h1>
