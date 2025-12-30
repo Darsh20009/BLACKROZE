@@ -113,22 +113,95 @@ export async function sendOrderNotificationEmail(
     const notificationEmail = process.env.NOTIFICATION_EMAIL || "cluny.cafe2026@gmail.com";
     const senderEmail = `CLUNY CAFE <${notificationEmail}>`;
     
+    // Get status color based on status
+    const statusColor = 
+      orderStatus === "completed" ? "#4CAF50" :
+      orderStatus === "ready" ? "#2196F3" :
+      orderStatus === "in_progress" || orderStatus === "preparing" ? "#FF9800" :
+      orderStatus === "cancelled" ? "#f44336" :
+      "#9C27B0";
+
+    const statusEmoji = 
+      orderStatus === "completed" ? "✅" :
+      orderStatus === "ready" ? "🎯" :
+      orderStatus === "in_progress" || orderStatus === "preparing" ? "👨‍🍳" :
+      orderStatus === "cancelled" ? "❌" :
+      "⏳";
+
     const mailOptions = {
       from: senderEmail,
       to: customerEmail,
-      subject: `تحديث طلبك - ${orderId}`,
+      subject: `${statusEmoji} تحديث طلبك - ${orderId}`,
       html: `
-        <div style="font-family: Arial, sans-serif; direction: rtl; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #8B5A2B;">مرحباً ${customerName}</h2>
-          <p>تم تحديث حالة طلبك!</p>
-          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 5px solid #8B5A2B;">
-            <p><strong>رقم الطلب:</strong> ${orderId}</p>
-            <p><strong>الحالة:</strong> ${statusAr}</p>
-            <p><strong>المبلغ:</strong> ${orderTotal} ريال</p>
+        <div style="font-family: 'Arial', sans-serif; direction: rtl; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0; margin: 0;">
+          <!-- Header with Logo -->
+          <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px 20px; text-align: center; border-bottom: 4px solid #8B5A2B;">
+            <div style="max-width: 600px; margin: 0 auto;">
+              <img src="https://cluny-cafe.web.app/cluny-logo.png" alt="CLUNY CAFE" style="height: 80px; margin-bottom: 20px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+              <h1 style="color: #ffffff; margin: 0; font-size: 32px; letter-spacing: 2px;">CLUNY CAFE</h1>
+              <p style="color: #b8a489; margin: 8px 0 0 0; font-size: 14px;">تجربة القهوة الفاخرة</p>
+            </div>
           </div>
-          <p>شكراً لاختيارك CLUNY CAFE!</p>
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-          <p style="font-size: 12px; color: #999;">هذا البريد مرسل تلقائياً، يرجى عدم الرد.</p>
+
+          <!-- Main Content -->
+          <div style="background: #ffffff; max-width: 600px; margin: 20px auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;">
+            
+            <!-- Greeting -->
+            <div style="padding: 30px 20px; background: #f8f9fa; border-bottom: 2px solid #e8e8e8;">
+              <h2 style="color: #1a1a2e; margin: 0 0 10px 0; font-size: 24px;">مرحباً ${customerName} 👋</h2>
+              <p style="color: #666; margin: 0; font-size: 16px;">تحديث جديد على طلبك!</p>
+            </div>
+
+            <!-- Status Badge -->
+            <div style="padding: 30px 20px; text-align: center;">
+              <div style="background: ${statusColor}; color: white; padding: 20px; border-radius: 10px; display: inline-block; min-width: 200px;">
+                <p style="margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; opacity: 0.9; letter-spacing: 1px;">حالة الطلب</p>
+                <p style="margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px;">${statusEmoji} ${statusAr}</p>
+              </div>
+            </div>
+
+            <!-- Order Details -->
+            <div style="padding: 0 20px 30px 20px;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; padding: 25px; color: white;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                  <div style="border-right: 2px solid rgba(255,255,255,0.3); padding-right: 15px;">
+                    <p style="margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; opacity: 0.8;">رقم الطلب</p>
+                    <p style="margin: 0; font-size: 18px; font-weight: bold; letter-spacing: 1px;">${orderId}</p>
+                  </div>
+                  <div style="padding-left: 15px;">
+                    <p style="margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; opacity: 0.8;">المبلغ الإجمالي</p>
+                    <p style="margin: 0; font-size: 18px; font-weight: bold;">${orderTotal} ريال</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Message -->
+            <div style="padding: 20px; background: #f0f4f8; border-top: 2px solid #e8e8e8; text-align: center; border-radius: 0 0 12px 12px;">
+              <p style="color: #1a1a2e; margin: 0; font-size: 15px;">
+                ${
+                  orderStatus === "completed" ? "🎉 شكراً لك! طلبك جاهز للاستلام." :
+                  orderStatus === "ready" ? "📍 طلبك جاهز! تفضل للاستلام." :
+                  orderStatus === "in_progress" || orderStatus === "preparing" ? "👨‍🍳 فريقنا يحضر طلبك بعناية." :
+                  orderStatus === "cancelled" ? "😞 تم إلغاء طلبك. للمزيد من المعلومات، تواصل معنا." :
+                  "⏳ جاري معالجة طلبك..."
+                }
+              </p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="padding: 30px 20px; text-align: center; background: #1a1a2e; color: #b8a489; font-size: 12px;">
+            <p style="margin: 0 0 10px 0;">
+              <strong style="color: #ffffff;">CLUNY CAFE</strong> | تجربة القهوة الفاخرة
+            </p>
+            <p style="margin: 0 0 15px 0; color: #888;">
+              هذا البريد مرسل تلقائياً من نظام CLUNY CAFE. يرجى عدم الرد على هذا البريد.
+            </p>
+            <p style="margin: 0; font-size: 11px; color: #666; opacity: 0.8;">
+              © 2025 CLUNY CAFE. جميع الحقوق محفوظة.
+            </p>
+          </div>
         </div>
       `,
     };
