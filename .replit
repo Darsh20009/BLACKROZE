@@ -46,9 +46,4 @@ build = ["npm", "run", "build"]
 [userenv]
 
 [userenv.shared]
-MONGODB_URI = "mongodb+srv://Vercel-Admin-qahwa:TOTY20009a@qahwa.ink6nxz.mongodb.net/?appName=qahwa"
-SMTP_USER = "7503570baf039fb81335"
-SMTP_PASS = "ofxqvjZtVBOiX2Tk5LWn"
-SMTP_HOST = "pro.eu.turbo-smtp.com"
-SMTP_PORT = "587"
-SMTP_FROM = "قهوة كوب <ma3k.2025@gmail.com>"
+MONGODB_URI = "mongodb+srv://Vercel-Admin-CLUNY-CAFE:TOTY20009a@cluny-cafe.idvtc04.mongodb.net/?appName=CLUNY-CAFE"
