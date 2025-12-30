@@ -31,6 +31,8 @@ import { appendOrderToSheet } from "./google-sheets";
 // Ensure upload directories exist
 const uploadDirs = [
   path.join(import.meta.dirname, '..', 'attached_assets', 'drinks'),
+  path.join(import.meta.dirname, '..', 'attached_assets', 'sizes'),
+  path.join(import.meta.dirname, '..', 'attached_assets', 'addons'),
   path.join(import.meta.dirname, '..', 'attached_assets', 'employees'),
   path.join(import.meta.dirname, '..', 'attached_assets', 'attendance'),
   path.join(import.meta.dirname, '..', 'attached_assets', 'receipts'),
@@ -5951,6 +5953,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const fileUrl = `/attached_assets/drinks/${req.file.filename}`;
+      res.json({ url: fileUrl, filename: req.file.filename });
+    } catch (error) {
+      res.status(500).json({ error: "فشل رفع الصورة" });
+    }
+  });
+
+  // Configure multer for size image uploads
+  const sizesUploadsDir = path.join(import.meta.dirname, '..', 'attached_assets', 'sizes');
+  const sizesStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, sizesUploadsDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = `${Date.now()}-${nanoid(8)}`;
+      cb(null, `size-${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+  });
+
+  const sizeUpload = multer({
+    storage: sizesStorage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /jpeg|jpg|png|webp/;
+      const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimeType = allowedTypes.test(file.mimetype);
+      if (ext && mimeType) {
+        cb(null, true);
+      } else {
+        cb(new Error('نوع الملف غير مسموح'));
+      }
+    }
+  });
+
+  // Upload size image
+  app.post("/api/upload-size-image", requireAuth, requireManager, sizeUpload.single('image'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "لم يتم رفع صورة" });
+      }
+      const fileUrl = `/attached_assets/sizes/${req.file.filename}`;
+      res.json({ url: fileUrl, filename: req.file.filename });
+    } catch (error) {
+      res.status(500).json({ error: "فشل رفع الصورة" });
+    }
+  });
+
+  // Configure multer for addon image uploads
+  const addonsUploadsDir = path.join(import.meta.dirname, '..', 'attached_assets', 'addons');
+  const addonsStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, addonsUploadsDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = `${Date.now()}-${nanoid(8)}`;
+      cb(null, `addon-${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+  });
+
+  const addonUpload = multer({
+    storage: addonsStorage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /jpeg|jpg|png|webp/;
+      const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimeType = allowedTypes.test(file.mimetype);
+      if (ext && mimeType) {
+        cb(null, true);
+      } else {
+        cb(new Error('نوع الملف غير مسموح'));
+      }
+    }
+  });
+
+  // Upload addon image
+  app.post("/api/upload-addon-image", requireAuth, requireManager, addonUpload.single('image'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "لم يتم رفع صورة" });
+      }
+      const fileUrl = `/attached_assets/addons/${req.file.filename}`;
       res.json({ url: fileUrl, filename: req.file.filename });
     } catch (error) {
       res.status(500).json({ error: "فشل رفع الصورة" });

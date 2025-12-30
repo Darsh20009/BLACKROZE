@@ -26,6 +26,7 @@ export interface ICoffeeItem extends Document {
     price: number;
     sizeML?: number;
     sku?: string;
+    imageUrl?: string;
   }>;
   branchAvailability?: Array<{
     branchId: string;
@@ -65,7 +66,8 @@ const CoffeeItemSchema = new Schema<ICoffeeItem>({
     nameEn: { type: String },
     price: { type: Number, required: true },
     sizeML: { type: Number },
-    sku: { type: String }
+    sku: { type: String },
+    imageUrl: { type: String }
   }],
   recipeId: { type: String },
   costOfGoods: { type: Number, default: 0 },
@@ -104,10 +106,12 @@ export interface IProductAddon extends Document {
   category: 'sugar' | 'milk' | 'shot' | 'syrup' | 'topping' | 'size' | 'other' | 'flavor';
   price: number;
   isAvailable: number;
+  isFree?: number;
   rawItemId?: string;
   quantityPerUnit?: number;
   unit?: string;
-  sku?: string; // Added SKU for addon tracking
+  sku?: string;
+  imageUrl?: string;
   createdAt: Date;
 }
 
@@ -118,10 +122,12 @@ const ProductAddonSchema = new Schema<IProductAddon>({
   category: { type: String, enum: ['sugar', 'milk', 'shot', 'syrup', 'topping', 'size', 'other', 'flavor', 'Flavor', 'Shot'], required: true },
   price: { type: Number, required: true, default: 0 },
   isAvailable: { type: Number, default: 1 },
+  isFree: { type: Number, default: 0 },
   rawItemId: { type: String },
   quantityPerUnit: { type: Number },
   unit: { type: String },
   sku: { type: String },
+  imageUrl: { type: String },
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: false });
 
