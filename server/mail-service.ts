@@ -107,8 +107,11 @@ export async function sendOrderNotificationEmail(
               ? "ملغي"
               : "قيد المعالجة";
 
-    // Use verified TurboSMTP sender email
-    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <ma3k.2025@gmail.com>";
+    // TurboSMTP Re-envelope: Send from TurboSMTP while showing notification email
+    // The actual sending happens through TurboSMTP (pro.eu.turbo-smtp.com)
+    // but the "From" address shows the notification email
+    const notificationEmail = process.env.NOTIFICATION_EMAIL || "cluny.cafe2026@gmail.com";
+    const senderEmail = `CLUNY CAFE <${notificationEmail}>`;
     
     const mailOptions = {
       from: senderEmail,

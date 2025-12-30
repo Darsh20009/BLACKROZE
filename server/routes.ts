@@ -3425,6 +3425,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Serialize the order properly
       const serializedOrder = serializeDoc(updatedOrder);
 
+      // Send email notification on status change
+      if (updatedOrder) {
+        const updateCustomerInfo = typeof updatedOrder.customerInfo === 'string' ? JSON.parse(updatedOrder.customerInfo) : updatedOrder.customerInfo;
+        const customerEmail = updateCustomerInfo?.email;
+        const customerName = updateCustomerInfo?.name;
+
+        if (customerEmail) {
+          setImmediate(async () => {
+            try {
+              console.log(`📧 Triggering status change email for order ${updatedOrder.orderNumber} status: ${status} to ${customerEmail}`);
+              const { sendOrderNotificationEmail } = await import("./mail-service");
+              const emailSent = await sendOrderNotificationEmail(
+                customerEmail,
+                customerName || 'عميل CLUNY CAFE',
+                updatedOrder.orderNumber,
+                status,
+                parseFloat(updatedOrder.totalAmount.toString()),
+                updatedOrder
+              );
+              console.log(`📧 Status change email sent result for ${updatedOrder.orderNumber}: ${emailSent}`);
+            } catch (emailError) {
+              console.error("❌ Failed to send order status email:", emailError);
+            }
+          });
+        }
+      }
+
       // Broadcast order update via WebSocket
       wsManager.broadcastOrderUpdate(serializedOrder);
       if (status === 'ready') {
