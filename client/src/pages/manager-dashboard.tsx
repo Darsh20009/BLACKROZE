@@ -107,7 +107,7 @@ export default function ManagerDashboard() {
  setIsSearchingBranch(true);
  try {
  const response = await fetch(
- `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`
+ `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}, Saudi Arabia&format=json&limit=5&countrycodes=sa`
  );
  const data = await response.json();
  setBranchSearchResults(data || []);
