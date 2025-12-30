@@ -69,7 +69,7 @@ export default function CustomerAuth() {
  console.error("Login error:", error);
  toast({
  title: "خطأ",
- description: error.message || "رقم الهاتف/البريد الإلكتروني أو كلمة المرور غير صحيحة ",
+ description: error.message || "العميل غير مسجل لدينا",
  variant: "destructive"
  });
  } finally {
