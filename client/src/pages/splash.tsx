@@ -23,13 +23,13 @@ export default function SplashScreen() {
  clearInterval(progressInterval);
  return 100;
  }
- return prev + 2;
+ return prev + 3.33;
  });
  }, 100);
  
  const autoNavigateTimer = setTimeout(() => {
- setLocation("/menu");
- }, 5000);
+ setLocation("/welcome");
+ }, 3000);
  
  return () => {
  clearTimeout(logoTimer);
@@ -72,8 +72,8 @@ export default function SplashScreen() {
  </div>
  
  <div className={`transition-all duration-1000 ${showText ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
- <h2 className="font-playfair text-2xl sm:text-3xl font-light text-foreground mb-3 sm:mb-4" data-testid="text-welcome">
- أهلاً بك في CLUNY
+ <h2 className="font-playfair text-3xl sm:text-5xl font-light text-foreground mb-3 sm:mb-4" data-testid="text-welcome">
+ CLUNY CAFE
  </h2>
  <p className="text-muted text-base sm:text-lg mb-6 sm:mb-8 font-cairo font-light leading-relaxed" data-testid="text-tagline">
  تجربة قهوة فاخرة وأصيلة
@@ -101,7 +101,7 @@ export default function SplashScreen() {
  ادخل إلى عالم القهوة
  </Button>
  <p className="text-muted text-xs sm:text-sm mt-3 font-cairo opacity-75">
- سيتم الانتقال تلقائياً خلال ثوانٍ...
+ سيتم الانتقال تلقائياً خلال 3 ثوانٍ...
  </p>
  </div>
  </div>
