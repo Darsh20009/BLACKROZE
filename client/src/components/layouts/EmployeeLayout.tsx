@@ -65,10 +65,11 @@ export function EmployeeLayout({
 
   const navItems = [
     { path: "/employee/dashboard", icon: Home, label: "الرئيسية", roles: ["all"] },
-    { path: "/employee/orders", icon: ShoppingBag, label: "الطلبات", roles: ["all"] },
+    { path: "/employee/cashier", icon: ShoppingBag, label: "الكاشير", roles: ["all"] },
+    { path: "/employee/orders", icon: ClipboardList, label: "الطلبات", roles: ["all"] },
     { path: "/employee/pos", icon: CreditCard, label: "نقطة البيع", roles: ["cashier", "manager", "admin"] },
     { path: "/employee/kitchen", icon: ChefHat, label: "المطبخ", roles: ["barista", "manager", "admin"] },
-    { path: "/employee/tables", icon: TableIcon, label: "الطاولات", roles: ["all"] },
+    { path: "/employee/table-orders", icon: TableIcon, label: "الطاولات", roles: ["all"] },
     { path: "/employee/menu-management", icon: Coffee, label: "القائمة", roles: ["manager", "admin"] },
     { path: "/employee/loyalty", icon: Users, label: "الولاء", roles: ["all"] },
   ];
