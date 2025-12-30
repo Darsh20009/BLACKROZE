@@ -250,7 +250,7 @@ export default function WelcomePage() {
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">الموقع</h4>
-              <p className="text-sm text-muted-foreground font-cairo">عدة فروع في المدينة</p>
+              <p className="text-sm text-muted-foreground font-cairo">Olaya St, العام، Riyadh 12211</p>
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">التواصل</h4>
