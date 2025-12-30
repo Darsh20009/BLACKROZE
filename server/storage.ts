@@ -846,10 +846,10 @@ export class DBStorage implements IStorage {
   async getCoffeeItems(): Promise<CoffeeItem[]> {
     const items = await CoffeeItemModel.find().lean();
     return (items as any[]).map(i => {
-      const doc = { ...i, id: i.id || i._id?.toString() };
+      const doc = { ...i, id: i.id || (i as any)._id?.toString() };
       delete (doc as any)._id;
       delete (doc as any).__v;
-      return doc as CoffeeItem;
+      return doc as any as CoffeeItem;
     });
   }
 
@@ -859,16 +859,16 @@ export class DBStorage implements IStorage {
     const doc = { ...item, id: item.id || (item as any)._id?.toString() };
     delete (doc as any)._id;
     delete (doc as any).__v;
-    return doc as CoffeeItem;
+    return doc as any as CoffeeItem;
   }
 
   async getCoffeeItemsByCategory(category: string): Promise<CoffeeItem[]> {
     const items = await CoffeeItemModel.find({ category }).lean();
     return (items as any[]).map(i => {
-      const doc = { ...i, id: i.id || i._id?.toString() };
+      const doc = { ...i, id: i.id || (i as any)._id?.toString() };
       delete (doc as any)._id;
       delete (doc as any).__v;
-      return doc as CoffeeItem;
+      return doc as any as CoffeeItem;
     });
   }
 

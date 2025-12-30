@@ -66,6 +66,8 @@ export default function EmployeeMenuManagement() {
    coffeeStrength: string;
    imageUrl?: string;
    branchAvailability?: BranchAvailability[];
+   isGiftable?: boolean;
+   availableSizes?: any[];
  } | null>(null);
 
  useEffect(() => {
@@ -458,7 +460,8 @@ export default function EmployeeMenuManagement() {
      oldPrice: formData.get("oldPrice") as string || "",
      coffeeStrength: selectedCoffeeStrength,
      imageUrl,
-     branchAvailability: selectedBranches.length > 0 ? selectedBranches : undefined
+     branchAvailability: selectedBranches.length > 0 ? selectedBranches : undefined,
+     isGiftable: false, // Default value, will be updated by UI if needed
    });
    setAddStep(2);
  };
@@ -493,7 +496,9 @@ export default function EmployeeMenuManagement() {
      isAvailable: 1,
      availabilityStatus: "available",
      isNewProduct: 0,
-     isGiftable: false,
+     isGiftable: step1Data.isGiftable || false,
+     availableSizes: step1Data.availableSizes || [],
+     addons: (step1Data as any).addons || [],
      branchAvailability: step1Data.branchAvailability,
      hasRecipe: 0,
      requiresRecipe: 0,
@@ -525,7 +530,9 @@ export default function EmployeeMenuManagement() {
      isAvailable: 1,
      availabilityStatus: "available",
      isNewProduct: 0,
-     isGiftable: false,
+     isGiftable: step1Data.isGiftable || false,
+     availableSizes: step1Data.availableSizes || [],
+     addons: (step1Data as any).addons || [],
      branchAvailability: step1Data.branchAvailability,
      hasRecipe: hasRecipeItems ? 1 : 0,
      requiresRecipe: 1,
@@ -856,21 +863,66 @@ export default function EmployeeMenuManagement() {
  </div>
 
  <div className="grid grid-cols-2 gap-4">
- <div>
- <Label htmlFor="category" className="text-gray-300">القسم *</Label>
- <Select value={selectedCategory} onValueChange={setSelectedCategory}>
- <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-category">
- <SelectValue placeholder="اختر القسم" />
- </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
- <SelectItem value="basic">قهوة أساسية</SelectItem>
- <SelectItem value="hot">قهوة ساخنة</SelectItem>
- <SelectItem value="cold">قهوة باردة </SelectItem>
- <SelectItem value="specialty">مشروبات إضافية </SelectItem>
- <SelectItem value="desserts">الحلويات</SelectItem>
- </SelectContent>
- </Select>
- </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                       <Label htmlFor="category" className="text-gray-300">القسم *</Label>
+                       <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                         <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-category">
+                           <SelectValue placeholder="اختر القسم" />
+                         </SelectTrigger>
+                         <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
+                           <SelectItem value="basic">قهوة أساسية</SelectItem>
+                           <SelectItem value="hot">قهوة ساخنة</SelectItem>
+                           <SelectItem value="cold">قهوة باردة </SelectItem>
+                           <SelectItem value="specialty">مشروبات إضافية </SelectItem>
+                           <SelectItem value="drinks">المشروبات</SelectItem>
+                           <SelectItem value="desserts">الحلويات</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     <div className="flex items-center space-x-2 space-x-reverse pt-8">
+                       <Switch 
+                         id="isGiftable" 
+                         checked={step1Data?.isGiftable || false}
+                         onCheckedChange={(checked) => setStep1Data(prev => prev ? {...prev, isGiftable: checked} : null)}
+                       />
+                       <Label htmlFor="isGiftable" className="text-gray-300">قابل للإهداء</Label>
+                     </div>
+                   </div>
+                 <div className="space-y-2 mt-4">
+                   <Label htmlFor="availableSizes" className="text-gray-300">الأحجام المتوفرة (اختياري)</Label>
+                   <p className="text-gray-500 text-xs mb-2">أدخل الحجم والسعر بتنسيق: كبير: 20، وسط: 15 (كل حجم في سطر)</p>
+                   <Textarea
+                     id="availableSizes"
+                     placeholder="كبير: 20&#10;وسط: 15"
+                     className="bg-[#1a1410] border-primary/30 text-white min-h-[100px]"
+                     onChange={(e) => {
+                       const lines = e.target.value.split('\n').filter(l => l.includes(':'));
+                       const sizes = lines.map(l => {
+                         const [name, price] = l.split(':').map(s => s.trim());
+                         return { nameAr: name, nameEn: name, price: Number(price) || 0 };
+                       });
+                       setStep1Data(prev => prev ? {...prev, availableSizes: sizes} : null);
+                     }}
+                   />
+                 </div>
+                 <div className="space-y-2 mt-4">
+                   <Label htmlFor="addons" className="text-gray-300">الإضافات المتوفرة (اختياري)</Label>
+                   <p className="text-gray-500 text-xs mb-2">أدخل الإضافات بتنسيق: حليب إضافي: 5، نكهة فانيلا: 3 (كل إضافة في سطر)</p>
+                   <Textarea
+                     id="addons"
+                     placeholder="حليب إضافي: 5&#10;نكهة فانيلا: 3"
+                     className="bg-[#1a1410] border-primary/30 text-white min-h-[100px]"
+                     onChange={(e) => {
+                       const lines = e.target.value.split('\n').filter(l => l.includes(':'));
+                       const addons = lines.map(l => {
+                         const [name, price] = l.split(':').map(s => s.trim());
+                         return { nameAr: name, nameEn: name, price: Number(price) || 0 };
+                       });
+                       setStep1Data(prev => prev ? {...prev, addons: addons as any} : null);
+                     }}
+                   />
+                 </div>
  <div>
  <Label htmlFor="price" className="text-gray-300">السعر (ريال) *</Label>
  <Input

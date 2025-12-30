@@ -84,6 +84,11 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
  {item.availabilityStatus === 'temporarily_unavailable' && "غير متوفر مؤقتاً"}
  </Badge>
  )}
+ {item.isGiftable && (
+   <Badge variant="outline" className="bg-accent/20 border-accent text-accent text-xs">
+     هدية 🎁
+   </Badge>
+ )}
  </div>
 
  {/* Elegant Quick View Button - Mobile Optimized */}
