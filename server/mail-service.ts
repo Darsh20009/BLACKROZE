@@ -123,122 +123,99 @@ export async function sendOrderNotificationEmail(
       "⏳";
 
     const mailOptions = {
-      from: '"CLUNY CAFE" <cluny.cafe2026@gmail.com>',
-      replyTo: "cluny.cafe2026@gmail.com",
+      from: 'cluny.cafe2026@gmail.com',
       to: customerEmail,
       subject: `تحديث طلبك - ${orderId}`,
       headers: {
         'X-Priority': '3',
         'X-MSMail-Priority': 'Normal',
         'Importance': 'Normal',
-        'X-Mailer': 'CLUNY CAFE Order System v1.0'
+        'X-Mailer': 'CLUNY CAFE',
+        'List-Unsubscribe': '<mailto:cluny.cafe2026@gmail.com>'
       },
+      text: `مرحباً ${customerName}
+      
+تم تحديث حالة طلبك.
+
+رقم الطلب: ${orderId}
+الحالة: ${statusAr}
+المبلغ: ${orderTotal} ريال
+
+${
+  orderStatus === "completed" ? "شكراً لك! طلبك جاهز للاستلام الآن." :
+  orderStatus === "ready" ? "طلبك جاهز! تفضل للاستلام من الفرع." :
+  orderStatus === "in_progress" || orderStatus === "preparing" ? "فريقنا يحضر طلبك الآن." :
+  orderStatus === "cancelled" ? "تم إلغاء طلبك." :
+  "جاري معالجة طلبك."
+}
+
+CLUNY CAFE
+تجربة القهوة الفاخرة`,
       html: `
-        <!DOCTYPE html>
         <html dir="rtl" lang="ar">
         <head>
           <meta charset="UTF-8">
-          <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #f5f7fa; }
-            .email-container { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-            .header { background: linear-gradient(135deg, #8B5A2B 0%, #A67C52 100%); padding: 40px 30px; text-align: center; }
-            .logo { height: 60px; margin-bottom: 15px; }
-            .brand-title { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px; }
-            .brand-tagline { color: rgba(255,255,255,0.85); margin: 8px 0 0 0; font-size: 13px; font-weight: 400; }
-            .content { padding: 40px 30px; }
-            .greeting { margin-bottom: 30px; }
-            .greeting-name { color: #1a1a2e; margin: 0 0 8px 0; font-size: 22px; font-weight: 600; }
-            .greeting-text { color: #666; margin: 0; font-size: 15px; line-height: 1.5; }
-            .status-section { text-align: center; margin: 35px 0; }
-            .status-badge { display: inline-block; background: ${statusColor}; color: white; padding: 25px 35px; border-radius: 12px; min-width: 220px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-            .status-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; margin: 0 0 12px 0; font-weight: 600; }
-            .status-value { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: 0.5px; }
-            .details-box { background: linear-gradient(135deg, #f8f9fa 0%, #eef2f7 100%); border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 4px solid #8B5A2B; }
-            .detail-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
-            .detail-row:last-child { margin-bottom: 0; }
-            .detail-label { color: #888; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-            .detail-value { color: #1a1a2e; font-size: 16px; font-weight: 700; }
-            .message-box { background: linear-gradient(135deg, #fff8f0 0%, #fff5eb 100%); border-radius: 12px; padding: 20px; margin: 25px 0; text-align: center; border: 1px solid #f0dcc8; }
-            .message-text { color: #5c3d2e; margin: 0; font-size: 15px; line-height: 1.6; font-weight: 500; }
-            .action-text { color: #8B5A2B; font-weight: 600; }
-            .cta-button { display: inline-block; background: linear-gradient(135deg, #8B5A2B 0%, #A67C52 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; margin: 25px 0; transition: all 0.3s ease; }
-            .cta-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,90,43,0.3); }
-            .footer { background: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #e8e8e8; }
-            .footer-text { color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.5; }
-            .footer-brand { color: #1a1a2e; font-weight: 700; }
-            .divider { height: 1px; background: #e8e8e8; margin: 20px 0; }
+          <style type="text/css">
+            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+            .wrapper { background: #f5f5f5; padding: 20px; }
+            .container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; }
+            .header { text-align: center; border-bottom: 2px solid #8B5A2B; padding-bottom: 20px; margin-bottom: 20px; }
+            .header h1 { color: #8B5A2B; font-size: 28px; margin: 10px 0; }
+            .tagline { color: #666; font-size: 13px; }
+            .content { margin: 20px 0; }
+            .greeting { font-size: 16px; color: #333; margin-bottom: 20px; }
+            .status { background: ${statusColor}; color: white; padding: 20px; text-align: center; margin: 20px 0; border-radius: 5px; }
+            .status-value { font-size: 24px; font-weight: bold; }
+            .details { background: #f9f9f9; padding: 15px; margin: 20px 0; border-right: 3px solid #8B5A2B; }
+            .detail-row { padding: 8px 0; }
+            .detail-label { color: #888; font-size: 12px; font-weight: bold; }
+            .detail-value { color: #333; font-size: 16px; font-weight: bold; }
+            .message { background: #faf5f0; padding: 15px; margin: 20px 0; border-radius: 5px; color: #5c3d2e; font-size: 14px; line-height: 1.5; }
+            .footer { border-top: 1px solid #e0e0e0; padding-top: 15px; font-size: 12px; color: #888; text-align: center; margin-top: 20px; }
           </style>
         </head>
         <body>
-          <div class="email-container">
-            <!-- Header -->
-            <div class="header">
-              <img src="https://cluny-cafe.web.app/cluny-logo.png" alt="CLUNY CAFE" class="logo">
-              <h1 class="brand-title">CLUNY CAFE</h1>
-              <p class="brand-tagline">تجربة القهوة الفاخرة الحقيقية</p>
-            </div>
-
-            <!-- Main Content -->
-            <div class="content">
-              <!-- Greeting -->
-              <div class="greeting">
-                <h2 class="greeting-name">مرحباً ${customerName}!</h2>
-                <p class="greeting-text">تم تحديث حالة طلبك. إليك التفاصيل:</p>
+          <div class="wrapper">
+            <div class="container">
+              <div class="header">
+                <h1>CLUNY CAFE</h1>
+                <p class="tagline">تجربة القهوة الفاخرة</p>
               </div>
-
-              <!-- Status Badge -->
-              <div class="status-section">
-                <div class="status-badge">
-                  <div class="status-label">حالة الطلب</div>
+              
+              <div class="content">
+                <div class="greeting">مرحباً ${customerName}!</div>
+                
+                <div class="status">
+                  <div style="font-size: 12px; margin-bottom: 10px;">حالة الطلب</div>
                   <div class="status-value">${statusAr}</div>
                 </div>
-              </div>
-
-              <!-- Order Details -->
-              <div class="details-box">
-                <div class="detail-row">
-                  <div>
+                
+                <div class="details">
+                  <div class="detail-row">
                     <div class="detail-label">رقم الطلب</div>
                     <div class="detail-value">${orderId}</div>
                   </div>
-                  <div>
+                  <div class="detail-row" style="margin-top: 10px;">
                     <div class="detail-label">المبلغ الإجمالي</div>
                     <div class="detail-value">${orderTotal} ريال</div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Status Message -->
-              <div class="message-box">
-                <p class="message-text">
+                
+                <div class="message">
                   ${
-                    orderStatus === "completed" ? "<span class='action-text'>شكراً لك!</span> طلبك جاهز للاستلام الآن. نتمنى أن تستمتع بقهوتك!" :
-                    orderStatus === "ready" ? "<span class='action-text'>تمام!</span> طلبك أصبح جاهزاً. تفضل للاستلام من الفرع." :
-                    orderStatus === "in_progress" || orderStatus === "preparing" ? "<span class='action-text'>قيد الإعداد</span> فريقنا يحضر طلبك الآن بأفضل طريقة." :
-                    orderStatus === "cancelled" ? "<span class='action-text'>تم الإلغاء</span> - إذا كان لديك أي استفسار، تواصل معنا." :
-                    "<span class='action-text'>قيد المعالجة</span> - سيتم تحديثك قريباً عن حالة طلبك."
+                    orderStatus === "completed" ? "شكراً لك! طلبك جاهز للاستلام الآن. نتمنى أن تستمتع بقهوتك!" :
+                    orderStatus === "ready" ? "تمام! طلبك أصبح جاهزاً. تفضل للاستلام من الفرع." :
+                    orderStatus === "in_progress" || orderStatus === "preparing" ? "قيد الإعداد - فريقنا يحضر طلبك الآن بعناية." :
+                    orderStatus === "cancelled" ? "تم إلغاء طلبك. إذا كان لديك أي استفسار، تواصل معنا." :
+                    "قيد المعالجة - سيتم تحديثك قريباً."
                   }
-                </p>
+                </div>
               </div>
-
-              ${
-                orderStatus === "ready" 
-                  ? `<center><a href="#" class="cta-button">اذهب إلى الفرع</a></center>`
-                  : ''
-              }
-            </div>
-
-            <!-- Footer -->
-            <div class="footer">
-              <p class="footer-text">
-                <span class="footer-brand">CLUNY CAFE</span> - نحن نقدم أفضل تجربة قهوة
-              </p>
-              <p class="footer-text">
-                هذا البريد مرسل تلقائياً. يرجى عدم الرد عليه مباشرة.
-              </p>
-              <p class="footer-text" style="margin-top: 12px; font-size: 11px; opacity: 0.7;">
-                © 2025 CLUNY CAFE. جميع الحقوق محفوظة.
-              </p>
+              
+              <div class="footer">
+                <p>© 2025 CLUNY CAFE - جميع الحقوق محفوظة</p>
+                <p>هذا البريد مرسل تلقائياً. يرجى عدم الرد.</p>
+              </div>
             </div>
           </div>
         </body>
