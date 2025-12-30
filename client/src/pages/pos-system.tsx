@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -137,7 +137,6 @@ export default function POSSystem() {
             if (item.type === 'CREATE_ORDER') {
               await apiRequest("POST", "/api/orders", item.payload);
             }
-            await db.syncQueue.update(item.id!, { status: 'synced' });
           } catch (err) {
             await db.syncQueue.update(item.id!, { 
               status: 'pending', 
@@ -152,32 +151,6 @@ export default function POSSystem() {
     }
   }, [isOnline]);
   
-  // Local caching logic for offline products - Simplified to avoid redundant updates
-  useEffect(() => {
-    const syncWithLocal = async () => {
-      if (coffeeItems && coffeeItems.length > 0 && !isOffline) {
-        try {
-          const currentCount = await db.products.count();
-          if (currentCount !== coffeeItems.length) {
-            const localProducts = coffeeItems.map((p: any) => ({
-              id: p.id,
-              nameAr: p.nameAr,
-              price: typeof p.price === 'string' ? parseFloat(p.price) : p.price,
-              category: p.category,
-              imageUrl: p.imageUrl,
-              isAvailable: p.isAvailable,
-              tenantId: p.tenantId || 'demo-tenant',
-              updatedAt: Date.now()
-            }));
-            await db.products.bulkPut(localProducts);
-          }
-        } catch (err) {
-          console.error("Failed to sync products to IndexedDB:", err);
-        }
-      }
-    };
-    syncWithLocal();
-  }, [coffeeItems, isOffline]);
   const [orderType, setOrderType] = useState<OrderType>("dine_in");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -537,8 +510,8 @@ export default function POSSystem() {
   }, [coffeeItems]);
 
   const filteredItems = useMemo(() => {
-    return coffeeItems.filter(item => {
-      const matchesSearch = item.nameAr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    return coffeeItems.filter((item: any) => {
+      const matchesSearch = item.nameAr?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             (item.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesCategory = selectedCategory === "all" || 
                               (item.categoryAr === selectedCategory) ||
@@ -932,7 +905,7 @@ export default function POSSystem() {
           paymentMethod: orderData.paymentMethod,
           createdAt: Date.now(),
           status: 'pending',
-          tenantId: employee?.tenantId || 'demo-tenant',
+          tenantId: (employee as any)?.tenantId || 'demo-tenant',
           branchId: employee?.branchId || ''
         });
 
@@ -1218,7 +1191,7 @@ export default function POSSystem() {
                 )}
                 
                 <div className="flex gap-1 sm:gap-2 flex-1 min-w-0 overflow-x-auto pb-1">
-                  {visibleCategories.map(cat => (
+                  {visibleCategories.map((cat: any) => (
                     <Button
                       key={cat.id}
                       variant={selectedCategory === cat.id ? "default" : "outline"}
@@ -1258,7 +1231,7 @@ export default function POSSystem() {
                   />
                 ) : (
                   <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-4">
-                    {filteredItems.map((item) => {
+                    {filteredItems.map((item: any) => {
                       const inCart = orderItems.find(oi => oi.coffeeItem.id === item.id);
                       return (
                         <Card
