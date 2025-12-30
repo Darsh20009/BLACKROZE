@@ -36,7 +36,6 @@ export default function WelcomePage() {
           </Button>
         </div>
       </nav>
-
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden pt-20">
         <div className="absolute inset-0 pointer-events-none">
@@ -112,7 +111,6 @@ export default function WelcomePage() {
           </motion.div>
         </div>
       </section>
-
       {/* Features Section */}
       <section className="py-24 px-4 bg-card/40">
         <div className="max-w-6xl mx-auto">
@@ -163,7 +161,6 @@ export default function WelcomePage() {
           </div>
         </div>
       </section>
-
       {/* About Section */}
       <section className="py-24 px-4 bg-background">
         <div className="max-w-4xl mx-auto text-center">
@@ -200,7 +197,6 @@ export default function WelcomePage() {
           </motion.p>
         </div>
       </section>
-
       {/* CTA Section */}
       <section className="py-24 px-4 bg-gradient-to-r from-primary to-primary/90">
         <div className="max-w-4xl mx-auto text-center">
@@ -240,7 +236,6 @@ export default function WelcomePage() {
           </motion.div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="bg-foreground/5 py-12 px-4 border-t border-border">
         <div className="max-w-6xl mx-auto">
@@ -259,7 +254,7 @@ export default function WelcomePage() {
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">التواصل</h4>
-              <p className="text-sm text-muted-foreground font-cairo">info@clunycafe.com</p>
+              <p className="text-sm text-muted-foreground font-cairo">cluny.cafe2026@gmail.com</p>
             </div>
           </div>
 
