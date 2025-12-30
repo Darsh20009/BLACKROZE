@@ -10,7 +10,7 @@ import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
 
 export default function EmployeeLogin() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -108,17 +108,17 @@ export default function EmployeeLogin() {
     <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
-            <img src="/logo.png" alt="CLUNY SYSTEMS" className="w-full h-full object-contain" />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4 bg-primary/10 rounded-full">
+            <Coffee className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">CLUNY SYSTEMS</h1>
           <p className="text-muted-foreground font-cairo">تسجيل دخول الموظف</p>
         </div>
 
         {showQRScanner ? (
-          <Card>
+          <Card className="border-border shadow-sm">
             <CardHeader>
-              <CardTitle className="text-2xl text-center">
+              <CardTitle className="text-2xl text-center text-primary">
                 مسح بطاقة الموظف
               </CardTitle>
               <CardDescription className="text-center">
@@ -126,7 +126,7 @@ export default function EmployeeLogin() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div id="qr-reader" className="w-full" />
+              <div id="qr-reader" className="w-full overflow-hidden rounded-md border border-border" />
               {error && (
                 <p className="text-destructive text-sm text-center" data-testid="text-qr-error">
                   {error}
@@ -136,7 +136,7 @@ export default function EmployeeLogin() {
                 type="button"
                 variant="outline"
                 onClick={handleToggleQRScanner}
-                className="w-full"
+                className="w-full border-primary/20 text-primary"
                 data-testid="button-cancel-qr"
               >
                 إلغاء
@@ -144,9 +144,9 @@ export default function EmployeeLogin() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="border-border shadow-sm">
             <CardHeader>
-              <CardTitle className="text-2xl text-center">
+              <CardTitle className="text-2xl text-center text-primary">
                 تسجيل الدخول
               </CardTitle>
               <CardDescription className="text-center">
@@ -157,13 +157,13 @@ export default function EmployeeLogin() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <div className="relative">
-                    <User className="absolute right-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <User className="absolute right-3 top-3 h-5 w-5 text-primary" />
                     <Input
                       type="text"
                       placeholder="اسم المستخدم"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="pr-10"
+                      className="pr-10 bg-background border-border"
                       data-testid="input-username"
                       autoFocus
                       disabled={loginMutation.isPending}
@@ -173,20 +173,20 @@ export default function EmployeeLogin() {
 
                 <div className="space-y-2">
                   <div className="relative">
-                    <Lock className="absolute right-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Lock className="absolute right-3 top-3 h-5 w-5 text-primary" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="كلمة المرور"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pr-10 pl-10"
+                      className="pr-10 pl-10 bg-background border-border"
                       data-testid="input-password"
                       disabled={loginMutation.isPending}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3 top-3 text-muted-foreground hover:text-foreground"
+                      className="absolute left-3 top-3 text-primary hover:text-primary/80"
                       data-testid="button-toggle-password"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -196,7 +196,7 @@ export default function EmployeeLogin() {
                     <button
                       type="button"
                       onClick={() => setLocation("/employee/forgot-password")}
-                      className="text-xs text-primary hover:text-primary/80 underline"
+                      className="text-xs text-[#B58B5A] hover:text-[#B58B5A]/80 underline"
                       data-testid="link-forgot-password"
                     >
                       نسيت كلمة المرور؟
@@ -212,7 +212,7 @@ export default function EmployeeLogin() {
                 <Button
                   type="submit"
                   disabled={loginMutation.isPending}
-                  className="w-full"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
                   data-testid="button-login"
                 >
                   {loginMutation.isPending ? (
@@ -230,7 +230,7 @@ export default function EmployeeLogin() {
                     type="button"
                     variant="secondary"
                     onClick={handleToggleQRScanner}
-                    className="w-full"
+                    className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                     data-testid="button-scan-qr"
                   >
                     <QrCode className="w-4 h-4 ml-2" />
@@ -242,7 +242,7 @@ export default function EmployeeLogin() {
                     type="button"
                     variant="outline"
                     onClick={() => setLocation("/employee/activate")}
-                    className="w-full"
+                    className="w-full border-primary/20 text-primary"
                     data-testid="button-activate"
                   >
                     تفعيل حساب جديد
@@ -257,6 +257,7 @@ export default function EmployeeLogin() {
           <Button
             variant="ghost"
             onClick={() => setLocation("/employee/gateway")}
+            className="text-primary hover:text-primary/80"
             data-testid="link-back"
           >
             رجوع
