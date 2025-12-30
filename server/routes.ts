@@ -1999,8 +1999,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const isEmployee = !!req.session?.employee;
           const tenantId = req.session?.employee?.tenantId || req.query.tenantId || 'demo-tenant';
           
-          // Fetch all items for this tenant
-          const items = await CoffeeItemModel.find({ tenantId }).lean().exec();
+          // Fetch all items for this tenant, with fallback to items without tenantId (legacy items)
+          let items = await CoffeeItemModel.find({ 
+            $or: [
+              { tenantId: tenantId },
+              { tenantId: { $exists: false } },
+              { tenantId: null }
+            ]
+          }).lean().exec();
           console.log(`[GET /api/coffee-items] Found ${items.length} items for tenant ${tenantId}`);
 
       
@@ -2090,7 +2096,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const tenantId = req.employee.tenantId;
-      const items = await CoffeeItemModel.find({ tenantId }).lean().exec();
+      const items = await CoffeeItemModel.find({ 
+        $or: [
+          { tenantId: tenantId },
+          { tenantId: { $exists: false } },
+          { tenantId: null }
+        ]
+      }).lean().exec();
       
       // Get drinks that are NOT published in this branch but exist in other branches
       const filteredItems = items.filter((item: any) => {
