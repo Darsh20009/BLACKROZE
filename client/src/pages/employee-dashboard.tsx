@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import { EmployeeSidebar } from "@/components/employee-sidebar";
 import html2canvas from "html2canvas";
+import logoImage from "@assets/cluny_cafe_logo_1767095370460.png";
 import type { Employee } from "@shared/schema";
 
 interface LeaveRequest {
@@ -344,8 +345,8 @@ export default function EmployeeDashboard() {
 
                     <div className="bg-gradient-to-r from-primary via-primary to-primary/80 p-6 relative">
                       <div className="flex items-center justify-center gap-3 mb-2">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                          <Coffee className="w-7 h-7 text-primary" />
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                          <img src={logoImage} alt="CLUNY CAFE Logo" className="w-14 h-14 object-contain" />
                         </div>
                         <div className="text-white text-right">
                           <h3 className="text-2xl font-bold">CLUNY CAFE</h3>
