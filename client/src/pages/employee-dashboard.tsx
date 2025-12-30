@@ -344,9 +344,9 @@ export default function EmployeeDashboard() {
                     <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-accent to-primary opacity-15 rounded-tr-3xl pointer-events-none"></div>
 
                     <div className="bg-gradient-to-r from-primary via-primary to-primary/80 p-6 relative">
-                      <div className="flex items-center justify-center gap-3 mb-2">
-                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg overflow-hidden">
-                          <img src={logoImage} alt="CLUNY CAFE Logo" className="w-14 h-14 object-contain" />
+                      <div className="flex items-center justify-center gap-4 mb-2">
+                        <div className="w-20 h-20 flex items-center justify-center shadow-lg rounded-lg">
+                          <img src={logoImage} alt="CLUNY CAFE Logo" className="w-full h-full object-contain rounded-lg" />
                         </div>
                         <div className="text-white text-right">
                           <h3 className="text-2xl font-bold">CLUNY CAFE</h3>
