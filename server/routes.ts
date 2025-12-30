@@ -3553,6 +3553,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const loyaltyCard = await storage.getLoyaltyCardByPhone(cleanPhone);
       if (!loyaltyCard) {
+        // Automatically create a card if it doesn't exist
+        const customer = await storage.getCustomerByPhone(cleanPhone);
+        if (customer) {
+          const newCard = await storage.createLoyaltyCard({
+            customerName: customer.name,
+            phoneNumber: cleanPhone
+          });
+          return res.json(newCard);
+        }
         return res.status(404).json({ error: "بطاقة الولاء غير موجودة" });
       }
 

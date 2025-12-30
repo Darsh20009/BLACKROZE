@@ -812,7 +812,7 @@ export default function CopyCard() {
                     <p className="text-xl font-mono tracking-wider text-accent font-bold select-all">
                       {loyaltyCard?.cardNumber ? (
                         loyaltyCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
-                      ) : "جاري التحميل..."}
+                      ) : (customer?.phone ? `QC-${customer.phone}` : "لا يوجد بطاقة")}
                     </p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">

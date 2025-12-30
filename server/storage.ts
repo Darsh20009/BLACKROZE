@@ -1013,7 +1013,7 @@ export class DBStorage implements IStorage {
   }
 
   async getLoyaltyCardByPhone(phoneNumber: string): Promise<LoyaltyCard | undefined> {
-    const card = await LoyaltyCardModel.findOne({ phoneNumber, isActive: true });
+    const card = await LoyaltyCardModel.findOne({ phoneNumber });
     return card || undefined;
   }
 
