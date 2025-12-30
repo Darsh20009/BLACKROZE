@@ -77,8 +77,10 @@ export default function EmployeeMenuManagement() {
  }
  }, [setLocation]);
 
- const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
+ const { data: coffeeItems = [], isLoading, refetch } = useQuery<CoffeeItem[]>({
  queryKey: ["/api/coffee-items"],
+ staleTime: 0,
+ gcTime: 0,
  });
 
  const { data: ingredients = [] } = useQuery<Ingredient[]>({
@@ -240,7 +242,8 @@ export default function EmployeeMenuManagement() {
    
    return createdItem;
  },
- onSuccess: () => {
+ onSuccess: async () => {
+   await refetch();
    queryClient.invalidateQueries({ queryKey: ["/api/coffee-items"] });
    queryClient.invalidateQueries({ queryKey: ["/api/inventory/all-recipes"] });
    setIsAddDialogOpen(false);
