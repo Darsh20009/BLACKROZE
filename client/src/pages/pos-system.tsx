@@ -274,6 +274,8 @@ export default function POSSystem() {
   const [customizingItem, setCustomizingItem] = useState<CoffeeItem | null>(null);
   const [editingLineItemId, setEditingLineItemId] = useState<string | null>(null);
   const [usedFreeDrinks, setUsedFreeDrinks] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [offlineOrders, setOfflineOrders] = useState<any[]>([]);
   
   const [categoryPage, setCategoryPage] = useState(0);
   const categoriesPerPage = 6;
@@ -362,7 +364,7 @@ export default function POSSystem() {
   const { data: productsData, isLoading } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
-    cacheTime: 1000 * 60 * 60 * 24, // 24 hours
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/coffee-items");
       const data = await res.json();
