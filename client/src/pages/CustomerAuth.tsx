@@ -11,7 +11,6 @@ import { SmartIdentifierInput } from "@/components/smart-identifier-input";
 import { Phone, User, Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import clunyLogo from "@assets/cluny-logo.png";
 
 export default function CustomerAuth() {
  const [, navigate] = useLocation();
@@ -170,7 +169,7 @@ export default function CustomerAuth() {
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
  <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg shadow-accent/50">
- <img src={clunyLogo} alt="CLUNY CAFE" className="w-full h-full object-cover" />
+ <img src="/logo.png" alt="CLUNY CAFE" className="w-full h-full object-cover" />
  </div>
  </div>
  <CardTitle className="text-3xl font-bold text-card">

@@ -115,7 +115,6 @@ export default function WelcomePage() {
       {/* Footer */}
       <footer className="bg-foreground/10 py-12 px-4 border-t border-border">
         <div className="max-w-6xl mx-auto">
-          
           <div className="border-t border-slate-700 pt-8 text-center text-slate-400">
             <p className="font-cairo">© 2025 CLUNY CAFE. جميع الحقوق محفوظة.</p>
           </div>

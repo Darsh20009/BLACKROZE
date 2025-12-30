@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap } from "lucide-react";
-import clunyLogo from "@assets/cluny-logo.png";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();
@@ -65,7 +64,7 @@ export default function EmployeeSplash() {
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                 className="w-32 h-32 rounded-full border-2 border-[#8B5A2B] flex items-center justify-center overflow-hidden"
               >
-                <img src={clunyLogo} alt="Logo" className="w-24 h-24 object-contain animate-pulse" />
+                <img src="/logo.png" alt="Logo" className="w-24 h-24 object-contain animate-pulse" />
               </motion.div>
               <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
