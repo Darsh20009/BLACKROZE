@@ -168,7 +168,7 @@ const MenuPage = memo(function MenuPage() {
               <img 
                 src={clunyLogo} 
                 alt="CLUNY CAFE" 
-                className="w-10 h-10 sm:w-12 sm:h-12 object-contain" 
+                className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-full" 
                 data-testid="logo-header"
               />
               <div>
