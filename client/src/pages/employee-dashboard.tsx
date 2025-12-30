@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Coffee, LogOut, ShoppingCart, ClipboardList, User, Award, Gift, Sparkles, Download, IdCard, Settings, BarChart3, Table, Lock, Clock, MonitorSmartphone, ChefHat, Wallet, Warehouse, Eye, Bell, CheckCircle, AlertCircle, Calendar, FileText } from "lucide-react";
+import { Coffee, LogOut, ShoppingCart, ClipboardList, User, Award, Gift, Sparkles, Download, IdCard, Settings, BarChart3, Table, Lock, Clock, MonitorSmartphone, ChefHat, Wallet, Warehouse, Eye, Bell, CheckCircle, AlertCircle, Calendar, FileText, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import { EmployeeSidebar } from "@/components/employee-sidebar";
@@ -52,16 +52,21 @@ export default function EmployeeDashboard() {
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [kitchenOrders, setKitchenOrders] = useState<Order[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [caféAddress, setCaféAddress] = useState<string>("");
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const storedEmployee = localStorage.getItem("currentEmployee");
+    const storedAddress = localStorage.getItem("caféAddress");
     if (storedEmployee) {
       const emp = JSON.parse(storedEmployee);
       setEmployee(emp);
       fetchAllNotifications();
     } else {
       setLocation("/employee/gateway");
+    }
+    if (storedAddress) {
+      setCaféAddress(storedAddress);
     }
     setIsLoading(false);
   }, [setLocation]);
@@ -814,6 +819,46 @@ export default function EmployeeDashboard() {
                 >
                   <FileText className="w-4 h-4 ml-2" />
                   عرض طلبات الجازة الكاملة
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-primary text-right flex items-center gap-2 flex-wrap">
+                <MapPin className="w-5 h-5" />
+                موقع الكافيه
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-primary text-right block">
+                  أدخل عنوان الكافيه الدقيق
+                </label>
+                <Input
+                  type="text"
+                  placeholder="مثال: شارع الملك، الرباط، المغرب"
+                  value={caféAddress}
+                  onChange={(e) => {
+                    setCaféAddress(e.target.value);
+                    localStorage.setItem("caféAddress", e.target.value);
+                  }}
+                  className="text-right"
+                  data-testid="input-cafe-address"
+                />
+              </div>
+              {caféAddress && (
+                <Button
+                  onClick={() => {
+                    const encodedAddress = encodeURIComponent(caféAddress);
+                    window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank');
+                  }}
+                  className="w-full bg-accent hover:bg-accent/90 text-white"
+                  data-testid="button-open-google-maps"
+                >
+                  <MapPin className="w-4 h-4 ml-2" />
+                  فتح في جوجل مابس
                 </Button>
               )}
             </CardContent>
