@@ -16,7 +16,7 @@ import BranchLocationPicker from "@/components/branch-location-picker";
 import { 
  Coffee, Users, ShoppingBag, TrendingUp, DollarSign, 
  Package, MapPin, Layers, ArrowLeft, Calendar, Warehouse,
- UserCheck, Receipt, BarChart3, Download, TrendingDown, Activity, Plus, Trash2, ExternalLink
+ UserCheck, Receipt, BarChart3, Download, TrendingDown, Activity, Plus, Trash2, ExternalLink, Edit2
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { 
@@ -37,6 +37,8 @@ export default function ManagerDashboard() {
  const [manager, setManager] = useState<Employee | null>(null);
  const [dateFilter, setDateFilter] = useState<"today" | "week" | "month" | "all">("all");
  const [isAddBranchOpen, setIsAddBranchOpen] = useState(false);
+ const [isEditBranchOpen, setIsEditBranchOpen] = useState(false);
+ const [editingBranch, setEditingBranch] = useState<any>(null);
  const [branchForm, setBranchForm] = useState({
  nameAr: "",
  nameEn: "",
@@ -212,6 +214,66 @@ export default function ManagerDashboard() {
  },
  });
 
+ const updateBranchMutation = useMutation({
+ mutationFn: async (branchData: { id: string; data: typeof branchForm }) => {
+ const payload: any = {
+ nameAr: branchData.data.nameAr,
+ nameEn: branchData.data.nameEn || undefined,
+ address: branchData.data.address,
+ phone: branchData.data.phone,
+ city: branchData.data.city,
+ managerName: branchData.data.managerName || undefined,
+ mapsUrl: branchData.data.mapsUrl || undefined,
+ location: {
+ lat: branchData.data.latitude,
+ lng: branchData.data.longitude,
+ },
+ isActive: 1,
+ };
+
+ const response = await fetch(`/api/branches/${branchData.id}`, {
+ method: "PATCH",
+ headers: {
+ "Content-Type": "application/json",
+ },
+ body: JSON.stringify(payload),
+ credentials: "include",
+ });
+ if (!response.ok) {
+ const error = await response.json();
+ throw new Error(error.error || "Failed to update branch");
+ }
+ return response.json();
+ },
+ onSuccess: () => {
+ queryClient.invalidateQueries({ queryKey: ["/api/branches"] });
+ setIsEditBranchOpen(false);
+ setEditingBranch(null);
+ setBranchForm({
+ nameAr: "",
+ nameEn: "",
+ address: "",
+ phone: "",
+ city: "",
+ managerName: "",
+ mapsUrl: "",
+ latitude: 24.7136,
+ longitude: 46.6753,
+ });
+ toast({
+ title: "تم تحديث الفرع بنجاح",
+ description: "تم تحديث بيانات الفرع",
+ });
+ },
+ onError: (error: any) => {
+ toast({
+ title: "خطأ في تحديث الفرع",
+ description: error.message || "حدث خطأ أثناء تحديث الفرع",
+ variant: "destructive",
+ });
+ },
+ });
+
  const handleLogout = () => {
  localStorage.removeItem("currentEmployee");
  setLocation("/employee/gateway");
@@ -246,6 +308,39 @@ export default function ManagerDashboard() {
  };
  
  createBranchMutation.mutate(payload);
+ };
+
+ const handleEditBranch = () => {
+ if (!editingBranch) return;
+ if (!branchForm.nameAr || !branchForm.address || !branchForm.city || !branchForm.phone) {
+ toast({
+ title: "بيانات ناقصة",
+ description: "الرجاء إدخال جميع البيانات المطلوبة",
+ variant: "destructive",
+ });
+ return;
+ }
+ 
+ updateBranchMutation.mutate({
+ id: editingBranch._id || editingBranch.id,
+ data: branchForm
+ });
+ };
+
+ const openEditDialog = (branch: any) => {
+ setEditingBranch(branch);
+ setBranchForm({
+ nameAr: branch.nameAr || "",
+ nameEn: branch.nameEn || "",
+ address: branch.address || "",
+ phone: branch.phone || "",
+ city: branch.city || "",
+ managerName: branch.managerName || "",
+ mapsUrl: branch.mapsUrl || "",
+ latitude: branch.location?.lat || 24.7136,
+ longitude: branch.location?.lng || 46.6753,
+ });
+ setIsEditBranchOpen(true);
  };
 
  const handleExportData = () => {
@@ -1026,6 +1121,109 @@ export default function ManagerDashboard() {
  </div>
  </DialogContent>
  </Dialog>
+
+ {isAdmin && (
+ <Dialog open={isEditBranchOpen} onOpenChange={setIsEditBranchOpen}>
+ <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+ <DialogHeader>
+ <DialogTitle className="text-2xl font-bold">تعديل الفرع</DialogTitle>
+ </DialogHeader>
+ <div className="grid gap-4 py-4">
+ <div className="grid grid-cols-2 gap-4">
+ <div className="grid gap-1.5">
+ <Label htmlFor="edit-name-ar">اسم الفرع بالعربية *</Label>
+ <Input
+ id="edit-name-ar"
+ value={branchForm.nameAr}
+ onChange={(e) => setBranchForm({ ...branchForm, nameAr: e.target.value })}
+ placeholder="مثال: فرع الرياض"
+ data-testid="input-edit-name-ar"
+ />
+ </div>
+ <div className="grid gap-1.5">
+ <Label htmlFor="edit-name-en">اسم الفرع بالإنجليزية</Label>
+ <Input
+ id="edit-name-en"
+ value={branchForm.nameEn}
+ onChange={(e) => setBranchForm({ ...branchForm, nameEn: e.target.value })}
+ placeholder="مثال: Riyadh Branch"
+ data-testid="input-edit-name-en"
+ />
+ </div>
+ </div>
+
+ <div className="grid gap-1.5">
+ <Label htmlFor="edit-address">العنوان *</Label>
+ <Input
+ id="edit-address"
+ value={branchForm.address}
+ onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
+ placeholder="العنوان الكامل"
+ data-testid="input-edit-address"
+ />
+ </div>
+
+ <div className="grid grid-cols-2 gap-4">
+ <div className="grid gap-1.5">
+ <Label htmlFor="edit-phone">رقم الجوال *</Label>
+ <Input
+ id="edit-phone"
+ value={branchForm.phone}
+ onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })}
+ placeholder="مثال: 0501234567"
+ data-testid="input-edit-phone"
+ />
+ </div>
+ <div className="grid gap-1.5">
+ <Label htmlFor="edit-city">المدينة *</Label>
+ <Input
+ id="edit-city"
+ value={branchForm.city}
+ onChange={(e) => setBranchForm({ ...branchForm, city: e.target.value })}
+ placeholder="المدينة"
+ data-testid="input-edit-city"
+ />
+ </div>
+ </div>
+
+ <div className="grid gap-1.5">
+ <Label htmlFor="edit-manager-name">اسم المدير</Label>
+ <Input
+ id="edit-manager-name"
+ value={branchForm.managerName}
+ onChange={(e) => setBranchForm({ ...branchForm, managerName: e.target.value })}
+ placeholder="اسم مدير الفرع"
+ data-testid="input-edit-manager-name"
+ />
+ </div>
+
+ <div className="grid gap-2">
+ <Label>موقع الفرع على الخريطة</Label>
+ <div className="h-[250px] rounded-lg overflow-hidden border border-border">
+ <BranchLocationPicker
+ initialLat={branchForm.latitude}
+ initialLng={branchForm.longitude}
+ onLocationSelect={(lat: number, lng: number) => setBranchForm({ ...branchForm, latitude: lat, longitude: lng })}
+ />
+ </div>
+ <div className="flex gap-4 text-xs text-muted-foreground">
+ <span>خط العرض: {branchForm.latitude.toFixed(6)}</span>
+ <span>خط الطول: {branchForm.longitude.toFixed(6)}</span>
+ </div>
+ </div>
+
+ <Button 
+ onClick={handleEditBranch} 
+ disabled={updateBranchMutation.isPending}
+ className="w-full h-12 text-lg"
+ data-testid="button-save-edit-branch"
+ >
+ {updateBranchMutation.isPending ? "جاري التحديث..." : "تحديث الفرع"}
+ </Button>
+ </div>
+ </DialogContent>
+ </Dialog>
+ )}
  </>
  )}
  </div>
@@ -1072,12 +1270,24 @@ export default function ManagerDashboard() {
  variant="outline" 
  size="sm" 
  className="flex-1"
+ onClick={() => openEditDialog(branch)}
+ disabled={updateBranchMutation.isPending}
+ data-testid="button-edit-branch"
+ >
+ <Edit2 className="w-4 h-4 ml-2" />
+ تعديل
+ </Button>
+ <Button 
+ variant="outline" 
+ size="sm" 
+ className="flex-1"
  onClick={() => {
  if (confirm('هل أنت متأكد من حذف هذا الفرع؟')) {
  deleteBranchMutation.mutate(branch._id || branch.id);
  }
  }}
  disabled={deleteBranchMutation.isPending}
+ data-testid="button-delete-branch"
  >
  <Trash2 className="w-4 h-4 ml-2" />
  حذف
