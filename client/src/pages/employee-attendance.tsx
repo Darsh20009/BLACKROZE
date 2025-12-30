@@ -655,18 +655,3 @@ export default function EmployeeAttendance() {
     </div>
   );
 }
-
-        <div className="mt-6">
-          <Button
-            variant="ghost"
-            onClick={() => setLocation("/employee/dashboard")}
-            className="w-full text-gray-400 hover:text-amber-500"
-            data-testid="button-back-dashboard"
-          >
-            العودة للوحة التحكم
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
