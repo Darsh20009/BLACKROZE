@@ -32,6 +32,29 @@ interface EmployeeWithStats extends Employee {
  totalSales?: number;
 }
 
+const SAUDI_CITIES = [
+ { name: 'الرياض | Riyadh', lat: '24.7136', lon: '46.6753' },
+ { name: 'جدة | Jeddah', lat: '21.5433', lon: '39.1728' },
+ { name: 'الدمام | Dammam', lat: '26.4124', lon: '50.1971' },
+ { name: 'مكة المكرمة | Mecca', lat: '21.4225', lon: '39.8262' },
+ { name: 'المدينة المنورة | Medina', lat: '24.4672', lon: '39.6024' },
+ { name: 'الخبر | Khobar', lat: '26.1588', lon: '50.2046' },
+ { name: 'الظهران | Dhahran', lat: '26.1428', lon: '50.1436' },
+ { name: 'عرعر | Arar', lat: '30.9753', lon: '41.0272' },
+ { name: 'طريف | Turaif', lat: '31.6778', lon: '39.6444' },
+ { name: 'القصيم | Qassim', lat: '26.1669', lon: '44.0056' },
+ { name: 'حائل | Hail', lat: '27.5247', lon: '41.7202' },
+ { name: 'الجوف | Al Jouf', lat: '29.7833', lon: '40.8333' },
+ { name: 'الباحة | Al Bahah', lat: '19.9885', lon: '41.4359' },
+ { name: 'عسير | Asir', lat: '18.2147', lon: '42.5053' },
+ { name: 'الطائف | Taif', lat: '21.2704', lon: '40.4156' },
+ { name: 'ينبع | Yanbu', lat: '24.0887', lon: '38.0697' },
+ { name: 'الليث | Lith', lat: '20.2381', lon: '40.1797' },
+ { name: 'رفحاء | Rafha', lat: '29.6000', lon: '43.4833' },
+ { name: 'سكاكا | Sakaka', lat: '29.9709', lon: '40.2056' },
+ { name: 'بريدة | Buraydah', lat: '26.3263', lon: '43.9750' },
+];
+
 export default function ManagerDashboard() {
  const [, setLocation] = useLocation();
  const [manager, setManager] = useState<Employee | null>(null);
@@ -99,19 +122,41 @@ export default function ManagerDashboard() {
  const managerBranchId = manager?.branchId;
 
  const searchBranchLocations = async (query: string) => {
- if (query.length < 2) {
+ if (query.length < 1) {
  setBranchSearchResults([]);
  return;
  }
  
  setIsSearchingBranch(true);
  try {
+ // First, search through predefined Saudi cities
+ const filteredCities = SAUDI_CITIES.filter(city =>
+ city.name.includes(query) || 
+ city.name.toLowerCase().includes(query.toLowerCase()) ||
+ city.name.includes(query.toLowerCase())
+ );
+ 
+ if (filteredCities.length > 0) {
+ setBranchSearchResults(filteredCities);
+ setShowBranchResults(true);
+ setIsSearchingBranch(false);
+ return;
+ }
+ 
+ // If no cities match, try Nominatim for custom locations
+ if (query.length >= 2) {
  const response = await fetch(
  `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}, Saudi Arabia&format=json&limit=5&countrycodes=sa`
  );
  const data = await response.json();
  setBranchSearchResults(data || []);
  setShowBranchResults(true);
+ } else {
+ // Show suggestions when query is too short
+ const suggestions = SAUDI_CITIES.slice(0, 5);
+ setBranchSearchResults(suggestions);
+ setShowBranchResults(true);
+ }
  } catch (error) {
  console.error("Error searching branch locations:", error);
  setBranchSearchResults([]);
