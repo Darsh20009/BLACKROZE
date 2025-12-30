@@ -49,7 +49,7 @@ build = ["npm", "run", "build"]
 MONGODB_URI = "mongodb+srv://Vercel-Admin-CLUNY-CAFE:TOTY20009a@cluny-cafe.idvtc04.mongodb.net/?appName=CLUNY-CAFE"
 SMTP_HOST = "pro.eu.turbo-smtp.com"
 SMTP_PORT = "587"
-NOTIFICATION_EMAIL = "cluny.cafe2026@gmail.com"
+NOTIFICATION_EMAIL = "noreply@cluny.cafe"
 SMTP_USER = "e09353b5db3d94e88d62"
 SMTP_PASS = "IPXW9ucbR1DHOQtzGikh"
 SMTP_FROM = "cluny.cafe2026@gmail.com"
