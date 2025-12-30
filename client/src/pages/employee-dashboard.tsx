@@ -338,14 +338,14 @@ export default function EmployeeDashboard() {
                 </Card>
 
                 <div ref={cardRef} className="space-y-4">
-                  <div className="bg-gradient-to-br from-[#f5e6d3] via-[#edd9c3] to-[#e8ccb5] border-4 border-amber-700/40 rounded-2xl overflow-hidden shadow-2xl relative" data-testid="employee-card-front">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500 to-amber-600 opacity-20 rounded-bl-3xl pointer-events-none"></div>
-                    <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-amber-700 to-amber-800 opacity-15 rounded-tr-3xl pointer-events-none"></div>
+                  <div className="bg-gradient-to-br from-primary/15 via-secondary to-accent/10 border-4 border-primary/40 rounded-2xl overflow-hidden shadow-2xl relative" data-testid="employee-card-front">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary to-accent opacity-20 rounded-bl-3xl pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-accent to-primary opacity-15 rounded-tr-3xl pointer-events-none"></div>
 
-                    <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 p-6 relative">
+                    <div className="bg-gradient-to-r from-primary via-primary to-primary/80 p-6 relative">
                       <div className="flex items-center justify-center gap-3 mb-2">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                          <Coffee className="w-7 h-7 text-amber-600" />
+                          <Coffee className="w-7 h-7 text-primary" />
                         </div>
                         <div className="text-white text-right">
                           <h3 className="text-2xl font-bold">CLUNY CAFE</h3>
@@ -364,41 +364,41 @@ export default function EmployeeDashboard() {
                             <img
                               src={employee.imageUrl}
                               alt={employee.fullName}
-                              className="w-32 h-32 rounded-full object-cover border-4 border-amber-600/40 shadow-lg"
+                              className="w-32 h-32 rounded-full object-cover border-4 border-primary/40 shadow-lg"
                             />
                           ) : (
-                            <div className="w-32 h-32 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center shadow-lg border-4 border-amber-600/30">
+                            <div className="w-32 h-32 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center shadow-lg border-4 border-primary/30">
                               <User className="w-16 h-16 text-white" />
                             </div>
                           )}
                           <div className="mt-3 text-center">
-                            <p className="text-amber-900 text-xs font-bold">بطاقة رسمية</p>
-                            <p className="text-amber-700/60 text-xs">Official Card</p>
+                            <p className="text-primary font-semibold text-xs font-bold">بطاقة رسمية</p>
+                            <p className="text-primary/60 text-xs">Official Card</p>
                           </div>
                         </div>
 
-                        <div className="text-center space-y-3 border-r-2 border-l-2 border-amber-600/20 px-6">
+                        <div className="text-center space-y-3 border-r-2 border-l-2 border-primary/20 px-6">
                           <div>
-                            <h2 className="text-2xl font-bold text-amber-900">{employee.fullName}</h2>
-                            <p className="text-amber-700 text-sm mt-1 font-semibold">{employee.jobTitle || roleArabic}</p>
+                            <h2 className="text-2xl font-bold text-primary/90">{employee.fullName}</h2>
+                            <p className="text-primary/70 text-sm mt-1 font-semibold">{employee.jobTitle || roleArabic}</p>
                           </div>
                           
                           <div className="flex justify-center gap-2">
-                            <Badge className="bg-gradient-to-r from-amber-600 to-amber-700 text-white text-xs">
+                            <Badge className="bg-gradient-to-r from-accent to-accent/80 text-white text-xs">
                               {roleArabic}
                             </Badge>
                           </div>
 
                           <div className="space-y-1 text-xs">
-                            <p className="text-amber-900/80">
+                            <p className="text-primary/80">
                               <span className="font-bold">ID:</span> {employee.id?.slice(0, 8) || 'N/A'}
                             </p>
-                            <p className="text-amber-700/70 font-mono">{employee.username}</p>
+                            <p className="text-primary/70 font-mono">{employee.username}</p>
                           </div>
                         </div>
 
                         <div className="flex flex-col items-center space-y-2">
-                          <div className="bg-white p-3 rounded-xl shadow-md border-2 border-amber-600/30">
+                          <div className="bg-white p-3 rounded-xl shadow-md border-2 border-primary/30">
                             {qrCodeUrl ? (
                               <img 
                                 src={qrCodeUrl}
@@ -412,22 +412,22 @@ export default function EmployeeDashboard() {
                               </div>
                             )}
                           </div>
-                          <p className="text-amber-900 text-xs font-bold">امسح لتسجيل الدخول</p>
-                          <p className="text-amber-700/60 text-xs">Scan Login</p>
+                          <p className="text-primary font-semibold text-xs font-bold">امسح لتسجيل الدخول</p>
+                          <p className="text-primary/60 text-xs">Scan Login</p>
                         </div>
                       </div>
 
-                      <div className="mt-8 pt-6 border-t-2 border-amber-600/20 grid grid-cols-3 gap-4 text-center text-xs">
+                      <div className="mt-8 pt-6 border-t-2 border-primary/20 grid grid-cols-3 gap-4 text-center text-xs">
                         <div className="space-y-1">
-                          <p className="text-amber-700 font-bold">الهاتف</p>
-                          <p className="text-amber-900 font-mono text-sm">{employee.phone || 'N/A'}</p>
+                          <p className="text-primary/70 font-bold">الهاتف</p>
+                          <p className="text-primary/90 font-mono text-sm">{employee.phone || 'N/A'}</p>
                         </div>
-                        <div className="space-y-1 border-r border-l border-amber-600/20">
-                          <p className="text-amber-700 font-bold">الدور</p>
-                          <p className="text-amber-900 font-semibold">{roleArabic}</p>
+                        <div className="space-y-1 border-r border-l border-primary/20">
+                          <p className="text-primary/70 font-bold">الدور</p>
+                          <p className="text-primary/90 font-semibold">{roleArabic}</p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-amber-700 font-bold">الحالة</p>
+                          <p className="text-primary/70 font-bold">الحالة</p>
                           <p className={`font-bold ${employee.isActivated ? 'text-green-700' : 'text-red-600'}`}>
                             {employee.isActivated ? 'نشط' : 'معطّل'}
                           </p>
@@ -435,26 +435,26 @@ export default function EmployeeDashboard() {
                       </div>
                     </div>
 
-                    <div className="h-1 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600"></div>
+                    <div className="h-1 bg-gradient-to-r from-primary via-accent to-primary"></div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-[#f5e6d3] via-[#edd9c3] to-[#e8ccb5] border-4 border-amber-700/40 rounded-2xl overflow-hidden shadow-2xl p-8 relative" data-testid="employee-card-back">
-                    <div className="absolute top-4 right-4 text-amber-600 opacity-20 pointer-events-none">
+                  <div className="bg-gradient-to-br from-primary/15 via-secondary to-accent/10 border-4 border-primary/40 rounded-2xl overflow-hidden shadow-2xl p-8 relative" data-testid="employee-card-back">
+                    <div className="absolute top-4 right-4 text-primary opacity-20 pointer-events-none">
                       <Coffee className="w-12 h-12 opacity-30" />
                     </div>
                     
                     <div className="max-w-2xl mx-auto space-y-6 relative">
                       <div className="text-center space-y-2 mb-6">
-                        <h3 className="text-amber-900 text-lg font-bold">شروط الاستخدام</h3>
-                        <p className="text-amber-700/60 text-xs">Terms of Use</p>
+                        <h3 className="text-primary/90 text-lg font-bold">شروط الاستخدام</h3>
+                        <p className="text-primary/60 text-xs">Terms of Use</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2 text-right">
-                          <h4 className="text-amber-900 font-bold text-sm flex items-center justify-end gap-2">
+                          <h4 className="text-primary/90 font-bold text-sm flex items-center justify-end gap-2">
                             <span>المسؤوليات</span>
                           </h4>
-                          <ul className="text-amber-800 text-xs space-y-1 leading-relaxed">
+                          <ul className="text-primary/80 text-xs space-y-1 leading-relaxed">
                             <li>• استقبال الطلبات</li>
                             <li>• معالجة الدفعات</li>
                             <li>• إدارة الجودة</li>
@@ -463,10 +463,10 @@ export default function EmployeeDashboard() {
                         </div>
                         
                         <div className="space-y-2 text-right">
-                          <h4 className="text-amber-900 font-bold text-sm flex items-center justify-end gap-2">
+                          <h4 className="text-primary/90 font-bold text-sm flex items-center justify-end gap-2">
                             <span>المزايا</span>
                           </h4>
-                          <ul className="text-amber-800 text-xs space-y-1 leading-relaxed">
+                          <ul className="text-primary/80 text-xs space-y-1 leading-relaxed">
                             <li>- بطاقة تعريف رسمية</li>
                             <li>- نسبة عمولة عادلة</li>
                             <li>- دعم فني 24/7</li>
@@ -475,9 +475,9 @@ export default function EmployeeDashboard() {
                         </div>
                       </div>
 
-                      <div className="border-t-2 border-amber-600/20 pt-6 mt-6 space-y-2 text-right">
-                        <p className="text-amber-900 text-xs"><span className="font-bold">الموقع:</span> cluny.ma3k.online</p>
-                        <p className="text-amber-700/60 text-xs">جميع الحقوق محفوظة © 2025</p>
+                      <div className="border-t-2 border-primary/20 pt-6 mt-6 space-y-2 text-right">
+                        <p className="text-primary/90 text-xs"><span className="font-bold">الموقع:</span> cluny.ma3k.online</p>
+                        <p className="text-primary/60 text-xs">جميع الحقوق محفوظة © 2025</p>
                       </div>
                     </div>
                   </div>
