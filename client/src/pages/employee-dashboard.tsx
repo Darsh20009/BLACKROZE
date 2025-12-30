@@ -53,7 +53,12 @@ export default function EmployeeDashboard() {
   const [kitchenOrders, setKitchenOrders] = useState<Order[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [caféAddress, setCaféAddress] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<Array<{ name: string; lat: string; lon: string }>>([]);
+  const [showResults, setShowResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const storedEmployee = localStorage.getItem("currentEmployee");
@@ -125,6 +130,50 @@ export default function EmployeeDashboard() {
       console.error("Error fetching kitchen orders:", error);
     }
     return [];
+  };
+
+  const searchLocations = async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`
+      );
+      const data = await response.json();
+      setSearchResults(data || []);
+      setShowResults(true);
+    } catch (error) {
+      console.error("Error searching locations:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      searchLocations(value);
+    }, 500);
+  };
+
+  const handleSelectLocation = (location: { name: string; lat: string; lon: string }) => {
+    setCaféAddress(location.name);
+    localStorage.setItem("caféAddress", location.name);
+    localStorage.setItem("caféLat", location.lat);
+    localStorage.setItem("caféLon", location.lon);
+    setSearchQuery("");
+    setShowResults(false);
+    setSearchResults([]);
   };
 
   useEffect(() => {
@@ -832,22 +881,51 @@ export default function EmployeeDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-sm font-semibold text-primary text-right block">
-                  أدخل عنوان الكافيه الدقيق
+                  ابحث واختر موقع الكافيه
                 </label>
                 <Input
                   type="text"
-                  placeholder="مثال: شارع الملك، الرباط، المغرب"
-                  value={caféAddress}
-                  onChange={(e) => {
-                    setCaféAddress(e.target.value);
-                    localStorage.setItem("caféAddress", e.target.value);
-                  }}
+                  placeholder="ابحث عن الموقع... (مثال: الرباط، المغرب)"
+                  value={searchQuery || caféAddress}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onFocus={() => searchQuery && setShowResults(true)}
                   className="text-right"
-                  data-testid="input-cafe-address"
+                  data-testid="input-cafe-search"
                 />
+                
+                {isSearching && (
+                  <div className="absolute right-3 top-9 text-primary">
+                    <div className="animate-spin">⟳</div>
+                  </div>
+                )}
+
+                {showResults && searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+                    {searchResults.map((result, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSelectLocation(result)}
+                        className="w-full text-right px-4 py-3 hover:bg-primary/10 dark:hover:bg-primary/20 border-b border-border last:border-b-0 transition-colors"
+                        data-testid={`location-result-${index}`}
+                      >
+                        <div className="flex items-end gap-2 justify-end">
+                          <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                          <span className="text-sm text-foreground">{result.name}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {showResults && searchResults.length === 0 && searchQuery && !isSearching && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 p-3">
+                    <p className="text-sm text-muted-foreground text-right">لم يتم العثور على نتائج</p>
+                  </div>
+                )}
               </div>
+
               {caféAddress && (
                 <Button
                   onClick={() => {
@@ -860,6 +938,12 @@ export default function EmployeeDashboard() {
                   <MapPin className="w-4 h-4 ml-2" />
                   فتح في جوجل مابس
                 </Button>
+              )}
+
+              {caféAddress && (
+                <div className="text-sm text-primary font-semibold text-right p-3 bg-primary/5 rounded-md">
+                  ✓ الموقع المحدد: {caféAddress}
+                </div>
               )}
             </CardContent>
           </Card>
