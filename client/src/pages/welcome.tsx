@@ -42,13 +42,15 @@ export default function WelcomePage() {
         className="relative h-screen flex items-center justify-center overflow-hidden pt-20"
         style={{
           backgroundImage: 'url(/logo.png)',
-          backgroundSize: '35%',
-          backgroundPosition: 'center top',
+          backgroundSize: '40%',
+          backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed'
+          backgroundAttachment: 'fixed',
+          backgroundBlendMode: 'screen',
+          opacity: 1
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/30 to-background/60 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-primary/5 to-accent/5 pointer-events-none"></div>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/15 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
