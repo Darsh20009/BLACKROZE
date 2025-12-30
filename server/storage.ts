@@ -1685,7 +1685,7 @@ export class DBStorage implements IStorage {
     const newItem = await RawItemModel.create(itemWithDefaults);
     return {
       ...newItem.toObject(),
-      id: newItem._id.toString(),
+      id: (newItem._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -1748,7 +1748,7 @@ export class DBStorage implements IStorage {
     const newSupplier = await SupplierModel.create(supplier);
     return {
       ...newSupplier.toObject(),
-      id: newSupplier._id.toString(),
+      id: (newSupplier._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -1867,7 +1867,7 @@ export class DBStorage implements IStorage {
 
     return {
       ...stock.toObject(),
-      id: stock._id.toString(),
+      id: (stock._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -1961,7 +1961,7 @@ export class DBStorage implements IStorage {
     });
     return {
       ...newTransfer.toObject(),
-      id: newTransfer._id.toString(),
+      id: (newTransfer._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -2057,7 +2057,7 @@ export class DBStorage implements IStorage {
     });
     return {
       ...newInvoice.toObject(),
-      id: newInvoice._id.toString(),
+      id: (newInvoice._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -2129,7 +2129,7 @@ export class DBStorage implements IStorage {
 
     return {
       ...invoice.toObject(),
-      id: invoice._id.toString(),
+      id: (invoice._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -2160,7 +2160,7 @@ export class DBStorage implements IStorage {
     const newItem = await RecipeItemModel.create(item);
     return {
       ...newItem.toObject(),
-      id: newItem._id.toString(),
+      id: (newItem._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -2232,7 +2232,7 @@ export class DBStorage implements IStorage {
     });
     return {
       ...alert.toObject(),
-      id: alert._id.toString(),
+      id: (alert._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -2286,7 +2286,7 @@ export class DBStorage implements IStorage {
     const newMovement = await StockMovementModel.create(movement);
     return {
       ...newMovement.toObject(),
-      id: newMovement._id.toString(),
+      id: (newMovement._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
