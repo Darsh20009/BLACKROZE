@@ -96,6 +96,8 @@ export async function sendOrderNotificationEmail(
   }
 
   try {
+    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <cluny.cafe2026@gmail.com>";
+    
     const statusAr =
       orderStatus === "completed"
         ? "مكتمل"
@@ -123,15 +125,16 @@ export async function sendOrderNotificationEmail(
       "⏳";
 
     const mailOptions = {
-      from: 'cluny.cafe2026@gmail.com',
+      from: senderEmail,
       to: customerEmail,
+      replyTo: 'noreply@cluny.cafe',
       subject: `تحديث طلبك - ${orderId}`,
       headers: {
         'X-Priority': '3',
         'X-MSMail-Priority': 'Normal',
         'Importance': 'Normal',
         'X-Mailer': 'CLUNY CAFE',
-        'List-Unsubscribe': '<mailto:cluny.cafe2026@gmail.com>'
+        'List-Unsubscribe': '<mailto:noreply@cluny.cafe>'
       },
       text: `مرحباً ${customerName}
       
