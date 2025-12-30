@@ -116,12 +116,12 @@ export default function EmployeeLogin() {
         </div>
 
         {showQRScanner ? (
-          <Card className="border-border shadow-sm">
+          <Card className="bg-card border-border/50 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl text-center text-primary">
+              <CardTitle className="text-2xl text-center font-playfair text-accent">
                 مسح بطاقة الموظف
               </CardTitle>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-muted-foreground">
                 وجه الكاميرا نحو QR الكود الموجود على بطاقتك
               </CardDescription>
             </CardHeader>
@@ -144,12 +144,12 @@ export default function EmployeeLogin() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-border shadow-sm">
+          <Card className="bg-card border-border/50 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl text-center text-primary">
+              <CardTitle className="text-2xl text-center font-playfair text-foreground">
                 تسجيل الدخول
               </CardTitle>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-muted-foreground">
                 أدخل بيانات حسابك للوصول
               </CardDescription>
             </CardHeader>
@@ -196,7 +196,7 @@ export default function EmployeeLogin() {
                     <button
                       type="button"
                       onClick={() => setLocation("/employee/forgot-password")}
-                      className="text-xs text-[#B58B5A] hover:text-[#B58B5A]/80 underline"
+                      className="text-xs text-accent hover:text-accent/80 underline"
                       data-testid="link-forgot-password"
                     >
                       نسيت كلمة المرور؟
@@ -212,7 +212,7 @@ export default function EmployeeLogin() {
                 <Button
                   type="submit"
                   disabled={loginMutation.isPending}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                  className="w-full bg-gradient-to-r from-accent to-accent/90 hover:from-accent/95 hover:to-accent/85 text-accent-foreground font-bold"
                   data-testid="button-login"
                 >
                   {loginMutation.isPending ? (

@@ -64,16 +64,16 @@ export default function ManagerLogin() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-full mb-4">
             <Shield className="w-10 h-10 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">CLUNY CAFE</h1>
-          <p className="text-muted-foreground">تسجيل دخول المدير</p>
+          <h1 className="text-3xl font-bold font-playfair text-foreground mb-2">CLUNY CAFE</h1>
+          <p className="text-muted-foreground font-cairo">تسجيل دخول المدير</p>
         </div>
 
-        <Card>
+        <Card className="bg-card border-border/50 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl text-center">
+            <CardTitle className="text-2xl text-center font-playfair text-foreground">
               لوحة تحكم المدير
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription className="text-center text-muted-foreground">
               أدخل بيانات حساب المدير للوصول
             </CardDescription>
           </CardHeader>
@@ -138,7 +138,7 @@ export default function ManagerLogin() {
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-accent to-accent/90 hover:from-accent/95 hover:to-accent/85 text-accent-foreground font-semibold"
                 data-testid="button-login"
               >
                 {loginMutation.isPending ? (
