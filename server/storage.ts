@@ -882,12 +882,12 @@ export class DBStorage implements IStorage {
   }
 
   async updateCoffeeItem(id: string, updates: Partial<CoffeeItem>): Promise<CoffeeItem | undefined> {
-    const updated = await CoffeeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    const updated = await CoffeeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean() as any;
     if (!updated) return undefined;
     const doc = { ...updated, id: updated.id || (updated as any)._id?.toString() };
     delete (doc as any)._id;
     delete (doc as any).__v;
-    return doc as CoffeeItem;
+    return doc as any as CoffeeItem;
   }
 
   async deleteCoffeeItem(id: string): Promise<boolean> {
@@ -2017,7 +2017,7 @@ export class DBStorage implements IStorage {
 
     return {
       ...transfer.toObject(),
-      id: transfer._id.toString(),
+      id: (transfer._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
@@ -2108,7 +2108,7 @@ export class DBStorage implements IStorage {
 
     return {
       ...invoice.toObject(),
-      id: invoice._id.toString(),
+      id: (invoice._id as any).toString(),
       _id: undefined,
       __v: undefined,
     } as any;
