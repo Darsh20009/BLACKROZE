@@ -115,20 +115,7 @@ export default function WelcomePage() {
       {/* Footer */}
       <footer className="bg-foreground/10 py-12 px-4 border-t border-border">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <h4 className="font-playfair text-lg mb-4 text-foreground">CLUNY CAFE</h4>
-              <p className="text-muted font-cairo">تجربة قهوة فاخرة وأصيلة</p>
-            </div>
-            <div>
-              <h4 className="font-playfair text-lg mb-4 text-foreground">الفروع</h4>
-              <p className="text-muted font-cairo">الرياض - جدة - الدمام</p>
-            </div>
-            <div>
-              <h4 className="font-playfair text-lg mb-4">التواصل</h4>
-              <p className="text-slate-400 font-cairo">support@cluny-cafe.com</p>
-            </div>
-          </div>
+          
           <div className="border-t border-slate-700 pt-8 text-center text-slate-400">
             <p className="font-cairo">© 2025 CLUNY CAFE. جميع الحقوق محفوظة.</p>
           </div>
