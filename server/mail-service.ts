@@ -96,7 +96,7 @@ export async function sendOrderNotificationEmail(
   }
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "cluny.cafe2026@gmail.com";
+    const senderEmail = process.env.SMTP_FROM || "cluny@cluny.shop";
     
     const statusAr =
       orderStatus === "completed"
