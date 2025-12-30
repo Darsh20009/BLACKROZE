@@ -15,12 +15,17 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://Vercel-Admin-CLUNY
 
 // Track database connection status
 let isDbConnected = false;
+let isInitializing = false;
 
 // Connect to MongoDB in the background (don't block server startup)
 async function connectDatabase() {
+  if (isInitializing) return;
+  isInitializing = true;
+  
   if (!MONGODB_URI) {
     console.error("❌ WARNING: MONGODB_URI environment variable is not set");
     console.log("Database functionality will be unavailable");
+    isInitializing = false;
     return;
   }
 
@@ -35,6 +40,8 @@ async function connectDatabase() {
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
     // Don't exit - let the server continue running for health checks
+  } finally {
+    isInitializing = false;
   }
 }
 
@@ -237,7 +244,6 @@ app.use((req, res, next) => {
   server.listen({
     port,
     host: "0.0.0.0",
-    reusePort: true,
   }, async () => {
     log(`serving on port ${port}`);
     
