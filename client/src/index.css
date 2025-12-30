@@ -34,48 +34,48 @@
   --elevate-2: rgba(0,0,0, .08);
 
   /* ═══════════════════════════════════════════════════════════════
-     🌟 SIGNATURE GOLD - Premium Enterprise Design System 🌟
-     Luxury Café Management System Theme
+     🎨 CLUNY SAGE - Luxury Minimal Café Design System
+     Muted Sage / Dusty Blue-Green with Coffee Brown Accents
      ═══════════════════════════════════════════════════════════════ */
   
-  /* Base Colors - Ivory & Charcoal with Gold Accents */
-  --background: 40 20% 97%; /* Pure ivory background */
-  --foreground: 220 15% 20%; /* Deep charcoal text */
-  --border: 40 15% 88%; /* Subtle ivory border */
+  /* Base Colors - Light Sage & Deep Charcoal */
+  --background: 165 15% 97%; /* Soft light background */
+  --foreground: 185 15% 25%; /* Deep text color */
+  --border: 165 12% 88%; /* Subtle sage border */
   --card: 0 0% 100%; /* Pure white cards */
-  --card-foreground: 220 15% 18%; /* Rich charcoal text */
-  --card-border: 40 20% 90%; /* Elegant border */
+  --card-foreground: 185 15% 20%; /* Rich text */
+  --card-border: 165 10% 92%; /* Elegant border */
 
-  /* Sidebar - Premium Dark Theme */
-  --sidebar: 225 25% 15%; /* Deep espresso/charcoal */
-  --sidebar-foreground: 40 25% 95%; /* Ivory text */
-  --sidebar-border: 225 20% 20%; /* Subtle border */
-  --sidebar-primary: 43 80% 55%; /* Rich gold */
-  --sidebar-primary-foreground: 225 25% 12%; /* Dark text on gold */
-  --sidebar-accent: 225 20% 22%; /* Elevated dark */
-  --sidebar-accent-foreground: 40 25% 90%; /* Light text */
-  --sidebar-ring: 43 80% 55%; /* Gold ring */
+  /* Sidebar - Premium Sage Theme */
+  --sidebar: 175 18% 25%; /* Deep sage-charcoal */
+  --sidebar-foreground: 165 15% 95%; /* Light text */
+  --sidebar-border: 175 15% 30%; /* Subtle border */
+  --sidebar-primary: 165 22% 62%; /* Muted sage primary */
+  --sidebar-primary-foreground: 185 15% 15%; /* Dark text */
+  --sidebar-accent: 175 15% 35%; /* Elevated sage */
+  --sidebar-accent-foreground: 165 15% 92%; /* Light text */
+  --sidebar-ring: 165 22% 62%; /* Sage ring */
 
   /* Popover */
   --popover: 0 0% 100%; /* Pure white */
-  --popover-foreground: 220 15% 18%; /* Charcoal text */
-  --popover-border: 40 20% 88%; /* Subtle border */
+  --popover-foreground: 185 15% 20%; /* Text */
+  --popover-border: 165 12% 88%; /* Subtle border */
 
-  /* Primary - Signature Gold */
-  --primary: 43 80% 50%; /* Rich gold */
-  --primary-foreground: 225 30% 12%; /* Dark text for contrast */
+  /* Primary - Muted Sage */
+  --primary: 165 22% 62%; /* #9FB2B3 Muted Sage */
+  --primary-foreground: 185 15% 15%; /* Dark text */
 
-  /* Secondary - Platinum Gray */
-  --secondary: 220 10% 94%; /* Light platinum */
-  --secondary-foreground: 220 15% 25%; /* Charcoal text */
+  /* Secondary - Light Sage */
+  --secondary: 165 15% 92%; /* Light background */
+  --secondary-foreground: 185 15% 30%; /* Text */
 
-  /* Muted - Executive Gray */
-  --muted: 220 12% 40%; /* Professional gray */
+  /* Muted - Sage Gray */
+  --muted: 165 12% 50%; /* Professional muted */
   --muted-foreground: 0 0% 100%; /* White text */
 
-  /* Accent - Gold Highlight */
-  --accent: 43 85% 52%; /* Bright gold accent */
-  --accent-foreground: 225 30% 12%; /* Dark text */
+  /* Accent - Coffee Brown */
+  --accent: 30 40% 52%; /* #B58B5A Coffee brown accent */
+  --accent-foreground: 0 0% 100%; /* Light text */
 
   /* Destructive - Premium Red */
   --destructive: 0 75% 55%; /* Elegant red */
@@ -157,40 +157,40 @@
   --elevate-2: rgba(255,255,255, .09);
 
   /* ═══════════════════════════════════════════════════════════════
-     🌙 SIGNATURE GOLD DARK MODE - Executive Night Theme
+     🌙 CLUNY SAGE DARK MODE - Luxury Night Theme
      ═══════════════════════════════════════════════════════════════ */
   
-  --background: 225 25% 8%; /* Deep charcoal-navy */
-  --foreground: 40 20% 92%; /* Warm ivory text */
-  --border: 225 20% 15%; /* Subtle dark border */
-  --card: 225 22% 12%; /* Elevated card surface */
-  --card-foreground: 40 20% 90%; /* Ivory text */
-  --card-border: 225 18% 18%; /* Card border */
+  --background: 175 20% 12%; /* Deep sage-navy */
+  --foreground: 165 15% 92%; /* Light text */
+  --border: 175 18% 20%; /* Subtle dark border */
+  --card: 175 18% 16%; /* Elevated card surface */
+  --card-foreground: 165 15% 90%; /* Light text */
+  --card-border: 175 15% 22%; /* Card border */
 
-  --sidebar: 225 28% 6%; /* Almost black sidebar */
-  --sidebar-foreground: 40 20% 90%; /* Ivory text */
-  --sidebar-border: 225 20% 12%; /* Dark border */
-  --sidebar-primary: 43 80% 55%; /* Rich gold */
-  --sidebar-primary-foreground: 225 30% 10%; /* Dark text */
-  --sidebar-accent: 225 22% 14%; /* Elevated accent */
-  --sidebar-accent-foreground: 40 20% 85%; /* Light text */
-  --sidebar-ring: 43 80% 55%; /* Gold ring */
+  --sidebar: 175 22% 10%; /* Deep sage sidebar */
+  --sidebar-foreground: 165 15% 90%; /* Light text */
+  --sidebar-border: 175 18% 16%; /* Dark border */
+  --sidebar-primary: 165 22% 60%; /* Muted sage */
+  --sidebar-primary-foreground: 185 15% 12%; /* Dark text */
+  --sidebar-accent: 175 18% 22%; /* Elevated accent */
+  --sidebar-accent-foreground: 165 15% 88%; /* Light text */
+  --sidebar-ring: 165 22% 60%; /* Sage ring */
 
-  --popover: 225 22% 12%; /* Card surface */
-  --popover-foreground: 40 20% 90%; /* Ivory text */
-  --popover-border: 225 18% 18%; /* Border */
+  --popover: 175 18% 16%; /* Card surface */
+  --popover-foreground: 165 15% 90%; /* Light text */
+  --popover-border: 175 15% 22%; /* Border */
 
-  --primary: 43 80% 55%; /* Signature gold */
-  --primary-foreground: 225 30% 10%; /* Dark text */
+  --primary: 165 22% 62%; /* Muted sage */
+  --primary-foreground: 185 15% 12%; /* Dark text */
 
-  --secondary: 225 18% 18%; /* Dark secondary */
-  --secondary-foreground: 40 20% 85%; /* Light text */
+  --secondary: 175 15% 22%; /* Dark secondary */
+  --secondary-foreground: 165 15% 88%; /* Light text */
 
-  --muted: 225 15% 35%; /* Muted gray */
+  --muted: 175 12% 40%; /* Muted gray */
   --muted-foreground: 0 0% 100%; /* White text */
 
-  --accent: 43 85% 52%; /* Bright gold */
-  --accent-foreground: 225 30% 10%; /* Dark text */
+  --accent: 30 40% 55%; /* Coffee brown bright */
+  --accent-foreground: 0 0% 100%; /* Light text */
 
   --destructive: 0 70% 55%;
   --destructive-foreground: 0 0% 100%;
