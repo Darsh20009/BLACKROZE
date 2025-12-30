@@ -152,17 +152,17 @@ export default function TenantSignup() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-background dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-12 text-center">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <h2 className="text-2xl font-bold text-foreground dark:text-foreground mb-2">
               تم الإنشاء بنجاح!
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-muted-foreground dark:text-muted-foreground mb-6">
               جاري إعادة التوجيه إلى الصفحة الرئيسية...
             </p>
-            <Loader className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
+            <Loader className="w-6 h-6 animate-spin text-accent mx-auto" />
           </CardContent>
         </Card>
       </div>
@@ -170,14 +170,14 @@ export default function TenantSignup() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-950 dark:to-slate-900 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-background dark:from-slate-950 dark:to-slate-900 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-4xl font-bold text-foreground dark:text-foreground mb-2">
             انضم إلى Menuza
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
+          <p className="text-muted-foreground dark:text-muted-foreground text-lg">
             أكمل البيانات الخاصة بمتجرك لبدء رحلتك مع نظام إدارة المقاهي الأفضل
           </p>
         </div>
@@ -304,7 +304,7 @@ export default function TenantSignup() {
                         <div className="flex gap-2">
                           <span>{plan.nameAr}</span>
                           <span className="text-gray-500">({plan.nameEn})</span>
-                          <span className="text-amber-600 font-semibold">{plan.price} ر.س</span>
+                          <span className="text-accent font-semibold">{plan.price} ر.س</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -314,8 +314,8 @@ export default function TenantSignup() {
 
               {/* Plan Features */}
               {SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan) && (
-                <div className="bg-amber-50 dark:bg-slate-800 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+                <div className="bg-background dark:bg-card p-4 rounded-lg">
+                  <h3 className="font-semibold text-foreground dark:text-foreground mb-3">
                     مميزات الخطة:
                   </h3>
                   <ul className="space-y-2">
@@ -349,7 +349,7 @@ export default function TenantSignup() {
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 text-lg"
+                className="w-full bg-primary hover:bg-primary text-white font-bold py-3 text-lg"
                 disabled={loading}
                 data-testid="button-submit-signup"
               >
@@ -368,22 +368,22 @@ export default function TenantSignup() {
 
         {/* Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white dark:bg-slate-800">
+          <Card className="bg-white dark:bg-card">
             <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-amber-600 mb-2">100%</div>
-              <p className="text-gray-600 dark:text-gray-400">بدء فوري بدون انتظار</p>
+              <div className="text-3xl font-bold text-accent mb-2">100%</div>
+              <p className="text-muted-foreground dark:text-muted-foreground">بدء فوري بدون انتظار</p>
             </CardContent>
           </Card>
-          <Card className="bg-white dark:bg-slate-800">
+          <Card className="bg-white dark:bg-card">
             <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-amber-600 mb-2">24/7</div>
-              <p className="text-gray-600 dark:text-gray-400">دعم عملاء متواصل</p>
+              <div className="text-3xl font-bold text-accent mb-2">24/7</div>
+              <p className="text-muted-foreground dark:text-muted-foreground">دعم عملاء متواصل</p>
             </CardContent>
           </Card>
-          <Card className="bg-white dark:bg-slate-800">
+          <Card className="bg-white dark:bg-card">
             <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-amber-600 mb-2">∞</div>
-              <p className="text-gray-600 dark:text-gray-400">قابل للتوسع بلا حدود</p>
+              <div className="text-3xl font-bold text-accent mb-2">∞</div>
+              <p className="text-muted-foreground dark:text-muted-foreground">قابل للتوسع بلا حدود</p>
             </CardContent>
           </Card>
         </div>

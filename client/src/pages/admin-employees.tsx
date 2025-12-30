@@ -159,7 +159,7 @@ export default function AdminEmployees() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-white dark:bg-slate-950 min-h-screen">
+    <div className="p-6 space-y-6 bg-white dark:bg-background min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -172,7 +172,7 @@ export default function AdminEmployees() {
             setEditingId(null);
             setFormData({ fullName: '', username: '', phone: '', jobTitle: '', role: 'cashier' });
           }}
-          className="bg-orange-600 hover:bg-orange-700"
+          className="bg-accent hover:bg-accent"
           data-testid="button-add-employee"
         >
           <Plus className="w-4 h-4 ml-2" />
@@ -182,7 +182,7 @@ export default function AdminEmployees() {
 
       {/* Add/Edit Form */}
       {(showAddForm || editingId) && (
-        <Card className="border-orange-200 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-900/10">
+        <Card className="border-orange-200 dark:border-orange-900/30 bg-background dark:bg-accent/10">
           <CardHeader className="pb-4">
             <CardTitle>{editingId ? 'تعديل الموظف' : 'إضافة موظف جديد'}</CardTitle>
           </CardHeader>
@@ -242,7 +242,7 @@ export default function AdminEmployees() {
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
-                <Button type="submit" className="bg-orange-600 hover:bg-orange-700" data-testid="button-save-employee">
+                <Button type="submit" className="bg-accent hover:bg-accent" data-testid="button-save-employee">
                   {editingId ? 'تحديث' : 'إضافة'}
                 </Button>
                 <Button 
@@ -322,7 +322,7 @@ export default function AdminEmployees() {
       </div>
 
       {/* Employees Table */}
-      <Card className="border-0 bg-white dark:bg-slate-900">
+      <Card className="border-0 bg-white dark:bg-card">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">
             الموظفون ({filteredEmployees.length})

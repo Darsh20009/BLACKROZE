@@ -149,10 +149,10 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   confirmed: { label: "مؤكد", color: "bg-green-500" },
   received: { label: "تم الاستلام", color: "bg-emerald-600" },
   cancelled: { label: "ملغي", color: "bg-red-500" },
-  pending: { label: "قيد الانتظار", color: "bg-amber-500" },
+  pending: { label: "قيد الانتظار", color: "bg-background0" },
   paid: { label: "مدفوع", color: "bg-green-500" },
   overdue: { label: "متأخر", color: "bg-red-500" },
-  disputed: { label: "متنازع", color: "bg-orange-500" },
+  disputed: { label: "متنازع", color: "bg-background0" },
   active: { label: "نشط", color: "bg-green-500" },
   inactive: { label: "غير نشط", color: "bg-gray-500" },
   blocked: { label: "محظور", color: "bg-red-500" },
@@ -186,22 +186,22 @@ export default function SupplierManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-[#1a1410] dark:via-[#1f1815] dark:to-[#231c17]" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-yellow-50 dark:from-background dark:via-primary/5 dark:to-background" dir="rtl">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         <div className="flex items-center justify-between gap-4 mb-6">
           <Button 
             variant="ghost" 
             onClick={() => setLocation("/manager/dashboard")}
-            className="text-amber-700 dark:text-amber-400"
+            className="text-accent dark:text-accent"
           >
             <ArrowLeft className="w-4 h-4 ml-2" />
             العودة
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-accent dark:text-accent flex items-center gap-2">
             <Truck className="w-8 h-8" />
             إدارة الموردين
           </h1>
-          <Button onClick={() => setIsAddSupplierOpen(true)} className="bg-amber-600 hover:bg-amber-700">
+          <Button onClick={() => setIsAddSupplierOpen(true)} className="bg-primary hover:bg-primary">
             <Plus className="w-4 h-4 ml-2" />
             مورد جديد
           </Button>
@@ -237,11 +237,11 @@ export default function SupplierManagementPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-amber-100 text-sm">فواتير معلقة</p>
+                  <p className="text-accent text-sm">فواتير معلقة</p>
                   <p className="text-3xl font-bold mt-1">{pendingInvoices.toLocaleString()}</p>
-                  <p className="text-amber-200 text-xs mt-1">ريال سعودي</p>
+                  <p className="text-accent text-xs mt-1">ريال سعودي</p>
                 </div>
-                <Receipt className="w-12 h-12 text-amber-200" />
+                <Receipt className="w-12 h-12 text-accent" />
               </div>
             </CardContent>
           </Card>
@@ -261,7 +261,7 @@ export default function SupplierManagementPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-amber-100 dark:bg-amber-900/30">
+          <TabsList className="grid w-full grid-cols-4 bg-primary dark:bg-primary/30">
             <TabsTrigger value="suppliers" className="flex items-center gap-1">
               <Building2 className="w-4 h-4" />
               الموردين
@@ -335,7 +335,7 @@ export default function SupplierManagementPage() {
 
                     <div className="flex items-center justify-between mt-4 pt-4 border-t">
                       <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                        <Star className="w-4 h-4 text-accent fill-amber-500" />
                         <span className="font-medium">{supplier.rating}</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
@@ -359,7 +359,7 @@ export default function SupplierManagementPage() {
           <TabsContent value="orders" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold">طلبات الشراء</h2>
-              <Button onClick={() => setIsAddOrderOpen(true)} className="bg-amber-600 hover:bg-amber-700">
+              <Button onClick={() => setIsAddOrderOpen(true)} className="bg-primary hover:bg-primary">
                 <Plus className="w-4 h-4 ml-2" />
                 طلب شراء جديد
               </Button>
@@ -494,9 +494,9 @@ export default function SupplierManagementPage() {
                     {suppliers.slice(0, 3).map((supplier, idx) => (
                       <div key={supplier.id} className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          idx === 0 ? 'bg-amber-500 text-white' :
+                          idx === 0 ? 'bg-background0 text-white' :
                           idx === 1 ? 'bg-gray-400 text-white' :
-                          'bg-amber-700 text-white'
+                          'bg-primary text-white'
                         }`}>
                           {idx + 1}
                         </div>
@@ -505,7 +505,7 @@ export default function SupplierManagementPage() {
                           <p className="text-sm text-muted-foreground">{supplier.totalSpent.toLocaleString()} ر.س</p>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                          <Star className="w-4 h-4 text-accent fill-amber-500" />
                           <span>{supplier.rating}</span>
                         </div>
                       </div>
@@ -523,7 +523,7 @@ export default function SupplierManagementPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                    <div className="flex justify-between items-center p-3 bg-background dark:bg-primary/20 rounded-lg">
                       <span>قهوة</span>
                       <span className="font-bold">55%</span>
                     </div>
@@ -570,7 +570,7 @@ export default function SupplierManagementPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                            <Star className="w-4 h-4 text-accent fill-amber-500" />
                             <span className="font-bold">{supplier.rating}</span>
                           </div>
                         </TableCell>
@@ -653,7 +653,7 @@ export default function SupplierManagementPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddSupplierOpen(false)}>إلغاء</Button>
-              <Button className="bg-amber-600 hover:bg-amber-700">حفظ المورد</Button>
+              <Button className="bg-primary hover:bg-primary">حفظ المورد</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -674,7 +674,7 @@ export default function SupplierManagementPage() {
                     <p className="text-muted-foreground">{selectedSupplier.category}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                    <Star className="w-5 h-5 text-accent fill-amber-500" />
                     <span className="text-xl font-bold">{selectedSupplier.rating}</span>
                   </div>
                 </div>
@@ -698,7 +698,7 @@ export default function SupplierManagementPage() {
                   </div>
                 </div>
 
-                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                <div className="p-4 bg-background dark:bg-primary/20 rounded-lg">
                   <p className="text-sm text-muted-foreground">شروط الدفع</p>
                   <p className="font-medium">{selectedSupplier.paymentTerms}</p>
                 </div>
@@ -706,7 +706,7 @@ export default function SupplierManagementPage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsViewSupplierOpen(false)}>إغلاق</Button>
-              <Button className="bg-amber-600 hover:bg-amber-700">
+              <Button className="bg-primary hover:bg-primary">
                 <FileText className="w-4 h-4 ml-2" />
                 طلب شراء جديد
               </Button>

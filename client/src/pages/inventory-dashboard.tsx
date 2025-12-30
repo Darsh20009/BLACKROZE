@@ -201,7 +201,7 @@ export default function InventoryDashboardPage() {
       return { status: "out", label: "نفد", color: "bg-destructive", textColor: "text-destructive" };
     }
     if (currentQty <= minLevel) {
-      return { status: "low", label: "منخفض", color: "bg-orange-500", textColor: "text-orange-600 dark:text-orange-400" };
+      return { status: "low", label: "منخفض", color: "bg-background0", textColor: "text-accent dark:text-accent" };
     }
     if (currentQty >= maxLevel * 0.8) {
       return { status: "high", label: "مرتفع", color: "bg-green-500", textColor: "text-green-600 dark:text-green-400" };
@@ -286,7 +286,7 @@ export default function InventoryDashboardPage() {
             <Layers className="h-10 w-10 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-3xl font-bold font-playfair text-foreground">
               لوحة تحكم المخزون
             </h1>
             <p className="text-muted-foreground">إدارة ذكية ومبسطة للمخزون</p>
@@ -322,7 +322,7 @@ export default function InventoryDashboardPage() {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">إجمالي المواد</p>
-                <p className="text-4xl font-bold text-foreground" data-testid="text-total-items">{totalItems}</p>
+                <p className="text-4xl font-bold font-playfair text-foreground" data-testid="text-total-items">{totalItems}</p>
               </div>
               <div className="p-3 rounded-full bg-primary/10">
                 <Package className="h-8 w-8 text-primary" />
@@ -336,16 +336,16 @@ export default function InventoryDashboardPage() {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">مخزون منخفض</p>
-                <p className="text-4xl font-bold text-orange-600 dark:text-orange-400" data-testid="text-low-stock">{lowStockItems}</p>
+                <p className="text-4xl font-bold text-accent dark:text-accent" data-testid="text-low-stock">{lowStockItems}</p>
                 {lowStockItems > 0 && (
-                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-accent dark:text-accent mt-1 flex items-center gap-1">
                     <Bell className="h-3 w-3" />
                     يحتاج إعادة طلب
                   </p>
                 )}
               </div>
-              <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30">
-                <TrendingDown className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+              <div className="p-3 rounded-full bg-accent dark:bg-accent/30">
+                <TrendingDown className="h-8 w-8 text-accent dark:text-accent" />
               </div>
             </div>
           </CardContent>
@@ -461,7 +461,7 @@ export default function InventoryDashboardPage() {
 
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-3xl font-bold text-foreground" data-testid={`text-qty-${item.id}`}>
+                            <span className="text-3xl font-bold font-playfair text-foreground" data-testid={`text-qty-${item.id}`}>
                               {currentQty.toFixed(currentQty < 1 ? 3 : 1)}
                             </span>
                             <span className="text-muted-foreground text-lg">
@@ -512,7 +512,7 @@ export default function InventoryDashboardPage() {
                         <div className={`px-4 py-2 flex items-center gap-2 text-sm ${
                           stockStatus.status === "out" 
                             ? "bg-destructive/10 text-destructive" 
-                            : "bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
+                            : "bg-accent dark:bg-accent/20 text-accent dark:text-accent"
                         }`}>
                           <AlertTriangle className="h-4 w-4" />
                           {stockStatus.status === "out" ? "نفد المخزون - يرجى إعادة التعبئة" : "المخزون منخفض - يرجى الطلب"}

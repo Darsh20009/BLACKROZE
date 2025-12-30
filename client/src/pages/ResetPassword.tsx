@@ -128,8 +128,8 @@ export default function ResetPassword() {
  dir="rtl"
  >
  <div className="text-center">
- <div className="w-16 h-16 border-4 border-amber-600/30 border-t-amber-600 rounded-full animate-spin mx-auto mb-4" />
- <p className="text-amber-200">جارٍ التحقق من الرابط...</p>
+ <div className="w-16 h-16 border-4 border-primary/30 border-t-amber-600 rounded-full animate-spin mx-auto mb-4" />
+ <p className="text-accent">جارٍ التحقق من الرابط...</p>
  </div>
  </div>
  );
@@ -147,7 +147,7 @@ export default function ResetPassword() {
  }}
  dir="rtl"
  >
- <Card className="w-full max-w-md border-amber-900/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
+ <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-900/50">
@@ -158,10 +158,10 @@ export default function ResetPassword() {
  )}
  </div>
  </div>
- <CardTitle className="text-3xl font-bold text-amber-100">
+ <CardTitle className="text-3xl font-bold text-accent">
  {resetSuccess ? "تم التغيير بنجاح!" : "إعادةتعيين كلمة المرور"}
  </CardTitle>
- <CardDescription className="text-amber-200/70 text-lg">
+ <CardDescription className="text-accent/70 text-lg">
  {resetSuccess ? "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة " : "أدخل كلمة المرور الجديدة "}
  </CardDescription>
  </CardHeader>
@@ -170,7 +170,7 @@ export default function ResetPassword() {
  {!resetSuccess ? (
  <form onSubmit={handleSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="new-password" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="new-password" className="text-accent flex items-center gap-2">
  <Lock className="w-4 h-4" />
  كلمة المرور الجديدة 
  </Label>
@@ -181,14 +181,14 @@ export default function ResetPassword() {
  placeholder="أدخل كلمة المرور الجديدة "
  value={newPassword}
  onChange={(e) => setNewPassword(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
  data-testid="input-new-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowNewPassword(!showNewPassword)}
- className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
+ className="absolute left-3 top-2.5 text-accent hover:text-accent"
  data-testid="button-toggle-new-password"
  >
  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -197,7 +197,7 @@ export default function ResetPassword() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="confirm-password" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="confirm-password" className="text-accent flex items-center gap-2">
  <Lock className="w-4 h-4" />
  تأكيد كلمة المرور
  </Label>
@@ -208,20 +208,20 @@ export default function ResetPassword() {
  placeholder="أعد إدخال كلمة المرور"
  value={confirmPassword}
  onChange={(e) => setConfirmPassword(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
  data-testid="input-confirm-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
- className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
+ className="absolute left-3 top-2.5 text-accent hover:text-accent"
  data-testid="button-toggle-confirm-password"
  >
  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
  </button>
  </div>
- <p className="text-xs text-amber-200/50 mt-1">
+ <p className="text-xs text-accent/50 mt-1">
  كلمة المرور يجب أن تكون على الأقل 4 أحرف
  </p>
  </div>
@@ -251,7 +251,7 @@ export default function ResetPassword() {
  </div>
  <Button
  onClick={() => navigate("/auth")}
- className="w-full bg-amber-600 hover:bg-amber-700"
+ className="w-full bg-primary hover:bg-primary"
  data-testid="button-go-to-login"
  >
  الذهاب لتسجيل الدخول

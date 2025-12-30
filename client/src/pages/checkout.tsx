@@ -791,100 +791,100 @@ ${itemsWithPrices}
  // Success Page
  if (showSuccessPage) {
  return (
-  <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 dark:from-slate-950 dark:via-amber-950 dark:to-slate-900 relative overflow-hidden">
+  <div className="min-h-screen bg-gradient-to-br from-orange-50 via-primary/5 to-background dark:from-slate-950 dark:via-amber-950 dark:to-slate-900 relative overflow-hidden">
    {/* Floating Coffee Elements */}
    <div className="absolute inset-0 pointer-events-none">
-   <div className="absolute top-20 left-20 w-16 h-16 bg-orange-400/15 rounded-full blur-xl animate-bounce" style={{animationDelay: '0s'}}></div>
-   <div className="absolute top-40 right-20 w-12 h-12 bg-amber-500/15 rounded-full blur-lg animate-bounce" style={{animationDelay: '1s'}}></div>
-   <div className="absolute bottom-40 left-16 w-20 h-20 bg-orange-400/10 rounded-full blur-2xl animate-bounce" style={{animationDelay: '2s'}}></div>
-   <div className="absolute bottom-20 right-32 w-14 h-14 bg-amber-500/12 rounded-full blur-xl animate-bounce" style={{animationDelay: '1.5s'}}></div>
+   <div className="absolute top-20 left-20 w-16 h-16 bg-accent/15 rounded-full blur-xl animate-bounce" style={{animationDelay: '0s'}}></div>
+   <div className="absolute top-40 right-20 w-12 h-12 bg-primary/15 rounded-full blur-lg animate-bounce" style={{animationDelay: '1s'}}></div>
+   <div className="absolute bottom-40 left-16 w-20 h-20 bg-accent/10 rounded-full blur-2xl animate-bounce" style={{animationDelay: '2s'}}></div>
+   <div className="absolute bottom-20 right-32 w-14 h-14 bg-primary/12 rounded-full blur-xl animate-bounce" style={{animationDelay: '1.5s'}}></div>
    </div>
    <div className="relative z-10 flex items-center justify-center min-h-screen p-8 bg-[#533d2d]">
-   <Card className="max-w-2xl w-full bg-white dark:bg-slate-900 border-orange-300/40 dark:border-amber-700/30 shadow-lg dark:shadow-2xl">
+   <Card className="max-w-2xl w-full bg-white dark:bg-card border-accent/40 dark:border-primary/30 shadow-lg dark:shadow-2xl">
    <CardContent className="p-12 text-center">
    {/* Success Icon */}
    <div className="relative mb-8">
-   <div className="w-32 h-32 bg-gradient-to-br from-orange-400/20 to-amber-500/20 rounded-full mx-auto flex items-center justify-center mb-6">
-   <CheckCircle className="w-20 h-20 text-orange-500 dark:text-amber-500 animate-pulse" />
+   <div className="w-32 h-32 bg-gradient-to-br from-orange-400/20 to-background0/20 rounded-full mx-auto flex items-center justify-center mb-6">
+   <CheckCircle className="w-20 h-20 text-accent dark:text-accent animate-pulse" />
    </div>
-   <div className="absolute -top-2 -right-2 w-8 h-8 bg-orange-500/50 dark:bg-amber-500/50 rounded-full animate-ping"></div>
+   <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent/50 dark:bg-primary/50 rounded-full animate-ping"></div>
    </div>
 
    {/* Main Message */}
-   <h1 className="font-amiri text-5xl font-bold text-orange-600 dark:text-amber-400 mb-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000">
+   <h1 className="font-playfair text-5xl font-bold text-accent dark:text-accent mb-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000">
    تم إنشاء طلبك بنجاح!
    </h1>
 
    {/* Personal Welcome for Customer */}
    {(orderDetails?.customerInfo?.customerName || customer?.name) && (
-   <div className="mb-6 bg-gradient-to-r from-orange-100/50 to-amber-100/50 dark:from-amber-600/15 dark:to-orange-600/15 rounded-2xl p-6 border-2 border-orange-300/50 dark:border-amber-700/40 shadow-lg animate-in fade-in-20 slide-in-from-top-4 duration-1500">
+   <div className="mb-6 bg-gradient-to-r from-orange-100/50 to-amber-100/50 dark:from-amber-600/15 dark:to-orange-600/15 rounded-2xl p-6 border-2 border-accent/50 dark:border-primary/40 shadow-lg animate-in fade-in-20 slide-in-from-top-4 duration-1500">
    <div className="flex items-center justify-center mb-3">
-   <div className="w-16 h-16 bg-orange-200/60 dark:bg-amber-600/30 rounded-full flex items-center justify-center ml-3">
-   <User className="w-8 h-8 text-orange-600 dark:text-amber-400" />
+   <div className="w-16 h-16 bg-accent/60 dark:bg-primary/30 rounded-full flex items-center justify-center ml-3">
+   <User className="w-8 h-8 text-accent dark:text-accent" />
    </div>
    <div className="text-center">
-   <p className="font-amiri text-lg text-orange-700 dark:text-amber-300/80 mb-1">أهلاً وسهلاً</p>
-   <h2 className="font-amiri text-3xl font-bold text-orange-600 dark:text-amber-400">
+   <p className="font-playfair text-lg text-accent dark:text-accent/80 mb-1">أهلاً وسهلاً</p>
+   <h2 className="font-playfair text-3xl font-bold text-accent dark:text-accent">
    {orderDetails?.customerInfo?.customerName || customer?.name}
    </h2>
-   <p className="text-sm text-orange-600/70 dark:text-amber-300/60 mt-1">لكل لحظة قهوة ، لحظة نجاح</p>
+   <p className="text-sm text-accent/70 dark:text-accent/60 mt-1">لكل لحظة قهوة ، لحظة نجاح</p>
    </div>
    </div>
-   <div className="text-center text-orange-700 dark:text-amber-200/70 text-sm bg-orange-100/60 dark:bg-amber-600/10 rounded-lg p-3">
+   <div className="text-center text-accent dark:text-accent/70 text-sm bg-accent/60 dark:bg-primary/10 rounded-lg p-3">
    شكراً لثقتك في CLUNY CAFE - طلبك الآن في قائمةالتحضير
    </div>
    </div>
    )}
 
    <div className="space-y-6 mb-8">
-   <div className="bg-gradient-to-r from-orange-100/70 to-amber-100/70 dark:from-amber-600/15 dark:to-orange-600/15 rounded-xl p-6 border border-orange-300/50 dark:border-amber-700/40">
-   <p className="text-2xl text-orange-700 dark:text-amber-200 font-medium mb-2">
-   رقم الطلب: <span className="font-bold text-orange-600 dark:text-amber-400">{orderDetails?.orderNumber}</span>
+   <div className="bg-gradient-to-r from-orange-100/70 to-amber-100/70 dark:from-amber-600/15 dark:to-orange-600/15 rounded-xl p-6 border border-accent/50 dark:border-primary/40">
+   <p className="text-2xl text-accent dark:text-accent font-medium mb-2">
+   رقم الطلب: <span className="font-bold text-accent dark:text-accent">{orderDetails?.orderNumber}</span>
    </p>
-   <p className="text-lg text-orange-700/80 dark:text-amber-300/70">
-   المبلغ المدفوع: <span className="font-semibold text-orange-600 dark:text-amber-400">{parseFloat(orderDetails.totalAmount).toFixed(2)} ريال</span>
+   <p className="text-lg text-accent/80 dark:text-accent/70">
+   المبلغ المدفوع: <span className="font-semibold text-accent dark:text-accent">{parseFloat(orderDetails.totalAmount).toFixed(2)} ريال</span>
    </p>
    </div>
 
    {/* Coffee Animation */}
    <div className="flex justify-center items-center space-x-4 py-6">
-   <Coffee className="w-12 h-12 text-orange-500 dark:text-amber-500 animate-bounce" style={{animationDelay: '0s'}} />
-   <div className="w-4 h-4 bg-orange-500/60 dark:bg-amber-500/60 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-   <div className="w-3 h-3 bg-orange-500/40 dark:bg-amber-500/40 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-   <div className="w-2 h-2 bg-orange-500/20 dark:bg-amber-500/20 rounded-full animate-bounce" style={{animationDelay: '0.6s'}}></div>
+   <Coffee className="w-12 h-12 text-accent dark:text-accent animate-bounce" style={{animationDelay: '0s'}} />
+   <div className="w-4 h-4 bg-accent/60 dark:bg-primary/60 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+   <div className="w-3 h-3 bg-accent/40 dark:bg-primary/40 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+   <div className="w-2 h-2 bg-accent/20 dark:bg-primary/20 rounded-full animate-bounce" style={{animationDelay: '0.6s'}}></div>
    </div>
 
    {/* Instructions */}
-   <div className="bg-gradient-to-br from-orange-100/60 to-amber-100/60 dark:from-slate-800/50 dark:to-slate-900/50 rounded-xl p-6 border border-orange-300/50 dark:border-amber-700/30">
+   <div className="bg-gradient-to-br from-orange-100/60 to-amber-100/60 dark:from-card/50 dark:to-slate-900/50 rounded-xl p-6 border border-accent/50 dark:border-primary/30">
    <div className="flex items-center justify-center mb-4">
-   <Clock className="w-6 h-6 text-orange-600 dark:text-amber-500 ml-2" />
-   <h3 className="font-amiri text-xl font-bold text-orange-700 dark:text-amber-200">خطوات الاستلام</h3>
+   <Clock className="w-6 h-6 text-accent dark:text-accent ml-2" />
+   <h3 className="font-playfair text-xl font-bold text-accent dark:text-accent">خطوات الاستلام</h3>
    </div>
    <div className="space-y-3 text-right">
    <div className="flex items-start space-x-3 space-x-reverse">
-   <div className="w-6 h-6 bg-orange-600 dark:bg-amber-600 rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
-   <p className="text-orange-700 dark:text-amber-200/70 flex-1">توجه إلى مقهى CLUNY CAFE</p>
+   <div className="w-6 h-6 bg-accent dark:bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
+   <p className="text-accent dark:text-accent/70 flex-1">توجه إلى مقهى CLUNY CAFE</p>
    </div>
    <div className="flex items-start space-x-3 space-x-reverse">
-   <div className="w-6 h-6 bg-orange-600 dark:bg-amber-600 rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
-   <p className="text-orange-700 dark:text-amber-200/70 flex-1">أظهر رقم الطلب للموظف</p>
+   <div className="w-6 h-6 bg-accent dark:bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
+   <p className="text-accent dark:text-accent/70 flex-1">أظهر رقم الطلب للموظف</p>
    </div>
    <div className="flex items-start space-x-3 space-x-reverse">
-   <div className="w-6 h-6 bg-orange-600 dark:bg-amber-600 rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
-   <p className="text-orange-700 dark:text-amber-200/70 flex-1">استمتع بقهوتك الطازجة !</p>
+   <div className="w-6 h-6 bg-accent dark:bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
+   <p className="text-accent dark:text-accent/70 flex-1">استمتع بقهوتك الطازجة !</p>
    </div>
    </div>
    </div>
 
    {/* Rating Section */}
-   <div className="bg-gradient-to-r from-orange-100/60 to-amber-100/60 dark:from-amber-600/12 dark:to-orange-600/12 rounded-xl p-6 border border-orange-300/50 dark:border-amber-700/30">
-   <h4 className="font-amiri text-lg font-bold text-orange-700 dark:text-amber-200 mb-3">شاركنا تقييمك</h4>
+   <div className="bg-gradient-to-r from-orange-100/60 to-amber-100/60 dark:from-amber-600/12 dark:to-orange-600/12 rounded-xl p-6 border border-accent/50 dark:border-primary/30">
+   <h4 className="font-playfair text-lg font-bold text-accent dark:text-accent mb-3">شاركنا تقييمك</h4>
    <div className="flex justify-center space-x-2 mb-3">
    {[...Array(5)].map((_, i) => (
-   <Star key={i} className="w-8 h-8 text-orange-500 dark:text-amber-500 fill-orange-500 dark:fill-amber-500 cursor-pointer hover:scale-110 transition-transform" />
+   <Star key={i} className="w-8 h-8 text-accent dark:text-accent fill-orange-500 dark:fill-amber-500 cursor-pointer hover:scale-110 transition-transform" />
    ))}
    </div>
-   <p className="text-sm text-orange-700/70 dark:text-amber-300/70">تقييمك يساعدنا على تحسين خدماتنا</p>
+   <p className="text-sm text-accent/70 dark:text-accent/70">تقييمك يساعدنا على تحسين خدماتنا</p>
    </div>
 
    
@@ -917,7 +917,7 @@ ${itemsWithPrices}
    window.location.href = '/menu';
    }}
    variant="outline"
-   className="w-full border-orange-600/50 dark:border-amber-700/50 text-orange-600 dark:text-amber-400 hover:bg-orange-600/10 dark:hover:bg-amber-600/10 py-4 text-lg font-semibold"
+   className="w-full border-accent/50 dark:border-primary/50 text-accent dark:text-accent hover:bg-accent/10 dark:hover:bg-primary/10 py-4 text-lg font-semibold"
    >
    <Coffee className="w-5 h-5 ml-2" />
    طلب المزيد من القهوة 
@@ -925,8 +925,8 @@ ${itemsWithPrices}
    </div>
 
    {/* Footer Message */}
-   <div className="mt-8 pt-6 border-t border-orange-300/50 dark:border-amber-700/30">
-   <p className="text-orange-700/80 dark:text-amber-300/70 text-sm">
+   <div className="mt-8 pt-6 border-t border-accent/50 dark:border-primary/30">
+   <p className="text-accent/80 dark:text-accent/70 text-sm">
    شكراً لاختيارك CLUNY CAFE - لكل لحظة قهوة ، لحظة نجاح
    </p>
    </div>
@@ -951,21 +951,21 @@ ${itemsWithPrices}
  }
 
  return (
-  <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50/70 to-orange-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" data-testid="page-checkout">
+  <div className="min-h-screen bg-gradient-to-br from-orange-50 via-primary/5/70 to-background dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" data-testid="page-checkout">
    {/* Soft Background Elements */}
    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-   <div className="absolute top-20 left-20 w-32 h-32 bg-orange-200/15 dark:bg-orange-950/20 rounded-full blur-2xl animate-pulse"></div>
-   <div className="absolute bottom-32 right-16 w-24 h-24 bg-amber-200/10 dark:bg-amber-950/15 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
-   <div className="absolute top-1/2 left-10 w-20 h-20 bg-orange-100/8 dark:bg-orange-950/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '4s'}}></div>
+   <div className="absolute top-20 left-20 w-32 h-32 bg-accent/15 dark:bg-accent/20 rounded-full blur-2xl animate-pulse"></div>
+   <div className="absolute bottom-32 right-16 w-24 h-24 bg-primary/10 dark:bg-primary/15 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
+   <div className="absolute top-1/2 left-10 w-20 h-20 bg-accent/8 dark:bg-accent/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '4s'}}></div>
    </div>
    <div className="relative z-10 py-6 md:py-12">
    <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
    {/* Clean Header */}
    <div className="text-center mb-6 md:mb-12">
-   <h1 className="font-amiri text-2xl sm:text-3xl md:text-4xl font-bold text-orange-700 dark:text-amber-100 mb-2 md:mb-4">
+   <h1 className="font-playfair text-2xl sm:text-3xl md:text-4xl font-bold text-accent dark:text-accent mb-2 md:mb-4">
    إتمام عمليةالدفع
    </h1>
-   <p className="text-orange-600 dark:text-amber-200/80 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed px-4">
+   <p className="text-accent dark:text-accent/80 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed px-4">
    اختر طريقة الدفع المفضلةلديك واستمتع بتجربة قهوة لا تُنسى
    </p>
    <div className="mt-4 md:mt-6 flex items-center justify-center space-x-2">
@@ -980,7 +980,7 @@ ${itemsWithPrices}
    <div className="lg:col-span-1 order-2 lg:order-1">
    <Card className="bg-white border-slate-200 shadow-lg">
    <CardHeader className="bg-slate-100 rounded-t-lg p-4 md:p-6">
-   <CardTitle className="font-amiri text-lg md:text-xl font-bold flex items-center text-slate-700">
+   <CardTitle className="font-playfair text-lg md:text-xl font-bold flex items-center text-slate-700">
    <Coffee className="w-4 md:w-5 h-4 md:h-5 ml-2" />
    ملخص طلبك
    </CardTitle>
@@ -1013,10 +1013,10 @@ ${itemsWithPrices}
 
    {/* Discount Code Section */}
    {!useFreeDrink && selectedPaymentMethod !== 'qahwa-card' && (
-   <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg md:rounded-xl border-2 border-amber-200 dark:border-amber-800">
+   <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gradient-to-r from-amber-50 to-background dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg md:rounded-xl border-2 border-primary dark:border-primary">
    <div className="flex items-center gap-2 mb-2">
-   <Gift className="w-4 md:w-5 h-4 md:h-5 text-amber-600" />
-   <h3 className="font-bold text-sm md:text-base text-amber-900 dark:text-amber-100">كود الخصم</h3>
+   <Gift className="w-4 md:w-5 h-4 md:h-5 text-accent" />
+   <h3 className="font-bold text-sm md:text-base text-accent dark:text-accent">كود الخصم</h3>
    </div>
    {appliedDiscount ? (
    <div className="flex items-center justify-between bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">
@@ -1057,7 +1057,7 @@ ${itemsWithPrices}
    <Button
    onClick={handleValidateDiscount}
    disabled={isValidatingDiscount || !discountCode.trim()}
-   className="bg-amber-600 hover:bg-amber-700"
+   className="bg-primary hover:bg-primary"
    data-testid="button-apply-discount"
    >
    {isValidatingDiscount ? "جاري التحقق..." : "تطبيق"}
@@ -1072,7 +1072,7 @@ ${itemsWithPrices}
    <Card className="mb-4 border-2 border-primary/20 bg-gradient-to-br from-slate-50 to-white">
    <CardHeader className="pb-3">
    <div className="flex items-center justify-between">
-   <CardTitle className="font-amiri text-lg flex items-center gap-2">
+   <CardTitle className="font-playfair text-lg flex items-center gap-2">
    {deliveryInfo.type === 'pickup' ? (
    <>
    <Store className="w-5 h-5 text-primary" />
@@ -1163,10 +1163,10 @@ ${itemsWithPrices}
    )}
 
    <div className={`bg-gradient-to-r ${useFreeDrink ? 'from-green-500 to-emerald-600' : 'from-primary to-secondary'} text-primary-foreground rounded-xl p-6 shadow-lg relative overflow-hidden`}>
-   <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-50"></div>
+   <div className="absolute inset-0 bg-gradient-to-r from-card/10 to-transparent opacity-50"></div>
    <div className="relative z-10">
    <div className="flex justify-between items-center mb-2">
-   <span className="font-amiri text-xl font-bold flex items-center">
+   <span className="font-playfair text-xl font-bold flex items-center">
    <Coffee className="w-6 h-6 ml-2 animate-pulse" />
    المجموع الكلي:
    </span>
@@ -1220,7 +1220,7 @@ ${itemsWithPrices}
    <div className="lg:col-span-2 order-1 lg:order-2">
    <Card className="bg-white border-slate-200 shadow-lg">
    <CardHeader className="bg-slate-100 rounded-t-lg p-4 md:p-6">
-   <CardTitle className="flex items-center font-amiri text-lg md:text-xl font-bold text-slate-700" data-testid="text-checkout-title">
+   <CardTitle className="flex items-center font-playfair text-lg md:text-xl font-bold text-slate-700" data-testid="text-checkout-title">
    <CreditCard className="w-4 md:w-5 h-4 md:h-5 ml-2" />
    اختر طريقة الدفع
    </CardTitle>
@@ -1234,7 +1234,7 @@ ${itemsWithPrices}
    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-blue-500/20 to-primary/20 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity duration-500"></div>
 
    {/* Main popup container */}
-   <div className="relative bg-gradient-to-br from-white/95 via-blue-50/80 to-slate-50/90 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border-2 border-primary/20 shadow-2xl transform transition-all duration-500 hover:scale-[1.01] hover:shadow-3xl">
+   <div className="relative bg-gradient-to-br from-card/95 via-blue-50/80 to-slate-50/90 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border-2 border-primary/20 shadow-2xl transform transition-all duration-500 hover:scale-[1.01] hover:shadow-3xl">
    {/* Header with floating animation */}
    <div className="flex items-center justify-center mb-4 md:mb-6 lg:mb-8">
    <div className="relative">
@@ -1245,7 +1245,7 @@ ${itemsWithPrices}
    </div>
    </div>
 
-   <h4 className="font-amiri text-xl md:text-2xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+   <h4 className="font-playfair text-xl md:text-2xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
    معلومات العميل
    </h4>
    {isRegisteredCustomer ? (
@@ -1367,21 +1367,21 @@ ${itemsWithPrices}
    {/* Free Drinks Counter for Registered Users */}
    {(isRegisteredCustomer || loyaltyCard) && (availableFreeDrinks > 0 || (loyaltyCard?.stamps || 0) > 0) && (
    <div className="mt-6 relative group" data-testid="section-free-drink">
-   <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-orange-500/30 to-amber-400/30 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
+   <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-primary/50/30 to-amber-400/30 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
 
-   <div className="relative bg-gradient-to-br from-amber-50/90 via-orange-50/80 to-amber-50/90 backdrop-blur-sm rounded-2xl p-5 border-2 border-amber-300/50 shadow-xl">
+   <div className="relative bg-gradient-to-br from-amber-50/90 via-primary/5/80 to-background/90 backdrop-blur-sm rounded-2xl p-5 border-2 border-primary/50 shadow-xl">
    <div className="text-center space-y-3">
    <div className="flex items-center justify-center gap-2">
-   <Coffee className="w-6 h-6 text-amber-600" />
-   <h4 className="font-amiri text-xl font-bold text-amber-900">
+   <Coffee className="w-6 h-6 text-accent" />
+   <h4 className="font-playfair text-xl font-bold text-accent">
    بطاقة كوبي - مشروباتك
    </h4>
    </div>
 
    <div className="bg-white/60 rounded-xl p-4 space-y-2">
    <div className="flex justify-between items-center">
-   <span className="text-sm text-amber-700">الأختام الحالية:</span>
-   <span className="font-bold text-amber-900">
+   <span className="text-sm text-accent">الأختام الحالية:</span>
+   <span className="font-bold text-accent">
    {(loyaltyCard?.stamps || 0) % 6}/6
    </span>
    </div>
@@ -1394,13 +1394,13 @@ ${itemsWithPrices}
    </div>
 
    <div className="flex justify-between items-center">
-   <span className="text-sm text-orange-700">مشروبات تم استخدامها:</span>
-   <span className="font-bold text-orange-600">
+   <span className="text-sm text-accent">مشروبات تم استخدامها:</span>
+   <span className="font-bold text-accent">
    {totalFreeCupsRedeemed}
    </span>
    </div>
 
-   <div className="flex justify-between items-center pt-2 border-t border-amber-300">
+   <div className="flex justify-between items-center pt-2 border-t border-primary">
    <span className="text-sm text-green-700 font-bold">مشروبات مجانية متاحة:</span>
    <span className="font-bold text-green-600 text-xl">
    {availableFreeDrinks}
@@ -1430,7 +1430,7 @@ ${itemsWithPrices}
    <div key={item.coffeeItemId} className="flex items-center justify-between bg-green-50/50 p-3 rounded-lg border-l-4 border-l-green-500">
    <div className="flex-1">
    <p className="font-semibold text-sm">{item.coffeeItem?.nameAr}</p>
-   <p className="text-xs text-gray-600">سعر الواحد: {item.coffeeItem?.price} ريال</p>
+   <p className="text-xs text-muted-foreground">سعر الواحد: {item.coffeeItem?.price} ريال</p>
    </div>
    <div className="text-center">
    <span className="font-bold text-lg text-green-600">{freeQty}</span>
@@ -1454,8 +1454,8 @@ ${itemsWithPrices}
    
    if (remainingDrinks > 0) {
    return (
-   <div className="bg-amber-50 rounded-lg p-3 border border-amber-300">
-   <p className="text-sm text-amber-800 font-semibold">
+   <div className="bg-background rounded-lg p-3 border border-primary">
+   <p className="text-sm text-accent font-semibold">
    تنبيه: يتبقى {remainingDrinks} مشروب يحتاج طريقة دفع إضافية
    </p>
    </div>
@@ -1466,11 +1466,11 @@ ${itemsWithPrices}
    </div>
    </div>
    ) : (availableFreeDrinks > 0 && selectedPaymentMethod !== 'qahwa-card') ? (
-   <p className="text-sm text-amber-700 bg-amber-100 rounded-lg p-2">
+   <p className="text-sm text-accent bg-primary rounded-lg p-2">
    اختر بطاقة كوبي - مشروباتك كطريقة دفع لتطبيق المشروبات المجانية تلقائياً
    </p>
    ) : (
-   <p className="text-sm text-amber-700 bg-amber-100 rounded-lg p-2">
+   <p className="text-sm text-accent bg-primary rounded-lg p-2">
    اجمع {6 - ((loyaltyCard?.stamps || 0) % 6)} أختام إضافية للحصول على المشروب المجاني القادم!
    </p>
    )}
@@ -1501,7 +1501,7 @@ ${itemsWithPrices}
    </div>
    </div>
    <div>
-   <Label htmlFor="use-free-drink" className="font-amiri text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-700 bg-clip-text text-transparent cursor-pointer">
+   <Label htmlFor="use-free-drink" className="font-playfair text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-700 bg-clip-text text-transparent cursor-pointer">
    استخدام بطاقةتي (مشروب مجاني)
    </Label>
    <p className="text-sm text-green-700 font-cairo">
@@ -1517,22 +1517,22 @@ ${itemsWithPrices}
    {/* بطاقةتي - رابط سريع - Only show for non-registered users */}
    {!isRegisteredCustomer && (
    <div className="mt-6 relative group">
-   <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-orange-500/30 to-amber-400/30 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
+   <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-primary/50/30 to-amber-400/30 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
 
-   <div className="relative bg-gradient-to-br from-amber-50/90 via-orange-50/80 to-amber-50/90 backdrop-blur-sm rounded-2xl p-5 border-2 border-amber-300/50 shadow-xl">
+   <div className="relative bg-gradient-to-br from-amber-50/90 via-primary/5/80 to-background/90 backdrop-blur-sm rounded-2xl p-5 border-2 border-primary/50 shadow-xl">
    <div className="flex items-center justify-between">
    <div className="flex items-center gap-3">
    <div className="relative">
-   <div className="absolute -inset-2 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full opacity-20 blur animate-pulse"></div>
+   <div className="absolute -inset-2 bg-gradient-to-r from-amber-400 to-background0 rounded-full opacity-20 blur animate-pulse"></div>
    <div className="relative bg-gradient-to-r from-amber-500 to-orange-600 rounded-full p-2.5 text-white shadow-lg">
    <Gift className="w-6 h-6" />
    </div>
    </div>
    <div>
-   <h4 className="font-amiri text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-700 bg-clip-text text-transparent">
+   <h4 className="font-playfair text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-700 bg-clip-text text-transparent">
    سجل دخولك واحصل على مشروبات مجانية !
    </h4>
-   <p className="text-sm text-amber-700 font-cairo">
+   <p className="text-sm text-accent font-cairo">
    5 طوابع = قهوة مجانية
    </p>
    </div>
@@ -1540,7 +1540,7 @@ ${itemsWithPrices}
    <Button
    onClick={() => window.location.href = '/customer-login'}
    variant="outline"
-   className="border-amber-500 text-amber-700 hover:bg-amber-100 font-cairo"
+   className="border-primary text-accent hover:bg-primary font-cairo"
    data-testid="button-register-link"
    >
    تسجيل
@@ -1664,7 +1664,7 @@ ${itemsWithPrices}
    <div className="mt-6 relative group">
    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-700/30 via-amber-700/30 to-yellow-700/30 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
    <div className="relative from-yellow-900/40 via-amber-900/35 to-yellow-900/40 backdrop-blur-sm rounded-2xl p-5 border-2 border-yellow-800/40 shadow-xl bg-[#222429]">
-   <h4 className="font-amiri text-lg font-bold text-orange-500 mb-4 flex items-center gap-2">
+   <h4 className="font-playfair text-lg font-bold text-accent mb-4 flex items-center gap-2">
    <CreditCard className="w-5 h-5" />
    طريقة الدفع للمشروبات المتبقية ({remainingDrinks} مشروب)
    </h4>
@@ -1701,7 +1701,7 @@ ${itemsWithPrices}
    <div className="mt-6 animate-in fade-in-0 slide-in-from-bottom-5 duration-500">
    <Card className="border-2 border-yellow-800/40 bg-gradient-to-br from-yellow-900/30 to-amber-900/30">
    <CardHeader>
-   <CardTitle className="font-amiri text-lg flex items-center gap-2 text-orange-500">
+   <CardTitle className="font-playfair text-lg flex items-center gap-2 text-accent">
    <FileText className="w-5 h-5" />
    رفع إيصال الدفع (إجباري) - للطريقة الثانية
    </CardTitle>
@@ -1725,7 +1725,7 @@ ${itemsWithPrices}
    <div className="mt-6 animate-in fade-in-0 slide-in-from-bottom-5 duration-500">
    <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
    <CardHeader>
-   <CardTitle className="font-amiri text-lg flex items-center gap-2 text-primary">
+   <CardTitle className="font-playfair text-lg flex items-center gap-2 text-primary">
    <FileText className="w-5 h-5" />
    رفع إيصال الدفع (إجباري)
    </CardTitle>
@@ -1751,7 +1751,7 @@ ${itemsWithPrices}
    <div className="absolute -inset-2 bg-gradient-to-r from-green-400/30 via-primary/30 to-emerald-500/30 rounded-3xl blur-xl opacity-40 animate-pulse"></div>
 
    {/* Main confirmation popup */}
-   <div className="relative bg-gradient-to-br from-white/95 via-green-50/90 to-emerald-50/85 backdrop-blur-sm rounded-3xl p-8 border-2 border-emerald-300/50 shadow-2xl transform transition-all duration-500 hover:scale-[1.02] hover:shadow-3xl">
+   <div className="relative bg-gradient-to-br from-card/95 via-green-50/90 to-emerald-50/85 backdrop-blur-sm rounded-3xl p-8 border-2 border-emerald-300/50 shadow-2xl transform transition-all duration-500 hover:scale-[1.02] hover:shadow-3xl">
    {/* Header with animated checkmark */}
    <div className="flex items-center justify-center mb-6">
    <div className="relative">
@@ -1765,7 +1765,7 @@ ${itemsWithPrices}
    </div>
    </div>
 
-   <h4 className="font-amiri text-3xl font-bold text-center mb-3 bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent">
+   <h4 className="font-playfair text-3xl font-bold text-center mb-3 bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent">
    تأكيد الدفع
    </h4>
 
@@ -1774,7 +1774,7 @@ ${itemsWithPrices}
    هل قمت بإرسال المبلغ المطلوب؟
    </p>
    <div className="bg-gradient-to-r from-primary/20 to-emerald-500/20 rounded-2xl p-4 border border-primary/30">
-   <div className="text-3xl font-bold font-amiri bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
+   <div className="text-3xl font-bold font-playfair bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
    {getTotalPrice().toFixed(2)} ريال
    </div>
    <p className="text-sm text-slate-600 mt-1">باستخدام الطريقة المحددة </p>
@@ -1809,7 +1809,7 @@ ${itemsWithPrices}
    </Button>
 
    {/* Decorative floating elements */}
-   <div className="absolute top-6 right-6 w-4 h-4 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full opacity-50 animate-pulse"></div>
+   <div className="absolute top-6 right-6 w-4 h-4 bg-gradient-to-r from-yellow-400 to-background0 rounded-full opacity-50 animate-pulse"></div>
    <div className="absolute bottom-8 left-8 w-3 h-3 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full opacity-40 animate-bounce"></div>
    </div>
    </div>
@@ -1835,7 +1835,7 @@ ${itemsWithPrices}
    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
    </div>
-   <span className="mr-3 font-amiri">
+   <span className="mr-3 font-playfair">
    جاري معالجةطلبك بعناية ...
    </span>
    <Coffee className="w-6 h-6 animate-pulse ml-2" />
@@ -1846,7 +1846,7 @@ ${itemsWithPrices}
    <CreditCard className="w-6 h-6 text-white" />
    </div>
    <div className="text-center">
-   <div className="font-amiri text-xl">تأكيد طلب القهوة </div>
+   <div className="font-playfair text-xl">تأكيد طلب القهوة </div>
    <div className="text-sm opacity-90">{calculateFinalPrice().toFixed(2)} ريال</div>
    </div>
    <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>

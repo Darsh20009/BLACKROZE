@@ -64,16 +64,16 @@ export default function AdminDashboard() {
   }, [employees, orders]);
 
   const StatCard = ({ icon: Icon, label, value, subtext, color = 'primary' }: any) => (
-    <Card className="border-0 bg-gradient-to-br from-white to-orange-50 dark:from-slate-900 dark:to-slate-800">
+    <Card className="border-border/50 bg-gradient-to-br from-card to-card/90 shadow-md hover:shadow-lg transition-all">
       <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm text-muted-foreground font-medium">{label}</p>
-            <p className="text-3xl font-bold mt-2">{value}</p>
+            <p className="text-3xl font-bold font-playfair mt-2 text-foreground">{value}</p>
             {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
           </div>
-          <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-lg">
-            <Icon className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+          <div className="bg-accent/20 dark:bg-accent/10 p-3 rounded-lg flex-shrink-0">
+            <Icon className="w-6 h-6 text-accent" />
           </div>
         </div>
       </CardContent>
@@ -81,12 +81,12 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="p-6 space-y-8 bg-white dark:bg-slate-950 min-h-screen">
+    <div className="p-6 space-y-8 bg-gradient-to-b from-background via-primary/5 to-background min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">لوحة التحكم</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">مرحباً بك في نظام الإدارة</p>
+          <h1 className="text-4xl font-bold font-playfair text-foreground">لوحة التحكم</h1>
+          <p className="text-muted-foreground mt-2 font-cairo">مرحباً بك في نظام الإدارة</p>
         </div>
         <Button variant="outline" onClick={() => navigate('/admin/settings')}>
           <Settings className="w-4 h-4 ml-2" />
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
 
       {/* Orders Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-0 bg-white dark:bg-slate-900">
+        <Card className="lg:col-span-2 border-0 bg-white dark:bg-card">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -134,9 +134,9 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+              <div className="flex justify-between items-center p-4 bg-background dark:bg-accent/20 rounded-lg">
                 <span className="text-sm font-medium">إجمالي الطلبات</span>
-                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{metrics.totalOrders}</span>
+                <span className="text-2xl font-bold text-accent dark:text-accent">{metrics.totalOrders}</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
                 <span className="text-sm font-medium">الإيرادات الكلية</span>
@@ -147,14 +147,14 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <Card className="border-0 bg-white dark:bg-slate-900">
+        <Card className="border-0 bg-white dark:bg-card">
           <CardHeader className="pb-4">
             <CardTitle>إجراءات سريعة</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
               onClick={() => navigate('/admin/employees')}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+              className="w-full bg-accent hover:bg-accent text-white"
               data-testid="button-manage-employees"
             >
               <Users className="w-4 h-4 ml-2" />
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Employees */}
-      <Card className="border-0 bg-white dark:bg-slate-900">
+      <Card className="border-0 bg-white dark:bg-card">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle>الموظفون الأخيرون</CardTitle>
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           emp.isActivated === 1 
                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-muted-foreground'
                         }`}>
                           {emp.isActivated === 1 ? 'نشط' : 'معطل'}
                         </span>

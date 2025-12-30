@@ -313,9 +313,9 @@ export default function TableMenuNew() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-primary/5 to-yellow-50">
       {/* Clean Header */}
-      <header className="sticky top-0 bg-white border-b-2 border-amber-200 z-40 shadow-md" dir="rtl">
+      <header className="sticky top-0 bg-white border-b-2 border-primary z-40 shadow-md" dir="rtl">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
             <div className="flex items-center space-x-2 sm:space-x-4 space-x-reverse">
@@ -384,19 +384,19 @@ export default function TableMenuNew() {
 
         {/* Pending Order Alert */}
         {pendingOrder && pendingOrder.status !== 'completed' && (
-          <div className="mb-8 p-5 bg-amber-50 border-2 border-amber-400 rounded-lg shadow-md">
+          <div className="mb-8 p-5 bg-background border-2 border-primary rounded-lg shadow-md">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-bold text-lg text-amber-900 mb-2">لديك طلب معلق!</h3>
-                <p className="text-sm text-amber-800 mb-3">
+                <h3 className="font-bold text-lg text-accent mb-2">لديك طلب معلق!</h3>
+                <p className="text-sm text-accent mb-3">
                   لديك طلب تم طلبه سابقاً من هذه الطاولة ولا يزال في الانتظار. يمكنك متابعة الطلب أو إنشاء طلب جديد.
                 </p>
                 <Button
                   onClick={() => {
                     navigate(`/table-order-tracking/${table?.currentOrderId}`);
                   }}
-                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  className="bg-primary hover:bg-primary text-white"
                   data-testid="button-view-pending-order"
                 >
                   متابعة الطلب السابق
@@ -419,11 +419,11 @@ export default function TableMenuNew() {
               </>
             ) : reservationStatus === "before_window" ? (
               <>
-                <h3 className="font-bold text-lg mb-3 text-amber-900">ℹ️ الحجز لم يبدأ بعد</h3>
-                <p className="text-sm text-amber-800 mb-3">
+                <h3 className="font-bold text-lg mb-3 text-accent">ℹ️ الحجز لم يبدأ بعد</h3>
+                <p className="text-sm text-accent mb-3">
                   هناك حجز باسم: <strong>{table.reservedFor.customerName}</strong>
                 </p>
-                <p className="text-sm text-amber-700">يمكنك تقديم طلب عادي حالياً.</p>
+                <p className="text-sm text-accent">يمكنك تقديم طلب عادي حالياً.</p>
               </>
             ) : (
               <>

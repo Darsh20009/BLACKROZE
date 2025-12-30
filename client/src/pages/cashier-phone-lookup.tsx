@@ -69,7 +69,7 @@ const SearchCustomer: React.FC<SearchCustomerProps> = ({ setSearchPhone, searchP
         data-testid="input-phone"
         maxLength={9}
       />
-      <Button onClick={handleSearch} className="bg-amber-500 hover:bg-amber-600 text-black">
+      <Button onClick={handleSearch} className="bg-background0 hover:bg-primary text-black">
         بحث
       </Button>
     </div>

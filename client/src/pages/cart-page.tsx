@@ -14,12 +14,12 @@ export default function CartPage() {
 
  if (cartItems.length === 0) {
  return (
- <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100">
+ <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
  {/* Luxury Background Elements with Coffee Theme */}
  <div className="absolute inset-0 pointer-events-none">
- <div className="absolute top-20 left-20 w-32 h-32 bg-amber-300/20 rounded-full blur-2xl animate-pulse"></div>
- <div className="absolute bottom-32 right-16 w-24 h-24 bg-orange-300/15 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
- <div className="absolute top-1/2 left-10 w-20 h-20 bg-amber-400/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '4s'}}></div>
+ <div className="absolute top-20 left-20 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
+ <div className="absolute bottom-32 right-16 w-24 h-24 bg-accent/8 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
+ <div className="absolute top-1/2 left-10 w-20 h-20 bg-primary/8 rounded-full blur-lg animate-pulse" style={{animationDelay: '4s'}}></div>
  </div>
 
  <div className="relative z-10">
@@ -38,13 +38,13 @@ export default function CartPage() {
 
  {/* Simple Empty Cart */}
  <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
- <ShoppingCart className="w-24 h-24 text-amber-600 mb-6" />
- <h2 className="font-amiri text-3xl font-bold text-amber-800 mb-4">السلةفارغةحالياً</h2>
- <p className="text-amber-700 text-lg mb-8 text-center max-w-md leading-relaxed">
+ <ShoppingCart className="w-24 h-24 text-accent mb-6" />
+ <h2 className="font-playfair text-3xl font-bold text-foreground mb-4">السلة فارغة حالياً</h2>
+ <p className="text-muted-foreground text-lg mb-8 text-center max-w-md leading-relaxed font-cairo">
  ابدأ رحلة القهوة الخاصةبك واختر من تشكيلتنا الرائعةمن القهوة الطازجة 
  </p>
  <Link href="/menu">
- <Button className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-8 py-4 text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl rounded-lg">
+ <Button className="bg-gradient-to-r from-accent to-accent/90 hover:from-accent/95 hover:to-accent/85 text-accent-foreground px-8 py-4 text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl rounded-lg">
  تصفح المنيو
  </Button>
  </Link>
@@ -55,12 +55,12 @@ export default function CartPage() {
  }
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100">
+ <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
  {/* Luxury Background Elements with Coffee Theme */}
  <div className="absolute inset-0 pointer-events-none">
- <div className="absolute top-20 left-20 w-32 h-32 bg-amber-300/20 rounded-full blur-2xl animate-pulse"></div>
- <div className="absolute bottom-32 right-16 w-24 h-24 bg-orange-300/15 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
- <div className="absolute top-1/2 left-10 w-20 h-20 bg-amber-400/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '4s'}}></div>
+ <div className="absolute top-20 left-20 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
+ <div className="absolute bottom-32 right-16 w-24 h-24 bg-accent/8 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
+ <div className="absolute top-1/2 left-10 w-20 h-20 bg-primary/8 rounded-full blur-lg animate-pulse" style={{animationDelay: '4s'}}></div>
  </div>
 
  <div className="relative z-10">
@@ -82,7 +82,7 @@ export default function CartPage() {
  <div className="grid gap-8 lg:grid-cols-3">
  {/* Modern Cart Items */}
  <div className="lg:col-span-2 space-y-6">
- <h2 className="font-amiri text-3xl font-black text-amber-800 mb-8 flex items-center">
+ <h2 className="font-playfair text-3xl font-bold text-foreground mb-8 flex items-center">
  <ShoppingCart className="w-8 h-8 ml-3" />
  العناصر المختارة
  </h2>
@@ -106,29 +106,29 @@ export default function CartPage() {
  e.currentTarget.src = "/images/default-coffee.png";
  }}
  />
- <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+ <div className="absolute -top-2 -right-2 w-6 h-6 bg-background0 rounded-full flex items-center justify-center">
  <span className="text-white text-xs font-bold">{item.quantity}</span>
  </div>
  </div>
  <div>
- <h3 className="font-amiri font-bold text-amber-800 text-xl mb-1">{item.coffeeItem?.nameAr}</h3>
- <p className="text-amber-600 font-bold text-lg">{item.coffeeItem?.price} ريال</p>
+ <h3 className="font-amiri font-bold text-accent text-xl mb-1">{item.coffeeItem?.nameAr}</h3>
+ <p className="text-accent font-bold text-lg">{item.coffeeItem?.price} ريال</p>
  </div>
  </div>
 
  <div className="flex items-center space-x-4 space-x-reverse">
  {/* Modern Quantity Controls */}
- <div className="flex items-center bg-amber-50 rounded-full p-1 border border-amber-200">
+ <div className="flex items-center bg-background rounded-full p-1 border border-primary">
  <Button
  size="sm"
  variant="ghost"
  onClick={() => updateQuantity(item.coffeeItemId, Math.max(0, item.quantity - 1))}
- className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-100 rounded-full"
+ className="h-8 w-8 p-0 text-accent hover:bg-primary rounded-full"
  >
  <Minus className="w-4 h-4" />
  </Button>
 
- <span className="text-amber-800 font-bold text-lg w-12 text-center">
+ <span className="text-accent font-bold text-lg w-12 text-center">
  {item.quantity}
  </span>
 
@@ -136,7 +136,7 @@ export default function CartPage() {
  size="sm"
  variant="ghost"
  onClick={() => updateQuantity(item.coffeeItemId, item.quantity + 1)}
- className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-100 rounded-full"
+ className="h-8 w-8 p-0 text-accent hover:bg-primary rounded-full"
  >
  <Plus className="w-4 h-4" />
  </Button>
@@ -160,7 +160,7 @@ export default function CartPage() {
 
  {/* Modern Order Summary */}
  <div className="lg:col-span-1">
- <Card className="bg-gradient-to-br from-white/95 to-amber-50/80 border-amber-200/50 backdrop-blur-sm sticky top-24 shadow-2xl">
+ <Card className="bg-gradient-to-br from-card/95 to-background/80 border-primary/50 backdrop-blur-sm sticky top-24 shadow-2xl">
  <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-t-lg">
  <CardTitle className="font-amiri text-2xl flex items-center">
  <ShoppingCart className="w-6 h-6 ml-2" />
@@ -168,17 +168,17 @@ export default function CartPage() {
  </CardTitle>
  </CardHeader>
  <CardContent className="space-y-6 p-6">
- <div className="flex justify-between items-center text-amber-700">
+ <div className="flex justify-between items-center text-accent">
  <span className="text-lg">عدد العناصر:</span>
- <Badge className="bg-amber-100 text-amber-800 text-lg px-3 py-1">
+ <Badge className="bg-primary text-accent text-lg px-3 py-1">
  {cartItems.reduce((sum, item) => sum + item.quantity, 0)} قطعة
  </Badge>
  </div>
 
- <div className="border-t border-amber-200 pt-6">
+ <div className="border-t border-primary pt-6">
  <div className="flex justify-between items-center">
- <span className="text-xl font-bold text-amber-800">المجموع الكلي:</span>
- <span className="text-2xl font-black text-amber-600">{totalPrice.toFixed(2)} ريال</span>
+ <span className="text-xl font-bold text-accent">المجموع الكلي:</span>
+ <span className="text-2xl font-black text-accent">{totalPrice.toFixed(2)} ريال</span>
  </div>
  </div>
 

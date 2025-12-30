@@ -160,7 +160,7 @@ export default function ProductDetails() {
  className={
  item.availabilityStatus === 'out_of_stock' ? "bg-red-500" :
  item.availabilityStatus === 'coming_soon' ? "bg-blue-500" :
- "bg-orange-500"
+ "bg-background0"
  }
  data-testid="badge-availability"
  >

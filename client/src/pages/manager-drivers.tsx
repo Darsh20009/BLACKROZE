@@ -139,7 +139,7 @@ export default function ManagerDrivers() {
  };
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] p-4">
+ <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4">
  {/* Header */}
  <div className="max-w-7xl mx-auto mb-6">
  <div className="flex items-center justify-between">
@@ -148,7 +148,7 @@ export default function ManagerDrivers() {
  <Truck className="w-6 h-6 text-white" />
  </div>
  <div>
- <h1 className="text-2xl font-bold text-amber-500">إدار� السائقين</h1>
+ <h1 className="text-2xl font-bold text-accent">إدار� السائقين</h1>
  <p className="text-gray-400 text-sm">إضاف� وتعديل حسابات السائقين</p>
  </div>
  </div>
@@ -164,7 +164,7 @@ export default function ManagerDrivers() {
  <Button
  variant="outline"
  onClick={() => setLocation("/manager/dashboard")}
- className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+ className="border-primary/50 text-accent hover:bg-background0 hover:text-white"
  data-testid="button-back"
  >
  <ArrowRight className="w-4 h-4 ml-2" />
@@ -177,14 +177,14 @@ export default function ManagerDrivers() {
  {/* Drivers List */}
  <div className="max-w-7xl mx-auto">
  {isLoading ? (
- <Card className="bg-[#2d1f1a] border-amber-500/20">
+ <Card className="bg-[#2d1f1a] border-primary/20">
  <CardContent className="p-12 text-center">
- <Truck className="w-12 h-12 animate-pulse mx-auto mb-4 text-amber-500" />
+ <Truck className="w-12 h-12 animate-pulse mx-auto mb-4 text-accent" />
  <p className="text-gray-400">جاري تحميل السائقين...</p>
  </CardContent>
  </Card>
  ) : drivers.length === 0 ? (
- <Card className="bg-[#2d1f1a] border-amber-500/20">
+ <Card className="bg-[#2d1f1a] border-primary/20">
  <CardContent className="p-12 text-center">
  <Truck className="w-12 h-12 mx-auto mb-4 text-gray-500" />
  <p className="text-gray-400">لا يوجد سائقين مسجلين</p>
@@ -200,9 +200,9 @@ export default function ManagerDrivers() {
  ) : (
  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
  {drivers.map((driver) => (
- <Card key={driver.id} className="bg-[#2d1f1a] border-amber-500/20">
+ <Card key={driver.id} className="bg-[#2d1f1a] border-primary/20">
  <CardHeader>
- <CardTitle className="text-amber-500 text-right flex items-center justify-between">
+ <CardTitle className="text-accent text-right flex items-center justify-between">
  <span className="flex items-center gap-2">
  <User className="w-5 h-5" />
  {driver.fullName}
@@ -222,11 +222,11 @@ export default function ManagerDrivers() {
  <CardContent className="space-y-3">
  <div className="space-y-2">
  <div className="flex items-center gap-2 text-gray-300">
- <Phone className="w-4 h-4 text-amber-500" />
+ <Phone className="w-4 h-4 text-accent" />
  <span className="text-sm" dir="ltr">{driver.phone}</span>
  </div>
  <div className="flex items-center gap-2 text-gray-300">
- <Truck className="w-4 h-4 text-amber-500" />
+ <Truck className="w-4 h-4 text-accent" />
  <span className="text-sm">
  {driver.vehicleType} - {driver.vehicleColor}
  </span>
@@ -247,7 +247,7 @@ export default function ManagerDrivers() {
  )}
  </div>
 
- <div className="flex gap-2 pt-3 border-t border-amber-500/20">
+ <div className="flex gap-2 pt-3 border-t border-primary/20">
  <Button
  size="sm"
  variant="outline"
@@ -291,9 +291,9 @@ export default function ManagerDrivers() {
 
  {/* Add Driver Dialog */}
  <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+ <DialogContent className="bg-[#2d1f1a] border-primary/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
  <DialogHeader>
- <DialogTitle className="text-amber-500">إضاف� سائق جديد</DialogTitle>
+ <DialogTitle className="text-accent">إضاف� سائق جديد</DialogTitle>
  </DialogHeader>
  <form onSubmit={handleSubmitNewDriver} className="space-y-4">
  <div className="grid grid-cols-2 gap-4">
@@ -303,7 +303,7 @@ export default function ManagerDrivers() {
  id="fullName"
  name="fullName"
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-fullname"
  />
  </div>
@@ -315,7 +315,7 @@ export default function ManagerDrivers() {
  type="tel"
  required
  placeholder="05xxxxxxxx"
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-phone"
  />
  </div>
@@ -328,7 +328,7 @@ export default function ManagerDrivers() {
  id="username"
  name="username"
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-username"
  />
  </div>
@@ -339,22 +339,22 @@ export default function ManagerDrivers() {
  name="password"
  type="password"
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-password"
  />
  </div>
  </div>
 
- <div className="border-t border-amber-500/20 pt-4">
- <h3 className="text-amber-400 font-semibold mb-3">معلومات المركب� </h3>
+ <div className="border-t border-primary/20 pt-4">
+ <h3 className="text-accent font-semibold mb-3">معلومات المركب� </h3>
  <div className="grid grid-cols-2 gap-4">
  <div>
  <Label htmlFor="vehicleType" className="text-gray-300">نوع المركب� *</Label>
  <Select name="vehicleType" required>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-vehicle-type">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-vehicle-type">
  <SelectValue placeholder="ا� تر نوع المركب� " />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <SelectItem value="سيار� ">سيار� </SelectItem>
  <SelectItem value="دراج� ناري� ">دراج� ناري� </SelectItem>
  <SelectItem value="دراج� كهربائي� ">دراج� كهربائي� </SelectItem>
@@ -368,7 +368,7 @@ export default function ManagerDrivers() {
  name="vehicleColor"
  required
  placeholder="مثال: أبيض"
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-vehicle-color"
  />
  </div>
@@ -382,7 +382,7 @@ export default function ManagerDrivers() {
  name="vehiclePlateNumber"
  required
  placeholder="ABC 1234"
- className="bg-[#1a1410] border-amber-500/30 text-white font-mono"
+ className="bg-[#1a1410] border-primary/30 text-white font-mono"
  data-testid="input-plate-number"
  />
  </div>
@@ -391,7 +391,7 @@ export default function ManagerDrivers() {
  <Input
  id="licenseNumber"
  name="licenseNumber"
- className="bg-[#1a1410] border-amber-500/30 text-white font-mono"
+ className="bg-[#1a1410] border-primary/30 text-white font-mono"
  data-testid="input-license-number"
  />
  </div>
@@ -423,9 +423,9 @@ export default function ManagerDrivers() {
 
  {/* Edit Driver Dialog */}
  <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+ <DialogContent className="bg-[#2d1f1a] border-primary/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
  <DialogHeader>
- <DialogTitle className="text-amber-500">تعديل معلومات السائق</DialogTitle>
+ <DialogTitle className="text-accent">تعديل معلومات السائق</DialogTitle>
  </DialogHeader>
  {editingDriver && (
  <form onSubmit={handleSubmitEditDriver} className="space-y-4">
@@ -437,7 +437,7 @@ export default function ManagerDrivers() {
  name="fullName"
  defaultValue={editingDriver.fullName}
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-fullname"
  />
  </div>
@@ -449,22 +449,22 @@ export default function ManagerDrivers() {
  type="tel"
  defaultValue={editingDriver.phone}
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-phone"
  />
  </div>
  </div>
 
- <div className="border-t border-amber-500/20 pt-4">
- <h3 className="text-amber-400 font-semibold mb-3">معلومات المركب� </h3>
+ <div className="border-t border-primary/20 pt-4">
+ <h3 className="text-accent font-semibold mb-3">معلومات المركب� </h3>
  <div className="grid grid-cols-2 gap-4">
  <div>
  <Label htmlFor="edit-vehicleType" className="text-gray-300">نوع المركب� *</Label>
  <Select name="vehicleType" defaultValue={editingDriver.vehicleType} required>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-edit-vehicle-type">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-edit-vehicle-type">
  <SelectValue />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <SelectItem value="سيار� ">سيار� </SelectItem>
  <SelectItem value="دراج� ناري� ">دراج� ناري� </SelectItem>
  <SelectItem value="دراج� كهربائي� ">دراج� كهربائي� </SelectItem>
@@ -478,7 +478,7 @@ export default function ManagerDrivers() {
  name="vehicleColor"
  defaultValue={editingDriver.vehicleColor}
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-vehicle-color"
  />
  </div>
@@ -492,7 +492,7 @@ export default function ManagerDrivers() {
  name="vehiclePlateNumber"
  defaultValue={editingDriver.vehiclePlateNumber}
  required
- className="bg-[#1a1410] border-amber-500/30 text-white font-mono"
+ className="bg-[#1a1410] border-primary/30 text-white font-mono"
  data-testid="input-edit-plate-number"
  />
  </div>
@@ -502,7 +502,7 @@ export default function ManagerDrivers() {
  id="edit-licenseNumber"
  name="licenseNumber"
  defaultValue={editingDriver.licenseNumber}
- className="bg-[#1a1410] border-amber-500/30 text-white font-mono"
+ className="bg-[#1a1410] border-primary/30 text-white font-mono"
  data-testid="input-edit-license-number"
  />
  </div>

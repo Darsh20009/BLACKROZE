@@ -250,7 +250,7 @@ export default function ManagerAttendance() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4" dir="rtl">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -258,14 +258,14 @@ export default function ManagerAttendance() {
               <Coffee className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-amber-500">سجل الحضور</h1>
+              <h1 className="text-xl font-bold text-accent">سجل الحضور</h1>
               <p className="text-gray-400 text-xs">إدارة حضور جميع الموظفين والمديرين</p>
             </div>
           </div>
           <Button
             variant="outline"
             onClick={() => setLocation("/manager/dashboard")}
-            className="border-amber-500/50 text-amber-500"
+            className="border-primary/50 text-accent"
             data-testid="button-back"
           >
             <ArrowRight className="w-4 h-4 ml-2" />
@@ -298,12 +298,12 @@ export default function ManagerAttendance() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 border-orange-500/20">
+          <Card className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 border-accent/20">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-orange-400" />
+                <AlertTriangle className="w-5 h-5 text-accent" />
                 <div>
-                  <p className="text-orange-400 text-2xl font-bold">{stats.late}</p>
+                  <p className="text-accent text-2xl font-bold">{stats.late}</p>
                   <p className="text-gray-400 text-xs">متأخرون</p>
                 </div>
               </div>
@@ -335,7 +335,7 @@ export default function ManagerAttendance() {
           </Card>
         </div>
 
-        <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-6">
+        <Card className="bg-gradient-to-br from-background to-background border-primary/20 mb-6">
           <CardContent className="p-4">
             <div className="space-y-3">
               <div className="flex flex-wrap gap-3 items-center">
@@ -346,19 +346,19 @@ export default function ManagerAttendance() {
                       placeholder="بحث بالاسم أو الهاتف..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pr-10 bg-[#1a1410] border-amber-500/20 text-white"
+                      className="pr-10 bg-[#1a1410] border-primary/20 text-white"
                       data-testid="input-search"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-amber-500" />
+                  <Calendar className="w-4 h-4 text-accent" />
                   <Input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="bg-[#1a1410] border-amber-500/20 text-white w-40"
+                    className="bg-[#1a1410] border-primary/20 text-white w-40"
                     data-testid="input-date"
                   />
                 </div>
@@ -367,7 +367,7 @@ export default function ManagerAttendance() {
               <div className="flex flex-wrap gap-3">
                 {(employee.role === 'admin' || employee.role === 'owner') && (
                   <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                    <SelectTrigger className="w-40 bg-[#1a1410] border-amber-500/20 text-white" data-testid="select-branch">
+                    <SelectTrigger className="w-40 bg-[#1a1410] border-primary/20 text-white" data-testid="select-branch">
                       <Filter className="w-4 h-4 ml-2" />
                       <SelectValue placeholder="جميع الفروع" />
                     </SelectTrigger>
@@ -383,7 +383,7 @@ export default function ManagerAttendance() {
                 )}
 
                 <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger className="w-40 bg-[#1a1410] border-amber-500/20 text-white" data-testid="select-role">
+                  <SelectTrigger className="w-40 bg-[#1a1410] border-primary/20 text-white" data-testid="select-role">
                     <Filter className="w-4 h-4 ml-2" />
                     <SelectValue placeholder="جميع الأدوار" />
                   </SelectTrigger>
@@ -396,7 +396,7 @@ export default function ManagerAttendance() {
                 </Select>
 
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-40 bg-[#1a1410] border-amber-500/20 text-white" data-testid="select-status">
+                  <SelectTrigger className="w-40 bg-[#1a1410] border-primary/20 text-white" data-testid="select-status">
                     <Filter className="w-4 h-4 ml-2" />
                     <SelectValue placeholder="جميع الحالات" />
                   </SelectTrigger>
@@ -411,7 +411,7 @@ export default function ManagerAttendance() {
 
                 <Button
                   onClick={downloadReport}
-                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                  className="bg-background0 hover:bg-primary text-white"
                   data-testid="button-download-report"
                 >
                   <Download className="w-4 h-4 ml-2" />
@@ -423,9 +423,9 @@ export default function ManagerAttendance() {
         </Card>
 
         {leaveRequests.length > 0 && (
-          <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-6">
+          <Card className="bg-gradient-to-br from-background to-background border-primary/20 mb-6">
             <CardHeader>
-              <CardTitle className="text-amber-500 flex items-center gap-2">
+              <CardTitle className="text-accent flex items-center gap-2">
                 <FileText className="w-5 h-5" />
                 طلبات الجازات المعلقة
               </CardTitle>
@@ -435,7 +435,7 @@ export default function ManagerAttendance() {
                 {leaveRequests.map((request) => (
                   <div
                     key={request._id}
-                    className="bg-[#1a1410] rounded-lg p-4 border border-amber-500/10"
+                    className="bg-[#1a1410] rounded-lg p-4 border border-primary/10"
                     data-testid={`leave-request-card-${request._id}`}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -453,14 +453,14 @@ export default function ManagerAttendance() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 text-sm">
                       <div>
                         <p className="text-gray-500">تاريخ البداية</p>
-                        <p className="text-amber-400 font-medium flex items-center gap-1">
+                        <p className="text-accent font-medium flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {new Date(request.startDate).toLocaleDateString('ar-SA')}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-500">تاريخ النهاية</p>
-                        <p className="text-amber-400 font-medium flex items-center gap-1">
+                        <p className="text-accent font-medium flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {new Date(request.endDate).toLocaleDateString('ar-SA')}
                         </p>
@@ -500,10 +500,10 @@ export default function ManagerAttendance() {
           </Card>
         )}
 
-        <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20">
+        <Card className="bg-gradient-to-br from-background to-background border-primary/20">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-amber-500 flex items-center gap-2">
+              <CardTitle className="text-accent flex items-center gap-2">
                 <Clock className="w-5 h-5" />
                 سجلات الحضور
               </CardTitle>
@@ -518,7 +518,7 @@ export default function ManagerAttendance() {
           <CardContent>
             {isLoading ? (
               <div className="text-center py-8">
-                <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full mx-auto"></div>
+                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
                 <p className="text-gray-400 mt-2">جاري التحميل...</p>
               </div>
             ) : filteredRecords.length === 0 ? (
@@ -530,20 +530,20 @@ export default function ManagerAttendance() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-amber-500/20">
-                      <th className="text-right py-3 px-4 text-amber-500">الاسم</th>
-                      <th className="text-right py-3 px-4 text-amber-500">الدور</th>
-                      <th className="text-right py-3 px-4 text-amber-500">الفرع</th>
-                      <th className="text-right py-3 px-4 text-amber-500">وقت الحضور</th>
-                      <th className="text-right py-3 px-4 text-amber-500">وقت الانصراف</th>
-                      <th className="text-right py-3 px-4 text-amber-500">الحالة</th>
-                      <th className="text-right py-3 px-4 text-amber-500">الموقع/المسافة</th>
-                      <th className="text-right py-3 px-4 text-amber-500">الصور</th>
+                    <tr className="border-b border-primary/20">
+                      <th className="text-right py-3 px-4 text-accent">الاسم</th>
+                      <th className="text-right py-3 px-4 text-accent">الدور</th>
+                      <th className="text-right py-3 px-4 text-accent">الفرع</th>
+                      <th className="text-right py-3 px-4 text-accent">وقت الحضور</th>
+                      <th className="text-right py-3 px-4 text-accent">وقت الانصراف</th>
+                      <th className="text-right py-3 px-4 text-accent">الحالة</th>
+                      <th className="text-right py-3 px-4 text-accent">الموقع/المسافة</th>
+                      <th className="text-right py-3 px-4 text-accent">الصور</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredRecords.map((record) => (
-                      <tr key={record.id} className="border-b border-amber-500/10 hover:bg-[#2d1f1a]/50">
+                      <tr key={record.id} className="border-b border-primary/10 hover:bg-[#2d1f1a]/50">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             {record.employee?.imageUrl ? (
@@ -553,7 +553,7 @@ export default function ManagerAttendance() {
                                 className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
-                              <div className="w-8 h-8 bg-amber-500/30 rounded-full flex items-center justify-center text-xs">
+                              <div className="w-8 h-8 bg-background0/30 rounded-full flex items-center justify-center text-xs">
                                 {record.employee?.fullName?.charAt(0) || '?'}
                               </div>
                             )}
@@ -563,7 +563,7 @@ export default function ManagerAttendance() {
                         <td className="py-3 px-4 text-gray-400">{record.employee?.jobTitle || 'موظف'}</td>
                         <td className="py-3 px-4 text-gray-400 text-xs">{record.branch?.nameAr || record.branch?.name || '-'}</td>
                         <td className="py-3 px-4 text-green-400">{formatTime(record.checkInTime)}</td>
-                        <td className="py-3 px-4 text-orange-400">{formatTime(record.checkOutTime)}</td>
+                        <td className="py-3 px-4 text-accent">{formatTime(record.checkOutTime)}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1">
                             {record.isLate === 1 && (
@@ -602,7 +602,7 @@ export default function ManagerAttendance() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setSelectedPhoto(record.checkInPhoto)}
-                                className="text-amber-500 p-0 h-auto text-xs"
+                                className="text-accent p-0 h-auto text-xs"
                                 data-testid={`button-view-checkin-photo-${record.id}`}
                               >
                                 <Camera className="w-3 h-3" />
@@ -613,7 +613,7 @@ export default function ManagerAttendance() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setSelectedPhoto(record.checkOutPhoto!)}
-                                className="text-amber-500 p-0 h-auto text-xs"
+                                className="text-accent p-0 h-auto text-xs"
                                 data-testid={`button-view-checkout-photo-${record.id}`}
                               >
                                 <Camera className="w-3 h-3" />
@@ -631,7 +631,7 @@ export default function ManagerAttendance() {
                 {filteredRecords.map((record) => (
                   <div
                     key={record.id}
-                    className="bg-[#1a1410] rounded-lg p-4 border border-amber-500/10"
+                    className="bg-[#1a1410] rounded-lg p-4 border border-primary/10"
                     data-testid={`attendance-record-${record.id}`}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -640,7 +640,7 @@ export default function ManagerAttendance() {
                           <img 
                             src={record.employee.imageUrl} 
                             alt={record.employee.fullName}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/50"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-primary/50"
                           />
                         ) : (
                           <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
@@ -657,7 +657,7 @@ export default function ManagerAttendance() {
                             {record.employee?.jobTitle || 'موظف'}
                           </p>
                           {(record.branch?.nameAr || record.branch?.name) && (
-                            <p className="text-amber-500/70 text-xs flex items-center gap-1">
+                            <p className="text-accent/70 text-xs flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
                               {record.branch.nameAr || record.branch.name}
                             </p>
@@ -733,7 +733,7 @@ export default function ManagerAttendance() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setSelectedPhoto(record.checkInPhoto)}
-                            className="text-amber-500 p-0 h-auto"
+                            className="text-accent p-0 h-auto"
                             data-testid={`button-view-checkin-photo-${record.id}`}
                           >
                             <Camera className="w-3 h-3 ml-1" />
@@ -745,7 +745,7 @@ export default function ManagerAttendance() {
                       </div>
                       <div>
                         <p className="text-gray-500">وقت الانصراف</p>
-                        <p className="text-orange-400 font-medium flex items-center gap-1">
+                        <p className="text-accent font-medium flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatTime(record.checkOutTime)}
                         </p>
@@ -777,7 +777,7 @@ export default function ManagerAttendance() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setSelectedPhoto(record.checkOutPhoto!)}
-                            className="text-amber-500 p-0 h-auto"
+                            className="text-accent p-0 h-auto"
                             data-testid={`button-view-checkout-photo-${record.id}`}
                           >
                             <Camera className="w-3 h-3 ml-1" />
@@ -809,7 +809,7 @@ export default function ManagerAttendance() {
               <Button
                 variant="outline"
                 onClick={() => setSelectedPhoto(null)}
-                className="w-full mt-4 border-amber-500/50 text-amber-500"
+                className="w-full mt-4 border-primary/50 text-accent"
                 data-testid="button-close-photo"
               >
                 إغلاق

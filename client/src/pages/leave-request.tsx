@@ -149,7 +149,7 @@ export default function LeaveRequestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4" dir="rtl">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -157,21 +157,21 @@ export default function LeaveRequestPage() {
             variant="ghost"
             size="icon"
             onClick={() => setLocation("/employee/attendance")}
-            className="text-gray-400 hover:text-amber-500"
+            className="text-gray-400 hover:text-accent"
             data-testid="button-back-attendance"
           >
             <ArrowRight className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-amber-500">التقديم على اجازة</h1>
+            <h1 className="text-2xl font-bold text-accent">التقديم على اجازة</h1>
             <p className="text-gray-400 text-sm">إدارة طلبات الاجازات</p>
           </div>
         </div>
 
         {/* Leave Request Form */}
-        <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-6">
+        <Card className="bg-gradient-to-br from-background to-background border-primary/20 mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-amber-500 flex items-center gap-2">
+            <CardTitle className="text-accent flex items-center gap-2">
               <FileText className="w-5 h-5" />
               نموذج تقديم اجازة
             </CardTitle>
@@ -186,7 +186,7 @@ export default function LeaveRequestPage() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-amber-950/30 border-amber-500/30 text-white"
+                  className="bg-primary/30 border-primary/30 text-white"
                   data-testid="input-start-date"
                 />
               </div>
@@ -199,17 +199,17 @@ export default function LeaveRequestPage() {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-amber-950/30 border-amber-500/30 text-white"
+                  className="bg-primary/30 border-primary/30 text-white"
                   data-testid="input-end-date"
                 />
               </div>
 
               {/* Number of Days */}
               {startDate && endDate && (
-                <div className="bg-amber-950/30 rounded-lg p-3 border border-amber-500/20">
+                <div className="bg-primary/30 rounded-lg p-3 border border-primary/20">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-300 text-sm">عدد الأيام</span>
-                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                    <Badge className="bg-background0/20 text-accent border-primary/30">
                       {calculateDays()} أيام
                     </Badge>
                   </div>
@@ -224,7 +224,7 @@ export default function LeaveRequestPage() {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="اذكر سبب الاجازة..."
-                  className="bg-amber-950/30 border-amber-500/30 text-white resize-none h-24"
+                  className="bg-primary/30 border-primary/30 text-white resize-none h-24"
                   data-testid="textarea-reason"
                 />
               </div>
@@ -243,9 +243,9 @@ export default function LeaveRequestPage() {
         </Card>
 
         {/* Leave Requests History */}
-        <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20">
+        <Card className="bg-gradient-to-br from-background to-background border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-amber-500 flex items-center gap-2">
+            <CardTitle className="text-accent flex items-center gap-2">
               <Calendar className="w-5 h-5" />
               سجل الطلبات
             </CardTitle>
@@ -265,7 +265,7 @@ export default function LeaveRequestPage() {
                 {requests.map((request) => (
                   <div
                     key={request._id}
-                    className="bg-amber-950/20 border border-amber-500/20 rounded-lg p-4"
+                    className="bg-primary/20 border border-primary/20 rounded-lg p-4"
                     data-testid={`card-leave-request-${request._id}`}
                   >
                     {/* Status Badge */}
@@ -300,7 +300,7 @@ export default function LeaveRequestPage() {
                     </div>
 
                     {/* Number of Days */}
-                    <div className="text-xs text-amber-400 mb-2">
+                    <div className="text-xs text-accent mb-2">
                       عدد الأيام: {request.numberOfDays} أيام
                     </div>
 

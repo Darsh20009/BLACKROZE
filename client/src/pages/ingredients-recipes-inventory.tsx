@@ -411,7 +411,7 @@ export default function IngredientsRecipesInventoryPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "critical": return "bg-red-500";
-      case "low": return "bg-amber-500";
+      case "low": return "bg-background0";
       default: return "bg-green-500";
     }
   };
@@ -419,7 +419,7 @@ export default function IngredientsRecipesInventoryPage() {
   const getStatusBg = (status: string) => {
     switch (status) {
       case "critical": return "bg-red-500/10 border-red-500/30";
-      case "low": return "bg-amber-500/10 border-amber-500/30";
+      case "low": return "bg-background0/10 border-amber-500/30";
       default: return "bg-green-500/10 border-green-500/30";
     }
   };
@@ -480,12 +480,12 @@ export default function IngredientsRecipesInventoryPage() {
 
           <Card className="border-2">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <div className="p-2 rounded-lg bg-background0/10">
+                <AlertTriangle className="h-5 w-5 text-accent" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">مخزون منخفض</p>
-                <p className="text-xl font-bold text-amber-600">{lowStockCount}</p>
+                <p className="text-xl font-bold text-accent">{lowStockCount}</p>
               </div>
             </CardContent>
           </Card>
@@ -533,7 +533,7 @@ export default function IngredientsRecipesInventoryPage() {
                     <span><strong>الأخضر:</strong> المخزون كافي - لا يحتاج إضافة</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-background0" />
                     <span><strong>البرتقالي:</strong> مخزون منخفض - يفضل الطلب قريباً</span>
                   </li>
                   <li className="flex items-center gap-2">
@@ -575,8 +575,8 @@ export default function IngredientsRecipesInventoryPage() {
 
           <TabsContent value="stock" className="mt-4">
             {selectedBranch === "all" && (
-              <div className="mb-4 p-4 bg-amber-500/10 rounded-lg border border-amber-500/30 flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+              <div className="mb-4 p-4 bg-background0/10 rounded-lg border border-amber-500/30 flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-accent shrink-0" />
                 <p className="text-sm">اختر فرع محدد لإضافة أو تعديل المخزون</p>
               </div>
             )}
@@ -676,7 +676,7 @@ export default function IngredientsRecipesInventoryPage() {
               {drinksWithRecipes.map(drink => (
                 <Card 
                   key={drink.id} 
-                  className={`border-2 transition-all ${drink.hasRecipe ? "border-green-500/30 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}`}
+                  className={`border-2 transition-all ${drink.hasRecipe ? "border-green-500/30 bg-green-500/5" : "border-amber-500/30 bg-background0/5"}`}
                   data-testid={`card-recipe-${drink.id}`}
                 >
                   <CardContent className="p-4 space-y-3">
@@ -717,7 +717,7 @@ export default function IngredientsRecipesInventoryPage() {
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-muted-foreground">النسبة</p>
-                          <p className={`font-bold ${drink.profitMargin >= 50 ? "text-green-600" : drink.profitMargin >= 30 ? "text-amber-600" : "text-red-600"}`}>
+                          <p className={`font-bold ${drink.profitMargin >= 50 ? "text-green-600" : drink.profitMargin >= 30 ? "text-accent" : "text-red-600"}`}>
                             {drink.profitMargin.toFixed(0)}%
                           </p>
                         </div>

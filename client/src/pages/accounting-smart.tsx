@@ -212,8 +212,8 @@ export default function AccountingSmartPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="relative">
-            <BarChart3 className="h-16 w-16 text-amber-600 animate-pulse mx-auto" />
-            <Loader2 className="h-8 w-8 animate-spin text-amber-500 absolute -bottom-2 -right-2" />
+            <BarChart3 className="h-16 w-16 text-accent animate-pulse mx-auto" />
+            <Loader2 className="h-8 w-8 animate-spin text-accent absolute -bottom-2 -right-2" />
           </div>
           <p className="text-muted-foreground mt-4 text-lg">جاري تحميل البيانات المالية...</p>
         </div>
@@ -329,17 +329,17 @@ export default function AccountingSmartPage() {
                   تكلفة المكونات (COGS)
                   <Eye className="h-3 w-3 opacity-50" />
                 </p>
-                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300" data-testid="text-cogs">
+                <p className="text-3xl font-bold text-accent dark:text-accent" data-testid="text-cogs">
                   {data.totalCogs.toFixed(0)}
                   <span className="text-lg mr-1">ر.س</span>
                 </p>
-                <div className="flex items-center gap-1 mt-2 text-sm text-amber-600">
+                <div className="flex items-center gap-1 mt-2 text-sm text-accent">
                   <Package className="h-4 w-4" />
                   <span>خصم تلقائي من المخزون</span>
                 </div>
               </div>
-              <div className="p-3 rounded-full bg-amber-200/50 dark:bg-amber-700/30">
-                <Layers className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+              <div className="p-3 rounded-full bg-primary/50 dark:bg-primary/30">
+                <Layers className="h-8 w-8 text-accent dark:text-accent" />
               </div>
             </div>
           </CardContent>
@@ -457,7 +457,7 @@ export default function AccountingSmartPage() {
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-amber-600" />
+                <BarChart3 className="w-5 h-5 text-accent" />
                 صافي الربح اليومي (آخر 7 أيام)
               </CardTitle>
             </CardHeader>
@@ -760,7 +760,7 @@ export default function AccountingSmartPage() {
               )}
               {drilldownType === "orders" && (
                 <>
-                  <Coffee className="h-5 w-5 text-amber-600" />
+                  <Coffee className="h-5 w-5 text-accent" />
                   تفاصيل الطلبات (COGS)
                 </>
               )}
@@ -811,7 +811,7 @@ export default function AccountingSmartPage() {
                           <div className="text-left">
                             <p className="font-bold text-emerald-600">{(order.totalAmount || 0).toFixed(2)} ر.س</p>
                             {drilldownType === "orders" && order.totalCost !== undefined && (
-                              <p className="text-xs text-amber-600">COGS: {(order.totalCost || 0).toFixed(2)} ر.س</p>
+                              <p className="text-xs text-accent">COGS: {(order.totalCost || 0).toFixed(2)} ر.س</p>
                             )}
                           </div>
                         </div>

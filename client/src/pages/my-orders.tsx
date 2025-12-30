@@ -26,11 +26,11 @@ export default function MyOrders() {
  });
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 overflow-hidden relative" data-testid="page-my-orders">
+ <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100 overflow-hidden relative" data-testid="page-my-orders">
  <div className="absolute inset-0 pointer-events-none">
- <div className="absolute top-20 left-20 w-40 h-40 bg-amber-300/20 rounded-full blur-3xl animate-pulse"></div>
- <div className="absolute bottom-32 right-16 w-32 h-32 bg-orange-300/15 rounded-full blur-2xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
- <div className="absolute top-1/2 left-10 w-28 h-28 bg-amber-400/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '3s'}}></div>
+ <div className="absolute top-20 left-20 w-40 h-40 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+ <div className="absolute bottom-32 right-16 w-32 h-32 bg-accent/15 rounded-full blur-2xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
+ <div className="absolute top-1/2 left-10 w-28 h-28 bg-primary/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '3s'}}></div>
  </div>
 
  <div className="max-w-4xl mx-auto p-4 relative z-10">
@@ -42,7 +42,7 @@ export default function MyOrders() {
  <Button
  variant="ghost"
  onClick={() => setLocation("/menu")}
- className="text-amber-800 hover:text-amber-900 hover:bg-amber-100/50 backdrop-blur-sm"
+ className="text-accent hover:text-accent hover:bg-primary/50 backdrop-blur-sm"
  data-testid="button-back"
  >
  <ArrowRight className="ml-2 h-5 w-5" />
@@ -59,18 +59,18 @@ export default function MyOrders() {
  <h1 className="text-4xl font-amiri font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent mb-2">
  طلباتي
  </h1>
- <p className="text-amber-700 font-cairo">
+ <p className="text-accent font-cairo">
  تتبع طلباتك السابقةوالحالية 
  </p>
  </motion.div>
 
  {!customerId ? (
- <Card className="p-8 bg-white/90 backdrop-blur-lg shadow-2xl border-2 border-amber-200/50 text-center">
- <Coffee className="h-16 w-16 text-amber-600 mx-auto mb-4" />
- <h2 className="text-2xl font-amiri font-bold text-amber-900 mb-3">
+ <Card className="p-8 bg-white/90 backdrop-blur-lg shadow-2xl border-2 border-primary/50 text-center">
+ <Coffee className="h-16 w-16 text-accent mx-auto mb-4" />
+ <h2 className="text-2xl font-amiri font-bold text-accent mb-3">
  لا توجد طلبات بعد
  </h2>
- <p className="text-amber-700 font-cairo mb-6">
+ <p className="text-accent font-cairo mb-6">
  قم بتسجيل الدخول أو إنشاء طلب جديد لعرض طلباتك
  </p>
  <Button
@@ -83,18 +83,18 @@ export default function MyOrders() {
  ) : isLoading ? (
  <div className="flex items-center justify-center py-20">
  <div className="flex space-x-2 space-x-reverse">
- <div className="w-3 h-3 bg-amber-600 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
- <div className="w-3 h-3 bg-amber-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
- <div className="w-3 h-3 bg-amber-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+ <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+ <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+ <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
  </div>
  </div>
  ) : orders.length === 0 ? (
- <Card className="p-8 bg-white/90 backdrop-blur-lg shadow-2xl border-2 border-amber-200/50 text-center">
- <Coffee className="h-16 w-16 text-amber-600 mx-auto mb-4" />
- <h2 className="text-2xl font-amiri font-bold text-amber-900 mb-3">
+ <Card className="p-8 bg-white/90 backdrop-blur-lg shadow-2xl border-2 border-primary/50 text-center">
+ <Coffee className="h-16 w-16 text-accent mx-auto mb-4" />
+ <h2 className="text-2xl font-amiri font-bold text-accent mb-3">
  لا توجد طلبات بعد
  </h2>
- <p className="text-amber-700 font-cairo mb-6">
+ <p className="text-accent font-cairo mb-6">
  ابدأ طلبك الأول واستمتع بأفضل القهوة !
  </p>
  <Button
@@ -115,16 +115,16 @@ export default function MyOrders() {
  >
  <div className="space-y-4">
  {/* Order Details Card */}
- <Card className="p-6 bg-white/90 backdrop-blur-lg shadow-lg border-2 border-amber-200/50">
+ <Card className="p-6 bg-white/90 backdrop-blur-lg shadow-lg border-2 border-primary/50">
  <div className="flex items-start justify-between mb-4">
  <div className="flex-1">
  <div className="flex items-center gap-2 mb-2">
- <Coffee className="h-5 w-5 text-amber-600" />
- <h3 className="text-lg font-cairo font-bold text-amber-900">
+ <Coffee className="h-5 w-5 text-accent" />
+ <h3 className="text-lg font-cairo font-bold text-accent">
  طلب #{order.orderNumber}
  </h3>
  </div>
- <p className="text-sm text-amber-700 font-cairo">
+ <p className="text-sm text-accent font-cairo">
  {new Date(order.createdAt).toLocaleDateString('ar-SA', {
  year: 'numeric',
  month: 'long',
@@ -135,7 +135,7 @@ export default function MyOrders() {
  </p>
  </div>
  <div className="text-left">
- <span className="text-2xl font-bold text-amber-900 font-cairo">
+ <span className="text-2xl font-bold text-accent font-cairo">
  {Number(order.totalAmount).toFixed(2)} ريال
  </span>
  </div>
@@ -143,11 +143,11 @@ export default function MyOrders() {
 
  <div className="space-y-2">
  {(order.items || []).map((item: any, i: number) => (
- <div key={i} className="flex justify-between text-sm bg-amber-50 p-2 rounded-lg">
- <span className="text-amber-800 font-cairo">
+ <div key={i} className="flex justify-between text-sm bg-background p-2 rounded-lg">
+ <span className="text-accent font-cairo">
  {item.nameAr || item.name} × {item.quantity}
  </span>
- <span className="text-amber-900 font-bold">
+ <span className="text-accent font-bold">
  {(parseFloat(item.price) * item.quantity).toFixed(2)} ريال
  </span>
  </div>
@@ -169,8 +169,8 @@ export default function MyOrders() {
  )}
 
  {order.customerNotes && (
- <div className="bg-amber-900/20 rounded-lg p-3 mb-4 border border-amber-500/20">
- <p className="text-amber-400 text-sm font-semibold mb-1">ملاحظات العميل:</p>
+ <div className="bg-primary/20 rounded-lg p-3 mb-4 border border-primary/20">
+ <p className="text-accent text-sm font-semibold mb-1">ملاحظات العميل:</p>
  <p className="text-white text-sm" data-testid={`text-customer-notes-${order.id}`}>
  {order.customerNotes}
  </p>

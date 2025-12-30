@@ -121,7 +121,7 @@ interface PointsTransaction {
 const loyaltyTiers: LoyaltyTier[] = [
   { id: "bronze", name: "برونزي", nameEn: "Bronze", minPoints: 0, maxPoints: 499, color: "from-amber-700 to-amber-800", icon: "☕", benefits: ["1 نقطة لكل ريال", "عروض حصرية"], multiplier: 1 },
   { id: "silver", name: "فضي", nameEn: "Silver", minPoints: 500, maxPoints: 1499, color: "from-slate-400 to-slate-500", icon: "⭐", benefits: ["1.25 نقطة لكل ريال", "مشروب مجاني شهرياً", "أولوية الطلب"], multiplier: 1.25 },
-  { id: "gold", name: "ذهبي", nameEn: "Gold", minPoints: 1500, maxPoints: 4999, color: "from-amber-400 to-amber-500", icon: "👑", benefits: ["1.5 نقطة لكل ريال", "مشروبين مجانيين شهرياً", "ترقية مجانية للحجم", "دعوات VIP"], multiplier: 1.5 },
+  { id: "gold", name: "ذهبي", nameEn: "Gold", minPoints: 1500, maxPoints: 4999, color: "from-amber-400 to-background0", icon: "👑", benefits: ["1.5 نقطة لكل ريال", "مشروبين مجانيين شهرياً", "ترقية مجانية للحجم", "دعوات VIP"], multiplier: 1.5 },
   { id: "platinum", name: "بلاتيني", nameEn: "Platinum", minPoints: 5000, color: "from-slate-700 to-slate-900", icon: "💎", benefits: ["2 نقطة لكل ريال", "مشروبات غير محدودة", "وصول مبكر للمنتجات الجديدة", "هدايا حصرية", "خط ساخن للدعم"], multiplier: 2 },
 ];
 
@@ -152,7 +152,7 @@ const typeConfig: Record<string, { label: string; color: string; icon: any }> = 
   redeem: { label: "استبدال", color: "bg-blue-500", icon: Gift },
   bonus: { label: "مكافأة", color: "bg-purple-500", icon: Sparkles },
   expire: { label: "انتهاء", color: "bg-red-500", icon: Clock },
-  adjust: { label: "تعديل", color: "bg-amber-500", icon: Edit },
+  adjust: { label: "تعديل", color: "bg-background0", icon: Edit },
 };
 
 export default function LoyaltyProgramPage() {
@@ -192,7 +192,7 @@ export default function LoyaltyProgramPage() {
             العودة
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
-            <Crown className="w-8 h-8 text-amber-400" />
+            <Crown className="w-8 h-8 text-accent" />
             برنامج الولاء
           </h1>
           <Button onClick={() => setIsSettingsOpen(true)} variant="outline" className="border-purple-400 text-purple-200">
@@ -218,11 +218,11 @@ export default function LoyaltyProgramPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-amber-100 text-sm">النقاط المتاحة</p>
+                  <p className="text-accent text-sm">النقاط المتاحة</p>
                   <p className="text-3xl font-bold mt-1">{totalPoints.toLocaleString()}</p>
-                  <p className="text-amber-200 text-xs mt-1">نقطة</p>
+                  <p className="text-accent text-xs mt-1">نقطة</p>
                 </div>
-                <Coins className="w-12 h-12 text-amber-200" />
+                <Coins className="w-12 h-12 text-accent" />
               </div>
             </CardContent>
           </Card>
@@ -268,7 +268,7 @@ export default function LoyaltyProgramPage() {
               <Card className="bg-purple-800/30 border-purple-700">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-amber-400" />
+                    <Trophy className="w-5 h-5 text-accent" />
                     توزيع المستويات
                   </CardTitle>
                 </CardHeader>
@@ -302,7 +302,7 @@ export default function LoyaltyProgramPage() {
               <Card className="bg-purple-800/30 border-purple-700">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Star className="w-5 h-5 text-amber-400" />
+                    <Star className="w-5 h-5 text-accent" />
                     أفضل الأعضاء
                   </CardTitle>
                 </CardHeader>
@@ -313,9 +313,9 @@ export default function LoyaltyProgramPage() {
                       return (
                         <div key={member.id} className="flex items-center gap-3 p-3 bg-purple-900/30 rounded-lg">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                            idx === 0 ? 'bg-amber-500 text-white' :
+                            idx === 0 ? 'bg-background0 text-white' :
                             idx === 1 ? 'bg-slate-400 text-white' :
-                            idx === 2 ? 'bg-amber-700 text-white' :
+                            idx === 2 ? 'bg-primary text-white' :
                             'bg-purple-700 text-purple-300'
                           }`}>
                             {idx + 1}
@@ -328,7 +328,7 @@ export default function LoyaltyProgramPage() {
                             <p className="text-purple-400 text-sm">{member.lifetimePoints.toLocaleString()} نقطة إجمالية</p>
                           </div>
                           <div className="text-left">
-                            <p className="text-amber-400 font-bold">{member.points.toLocaleString()}</p>
+                            <p className="text-accent font-bold">{member.points.toLocaleString()}</p>
                             <p className="text-purple-400 text-xs">نقطة متاحة</p>
                           </div>
                         </div>
@@ -350,12 +350,12 @@ export default function LoyaltyProgramPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {rewards.slice(0, 3).sort((a, b) => b.redemptions - a.redemptions).map((reward, idx) => (
                     <div key={reward.id} className={`p-4 rounded-lg border ${
-                      idx === 0 ? 'bg-gradient-to-br from-amber-900/50 to-amber-800/50 border-amber-600' :
-                      idx === 1 ? 'bg-gradient-to-br from-slate-800/50 to-slate-700/50 border-slate-500' :
-                      'bg-gradient-to-br from-amber-800/30 to-amber-700/30 border-amber-700'
+                      idx === 0 ? 'bg-gradient-to-br from-amber-900/50 to-amber-800/50 border-primary' :
+                      idx === 1 ? 'bg-gradient-to-br from-card/50 to-slate-700/50 border-slate-500' :
+                      'bg-gradient-to-br from-amber-800/30 to-amber-700/30 border-primary'
                     }`}>
                       <div className="flex items-center gap-2 mb-2">
-                        <Medal className={`w-5 h-5 ${idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-slate-400' : 'text-amber-600'}`} />
+                        <Medal className={`w-5 h-5 ${idx === 0 ? 'text-accent' : idx === 1 ? 'text-slate-400' : 'text-accent'}`} />
                         <span className="text-white font-medium">{reward.name}</span>
                       </div>
                       <p className="text-purple-300 text-sm mb-2">{reward.description}</p>
@@ -424,7 +424,7 @@ export default function LoyaltyProgramPage() {
                               {tier.icon} {tier.name}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-amber-400 font-bold">{member.points.toLocaleString()}</TableCell>
+                          <TableCell className="text-accent font-bold">{member.points.toLocaleString()}</TableCell>
                           <TableCell className="text-purple-300">{member.lifetimePoints.toLocaleString()}</TableCell>
                           <TableCell className="text-purple-300">{member.totalOrders}</TableCell>
                           <TableCell className="text-purple-400 text-sm">
@@ -468,15 +468,15 @@ export default function LoyaltyProgramPage() {
                         <h3 className="text-white font-bold">{reward.name}</h3>
                         <p className="text-purple-400 text-sm mt-1">{reward.description}</p>
                       </div>
-                      <Badge className={reward.type === 'discount' ? 'bg-blue-600' : reward.type === 'free_item' ? 'bg-green-600' : reward.type === 'upgrade' ? 'bg-amber-600' : 'bg-purple-600'}>
+                      <Badge className={reward.type === 'discount' ? 'bg-blue-600' : reward.type === 'free_item' ? 'bg-green-600' : reward.type === 'upgrade' ? 'bg-primary' : 'bg-purple-600'}>
                         {reward.type === 'discount' ? 'خصم' : reward.type === 'free_item' ? 'مجاني' : reward.type === 'upgrade' ? 'ترقية' : 'حصري'}
                       </Badge>
                     </div>
                     
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-2">
-                        <Coins className="w-5 h-5 text-amber-400" />
-                        <span className="text-xl font-bold text-amber-400">{reward.pointsCost}</span>
+                        <Coins className="w-5 h-5 text-accent" />
+                        <span className="text-xl font-bold text-accent">{reward.pointsCost}</span>
                         <span className="text-purple-400 text-sm">نقطة</span>
                       </div>
                       <div className="text-purple-400 text-sm">

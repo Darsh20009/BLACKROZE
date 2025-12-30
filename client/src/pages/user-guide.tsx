@@ -325,18 +325,18 @@ export default function UserGuidePage() {
   const currentSection = guideSections.find(s => s.id === activeSection);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-[#1a1410] dark:via-[#1f1815] dark:to-[#231c17]" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-yellow-50 dark:from-background dark:via-primary/5 dark:to-background" dir="rtl">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         <div className="flex items-center justify-between gap-4 mb-6">
           <Button 
             variant="ghost" 
             onClick={() => setLocation("/manager/dashboard")}
-            className="text-amber-700 dark:text-amber-400"
+            className="text-accent dark:text-accent"
           >
             <ArrowLeft className="w-4 h-4 ml-2" />
             العودة
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-accent dark:text-accent flex items-center gap-2">
             <BookOpen className="w-8 h-8" />
             دليل استخدام CLUNY CAFE
           </h1>
@@ -373,7 +373,7 @@ export default function UserGuidePage() {
                           onClick={() => setActiveSection(section.id)}
                           className={`w-full flex items-center gap-2 p-3 rounded-lg text-right transition-colors ${
                             activeSection === section.id
-                              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400'
+                              ? 'bg-primary dark:bg-primary/30 text-accent dark:text-accent'
                               : 'hover:bg-muted'
                           }`}
                         >
@@ -388,7 +388,7 @@ export default function UserGuidePage() {
             </div>
 
             <div className="flex-1 space-y-6">
-              <TabsList className="grid grid-cols-4 lg:hidden bg-amber-100 dark:bg-amber-900/30">
+              <TabsList className="grid grid-cols-4 lg:hidden bg-primary dark:bg-primary/30">
                 <TabsTrigger value="getting-started" className="text-xs">البداية</TabsTrigger>
                 <TabsTrigger value="orders" className="text-xs">الطلبات</TabsTrigger>
                 <TabsTrigger value="inventory" className="text-xs">المخزون</TabsTrigger>
@@ -399,8 +399,8 @@ export default function UserGuidePage() {
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl">
-                        <currentSection.icon className="w-8 h-8 text-amber-600" />
+                      <div className="p-3 bg-primary dark:bg-primary/30 rounded-xl">
+                        <currentSection.icon className="w-8 h-8 text-accent" />
                       </div>
                       <div>
                         <CardTitle className="text-xl">{currentSection.title}</CardTitle>
@@ -411,8 +411,8 @@ export default function UserGuidePage() {
                   <CardContent>
                     <div className="space-y-4">
                       {currentSection.steps.map((step, index) => (
-                        <div key={index} className="relative pr-8 pb-6 border-r-2 border-amber-200 dark:border-amber-800 last:border-0 last:pb-0">
-                          <div className="absolute right-0 top-0 -translate-x-1/2 w-8 h-8 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                        <div key={index} className="relative pr-8 pb-6 border-r-2 border-primary dark:border-primary last:border-0 last:pb-0">
+                          <div className="absolute right-0 top-0 -translate-x-1/2 w-8 h-8 bg-background0 text-white rounded-full flex items-center justify-center font-bold text-sm">
                             {index + 1}
                           </div>
                           <div className="mr-6">
@@ -445,7 +445,7 @@ export default function UserGuidePage() {
                       <AccordionItem key={index} value={`faq-${index}`}>
                         <AccordionTrigger className="text-right hover:no-underline">
                           <span className="flex items-center gap-2">
-                            <HelpCircle className="w-4 h-4 text-amber-500" />
+                            <HelpCircle className="w-4 h-4 text-accent" />
                             {faq.question}
                           </span>
                         </AccordionTrigger>
@@ -461,7 +461,7 @@ export default function UserGuidePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-amber-500" />
+                    <Star className="w-5 h-5 text-accent" />
                     نصائح للاستخدام الأمثل
                   </CardTitle>
                 </CardHeader>
@@ -471,8 +471,8 @@ export default function UserGuidePage() {
                       const Icon = tip.icon;
                       return (
                         <div key={index} className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
-                          <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                            <Icon className="w-5 h-5 text-amber-600" />
+                          <div className="p-2 bg-primary dark:bg-primary/30 rounded-lg">
+                            <Icon className="w-5 h-5 text-accent" />
                           </div>
                           <div>
                             <h4 className="font-medium mb-1">{tip.title}</h4>
@@ -485,16 +485,16 @@ export default function UserGuidePage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-l from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 border-amber-300">
+              <Card className="bg-gradient-to-l from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 border-primary">
                 <CardContent className="flex items-center gap-4 p-6">
                   <div className="p-4 bg-white dark:bg-background rounded-xl shadow">
-                    <Coffee className="w-10 h-10 text-amber-600" />
+                    <Coffee className="w-10 h-10 text-accent" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-amber-800 dark:text-amber-400">تحتاج مساعدة إضافية؟</h3>
-                    <p className="text-amber-700 dark:text-amber-500">فريق الدعم الفني متاح على مدار الساعة لمساعدتك</p>
+                    <h3 className="text-lg font-bold text-accent dark:text-accent">تحتاج مساعدة إضافية؟</h3>
+                    <p className="text-accent dark:text-accent">فريق الدعم الفني متاح على مدار الساعة لمساعدتك</p>
                   </div>
-                  <Button className="bg-amber-600 hover:bg-amber-700">
+                  <Button className="bg-primary hover:bg-primary">
                     تواصل معنا
                   </Button>
                 </CardContent>

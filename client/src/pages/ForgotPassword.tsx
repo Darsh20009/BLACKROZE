@@ -170,19 +170,19 @@ export default function ForgotPassword() {
  }}
  dir="rtl"
  >
- <Card className="w-full max-w-md border-amber-900/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
+ <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-900/50">
  <Coffee className="w-10 h-10 text-white" />
  </div>
  </div>
- <CardTitle className="text-3xl font-bold text-amber-100">
+ <CardTitle className="text-3xl font-bold text-accent">
  {step === 'email' && 'نسيت كلمة المرور؟'}
  {step === 'phone' && 'تحقق من رقم الجوال'}
  {step === 'password' && 'كلمة المرور الجديدة '}
  </CardTitle>
- <CardDescription className="text-amber-200/70 text-lg">
+ <CardDescription className="text-accent/70 text-lg">
  {step === 'email' && 'أدخل بريدك الإلكتروني لإعادةتعيين كلمة المرور'}
  {step === 'phone' && 'أدخل رقم الجوال المرتبط بالبريد الإلكتروني'}
  {step === 'password' && 'أدخل كلمة المرور الجديدة وقم بتأكيدها'}
@@ -193,7 +193,7 @@ export default function ForgotPassword() {
  {step === 'email' && (
  <form onSubmit={handleEmailSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="email" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="email" className="text-accent flex items-center gap-2">
  <Mail className="w-4 h-4" />
  البريد الإلكتروني
  </Label>
@@ -203,12 +203,12 @@ export default function ForgotPassword() {
  placeholder="example@email.com"
  value={email}
  onChange={(e) => setEmail(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30"
  dir="ltr"
  data-testid="input-email"
  required
  />
- <p className="text-xs text-amber-200/50 mt-1">
+ <p className="text-xs text-accent/50 mt-1">
  أدخل البريد الإلكتروني الذي استخدمته عند إنشاء الحساب
  </p>
  </div>
@@ -237,7 +237,7 @@ export default function ForgotPassword() {
  {step === 'phone' && (
  <form onSubmit={handlePhoneSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="phone" className="text-amber-100">رقم الجوال</Label>
+ <Label htmlFor="phone" className="text-accent">رقم الجوال</Label>
  <PhoneInput
  id="phone"
  value={phone}
@@ -246,7 +246,7 @@ export default function ForgotPassword() {
  data-testid="input-phone"
  required
  />
- <p className="text-xs text-amber-200/50 mt-1">
+ <p className="text-xs text-accent/50 mt-1">
  أدخل رقم الجوال بدون الصفر (9 أرقام تبدأ بـ 5)
  </p>
  </div>
@@ -275,7 +275,7 @@ export default function ForgotPassword() {
  {step === 'password' && (
  <form onSubmit={handlePasswordSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="newPassword" className="text-amber-100">كلمة المرور الجديدة </Label>
+ <Label htmlFor="newPassword" className="text-accent">كلمة المرور الجديدة </Label>
  <div className="relative">
  <Input
  id="newPassword"
@@ -283,14 +283,14 @@ export default function ForgotPassword() {
  placeholder="أدخل كلمة المرور الجديدة "
  value={newPassword}
  onChange={(e) => setNewPassword(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
  data-testid="input-new-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowNewPassword(!showNewPassword)}
- className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
+ className="absolute left-3 top-2.5 text-accent hover:text-accent"
  data-testid="button-toggle-new-password"
  >
  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -299,7 +299,7 @@ export default function ForgotPassword() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="confirmPassword" className="text-amber-100">تأكيد كلمة المرور</Label>
+ <Label htmlFor="confirmPassword" className="text-accent">تأكيد كلمة المرور</Label>
  <div className="relative">
  <Input
  id="confirmPassword"
@@ -307,20 +307,20 @@ export default function ForgotPassword() {
  placeholder="أدخل كلمة المرور مرة أخرى"
  value={confirmPassword}
  onChange={(e) => setConfirmPassword(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
  data-testid="input-confirm-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
- className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
+ className="absolute left-3 top-2.5 text-accent hover:text-accent"
  data-testid="button-toggle-confirm-password"
  >
  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
  </button>
  </div>
- <p className="text-xs text-amber-200/50 mt-1">
+ <p className="text-xs text-accent/50 mt-1">
  كلمة المرور يجب أن تكون 4 أحرف على الأقل
  </p>
  </div>
@@ -350,7 +350,7 @@ export default function ForgotPassword() {
  <button
  type="button"
  onClick={() => navigate("/auth")}
- className="text-amber-300/70 hover:text-amber-200 transition-colors text-sm underline-offset-4 hover:underline"
+ className="text-accent/70 hover:text-accent transition-colors text-sm underline-offset-4 hover:underline"
  data-testid="link-back"
  >
  العودةلتسجيل الدخول

@@ -136,7 +136,7 @@ export default function ReferralProgram() {
         </div>
       </Card>
 
-      <Card className="p-6 bg-amber-50 dark:bg-amber-900/20">
+      <Card className="p-6 bg-background dark:bg-primary/20">
         <h3 className="font-semibold mb-3">كيفية برنامج الإحالات</h3>
         <ul className="space-y-2 text-sm">
           <li className="flex gap-2">

@@ -567,12 +567,12 @@ export default function InventoryRecipesPage() {
           <p className="text-xs text-muted-foreground mt-1">وصفة مكتملة</p>
         </div>
 
-        <div className="rounded-xl border p-4 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border-amber-200 dark:border-amber-700">
+        <div className="rounded-xl border p-4 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border-primary dark:border-primary">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-sm font-medium text-muted-foreground">تحتاج وصفات</span>
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertTriangle className="h-4 w-4 text-accent dark:text-accent" />
           </div>
-          <div className="text-3xl font-bold text-amber-700 dark:text-amber-300">{stats.withoutRecipes}</div>
+          <div className="text-3xl font-bold text-accent dark:text-accent">{stats.withoutRecipes}</div>
           <p className="text-xs text-muted-foreground mt-1">منتج بدون وصفة</p>
         </div>
 
@@ -679,7 +679,7 @@ export default function InventoryRecipesPage() {
                         </TableCell>
                         <TableCell>
                           {recipeCount > 0 ? (
-                            <span className="font-medium text-amber-600 dark:text-amber-400">
+                            <span className="font-medium text-accent dark:text-accent">
                               {itemCOGS.toFixed(2)} ر.س
                             </span>
                           ) : (
@@ -693,7 +693,7 @@ export default function InventoryRecipesPage() {
                                 marginPercentage >= 50 
                                   ? 'text-emerald-600 dark:text-emerald-400' 
                                   : marginPercentage >= 30 
-                                    ? 'text-amber-600 dark:text-amber-400'
+                                    ? 'text-accent dark:text-accent'
                                     : 'text-red-600 dark:text-red-400'
                               }`}>
                                 {marginPercentage.toFixed(0)}%
@@ -701,7 +701,7 @@ export default function InventoryRecipesPage() {
                               {marginPercentage >= 50 ? (
                                 <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                               ) : marginPercentage >= 30 ? (
-                                <TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                <TrendingUp className="h-4 w-4 text-accent dark:text-accent" />
                               ) : (
                                 <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                               )}
@@ -793,18 +793,18 @@ export default function InventoryRecipesPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-2 border-amber-500/20 dark:border-amber-400/20 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-900/10 dark:to-transparent">
+                <Card className="border-2 border-primary/20 dark:border-primary/20 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-900/10 dark:to-transparent">
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30">
-                        <Beaker className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <div className="p-2 rounded-full bg-primary dark:bg-primary/30">
+                        <Beaker className="h-5 w-5 text-accent dark:text-accent" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">تكلفة الصنف (COGS)</p>
                         {recipeCost === null ? (
                           <p className="text-xl font-bold text-muted-foreground">جاري الحساب...</p>
                         ) : (
-                          <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                          <p className="text-xl font-bold text-accent dark:text-accent">
                             {recipeCost.toFixed(2)} ر.س
                           </p>
                         )}
@@ -817,7 +817,7 @@ export default function InventoryRecipesPage() {
                   profitMargin && profitMargin.percentage >= 50 
                     ? 'border-emerald-500/20 dark:border-emerald-400/20 bg-gradient-to-br from-emerald-50 to-transparent dark:from-emerald-900/10 dark:to-transparent' 
                     : profitMargin && profitMargin.percentage >= 30 
-                      ? 'border-amber-500/20 dark:border-amber-400/20 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-900/10 dark:to-transparent'
+                      ? 'border-primary/20 dark:border-primary/20 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-900/10 dark:to-transparent'
                       : 'border-red-500/20 dark:border-red-400/20 bg-gradient-to-br from-red-50 to-transparent dark:from-red-900/10 dark:to-transparent'
                 }`}>
                   <CardContent className="pt-4">
@@ -826,14 +826,14 @@ export default function InventoryRecipesPage() {
                         profitMargin && profitMargin.percentage >= 50 
                           ? 'bg-emerald-100 dark:bg-emerald-900/30' 
                           : profitMargin && profitMargin.percentage >= 30 
-                            ? 'bg-amber-100 dark:bg-amber-900/30'
+                            ? 'bg-primary dark:bg-primary/30'
                             : 'bg-red-100 dark:bg-red-900/30'
                       }`}>
                         {profitMargin && profitMargin.percentage >= 30 ? (
                           <TrendingUp className={`h-5 w-5 ${
                             profitMargin.percentage >= 50 
                               ? 'text-emerald-600 dark:text-emerald-400' 
-                              : 'text-amber-600 dark:text-amber-400'
+                              : 'text-accent dark:text-accent'
                           }`} />
                         ) : (
                           <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -851,7 +851,7 @@ export default function InventoryRecipesPage() {
                               profitMargin.percentage >= 50 
                                 ? 'text-emerald-600 dark:text-emerald-400' 
                                 : profitMargin.percentage >= 30 
-                                  ? 'text-amber-600 dark:text-amber-400'
+                                  ? 'text-accent dark:text-accent'
                                   : 'text-red-600 dark:text-red-400'
                             }`}>
                               {profitMargin.margin.toFixed(2)} ر.س
@@ -871,7 +871,7 @@ export default function InventoryRecipesPage() {
                             profitMargin.percentage >= 50 
                               ? '[&>div]:bg-emerald-500' 
                               : profitMargin.percentage >= 30 
-                                ? '[&>div]:bg-amber-500'
+                                ? '[&>div]:bg-background0'
                                 : '[&>div]:bg-red-500'
                           }`}
                         />
@@ -993,7 +993,7 @@ export default function InventoryRecipesPage() {
                               <span className="text-muted-foreground">{costPerDisplayUnit.toFixed(4)} ر.س</span>
                             </TableCell>
                             <TableCell>
-                              <span className="font-medium text-amber-600 dark:text-amber-400">{totalCost.toFixed(2)} ر.س</span>
+                              <span className="font-medium text-accent dark:text-accent">{totalCost.toFixed(2)} ر.س</span>
                             </TableCell>
                             <TableCell>
                               <Button

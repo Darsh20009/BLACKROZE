@@ -66,7 +66,7 @@ interface Branch {
 const alertTypeConfig: Record<string, { label: string; icon: typeof AlertTriangle; color: string }> = {
   low_stock: { label: "مخزون منخفض", icon: TrendingDown, color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" },
   out_of_stock: { label: "نفاد المخزون", icon: AlertTriangle, color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" },
-  expiring_soon: { label: "قارب على الانتهاء", icon: Clock, color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200" },
+  expiring_soon: { label: "قارب على الانتهاء", icon: Clock, color: "bg-accent text-accent dark:bg-accent dark:text-accent" },
   expired: { label: "منتهي الصلاحية", icon: AlertTriangle, color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" },
 };
 
@@ -242,10 +242,10 @@ export default function InventoryAlertsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">صلاحية منتهية</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <Clock className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{expiringCount}</div>
+            <div className="text-2xl font-bold text-accent">{expiringCount}</div>
             <p className="text-xs text-muted-foreground">تنبيه صلاحية</p>
           </CardContent>
         </Card>

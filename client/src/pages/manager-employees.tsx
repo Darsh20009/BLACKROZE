@@ -314,7 +314,7 @@ export default function ManagerEmployees() {
  };
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] p-4">
+ <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4">
  <div className="max-w-7xl mx-auto">
  <div className="flex items-center justify-between mb-6">
  <div className="flex items-center gap-3">
@@ -322,7 +322,7 @@ export default function ManagerEmployees() {
  <Coffee className="w-6 h-6 text-white" />
  </div>
  <div>
- <h1 className="text-2xl font-bold text-amber-500">إدارةالموظفين</h1>
+ <h1 className="text-2xl font-bold text-accent">إدارةالموظفين</h1>
  <p className="text-gray-400 text-sm">لوحةتحكم المدير</p>
  </div>
  </div>
@@ -330,7 +330,7 @@ export default function ManagerEmployees() {
  <Button
  onClick={() => setLocation("/employee/dashboard")}
  variant="outline"
- className="border-amber-500/50 text-amber-500"
+ className="border-primary/50 text-accent"
  data-testid="button-dashboard"
  >
  لوحةالتحكم
@@ -358,9 +358,9 @@ export default function ManagerEmployees() {
  إضافة موظف جديد
  </Button>
  </DialogTrigger>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto">
+ <DialogContent className="bg-[#2d1f1a] border-primary/20 text-white w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto">
  <DialogHeader>
- <DialogTitle className="text-amber-500">إضافة موظف جديد</DialogTitle>
+ <DialogTitle className="text-accent">إضافة موظف جديد</DialogTitle>
  </DialogHeader>
  <form onSubmit={handleSubmitNew} className="space-y-3 sm:space-y-4">
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -370,7 +370,7 @@ export default function ManagerEmployees() {
  id="fullName"
  name="fullName"
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-fullname"
  />
  </div>
@@ -380,7 +380,7 @@ export default function ManagerEmployees() {
  id="username"
  name="username"
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-username"
  />
  </div>
@@ -394,17 +394,17 @@ export default function ManagerEmployees() {
  name="phone"
  type="tel"
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-phone"
  />
  </div>
  <div>
  <Label htmlFor="jobTitle" className="text-gray-300">الوظيفة*</Label>
  <Select name="jobTitle" required>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-jobtitle">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-jobtitle">
  <SelectValue placeholder="اختر الوظيفة" />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <SelectItem value="كاشير">كاشير</SelectItem>
  <SelectItem value="محاسب">محاسب</SelectItem>
  <SelectItem value="بائع">بائع</SelectItem>
@@ -424,10 +424,10 @@ export default function ManagerEmployees() {
  الدور في النظام *
  </Label>
  <Select value={selectedRole} onValueChange={setSelectedRole}>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-role">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-role">
  <SelectValue placeholder="اختر الدور" />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <SelectItem value="cashier">كاشير</SelectItem>
  <SelectItem value="accountant">محاسب</SelectItem>
  <SelectItem value="driver">سائق توصيل</SelectItem>
@@ -443,10 +443,10 @@ export default function ManagerEmployees() {
  الفرع {selectedRole === "manager" ? "*" : ""}
  </Label>
  <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-branch">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-branch">
  <SelectValue placeholder="اختر الفرع" />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  {branches.map((branch) => (
  <SelectItem key={branch._id} value={branch._id}>
  {branch.nameAr}
@@ -465,7 +465,7 @@ export default function ManagerEmployees() {
  id="shiftStartTime"
  name="shiftStartTime"
  type="time"
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-shiftstart"
  />
  </div>
@@ -475,7 +475,7 @@ export default function ManagerEmployees() {
  id="shiftEndTime"
  name="shiftEndTime"
  type="time"
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-shiftend"
  />
  </div>
@@ -490,7 +490,7 @@ export default function ManagerEmployees() {
    type="checkbox"
    name="workDays"
    value={day}
-   className="w-4 h-4 rounded border-amber-500/30 bg-[#1a1410]"
+   className="w-4 h-4 rounded border-primary/30 bg-[#1a1410]"
    data-testid={`checkbox-workday-${day}`}
    />
    <span className="text-sm">{day}</span>
@@ -501,7 +501,7 @@ export default function ManagerEmployees() {
 
  <div>
    <Label className="text-gray-300 block mb-2">الصلاحيات</Label>
-   <div className="grid grid-cols-2 gap-2 bg-[#1a1410] p-3 rounded-lg border border-amber-500/10">
+   <div className="grid grid-cols-2 gap-2 bg-[#1a1410] p-3 rounded-lg border border-primary/10">
      {PERMISSIONS_OPTIONS.map(opt => (
        <label key={opt.id} className="flex items-center gap-2 text-gray-300 cursor-pointer">
          <input
@@ -511,7 +511,7 @@ export default function ManagerEmployees() {
              if (e.target.checked) setSelectedPermissions([...selectedPermissions, opt.id]);
              else setSelectedPermissions(selectedPermissions.filter(id => id !== opt.id));
            }}
-           className="w-4 h-4 rounded border-amber-500/30 bg-[#1a1410]"
+           className="w-4 h-4 rounded border-primary/30 bg-[#1a1410]"
          />
          <span className="text-sm">{opt.label}</span>
        </label>
@@ -521,7 +521,7 @@ export default function ManagerEmployees() {
 
  <div>
    <Label className="text-gray-300 block mb-2">الصفحات المسموحة</Label>
-   <div className="grid grid-cols-2 gap-2 bg-[#1a1410] p-3 rounded-lg border border-amber-500/10">
+   <div className="grid grid-cols-2 gap-2 bg-[#1a1410] p-3 rounded-lg border border-primary/10">
      {PAGES_OPTIONS.map(opt => (
        <label key={opt.id} className="flex items-center gap-2 text-gray-300 cursor-pointer">
          <input
@@ -531,7 +531,7 @@ export default function ManagerEmployees() {
              if (e.target.checked) setSelectedPages([...selectedPages, opt.id]);
              else setSelectedPages(selectedPages.filter(id => id !== opt.id));
            }}
-           className="w-4 h-4 rounded border-amber-500/30 bg-[#1a1410]"
+           className="w-4 h-4 rounded border-primary/30 bg-[#1a1410]"
          />
          <span className="text-sm">{opt.label}</span>
        </label>
@@ -548,7 +548,7 @@ export default function ManagerEmployees() {
  type="number"
  min="0"
  defaultValue="0"
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-devicebalance"
  />
  </div>
@@ -562,7 +562,7 @@ export default function ManagerEmployees() {
  min="0"
  max="100"
  defaultValue="0"
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-commission"
  />
  </div>
@@ -588,7 +588,7 @@ export default function ManagerEmployees() {
  variant="outline"
  onClick={() => fileInputRef.current?.click()}
  disabled={isUploadingImage}
- className="w-full border-amber-500/30 text-amber-500"
+ className="w-full border-primary/30 text-accent"
  >
  <Upload className="w-4 h-4 ml-2" />
  {isUploadingImage ? "جاري الرفع..." : "اختر صورة"}
@@ -618,8 +618,8 @@ export default function ManagerEmployees() {
  )}
  </div>
 
- <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
- <p className="text-sm text-amber-500/90">
+ <div className="bg-background0/10 border border-primary/30 rounded-lg p-4">
+ <p className="text-sm text-accent/90">
   سيتم إنشاء الموظف بدون كلمة مرور. يجب على الموظف الذهاب إلى صفحة "موظف جديد" لإنشاء كلمة المرور الخاصةبه.
  </p>
  </div>
@@ -654,18 +654,18 @@ export default function ManagerEmployees() {
  </div>
 
  {isLoading ? (
- <div className="text-center text-amber-500 py-12">جاري تحميل الموظفين...</div>
+ <div className="text-center text-accent py-12">جاري تحميل الموظفين...</div>
  ) : (
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
  {employees.map((employee) => (
  <Card
  key={employee.id}
- className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 overflow-hidden"
+ className="bg-gradient-to-br from-background to-background border-primary/20 overflow-hidden"
  data-testid={`card-employee-${employee.id}`}
  >
  <CardHeader className="bg-gradient-to-r from-amber-500/20 to-amber-700/20">
  <div className="flex items-center justify-between">
- <CardTitle className="text-amber-500 flex items-center gap-2">
+ <CardTitle className="text-accent flex items-center gap-2">
  {employee.imageUrl ? (
  <img
  src={employee.imageUrl}
@@ -683,7 +683,7 @@ export default function ManagerEmployees() {
  size="sm"
  variant="ghost"
  onClick={() => setEditingEmployee(employee)}
- className="text-amber-500 hover:bg-amber-500/10"
+ className="text-accent hover:bg-background0/10"
  data-testid={`button-edit-${employee.id}`}
  >
  <Edit className="w-4 h-4" />
@@ -692,10 +692,10 @@ export default function ManagerEmployees() {
  </CardHeader>
  <CardContent className="pt-4 space-y-3">
  <div className="flex items-center gap-2 text-gray-300">
- <User className="w-4 h-4 text-amber-500" />
+ <User className="w-4 h-4 text-accent" />
  <span className="text-sm">{employee.jobTitle}</span>
  <Badge
- className={employee.isActivated ? "bg-green-500" : "bg-orange-500"}
+ className={employee.isActivated ? "bg-green-500" : "bg-background0"}
  data-testid={`badge-status-${employee.id}`}
  >
  {employee.isActivated ? "مفعّل" : "غير مفعّل"}
@@ -703,25 +703,25 @@ export default function ManagerEmployees() {
  </div>
 
  <div className="flex items-center gap-2 text-gray-300">
- <Phone className="w-4 h-4 text-amber-500" />
+ <Phone className="w-4 h-4 text-accent" />
  <span className="text-sm">{employee.phone}</span>
  </div>
 
  {employee.shiftTime && (
  <div className="flex items-center gap-2 text-gray-300">
- <Clock className="w-4 h-4 text-amber-500" />
+ <Clock className="w-4 h-4 text-accent" />
  <span className="text-sm">{employee.shiftTime}</span>
  </div>
  )}
 
  {employee.commissionPercentage !== undefined && employee.commissionPercentage > 0 && (
  <div className="flex items-center gap-2 text-gray-300">
- <Percent className="w-4 h-4 text-amber-500" />
+ <Percent className="w-4 h-4 text-accent" />
  <span className="text-sm">عمولة: {employee.commissionPercentage}%</span>
  </div>
  )}
 
- <div className="pt-2 border-t border-amber-500/20">
+ <div className="pt-2 border-t border-primary/20">
  <p className="text-xs text-gray-400">اسم المستخدم: {employee.username}</p>
  </div>
  </CardContent>
@@ -732,9 +732,9 @@ export default function ManagerEmployees() {
 
  {editingEmployee && (
  <Dialog open={!!editingEmployee} onOpenChange={() => setEditingEmployee(null)}>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto">
+ <DialogContent className="bg-[#2d1f1a] border-primary/20 text-white w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto">
  <DialogHeader>
- <DialogTitle className="text-amber-500">تعديل بيانات الموظف</DialogTitle>
+ <DialogTitle className="text-accent">تعديل بيانات الموظف</DialogTitle>
  </DialogHeader>
  <form onSubmit={handleSubmitEdit} className="space-y-3 sm:space-y-4">
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -745,7 +745,7 @@ export default function ManagerEmployees() {
  name="fullName"
  required
  defaultValue={editingEmployee.fullName}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-fullname"
  />
  </div>
@@ -757,7 +757,7 @@ export default function ManagerEmployees() {
  type="tel"
  required
  defaultValue={editingEmployee.phone}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-phone"
  />
  </div>
@@ -767,10 +767,10 @@ export default function ManagerEmployees() {
  <div>
  <Label htmlFor="edit-jobTitle" className="text-gray-300">الوظيفة*</Label>
  <Select name="jobTitle" defaultValue={editingEmployee.jobTitle} required>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-edit-jobtitle">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-edit-jobtitle">
  <SelectValue />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <SelectItem value="كاشير">كاشير</SelectItem>
  <SelectItem value="محاسب">محاسب</SelectItem>
  <SelectItem value="بائع">بائع</SelectItem>
@@ -788,7 +788,7 @@ export default function ManagerEmployees() {
  name="shiftStartTime"
  type="time"
  defaultValue={editingEmployee.shiftStartTime}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-shiftstart"
  />
  </div>
@@ -799,7 +799,7 @@ export default function ManagerEmployees() {
  name="shiftEndTime"
  type="time"
  defaultValue={editingEmployee.shiftEndTime}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-shiftend"
  />
  </div>
@@ -815,7 +815,7 @@ export default function ManagerEmployees() {
    name="workDays"
    value={day}
    defaultChecked={editingEmployee.workDays?.includes(day)}
-   className="w-4 h-4 rounded border-amber-500/30 bg-[#1a1410]"
+   className="w-4 h-4 rounded border-primary/30 bg-[#1a1410]"
    data-testid={`checkbox-edit-workday-${day}`}
    />
    <span className="text-sm">{day}</span>
@@ -826,7 +826,7 @@ export default function ManagerEmployees() {
 
  <div>
    <Label className="text-gray-300 block mb-2">الصلاحيات</Label>
-   <div className="grid grid-cols-2 gap-2 bg-[#1a1410] p-3 rounded-lg border border-amber-500/10">
+   <div className="grid grid-cols-2 gap-2 bg-[#1a1410] p-3 rounded-lg border border-primary/10">
      {PERMISSIONS_OPTIONS.map(opt => (
        <label key={opt.id} className="flex items-center gap-2 text-gray-300 cursor-pointer">
          <input
@@ -836,7 +836,7 @@ export default function ManagerEmployees() {
              if (e.target.checked) setSelectedPermissions([...selectedPermissions, opt.id]);
              else setSelectedPermissions(selectedPermissions.filter(id => id !== opt.id));
            }}
-           className="w-4 h-4 rounded border-amber-500/30 bg-[#1a1410]"
+           className="w-4 h-4 rounded border-primary/30 bg-[#1a1410]"
          />
          <span className="text-sm">{opt.label}</span>
        </label>
@@ -846,7 +846,7 @@ export default function ManagerEmployees() {
 
  <div>
    <Label className="text-gray-300 block mb-2">الصفحات المسموحة</Label>
-   <div className="grid grid-cols-2 gap-2 bg-[#1a1410] p-3 rounded-lg border border-amber-500/10">
+   <div className="grid grid-cols-2 gap-2 bg-[#1a1410] p-3 rounded-lg border border-primary/10">
      {PAGES_OPTIONS.map(opt => (
        <label key={opt.id} className="flex items-center gap-2 text-gray-300 cursor-pointer">
          <input
@@ -856,7 +856,7 @@ export default function ManagerEmployees() {
              if (e.target.checked) setSelectedPages([...selectedPages, opt.id]);
              else setSelectedPages(selectedPages.filter(id => id !== opt.id));
            }}
-           className="w-4 h-4 rounded border-amber-500/30 bg-[#1a1410]"
+           className="w-4 h-4 rounded border-primary/30 bg-[#1a1410]"
          />
          <span className="text-sm">{opt.label}</span>
        </label>
@@ -873,7 +873,7 @@ export default function ManagerEmployees() {
  type="number"
  min="0"
  defaultValue={editingEmployee.deviceBalance || 0}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-devicebalance"
  />
  </div>
@@ -887,7 +887,7 @@ export default function ManagerEmployees() {
  min="0"
  max="100"
  defaultValue={editingEmployee.commissionPercentage || 0}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-commission"
  />
  </div>
@@ -913,7 +913,7 @@ export default function ManagerEmployees() {
  variant="outline"
  onClick={() => editFileInputRef.current?.click()}
  disabled={isUploadingImage}
- className="w-full border-amber-500/30 text-amber-500"
+ className="w-full border-primary/30 text-accent"
  >
  <Upload className="w-4 h-4 ml-2" />
  {isUploadingImage ? "جاري الرفع..." : "اختر صورة جديدة"}

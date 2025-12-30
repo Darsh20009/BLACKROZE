@@ -76,7 +76,7 @@ export default function AdminBranches() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-white dark:bg-slate-950 min-h-screen" dir="rtl">
+    <div className="p-6 space-y-6 bg-white dark:bg-background min-h-screen" dir="rtl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/admin/dashboard')}>
@@ -89,7 +89,7 @@ export default function AdminBranches() {
         </div>
         <Button 
           onClick={() => setIsAddDialogOpen(true)}
-          className="bg-orange-600 hover:bg-orange-700"
+          className="bg-accent hover:bg-accent"
         >
           <Plus className="w-4 h-4 ml-2" />
           إضافة فرع جديد
@@ -157,7 +157,7 @@ export default function AdminBranches() {
               </Button>
               <Button 
                 type="submit" 
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-accent hover:bg-accent"
                 disabled={createMutation.isPending}
               >
                 {createMutation.isPending ? (
@@ -181,7 +181,7 @@ export default function AdminBranches() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
           <div className="col-span-full text-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-600" />
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-accent" />
             <p className="mt-2 text-muted-foreground">جاري تحميل الفروع...</p>
           </div>
         ) : branches && branches.length > 0 ? (
@@ -192,7 +192,7 @@ export default function AdminBranches() {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl font-bold">{branch.nameAr}</CardTitle>
-                    <Store className="w-5 h-5 text-orange-600" />
+                    <Store className="w-5 h-5 text-accent" />
                   </div>
                   {branch.nameEn && <CardDescription>{branch.nameEn}</CardDescription>}
                 </CardHeader>
@@ -220,7 +220,7 @@ export default function AdminBranches() {
             );
           })
         ) : (
-          <div className="col-span-full text-center py-12 bg-gray-50 dark:bg-slate-900 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-800">
+          <div className="col-span-full text-center py-12 bg-gray-50 dark:bg-card rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-800">
             <Store className="w-12 h-12 mx-auto text-gray-300 mb-3" />
             <h3 className="text-lg font-semibold">لا توجد فروع مضافة</h3>
             <p className="text-muted-foreground">ابدأ بإضافة أول فرع للمقهى الخاص بك</p>

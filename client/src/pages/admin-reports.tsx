@@ -146,7 +146,7 @@ export default function AdminReports() {
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
   const StatBox = ({ label, value, trend, icon: Icon }: any) => (
-    <Card className="border-0 bg-gradient-to-br from-white to-orange-50 dark:from-slate-900 dark:to-slate-800">
+    <Card className="border-0 bg-gradient-to-br from-card to-background dark:from-card dark:to-slate-800">
       <CardContent className="pt-6">
         <p className="text-sm text-muted-foreground font-medium">{label}</p>
         <p className="text-3xl font-bold mt-2">{value}</p>
@@ -161,7 +161,7 @@ export default function AdminReports() {
   );
 
   return (
-    <div className="p-6 space-y-8 bg-white dark:bg-slate-950 min-h-screen">
+    <div className="p-6 space-y-8 bg-white dark:bg-background min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -201,7 +201,7 @@ export default function AdminReports() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Trend */}
-        <Card className="border-0 bg-white dark:bg-slate-900">
+        <Card className="border-0 bg-white dark:bg-card">
           <CardHeader className="pb-4">
             <CardTitle>اتجاه الإيرادات</CardTitle>
           </CardHeader>
@@ -233,7 +233,7 @@ export default function AdminReports() {
         </Card>
 
         {/* Orders Count */}
-        <Card className="border-0 bg-white dark:bg-slate-900">
+        <Card className="border-0 bg-white dark:bg-card">
           <CardHeader className="pb-4">
             <CardTitle>عدد الطلبات اليومية</CardTitle>
           </CardHeader>
@@ -261,7 +261,7 @@ export default function AdminReports() {
       {/* Top Products & Employee Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Products */}
-        <Card className="border-0 bg-white dark:bg-slate-900">
+        <Card className="border-0 bg-white dark:bg-card">
           <CardHeader className="pb-4">
             <CardTitle>أفضل المنتجات مبيعاً</CardTitle>
           </CardHeader>
@@ -285,7 +285,7 @@ export default function AdminReports() {
         </Card>
 
         {/* Employee Performance */}
-        <Card className="border-0 bg-white dark:bg-slate-900">
+        <Card className="border-0 bg-white dark:bg-card">
           <CardHeader className="pb-4">
             <CardTitle>أداء الموظفين</CardTitle>
           </CardHeader>
@@ -298,7 +298,7 @@ export default function AdminReports() {
                     <p className="text-sm text-muted-foreground">{emp.orders} طلب</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-orange-600 dark:text-orange-400">{emp.revenue.toFixed(0)} ر.س</p>
+                    <p className="font-bold text-accent dark:text-accent">{emp.revenue.toFixed(0)} ر.س</p>
                   </div>
                 </div>
               ))}
@@ -308,7 +308,7 @@ export default function AdminReports() {
       </div>
 
       {/* Product Distribution */}
-      <Card className="border-0 bg-white dark:bg-slate-900">
+      <Card className="border-0 bg-white dark:bg-card">
         <CardHeader className="pb-4">
           <CardTitle>توزيع المبيعات حسب الفئة</CardTitle>
         </CardHeader>
@@ -342,7 +342,7 @@ export default function AdminReports() {
       </Card>
 
       {/* Detailed Table */}
-      <Card className="border-0 bg-white dark:bg-slate-900">
+      <Card className="border-0 bg-white dark:bg-card">
         <CardHeader className="pb-4">
           <CardTitle>تفاصيل الطلبات الأخيرة</CardTitle>
         </CardHeader>
@@ -350,7 +350,7 @@ export default function AdminReports() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b-2 border-orange-200 dark:border-orange-900/30">
+                <tr className="border-b-2 border-accent dark:border-accent/30">
                   <th className="text-right p-4 font-semibold">رقم الطلب</th>
                   <th className="text-right p-4 font-semibold">العميل</th>
                   <th className="text-right p-4 font-semibold">الموظف</th>
@@ -366,7 +366,7 @@ export default function AdminReports() {
                       <td className="p-4">{order.orderNumber}</td>
                       <td className="p-4 text-muted-foreground">{order.customerInfo?.name || 'زائر'}</td>
                       <td className="p-4">{emp?.fullName || '-'}</td>
-                      <td className="p-4 font-bold text-orange-600 dark:text-orange-400">{order.totalAmount?.toFixed(2)} ر.س</td>
+                      <td className="p-4 font-bold text-accent dark:text-accent">{order.totalAmount?.toFixed(2)} ر.س</td>
                       <td className="p-4 text-muted-foreground">{new Date(order.createdAt).toLocaleDateString('ar-SA')}</td>
                     </tr>
                   );

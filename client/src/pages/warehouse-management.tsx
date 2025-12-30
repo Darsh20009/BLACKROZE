@@ -73,10 +73,10 @@ export default function WarehouseManagementPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-amber-500/5 border-amber-500/20">
+        <Card className="bg-background0/5 border-amber-500/20">
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3 rounded-full bg-amber-500/10">
-              <BarChart3 className="w-6 h-6 text-amber-500" />
+            <div className="p-3 rounded-full bg-background0/10">
+              <BarChart3 className="w-6 h-6 text-accent" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">تحويلات معلقة</p>

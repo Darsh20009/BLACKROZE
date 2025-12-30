@@ -211,7 +211,7 @@ export default function TableCheckout() {
       <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen flex flex-col justify-center">
         <div className="mb-8 text-center bg-gradient-to-br from-amber-50 to-orange-100 p-8 rounded-2xl shadow-lg">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-4 shadow-md">
-            <Coffee className="w-10 h-10 text-amber-600" />
+            <Coffee className="w-10 h-10 text-accent" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2">
             إتمام الطلب
@@ -265,7 +265,7 @@ export default function TableCheckout() {
             )}
             <div className="space-y-2">
               <Label htmlFor="name" className="text-base flex items-center gap-2 font-semibold text-slate-700">
-                <User className="w-5 h-5 text-amber-600" />
+                <User className="w-5 h-5 text-accent" />
                 الاسم *
               </Label>
               <Input
@@ -274,7 +274,7 @@ export default function TableCheckout() {
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 disabled={isLoggedInCustomer}
-                className="text-lg h-14 bg-white border-2 border-slate-300 focus:border-amber-500 text-slate-900 placeholder:text-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                className="text-lg h-14 bg-white border-2 border-slate-300 focus:border-primary text-slate-900 placeholder:text-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
                 data-testid="input-name"
                 autoFocus={!isLoggedInCustomer}
               />
@@ -282,7 +282,7 @@ export default function TableCheckout() {
 
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-base flex items-center gap-2 font-semibold text-slate-700">
-                <Phone className="w-5 h-5 text-amber-600" />
+                <Phone className="w-5 h-5 text-accent" />
                 رقم الجوال *
               </Label>
               <div className="relative">
@@ -293,12 +293,12 @@ export default function TableCheckout() {
                   onChange={(e) => handlePhoneChange(e.target.value)}
                   maxLength={9}
                   disabled={isSearchingCustomer || isLoggedInCustomer}
-                  className="text-lg h-14 bg-white border-2 border-slate-300 focus:border-amber-500 text-slate-900 placeholder:text-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  className="text-lg h-14 bg-white border-2 border-slate-300 focus:border-primary text-slate-900 placeholder:text-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
                   data-testid="input-phone"
                 />
                 {isSearchingCustomer && (
                   <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                    <Loader className="w-5 h-5 text-amber-600 animate-spin" />
+                    <Loader className="w-5 h-5 text-accent animate-spin" />
                   </div>
                 )}
               </div>
@@ -319,7 +319,7 @@ export default function TableCheckout() {
               </div>
             )}
 
-            <div className="bg-amber-50 border-2 border-amber-200 p-5 rounded-lg">
+            <div className="bg-background border-2 border-primary p-5 rounded-lg">
               <p className="text-base text-slate-800 text-center font-semibold">
                 سيتم الدفع عند الكاشير
               </p>

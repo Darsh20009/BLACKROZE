@@ -68,7 +68,7 @@ export default function CardCustomizationPage() {
   if (!customer) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-amber-50/20">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/20">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -88,17 +88,17 @@ export default function CardCustomizationPage() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         {/* Hero Section */}
         <div className="relative group animate-in fade-in-0 slide-in-from-top-10 duration-500">
-          <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-orange-500/30 to-amber-400/30 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
-          <div className="relative bg-gradient-to-br from-amber-50/90 via-orange-50/80 to-amber-50/90 backdrop-blur-sm rounded-2xl p-8 border-2 border-amber-300/50 shadow-xl">
+          <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-primary/50/30 to-amber-400/30 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
+          <div className="relative bg-gradient-to-br from-amber-50/90 via-primary/5/80 to-background/90 backdrop-blur-sm rounded-2xl p-8 border-2 border-primary/50 shadow-xl">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full text-white shadow-lg">
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-amber-900 mb-2">
+                <h2 className="text-2xl font-bold text-accent mb-2">
                   اختر تصميم بطاقتك المفضل
                 </h2>
-                <p className="text-amber-800">
+                <p className="text-accent">
                   اختر من بين 8 تصاميم فريدة تعكس شخصيتك وتفضلاتك. يمكنك تغيير التصميم في أي وقت.
                 </p>
               </div>
@@ -110,7 +110,7 @@ export default function CardCustomizationPage() {
         <Card className="border-border shadow-lg">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border">
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-500" />
+              <Sparkles className="w-5 h-5 text-accent" />
               اختر التصميم
             </CardTitle>
           </CardHeader>

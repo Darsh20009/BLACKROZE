@@ -362,21 +362,21 @@ export default function CopyCard() {
           variant="ghost"
           size="sm"
           onClick={() => navigate("/menu")}
-          className="text-amber-100 hover:text-amber-50 hover:bg-amber-900/20 px-2 h-9"
+          className="text-accent hover:text-accent hover:bg-primary/20 px-2 h-9"
           data-testid="button-back"
         >
           <ArrowLeft className="w-4 h-4 ml-1.5" />
           <span className="text-sm">القائمة</span>
         </Button>
 
-        <h1 className="text-xl md:text-2xl font-bold text-amber-100 text-center flex-1">حسابك</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-accent text-center flex-1">حسابك</h1>
 
         <div className="flex gap-1 md:gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/card-customization")}
-            className="text-amber-100 hover:text-amber-50 hover:bg-amber-900/20 px-2 h-9"
+            className="text-accent hover:text-accent hover:bg-primary/20 px-2 h-9"
             data-testid="button-customize-card"
           >
             <Palette className="w-4 h-4 ml-1.5" />
@@ -406,7 +406,7 @@ export default function CopyCard() {
               }}>
               <div className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none" 
                 style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 pointer-events-none z-10" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-card/5 via-transparent to-white/10 pointer-events-none z-10" />
               <div className="relative h-full p-4 md:p-5 flex flex-col justify-between text-white z-20">
                 <div className="flex justify-between items-start">
                   <div className="flex flex-col gap-0.5">
@@ -415,8 +415,8 @@ export default function CopyCard() {
                         <Coffee className="w-4 h-4 md:w-5 md:h-5 text-white" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-base md:text-lg font-black tracking-tighter text-amber-50 leading-none">CLUNY CAFE</span>
-                        <span className="text-[6px] md:text-[7px] uppercase tracking-[0.3em] text-amber-400/90 font-bold">LOYALTY PREMIUM</span>
+                        <span className="text-base md:text-lg font-black tracking-tighter text-accent leading-none">CLUNY CAFE</span>
+                        <span className="text-[6px] md:text-[7px] uppercase tracking-[0.3em] text-accent/90 font-bold">LOYALTY PREMIUM</span>
                       </div>
                     </div>
                   </div>
@@ -434,7 +434,7 @@ export default function CopyCard() {
                       tier === 'platinum' ? 'bg-purple-600 text-white' :
                       tier === 'gold' ? 'bg-yellow-500 text-black' :
                       tier === 'silver' ? 'bg-gray-400 text-black' :
-                      'bg-amber-800 text-white'
+                      'bg-primary text-white'
                     }`}>
                       {tierNames[tier]}
                     </Badge>
@@ -445,7 +445,7 @@ export default function CopyCard() {
                     <span className="text-[5px] md:text-[6px] uppercase tracking-[0.4em] font-bold">MEMBER ID</span>
                     <div className="h-[0.5px] flex-1 bg-white/20" />
                   </div>
-                  <p className="text-lg md:text-xl font-mono tracking-[0.2em] font-bold text-amber-50 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
+                  <p className="text-lg md:text-xl font-mono tracking-[0.2em] font-bold text-accent drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
                     {loyaltyCard?.cardNumber ? (
                       <>
                         <span>{loyaltyCard.cardNumber.substring(0, 4)}</span>
@@ -473,7 +473,7 @@ export default function CopyCard() {
                   <div className="flex items-center gap-2 md:gap-3 text-right">
                     <div className="hidden sm:block">
                       <p className="text-[5px] md:text-[6px] text-white/40 uppercase tracking-[0.1em]">EXPIRY</p>
-                      <p className="text-[8px] md:text-[10px] font-black text-amber-400">PERPETUAL</p>
+                      <p className="text-[8px] md:text-[10px] font-black text-accent">PERPETUAL</p>
                     </div>
                     <div className="relative w-8 h-8 md:w-10 md:h-10">
                       <div className="absolute inset-0 bg-gradient-to-br from-amber-400/30 via-purple-400/30 to-blue-400/30 rounded-full animate-[pulse_3s_infinite] mix-blend-screen" />
@@ -506,7 +506,7 @@ export default function CopyCard() {
         <div className="grid grid-cols-2 gap-2 md:gap-3 mb-6">
           <Button
             variant="outline"
-            className="h-14 md:h-16 flex flex-col items-center justify-center gap-1 border-amber-600/20 bg-stone-900/40 text-amber-100 hover:bg-amber-900/30 active:scale-95 transition-transform"
+            className="h-14 md:h-16 flex flex-col items-center justify-center gap-1 border-primary/20 bg-stone-900/40 text-accent hover:bg-primary/30 active:scale-95 transition-transform"
             onClick={() => {
               if (timeLeft > 0) {
                 setShowSecureInfo(true);
@@ -516,13 +516,13 @@ export default function CopyCard() {
             }}
             data-testid="button-show-card-info"
           >
-            <User className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
+            <User className="w-4 h-4 md:w-5 md:h-5 text-accent" />
             <span className="text-[10px] md:text-xs font-bold">معلومات البطاقة</span>
           </Button>
 
           <Button
             variant="outline"
-            className="h-14 md:h-16 flex flex-col items-center justify-center gap-1 border-amber-600/20 bg-stone-900/40 text-amber-100 hover:bg-amber-900/30 active:scale-95 transition-transform"
+            className="h-14 md:h-16 flex flex-col items-center justify-center gap-1 border-primary/20 bg-stone-900/40 text-accent hover:bg-primary/30 active:scale-95 transition-transform"
             onClick={() => navigate("/reset-password")}
             data-testid="button-change-password"
           >
@@ -665,9 +665,9 @@ export default function CopyCard() {
 
         {/* Reissue Card Dialog */}
         <Dialog open={showReissueDialog} onOpenChange={setShowReissueDialog}>
-          <DialogContent className="w-[90%] max-w-[425px] bg-stone-950 border-amber-500/30 text-white rounded-2xl">
+          <DialogContent className="w-[90%] max-w-[425px] bg-stone-950 border-primary/30 text-white rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-lg md:text-xl font-black text-amber-50">إصدار بطاقة جديدة</DialogTitle>
+              <DialogTitle className="text-lg md:text-xl font-black text-accent">إصدار بطاقة جديدة</DialogTitle>
               <DialogDescription className="text-white/60 text-sm">
                 اختر تصميماً جديداً وحدد رمز PIN للبطاقة الجديدة (متبقي: {loyaltyCard?.reissuanceCount ? 2 - loyaltyCard.reissuanceCount : 2}/2)
               </DialogDescription>
@@ -677,7 +677,7 @@ export default function CopyCard() {
                 <Label className="text-white/70 text-sm">اختر التصميم</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { id: 'classic', label: 'كلاسيكي', color: 'bg-amber-700' },
+                    { id: 'classic', label: 'كلاسيكي', color: 'bg-primary' },
                     { id: 'modern', label: 'عصري', color: 'bg-blue-700' },
                     { id: 'dark', label: 'داكن', color: 'bg-slate-800' },
                     { id: 'gold', label: 'ذهبي', color: 'bg-yellow-600' }
@@ -687,7 +687,7 @@ export default function CopyCard() {
                       onClick={() => setSelectedDesign(design.id)}
                       className={`p-3 rounded-lg border-2 transition-all ${
                         selectedDesign === design.id
-                          ? 'border-amber-500 ring-2 ring-amber-400'
+                          ? 'border-primary ring-2 ring-amber-400'
                           : 'border-white/20'
                       } ${design.color}`}
                     >
@@ -758,9 +758,9 @@ export default function CopyCard() {
 
         {/* Password Verification Dialog */}
         <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-          <DialogContent className="w-[90%] max-w-[425px] bg-stone-950 border-amber-500/30 text-white rounded-2xl">
+          <DialogContent className="w-[90%] max-w-[425px] bg-stone-950 border-primary/30 text-white rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-lg md:text-xl font-black text-amber-50">تحقق من الهوية</DialogTitle>
+              <DialogTitle className="text-lg md:text-xl font-black text-accent">تحقق من الهوية</DialogTitle>
               <DialogDescription className="text-white/60 text-sm">
                 الرجاء إدخال كلمة مرور حسابك لعرض بيانات البطاقة الحساسة.
               </DialogDescription>
@@ -784,7 +784,7 @@ export default function CopyCard() {
               <Button
                 disabled={isVerifying || !password}
                 onClick={verifyPassword}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-black h-11"
+                className="w-full bg-primary hover:bg-primary text-white font-black h-11"
               >
                 {isVerifying ? "جاري التحقق..." : "تأكيد"}
               </Button>
@@ -795,21 +795,21 @@ export default function CopyCard() {
         {/* Secure Info Modal */}
         {showSecureInfo && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <Card className="w-full max-w-sm bg-stone-950 border-amber-500/30 text-white overflow-hidden shadow-2xl ring-1 ring-white/10 rounded-2xl">
+            <Card className="w-full max-w-sm bg-stone-950 border-primary/30 text-white overflow-hidden shadow-2xl ring-1 ring-white/10 rounded-2xl">
               <div className="p-6 space-y-5">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-amber-500" />
-                    <h3 className="text-lg font-black tracking-tight text-amber-50">بيانات البطاقة</h3>
+                    <CreditCard className="w-5 h-5 text-accent" />
+                    <h3 className="text-lg font-black tracking-tight text-accent">بيانات البطاقة</h3>
                   </div>
-                  <Badge variant="outline" className="text-amber-400 border-amber-400 animate-pulse">
+                  <Badge variant="outline" className="text-accent border-primary animate-pulse">
                     {timeLeft} ثانية
                   </Badge>
                 </div>
                 <div className="space-y-4 bg-white/5 rounded-xl p-4 border border-white/5">
                   <div className="space-y-1">
                     <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">Card Number</p>
-                    <p className="text-xl font-mono tracking-wider text-amber-100 font-bold select-all">
+                    <p className="text-xl font-mono tracking-wider text-accent font-bold select-all">
                       {loyaltyCard?.cardNumber ? (
                         loyaltyCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
                       ) : "جاري التحميل..."}
@@ -818,7 +818,7 @@ export default function CopyCard() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">Tier</p>
-                      <p className="text-sm font-black text-amber-400 uppercase">{tierNames[tier]}</p>
+                      <p className="text-sm font-black text-accent uppercase">{tierNames[tier]}</p>
                     </div>
                     <div className="space-y-1 text-right">
                       <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">Points</p>
@@ -827,7 +827,7 @@ export default function CopyCard() {
                   </div>
                 </div>
                 <Button 
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-black h-11 shadow-lg shadow-amber-900/20"
+                  className="w-full bg-primary hover:bg-primary text-white font-black h-11 shadow-lg shadow-amber-900/20"
                   onClick={() => setShowSecureInfo(false)}
                 >
                   إغلاق آمن
@@ -840,10 +840,10 @@ export default function CopyCard() {
         {/* Stats Section */}
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-2 md:gap-3">
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/30 rounded-2xl p-3 md:p-4 text-center border border-amber-200/50 dark:border-amber-700/50">
-              <p className="text-xl md:text-2xl font-bold text-amber-900 dark:text-amber-300 mb-0.5">{stampsProgress}</p>
-              <p className="text-[10px] md:text-xs text-amber-700 dark:text-amber-400 font-semibold uppercase tracking-wider">اختام</p>
-              <p className="text-[9px] md:text-[10px] text-amber-600 dark:text-amber-500 opacity-60">إجمالي</p>
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/30 rounded-2xl p-3 md:p-4 text-center border border-primary/50 dark:border-primary/50">
+              <p className="text-xl md:text-2xl font-bold text-accent dark:text-accent mb-0.5">{stampsProgress}</p>
+              <p className="text-[10px] md:text-xs text-accent dark:text-accent font-semibold uppercase tracking-wider">اختام</p>
+              <p className="text-[9px] md:text-[10px] text-accent dark:text-accent opacity-60">إجمالي</p>
             </div>
             <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/30 rounded-2xl p-3 md:p-4 text-center border border-green-200/50 dark:border-green-700/50">
               <p className="text-xl md:text-2xl font-bold text-green-900 dark:text-green-300 mb-0.5">{availableFreeDrinks}</p>
@@ -866,10 +866,10 @@ export default function CopyCard() {
         </div>
 
         {/* Stamp Progress */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 md:p-5 border border-amber-200/10">
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 md:p-5 border border-primary/10">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm font-bold text-amber-100 tracking-wide">تقدم الاختام (من 6 لمشروب مجاني)</p>
-            <Badge variant="outline" className="text-[10px] font-black border-amber-500/30 text-amber-400">
+            <p className="text-sm font-bold text-accent tracking-wide">تقدم الاختام (من 6 لمشروب مجاني)</p>
+            <Badge variant="outline" className="text-[10px] font-black border-primary/30 text-accent">
               {stampsProgress % 6 || (stampsProgress > 0 ? 6 : 0)}/6
             </Badge>
           </div>
@@ -886,15 +886,15 @@ export default function CopyCard() {
             ))}
           </div>
           {stampsProgress >= 6 && (
-            <p className="text-xs text-amber-300 mt-3 text-center">
+            <p className="text-xs text-accent mt-3 text-center">
               أكملت {Math.floor(stampsProgress / 6)} مشروب مجاني و {stampsProgress % 6} ختم إضافي
             </p>
           )}
         </div>
 
         {/* QR & Barcode Section */}
-        <div className="bg-white dark:bg-stone-900/40 backdrop-blur-md rounded-2xl p-5 md:p-6 border border-amber-200/10 text-center">
-          <h3 className="font-bold text-amber-100 mb-5 text-sm md:text-base">استخدم البطاقة</h3>
+        <div className="bg-white dark:bg-stone-900/40 backdrop-blur-md rounded-2xl p-5 md:p-6 border border-primary/10 text-center">
+          <h3 className="font-bold text-accent mb-5 text-sm md:text-base">استخدم البطاقة</h3>
           <div className="flex flex-col items-center gap-5">
             <div className="bg-white p-3 md:p-4 rounded-xl shadow-xl ring-4 ring-amber-500/10">
               <canvas ref={qrCanvasRef} className="rounded-lg w-32 h-32 md:w-36 md:h-36" data-testid="qr-code" />
@@ -903,7 +903,7 @@ export default function CopyCard() {
               <svg ref={barcodeSvgRef} className="h-12 md:h-14 w-full" data-testid="barcode" />
             </div>
           </div>
-          <p className="text-[10px] md:text-xs text-amber-300/60 mt-5 font-medium leading-relaxed">
+          <p className="text-[10px] md:text-xs text-accent/60 mt-5 font-medium leading-relaxed">
             اعرض الباركود أو QR كود على الكاشير لجمع النقاط والاختام
           </p>
         </div>
@@ -924,8 +924,8 @@ export default function CopyCard() {
         {totalOrders > 0 && (
           <div className="space-y-4 pt-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg md:text-xl font-bold text-amber-100">طلباتك الأخيرة</h3>
-              <Badge variant="secondary" className="bg-amber-950/40 text-amber-400 border-amber-700/20 px-2.5">{totalOrders} طلب</Badge>
+              <h3 className="text-lg md:text-xl font-bold text-accent">طلباتك الأخيرة</h3>
+              <Badge variant="secondary" className="bg-primary/40 text-accent border-primary/20 px-2.5">{totalOrders} طلب</Badge>
             </div>
             <div className="space-y-3 max-h-[300px] overflow-y-auto scrollbar-hide">
               {orders.slice(0, 5).map((order, index) => (
@@ -936,26 +936,26 @@ export default function CopyCard() {
                 >
                   <div className="p-3 md:p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-bold text-amber-100">الطلب #{order.orderNumber || index + 1}</p>
+                      <p className="text-sm font-bold text-accent">الطلب #{order.orderNumber || index + 1}</p>
                       <Badge variant="outline" className="text-[9px] font-black h-5">
                         {order.status === 'completed' ? 'مكتمل' : order.status === 'cancelled' ? 'ملغى' : 'قيد التنفيذ'}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-amber-300/70">{Array.isArray(order.items) ? order.items.length : 0} أصناف</span>
-                      <span className="text-amber-400 font-black">{order.totalAmount || 0} ر.س</span>
+                      <span className="text-accent/70">{Array.isArray(order.items) ? order.items.length : 0} أصناف</span>
+                      <span className="text-accent font-black">{order.totalAmount || 0} ر.س</span>
                     </div>
                   </div>
                 </Card>
               ))}
             </div>
-            <Button onClick={() => navigate("/my-orders")} className="w-full h-11 bg-white/5 text-amber-100 font-bold rounded-xl text-sm">
+            <Button onClick={() => navigate("/my-orders")} className="w-full h-11 bg-white/5 text-accent font-bold rounded-xl text-sm">
               <ShoppingBag className="w-4 h-4 ml-2" />عرض جميع الطلبات
             </Button>
           </div>
         )}
 
-        <Button onClick={() => navigate("/menu")} variant="outline" className="w-full h-12 md:h-13 border-amber-500/20 bg-amber-500/5 text-amber-400 font-bold rounded-xl text-sm md:text-base mt-4 mb-8">
+        <Button onClick={() => navigate("/menu")} variant="outline" className="w-full h-12 md:h-13 border-primary/20 bg-background0/5 text-accent font-bold rounded-xl text-sm md:text-base mt-4 mb-8">
           <Coffee className="w-4 h-4 ml-2" />تصفح القائمة والطلب الآن
         </Button>
       </div>

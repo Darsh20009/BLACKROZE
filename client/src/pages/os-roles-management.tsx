@@ -159,19 +159,19 @@ export default function OSRolesManagement() {
           <CardTitle className="text-lg">حالة التنفيذ</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded">
+          <div className="flex items-center justify-between p-3 bg-white dark:bg-card rounded">
             <span>API Role Middleware</span>
             <Badge className="bg-green-600">مُنفذ</Badge>
           </div>
-          <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded">
+          <div className="flex items-center justify-between p-3 bg-white dark:bg-card rounded">
             <span>UI Access Control</span>
             <Badge className="bg-green-600">مُنفذ</Badge>
           </div>
-          <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded">
+          <div className="flex items-center justify-between p-3 bg-white dark:bg-card rounded">
             <span>Audit Logging</span>
             <Badge variant="outline">قيد التطوير</Badge>
           </div>
-          <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded">
+          <div className="flex items-center justify-between p-3 bg-white dark:bg-card rounded">
             <span>Role Management UI</span>
             <Badge variant="outline">قيد التطوير</Badge>
           </div>

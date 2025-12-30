@@ -69,7 +69,7 @@ export default function MenuView() {
 
  if (isLoading) {
  return (
- <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+ <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100 flex items-center justify-center">
  <div className="text-center">
  <div className="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
  <p className="text-primary text-xl font-semibold">جاري تحميل القائمة الفاخرة...</p>
@@ -81,7 +81,7 @@ export default function MenuView() {
  const currentItem = coffeeItems[currentIndex];
 
  return (
- <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100">
+ <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100">
  {/* Luxury Background Effects */}
  <div className="absolute inset-0 pointer-events-none overflow-hidden">
  <div className="absolute top-20 left-20 w-96 h-96 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-300/15 via-transparent to-transparent rounded-full blur-3xl animate-pulse"></div>
@@ -231,7 +231,7 @@ export default function MenuView() {
 
  <div className="flex items-center space-x-2 space-x-reverse">
  {Array.from({length: 5}).map((_, i) => (
- <Star key={i} className="w-6 h-6 text-amber-400 fill-amber-400" />
+ <Star key={i} className="w-6 h-6 text-accent fill-amber-400" />
  ))}
  </div>
  </div>
@@ -311,7 +311,7 @@ export default function MenuView() {
  </div>
  <div className="flex items-center space-x-2 space-x-reverse">
  {Array.from({length: 5}).map((_, i) => (
- <Star key={i} className="w-6 h-6 text-amber-400 fill-amber-400" />
+ <Star key={i} className="w-6 h-6 text-accent fill-amber-400" />
  ))}
  </div>
  </div>
@@ -346,7 +346,7 @@ export default function MenuView() {
  <span className="text-3xl font-bold">{currentItem.price} ريال</span>
  <div className="flex items-center space-x-1 space-x-reverse">
  {Array.from({length: 5}).map((_, i) => (
- <Star key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />
+ <Star key={i} className="w-5 h-5 text-accent fill-amber-400" />
  ))}
  </div>
  </div>
@@ -404,7 +404,7 @@ export default function MenuView() {
  </div>
  <div className="flex items-center space-x-1 space-x-reverse">
  {Array.from({length: 5}).map((_, i) => (
- <Star key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />
+ <Star key={i} className="w-5 h-5 text-accent fill-amber-400" />
  ))}
  </div>
  </div>
@@ -485,7 +485,7 @@ export default function MenuView() {
 
  <div className="flex items-center space-x-3 space-x-reverse">
  {Array.from({length: 5}).map((_, i) => (
- <Star key={i} className="w-8 h-8 text-amber-400 fill-amber-400" />
+ <Star key={i} className="w-8 h-8 text-accent fill-amber-400" />
  ))}
  </div>
  </div>
@@ -603,7 +603,7 @@ export default function MenuView() {
  </p>
  <div className="flex items-center justify-center space-x-1 space-x-reverse">
  {Array.from({length: 5}).map((_, i) => (
- <Star key={i} className="w-3 h-3 md:w-5 md:h-5 text-amber-400 fill-amber-400" />
+ <Star key={i} className="w-3 h-3 md:w-5 md:h-5 text-accent fill-amber-400" />
  ))}
  </div>
  </div>

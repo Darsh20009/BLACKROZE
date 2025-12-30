@@ -50,7 +50,7 @@ const categoryLabels: Record<string, { label: string; icon: any; color: string }
   ingredient: { 
     label: "مكون", 
     icon: Coffee,
-    color: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
+    color: "bg-primary text-accent border-primary dark:bg-primary/30 dark:text-accent dark:border-primary"
   },
   packaging: { 
     label: "تغليف", 
@@ -60,7 +60,7 @@ const categoryLabels: Record<string, { label: string; icon: any; color: string }
   equipment: { 
     label: "معدات", 
     icon: Wrench,
-    color: "bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-700"
+    color: "bg-slate-100 text-slate-800 border-slate-200 dark:bg-card/30 dark:text-slate-300 dark:border-slate-700"
   },
   consumable: { 
     label: "مستهلكات", 
@@ -219,8 +219,8 @@ export default function InventoryRawItemsPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="relative">
-            <Package className="h-12 w-12 text-amber-700 dark:text-amber-500 animate-pulse mx-auto" />
-            <Loader2 className="h-6 w-6 animate-spin text-amber-600 absolute -bottom-1 -right-1" />
+            <Package className="h-12 w-12 text-accent dark:text-accent animate-pulse mx-auto" />
+            <Loader2 className="h-6 w-6 animate-spin text-accent absolute -bottom-1 -right-1" />
           </div>
           <p className="text-muted-foreground mt-3">جاري تحميل المواد الخام...</p>
         </div>
@@ -233,7 +233,7 @@ export default function InventoryRawItemsPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/50 dark:to-amber-800/50">
-            <Package className="h-8 w-8 text-amber-700 dark:text-amber-400" />
+            <Package className="h-8 w-8 text-accent dark:text-accent" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">المواد الخام</h1>
@@ -242,7 +242,7 @@ export default function InventoryRawItemsPage() {
         </div>
         <Button 
           onClick={() => setIsAddDialogOpen(true)} 
-          className="bg-amber-600 hover:bg-amber-700"
+          className="bg-primary hover:bg-primary"
           data-testid="button-add-raw-item"
         >
           <Plus className="h-4 w-4 ml-2" />
@@ -251,12 +251,12 @@ export default function InventoryRawItemsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border p-4 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border-amber-200 dark:border-amber-700">
+        <div className="rounded-xl border p-4 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border-primary dark:border-primary">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-sm font-medium text-muted-foreground">إجمالي المواد</span>
-            <Package className="h-4 w-4 text-amber-600" />
+            <Package className="h-4 w-4 text-accent" />
           </div>
-          <div className="text-3xl font-bold text-amber-700 dark:text-amber-300">{rawItems.length}</div>
+          <div className="text-3xl font-bold text-accent dark:text-accent">{rawItems.length}</div>
           <p className="text-xs text-muted-foreground mt-1">مادة خام مسجلة</p>
         </div>
 
@@ -387,12 +387,12 @@ export default function InventoryRawItemsPage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {item.minStockLevel > 0 ? (
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
+                              <Badge variant="outline" className="bg-background text-accent border-primary dark:bg-primary/30 dark:text-accent dark:border-primary">
                                 <AlertTriangle className="h-3 w-3 ml-1" />
                                 {item.minStockLevel}
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400 dark:border-gray-700">
+                              <Badge variant="outline" className="bg-gray-50 text-muted-foreground border-gray-200 dark:bg-gray-900/30 dark:text-muted-foreground dark:border-gray-700">
                                 غير محدد
                               </Badge>
                             )}
@@ -432,7 +432,7 @@ export default function InventoryRawItemsPage() {
         <DialogContent className="max-w-2xl bg-[#F5F5DC]" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-amber-600" />
+              <Plus className="h-5 w-5 text-accent" />
               إضافة مادة خام جديدة
             </DialogTitle>
           </DialogHeader>
@@ -562,7 +562,7 @@ export default function InventoryRawItemsPage() {
             <Button
               onClick={() => createMutation.mutate(formData)}
               disabled={createMutation.isPending || !formData.code || !formData.nameAr}
-              className="bg-amber-600 hover:bg-amber-700"
+              className="bg-primary hover:bg-primary"
               data-testid="button-submit-add"
             >
               {createMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
@@ -576,7 +576,7 @@ export default function InventoryRawItemsPage() {
         <DialogContent className="max-w-2xl bg-[#F5F5DC]" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit className="h-5 w-5 text-amber-600" />
+              <Edit className="h-5 w-5 text-accent" />
               تعديل المادة الخام
             </DialogTitle>
           </DialogHeader>
@@ -702,7 +702,7 @@ export default function InventoryRawItemsPage() {
             <Button
               onClick={() => selectedItem && updateMutation.mutate({ id: selectedItem.id, data: formData })}
               disabled={updateMutation.isPending || !formData.code || !formData.nameAr}
-              className="bg-amber-600 hover:bg-amber-700"
+              className="bg-primary hover:bg-primary"
               data-testid="button-submit-edit"
             >
               {updateMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}

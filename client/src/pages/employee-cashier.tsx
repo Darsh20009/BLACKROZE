@@ -764,7 +764,7 @@ export default function EmployeeCashier() {
  }
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] p-4">
+ <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4">
  <div className="max-w-7xl mx-auto">
  <div className="flex items-center justify-between mb-6">
  <div className="flex items-center gap-3">
@@ -772,7 +772,7 @@ export default function EmployeeCashier() {
  <Coffee className="w-6 h-6 text-white" />
  </div>
  <div>
- <h1 className="text-2xl font-bold text-amber-500">نظام الكاشير</h1>
+ <h1 className="text-2xl font-bold text-accent">نظام الكاشير</h1>
  <p className="text-gray-400 text-sm">الموظف: {employee.fullName}</p>
  </div>
  </div>
@@ -780,7 +780,7 @@ export default function EmployeeCashier() {
  <Button
  variant="outline"
  onClick={() => setLocation("/employee/cashier/phone-lookup")}
- className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+ className="border-primary/50 text-accent hover:bg-background0 hover:text-white"
  data-testid="button-phone-lookup"
  >
  <Search className="w-4 h-4 ml-2" />
@@ -788,7 +788,7 @@ export default function EmployeeCashier() {
  </Button>
  <Dialog open={isPosSettingsOpen} onOpenChange={setIsPosSettingsOpen}>
  <DialogTrigger asChild>
- <div className="bg-[#2d1f1a] border border-amber-500/20 rounded-lg px-4 py-2 hover-elevate cursor-pointer" data-testid="pos-settings-trigger">
+ <div className="bg-[#2d1f1a] border border-primary/20 rounded-lg px-4 py-2 hover-elevate cursor-pointer" data-testid="pos-settings-trigger">
  <div className="flex items-center gap-2">
  <MonitorSmartphone className={`w-4 h-4 ${posConnected ? 'text-green-400' : 'text-gray-400'}`} />
  <span className="text-xs text-gray-400">جهاز POS:</span>
@@ -800,15 +800,15 @@ export default function EmployeeCashier() {
  <p className="text-xs text-gray-500 mt-1">{posConnected ? "جاهز للدفع الإلكتروني" : "انقر للإعدادات"}</p>
  </div>
  </DialogTrigger>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <DialogContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <DialogHeader>
- <DialogTitle className="text-amber-500 flex items-center gap-2">
+ <DialogTitle className="text-accent flex items-center gap-2">
  <MonitorSmartphone className="w-5 h-5" />
  إعدادات جهاز نقاط البيع (POS)
  </DialogTitle>
  </DialogHeader>
  <div className="space-y-6">
- <div className="flex items-center justify-between p-4 bg-[#1a1410] rounded-lg border border-amber-500/20">
+ <div className="flex items-center justify-between p-4 bg-[#1a1410] rounded-lg border border-primary/20">
  <div className="flex items-center gap-3">
  {posConnected ? (
  <Wifi className="w-6 h-6 text-green-400" />
@@ -831,7 +831,7 @@ export default function EmployeeCashier() {
  </div>
  
  <div className="space-y-3 p-4 bg-[#1a1410]/50 rounded-lg">
- <h4 className="text-amber-500 font-medium flex items-center gap-2">
+ <h4 className="text-accent font-medium flex items-center gap-2">
  <Settings className="w-4 h-4" />
  معلومات الجهاز
  </h4>
@@ -849,8 +849,8 @@ export default function EmployeeCashier() {
  </div>
  </div>
 
- <div className="text-xs text-gray-500 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
- <p className="font-medium text-amber-500 mb-1">ملاحظة:</p>
+ <div className="text-xs text-gray-500 p-3 bg-background0/10 rounded-lg border border-primary/20">
+ <p className="font-medium text-accent mb-1">ملاحظة:</p>
  <p>عند تفعيل جهاز POS، سيتم معالجة الدفعات الإلكترونية تلقائياً عبر الجهاز. تأكد من توصيل الجهاز بشكل صحيح قبل التفعيل.</p>
  </div>
  </div>
@@ -888,7 +888,7 @@ export default function EmployeeCashier() {
  size="icon"
  variant="outline"
  onClick={handleOpenCashDrawer}
- className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+ className="border-primary/50 text-accent hover:bg-background0 hover:text-white"
  data-testid="button-open-drawer"
  title="فتح الخزانة"
  >
@@ -897,7 +897,7 @@ export default function EmployeeCashier() {
  <Button
  variant="outline"
  onClick={() => setLocation("/employee/dashboard")}
- className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+ className="border-primary/50 text-accent hover:bg-background0 hover:text-white"
  data-testid="button-back-dashboard"
  >
  <ArrowRight className="w-4 h-4 ml-2" />
@@ -910,9 +910,9 @@ export default function EmployeeCashier() {
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
  {/* Menu Section */}
  <div className="lg:col-span-2">
- <Card className="bg-[#2d1f1a] border-amber-500/20">
+ <Card className="bg-[#2d1f1a] border-primary/20">
  <CardHeader>
- <CardTitle className="text-amber-500 text-right">القائمة</CardTitle>
+ <CardTitle className="text-accent text-right">القائمة</CardTitle>
  </CardHeader>
  <CardContent>
  {isLoading ? (
@@ -920,11 +920,11 @@ export default function EmployeeCashier() {
  ) : (
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  {coffeeItems.map((item) => (
- <Card key={item.id} className="bg-[#1a1410] border-amber-500/10 hover:border-amber-500/30 transition-colors">
+ <Card key={item.id} className="bg-[#1a1410] border-primary/10 hover:border-primary/30 transition-colors">
  <CardContent className="p-4">
  <div className="flex justify-between items-start mb-2">
  <div className="text-right flex-1">
- <h3 className="text-amber-500 font-bold mb-1" data-testid={`text-item-name-${item.id}`}>
+ <h3 className="text-accent font-bold mb-1" data-testid={`text-item-name-${item.id}`}>
  {item.nameAr}
  </h3>
  <p className="text-gray-400 text-sm line-clamp-2">
@@ -933,7 +933,7 @@ export default function EmployeeCashier() {
  </div>
  </div>
  <div className="flex items-center justify-between mt-3">
- <Badge variant="outline" className="border-amber-500/30 text-amber-500">
+ <Badge variant="outline" className="border-primary/30 text-accent">
  {Number(item.price).toFixed(2)} ريال
  </Badge>
  <Button
@@ -957,9 +957,9 @@ export default function EmployeeCashier() {
 
  {/* Order Summary Section */}
  <div className="lg:col-span-1 space-y-4">
- <Card className="bg-[#2d1f1a] border-amber-500/20 sticky top-4">
+ <Card className="bg-[#2d1f1a] border-primary/20 sticky top-4">
  <CardHeader>
- <CardTitle className="text-amber-500 text-right flex items-center justify-between gap-2">
+ <CardTitle className="text-accent text-right flex items-center justify-between gap-2">
  <div className="flex items-center gap-2">
  <ShoppingBag className="w-5 h-5" />
  الطلب الحالي
@@ -997,7 +997,7 @@ export default function EmployeeCashier() {
  <div className="flex justify-between items-start mb-2">
  <div className="text-right flex-1">
  <div className="flex items-center gap-2">
- <h4 className="text-amber-500 font-medium text-sm" data-testid={`text-order-item-${item.coffeeItem.id}`}>
+ <h4 className="text-accent font-medium text-sm" data-testid={`text-order-item-${item.coffeeItem.id}`}>
  {item.coffeeItem.nameAr}
  </h4>
  </div>
@@ -1021,7 +1021,7 @@ export default function EmployeeCashier() {
  size="sm"
  variant="outline"
  onClick={() => updateQuantity(item.coffeeItem.id, item.quantity - 1)}
- className="h-7 w-7 p-0 border-amber-500/30"
+ className="h-7 w-7 p-0 border-primary/30"
  data-testid={`button-decrease-${item.coffeeItem.id}`}
  >
  <Minus className="w-3 h-3" />
@@ -1033,13 +1033,13 @@ export default function EmployeeCashier() {
  size="sm"
  variant="outline"
  onClick={() => updateQuantity(item.coffeeItem.id, item.quantity + 1)}
- className="h-7 w-7 p-0 border-amber-500/30"
+ className="h-7 w-7 p-0 border-primary/30"
  data-testid={`button-increase-${item.coffeeItem.id}`}
  >
  <Plus className="w-3 h-3" />
  </Button>
  </div>
- <span className="font-bold text-amber-500">
+ <span className="font-bold text-accent">
  {(Number(item.coffeeItem.price) * item.quantity).toFixed(2)} ريال
  </span>
  </div>
@@ -1047,7 +1047,7 @@ export default function EmployeeCashier() {
  ))}
  </div>
 
- <Separator className="bg-amber-500/20" />
+ <Separator className="bg-background0/20" />
 
  <div className="space-y-3">
  <div className="space-y-2">
@@ -1059,7 +1059,7 @@ export default function EmployeeCashier() {
  value={customerName}
  onChange={(e) => setCustomerName(e.target.value)}
  placeholder="أدخل اسم العميل"
- className="bg-[#1a1410] border-amber-500/30 text-white text-right"
+ className="bg-[#1a1410] border-primary/30 text-white text-right"
  data-testid="input-customer-name"
  />
  </div>
@@ -1074,7 +1074,7 @@ export default function EmployeeCashier() {
  value={customerPhone}
  onChange={(e) => setCustomerPhone(e.target.value)}
  placeholder="5xxxxxxxx"
- className="bg-[#1a1410] border-amber-500/30 text-white text-right flex-1"
+ className="bg-[#1a1410] border-primary/30 text-white text-right flex-1"
  data-testid="input-customer-phone"
  />
  <Dialog open={showBarcodeScanner} onOpenChange={setShowBarcodeScanner}>
@@ -1082,15 +1082,15 @@ export default function EmployeeCashier() {
  <Button
  variant="outline"
  size="icon"
- className="border-amber-500/30 text-amber-400"
+ className="border-primary/30 text-accent"
  data-testid="button-scan-loyalty"
  >
  <CreditCard className="w-4 h-4" />
  </Button>
  </DialogTrigger>
- <DialogContent className="bg-[#1a1410] border-amber-500/30 text-white max-w-md">
+ <DialogContent className="bg-[#1a1410] border-primary/30 text-white max-w-md">
  <DialogHeader>
- <DialogTitle className="text-right text-amber-400">مسح بطاقة الولاء</DialogTitle>
+ <DialogTitle className="text-right text-accent">مسح بطاقة الولاء</DialogTitle>
  </DialogHeader>
  <BarcodeScanner
  showManualInput={true}
@@ -1116,7 +1116,7 @@ export default function EmployeeCashier() {
  </Dialog>
  </div>
  {isCheckingCustomer && (
- <p className="text-xs text-amber-400 text-right animate-pulse">جاري التحقق من العميل...</p>
+ <p className="text-xs text-accent text-right animate-pulse">جاري التحقق من العميل...</p>
  )}
  </div>
 
@@ -1168,13 +1168,13 @@ export default function EmployeeCashier() {
  )}
 
  {loyaltyCard && (
- <div className="bg-gradient-to-br from-amber-900/30 to-orange-900/30 p-4 rounded-lg border-2 border-amber-500/30 space-y-2">
+ <div className="bg-gradient-to-br from-amber-900/30 to-orange-900/30 p-4 rounded-lg border-2 border-primary/30 space-y-2">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
- <Gift className="w-5 h-5 text-amber-400" />
- <span className="text-amber-300 font-semibold">بطاقة كوبي</span>
+ <Gift className="w-5 h-5 text-accent" />
+ <span className="text-accent font-semibold">بطاقة كوبي</span>
  </div>
- <Badge className="bg-amber-500 text-black">
+ <Badge className="bg-background0 text-black">
  {(loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)} أختام
  </Badge>
  </div>
@@ -1189,7 +1189,7 @@ export default function EmployeeCashier() {
  isUsed
  ? 'bg-gray-600 border-gray-500 text-gray-400 line-through'
  : isEarned
- ? 'bg-amber-500 border-amber-400 text-black'
+ ? 'bg-background0 border-primary text-black'
  : 'bg-gray-800 border-gray-600 text-gray-500'
  }`}
  >
@@ -1199,7 +1199,7 @@ export default function EmployeeCashier() {
  })}
  </div>
  <p className="text-xs text-gray-400 text-right flex items-center gap-1 justify-end">
- <Gift className="w-3 h-3 text-amber-400" />
+ <Gift className="w-3 h-3 text-accent" />
  المشروبات المجانية متاحة: {Math.floor(((loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)) / 10)}
  </p>
  </div>
@@ -1217,7 +1217,7 @@ export default function EmployeeCashier() {
  className={`flex flex-col items-center gap-1 py-3 ${
  orderType === 'dine-in' 
  ? 'bg-purple-600 border-purple-500 text-white' 
- : 'bg-[#1a1410] border-amber-500/30 text-gray-300'
+ : 'bg-[#1a1410] border-primary/30 text-gray-300'
  }`}
  data-testid="button-order-type-dinein"
  >
@@ -1231,7 +1231,7 @@ export default function EmployeeCashier() {
  className={`flex flex-col items-center gap-1 py-3 ${
  orderType === 'pickup' 
  ? 'bg-blue-600 border-blue-500 text-white' 
- : 'bg-[#1a1410] border-amber-500/30 text-gray-300'
+ : 'bg-[#1a1410] border-primary/30 text-gray-300'
  }`}
  data-testid="button-order-type-pickup"
  >
@@ -1245,7 +1245,7 @@ export default function EmployeeCashier() {
  className={`flex flex-col items-center gap-1 py-3 ${
  orderType === 'delivery' 
  ? 'bg-green-600 border-green-500 text-white' 
- : 'bg-[#1a1410] border-amber-500/30 text-gray-300'
+ : 'bg-[#1a1410] border-primary/30 text-gray-300'
  }`}
  data-testid="button-order-type-delivery"
  >
@@ -1264,7 +1264,7 @@ export default function EmployeeCashier() {
  value={tableNumber}
  onChange={(e) => setTableNumber(e.target.value)}
  placeholder="مثال: 5 أو A3"
- className="bg-[#1a1410] border-amber-500/30 text-white text-right"
+ className="bg-[#1a1410] border-primary/30 text-white text-right"
  data-testid="input-table-number"
  />
  </div>
@@ -1274,7 +1274,7 @@ export default function EmployeeCashier() {
  طريقة الدفع
  </Label>
  <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-payment-method">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-payment-method">
  <SelectValue />
  </SelectTrigger>
  <SelectContent>
@@ -1292,9 +1292,9 @@ export default function EmployeeCashier() {
  </SelectContent>
  </Select>
  {paymentMethod === 'qahwa-card' && loyaltyCard && (
- <div className="bg-amber-900/30 border border-amber-500/50 rounded-lg p-4 space-y-3 mt-2">
+ <div className="bg-primary/30 border border-primary/50 rounded-lg p-4 space-y-3 mt-2">
  <div className="space-y-2">
- <Label className="text-amber-300 text-sm">عدد الأختام المراد استخدامها</Label>
+ <Label className="text-accent text-sm">عدد الأختام المراد استخدامها</Label>
  <div className="flex gap-2 items-center">
  <Input
  type="number"
@@ -1302,18 +1302,18 @@ export default function EmployeeCashier() {
  max={(loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)}
  value={stampsToUse}
  onChange={(e) => setStampsToUse(Math.min(parseInt(e.target.value) || 0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)))}
- className="bg-[#1a1410] border-amber-500/30 text-white text-center w-20"
+ className="bg-[#1a1410] border-primary/30 text-white text-center w-20"
  data-testid="input-stamps-to-use"
  />
- <span className="text-amber-400 text-sm">من {(loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)}</span>
+ <span className="text-accent text-sm">من {(loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)}</span>
  </div>
  </div>
  <div className="bg-[#1a1410] rounded p-2 space-y-1">
  <p className="text-xs text-gray-400">تفاصيل الحسم:</p>
- <p className="text-amber-300 text-sm">
+ <p className="text-accent text-sm">
  الأختام المستخدمة: {stampsToUse} ختم
  </p>
- <p className="text-amber-300 text-sm">
+ <p className="text-accent text-sm">
  {(() => {
  const itemPrices = orderItems.flatMap(item => 
  Array(item.quantity).fill(item.coffeeItem.price)
@@ -1328,7 +1328,7 @@ export default function EmployeeCashier() {
  return `قيمة الخصم: ${discount.toFixed(2)} ريال (${stampsToUse} ختم = ${freeItems.length} عنصر مجاني)`;
  })()}
  </p>
- <p className="text-amber-400 text-sm">
+ <p className="text-accent text-sm">
  {(() => {
  const itemPrices = orderItems.flatMap(item => 
  Array(item.quantity).fill(item.coffeeItem.price)
@@ -1411,7 +1411,7 @@ export default function EmployeeCashier() {
  </div>
  </div>
 
- <Separator className="bg-amber-500/20" />
+ <Separator className="bg-background0/20" />
 
  <div className="space-y-2">
  <div className="flex justify-between items-center text-sm">
@@ -1430,11 +1430,11 @@ export default function EmployeeCashier() {
  </div>
  )}
 
- <Separator className="bg-amber-500/10" />
+ <Separator className="bg-background0/10" />
  
  <div className="flex justify-between items-center text-lg font-bold">
- <span className="text-amber-500">الإجمالي:</span>
- <span className="text-amber-500" data-testid="text-total">
+ <span className="text-accent">الإجمالي:</span>
+ <span className="text-accent" data-testid="text-total">
  {calculateTotal()} ريال
  </span>
  </div>

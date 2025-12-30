@@ -389,7 +389,7 @@ export default function CashierTables() {
 
   if (isAdminUser && !selectedBranchId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center p-4" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100 flex items-center justify-center p-4" dir="rtl">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle>اختر الفرع</CardTitle>
@@ -423,13 +423,13 @@ export default function CashierTables() {
   const activeBranchId = selectedBranchId || employeeBranchId;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100" dir="rtl">
       <div className="max-w-7xl mx-auto p-4 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-amber-900">إدارة الطاولات</h1>
-            <p className="text-amber-700">
+            <h1 className="text-3xl font-bold text-accent">إدارة الطاولات</h1>
+            <p className="text-accent">
               {branch?.nameAr || "تحميل..."} • {tables.length} طاولة
             </p>
           </div>
@@ -464,7 +464,7 @@ export default function CashierTables() {
         {/* Tables Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="text-lg text-amber-900">جاري التحميل...</div>
+            <div className="text-lg text-accent">جاري التحميل...</div>
           </div>
         ) : tables.length === 0 ? (
           <Card className="bg-white/80 backdrop-blur">
@@ -526,7 +526,7 @@ export default function CashierTables() {
                       </div>
                       
                       {/* Customer Info */}
-                      <div className="bg-white/70 dark:bg-slate-800/70 rounded-lg p-3 space-y-2 backdrop-blur">
+                      <div className="bg-white/70 dark:bg-card/70 rounded-lg p-3 space-y-2 backdrop-blur">
                         <div className="flex items-center justify-center gap-2 text-sm">
                           <User className="w-4 h-4 text-red-600" />
                           <span className="font-semibold text-slate-900 dark:text-slate-100">

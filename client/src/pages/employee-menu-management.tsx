@@ -759,7 +759,7 @@ export default function EmployeeMenuManagement() {
  }
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] p-4">
+ <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4">
  {/* Header */}
          <div className="max-w-7xl mx-auto mb-6">
          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -768,7 +768,7 @@ export default function EmployeeMenuManagement() {
          <Coffee className="w-6 h-6 text-white" />
          </div>
          <div>
-         <h1 className="text-2xl font-bold text-amber-500">إدارة المشروبات</h1>
+         <h1 className="text-2xl font-bold text-accent">إدارة المشروبات</h1>
          <p className="text-gray-400 text-sm">تحديث حالة توفر المشروبات</p>
          </div>
          </div>
@@ -794,17 +794,17 @@ export default function EmployeeMenuManagement() {
  إضافة مشروب جديد
  </Button>
  </DialogTrigger>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+ <DialogContent className="bg-[#2d1f1a] border-primary/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
  <DialogHeader>
- <DialogTitle className="text-amber-500">
+ <DialogTitle className="text-accent">
    <div className="flex flex-col gap-3">
      <span>إضافة مشروب جديد</span>
      <div className="flex items-center gap-2 text-sm font-normal">
-       <span className={`px-3 py-1 rounded-full ${addStep === 1 ? 'bg-amber-500 text-white' : 'bg-gray-600 text-gray-300'}`}>
+       <span className={`px-3 py-1 rounded-full ${addStep === 1 ? 'bg-background0 text-white' : 'bg-gray-600 text-gray-300'}`}>
          1. المعلومات الأساسية
        </span>
        <ArrowLeft className="w-4 h-4 text-gray-400" />
-       <span className={`px-3 py-1 rounded-full ${addStep === 2 ? 'bg-amber-500 text-white' : 'bg-gray-600 text-gray-300'}`}>
+       <span className={`px-3 py-1 rounded-full ${addStep === 2 ? 'bg-background0 text-white' : 'bg-gray-600 text-gray-300'}`}>
          2. المكونات والوصفة
        </span>
      </div>
@@ -822,7 +822,7 @@ export default function EmployeeMenuManagement() {
  name="nameAr"
  required
  defaultValue={step1Data?.nameAr || ""}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-name-ar"
  />
  </div>
@@ -832,7 +832,7 @@ export default function EmployeeMenuManagement() {
  id="nameEn"
  name="nameEn"
  defaultValue={step1Data?.nameEn || ""}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-name-en"
  />
  </div>
@@ -845,7 +845,7 @@ export default function EmployeeMenuManagement() {
  name="description"
  required
  defaultValue={step1Data?.description || ""}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-description"
  />
  </div>
@@ -854,10 +854,10 @@ export default function EmployeeMenuManagement() {
  <div>
  <Label htmlFor="category" className="text-gray-300">القسم *</Label>
  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-category">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-category">
  <SelectValue placeholder="اختر القسم" />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <SelectItem value="basic">قهوة أساسية</SelectItem>
  <SelectItem value="hot">قهوة ساخنة</SelectItem>
  <SelectItem value="cold">قهوة باردة </SelectItem>
@@ -876,7 +876,7 @@ export default function EmployeeMenuManagement() {
  min="0"
  required
  defaultValue={step1Data?.price || ""}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-price"
  />
  </div>
@@ -892,7 +892,7 @@ export default function EmployeeMenuManagement() {
  step="0.01"
  min="0"
  defaultValue={step1Data?.oldPrice || ""}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-old-price"
  />
  </div>
@@ -909,7 +909,7 @@ export default function EmployeeMenuManagement() {
    />
    <div 
      onClick={() => fileInputRef.current?.click()}
-     className="border-2 border-dashed border-amber-500/30 rounded-lg p-4 text-center cursor-pointer hover:border-amber-500/60 transition-colors"
+     className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center cursor-pointer hover:border-primary/60 transition-colors"
    >
      {imagePreview ? (
        <div className="relative">
@@ -920,7 +920,7 @@ export default function EmployeeMenuManagement() {
        </div>
      ) : (
        <div className="py-4">
-         <Upload className="w-8 h-8 text-amber-500/50 mx-auto mb-2" />
+         <Upload className="w-8 h-8 text-accent/50 mx-auto mb-2" />
          <p className="text-gray-400 text-sm">انقر لرفع صورة</p>
          <p className="text-gray-500 text-xs mt-1">PNG, JPG حتى 5 ميجابايت</p>
        </div>
@@ -933,10 +933,10 @@ export default function EmployeeMenuManagement() {
  <div>
  <Label htmlFor="coffeeStrength" className="text-gray-300">قوة القهوة</Label>
  <Select value={selectedCoffeeStrength} onValueChange={setSelectedCoffeeStrength}>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-coffee-strength">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-coffee-strength">
  <SelectValue placeholder="اختر قوة القهوة" />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <SelectItem value="mild">خفيفة (1-4)</SelectItem>
  <SelectItem value="classic">كلاسيكية/العادي</SelectItem>
  <SelectItem value="medium">متوسطة (4-8)</SelectItem>
@@ -949,7 +949,7 @@ export default function EmployeeMenuManagement() {
    <div>
      <Label className="text-gray-300">متوفر في الفروع</Label>
      <p className="text-gray-500 text-xs mb-2">اختر الفروع التي سيتوفر فيها هذا المنتج (اتركه فارغاً للتوفر في جميع الفروع)</p>
-     <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto bg-[#1a1410] p-3 rounded-lg border border-amber-500/20">
+     <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto bg-[#1a1410] p-3 rounded-lg border border-primary/20">
        {branches.filter(b => b.isActive === 1 || b.isActive === true || String(b.isActive) === "1" || String(b.isActive) === "true").map((branch) => {
          const branchId = branch.id;
          const isSelected = selectedBranches.some(sb => sb.branchId === branchId);
@@ -959,7 +959,7 @@ export default function EmployeeMenuManagement() {
                id={`branch-${branchId}`}
                checked={isSelected}
                onCheckedChange={(checked) => handleToggleBranch(branchId, !!checked)}
-               className="border-amber-500/50"
+               className="border-primary/50"
                data-testid={`checkbox-branch-${branchId}`}
              />
              <label htmlFor={`branch-${branchId}`} className="text-gray-300 text-sm cursor-pointer">
@@ -995,13 +995,13 @@ export default function EmployeeMenuManagement() {
  </form>
  ) : (
  <div className="space-y-4">
-   <div className="bg-[#1a1410] p-4 rounded-lg border border-amber-500/20">
+   <div className="bg-[#1a1410] p-4 rounded-lg border border-primary/20">
      <p className="text-gray-400 text-sm mb-1">المشروب:</p>
-     <p className="text-amber-500 font-bold text-lg">{step1Data?.nameAr}</p>
+     <p className="text-accent font-bold text-lg">{step1Data?.nameAr}</p>
      <p className="text-gray-500 text-sm">{step1Data?.category && categoryNames[step1Data.category as keyof typeof categoryNames]} • {step1Data?.price} ريال</p>
    </div>
 
-   <div className="border-t border-amber-500/20 pt-4">
+   <div className="border-t border-primary/20 pt-4">
      <Label className="text-gray-300 text-lg flex items-center gap-2">
        <FlaskConical className="w-5 h-5" />
        وصفة المنتج (المواد الخام)
@@ -1016,7 +1016,7 @@ export default function EmployeeMenuManagement() {
              const selected = recipeItems.find(s => s.rawItemId === raw.id);
              
              return (
-               <div key={raw.id} className="flex items-center gap-3 p-2 bg-[#1a1410] rounded-lg border border-amber-500/10">
+               <div key={raw.id} className="flex items-center gap-3 p-2 bg-[#1a1410] rounded-lg border border-primary/10">
                  <Checkbox
                    id={`raw-step2-${raw.id}`}
                    checked={isSelected}
@@ -1032,7 +1032,7 @@ export default function EmployeeMenuManagement() {
                        setRecipeItems(recipeItems.filter(s => s.rawItemId !== raw.id));
                      }
                    }}
-                   className="border-amber-500/50"
+                   className="border-primary/50"
                    data-testid={`checkbox-raw-${raw.id}`}
                  />
                  <label htmlFor={`raw-step2-${raw.id}`} className="text-gray-300 flex-1 cursor-pointer">
@@ -1051,7 +1051,7 @@ export default function EmployeeMenuManagement() {
                            s.rawItemId === raw.id ? { ...s, quantity: parseFloat(e.target.value) || 0 } : s
                          ));
                        }}
-                       className="w-20 bg-[#2d1f1a] border-amber-500/30 text-white text-center"
+                       className="w-20 bg-[#2d1f1a] border-primary/30 text-white text-center"
                        data-testid={`input-qty-raw-${raw.id}`}
                      />
                      <Select
@@ -1062,10 +1062,10 @@ export default function EmployeeMenuManagement() {
                          ));
                        }}
                      >
-                       <SelectTrigger className="w-20 bg-[#2d1f1a] border-amber-500/30 text-white" data-testid={`select-unit-raw-${raw.id}`}>
+                       <SelectTrigger className="w-20 bg-[#2d1f1a] border-primary/30 text-white" data-testid={`select-unit-raw-${raw.id}`}>
                          <SelectValue />
                        </SelectTrigger>
-                       <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+                       <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
                          <SelectItem value="g">جرام</SelectItem>
                          <SelectItem value="ml">مل</SelectItem>
                          <SelectItem value="kg">كجم</SelectItem>
@@ -1101,7 +1101,7 @@ export default function EmployeeMenuManagement() {
          )}
 
          {recipeItems.length > 0 && (
-           <div className="bg-gradient-to-r from-[#1a1410] to-[#2d1f1a] p-4 rounded-lg border border-green-500/30 mt-3" data-testid="recipe-cost-preview">
+           <div className="bg-gradient-to-r from-background to-background p-4 rounded-lg border border-green-500/30 mt-3" data-testid="recipe-cost-preview">
              {(() => {
                const { totalCost, breakdown } = calculateRecipeCost(recipeItems);
                const sellingPrice = step1Data?.price ? parseFloat(step1Data.price) : 0;
@@ -1173,7 +1173,7 @@ export default function EmployeeMenuManagement() {
        type="button"
        variant="outline"
        onClick={() => setAddStep(1)}
-       className="border-amber-500/30 text-amber-500"
+       className="border-primary/30 text-accent"
        data-testid="button-back-step"
      >
        <ArrowRight className="w-4 h-4 ml-2" />
@@ -1209,7 +1209,7 @@ export default function EmployeeMenuManagement() {
  <Button
  variant="outline"
  onClick={() => setLocation("/employee/ingredients")}
- className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+ className="border-primary/50 text-accent hover:bg-background0 hover:text-white"
  data-testid="button-ingredients"
  >
  إدارةالمكونات
@@ -1217,7 +1217,7 @@ export default function EmployeeMenuManagement() {
  <Button
  variant="outline"
  onClick={() => setLocation("/employee/dashboard")}
- className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+ className="border-primary/50 text-accent hover:bg-background0 hover:text-white"
  data-testid="button-back"
  >
  <ArrowRight className="w-4 h-4 ml-2" />
@@ -1230,15 +1230,15 @@ export default function EmployeeMenuManagement() {
  {/* Content */}
  <div className="max-w-7xl mx-auto space-y-6">
  {isLoading ? (
- <div className="text-center text-amber-500 py-12">
+ <div className="text-center text-accent py-12">
  <Coffee className="w-12 h-12 animate-spin mx-auto mb-4" />
  <p>جاري تحميل المشروبات...</p>
  </div>
  ) : (
  Object.entries(categorizedItems).map(([category, items]) => (
- <Card key={category} className="bg-[#2d1f1a] border-amber-500/20">
+ <Card key={category} className="bg-[#2d1f1a] border-primary/20">
  <CardHeader>
- <CardTitle className="text-amber-500 text-right text-xl">
+ <CardTitle className="text-accent text-right text-xl">
  {categoryNames[category as keyof typeof categoryNames] || category}
  </CardTitle>
  </CardHeader>
@@ -1246,7 +1246,7 @@ export default function EmployeeMenuManagement() {
  {items.map((item) => (
  <div
  key={item.id}
- className="flex items-center justify-between p-4 bg-[#1a1410] rounded-lg border border-amber-500/10 hover:border-amber-500/30 transition-all"
+ className="flex items-center justify-between p-4 bg-[#1a1410] rounded-lg border border-primary/10 hover:border-primary/30 transition-all"
  data-testid={`item-${item.id}`}
  >
  <div className="flex items-center gap-4 flex-1">
@@ -1260,16 +1260,16 @@ export default function EmployeeMenuManagement() {
  data-testid={`img-${item.id}`}
  />
  <div className="flex-1">
- <h3 className="text-lg font-bold text-amber-500" data-testid={`text-name-${item.id}`}>
+ <h3 className="text-lg font-bold text-accent" data-testid={`text-name-${item.id}`}>
  {item.nameAr}
  </h3>
  <p className="text-gray-400 text-sm">{item.nameEn}</p>
  <div className="flex items-center gap-2 mt-1">
- <span className="text-amber-500 font-bold" data-testid={`text-price-${item.id}`}>
+ <span className="text-accent font-bold" data-testid={`text-price-${item.id}`}>
  {parseFloat(String(item.price)).toFixed(2)} ريال
  </span>
  {item.coffeeStrength && item.coffeeStrength !== "classic" && (
- <Badge variant="outline" className="text-xs border-amber-500/30 text-gray-400">
+ <Badge variant="outline" className="text-xs border-primary/30 text-gray-400">
  {item.coffeeStrength === "strong" && "قوي"}
  {item.coffeeStrength === "medium" && "متوسط"}
  {item.coffeeStrength === "mild" && "خفيف"}
@@ -1286,7 +1286,7 @@ export default function EmployeeMenuManagement() {
  item.availabilityStatus === 'available' ? "bg-green-500" :
  item.availabilityStatus === 'out_of_stock' ? "bg-red-500" :
  item.availabilityStatus === 'coming_soon' ? "bg-blue-500" :
- "bg-orange-500"
+ "bg-background0"
  }
  data-testid={`badge-status-${item.id}`}
  >
@@ -1320,7 +1320,7 @@ export default function EmployeeMenuManagement() {
  value={item.availabilityStatus || 'available'}
  onChange={(e) => handleStatusChange(item.id, e.target.value)}
  disabled={updateAvailabilityMutation.isPending}
- className="bg-[#1a1410] border border-amber-500/30 rounded-lg px-3 py-1 text-sm text-amber-500"
+ className="bg-[#1a1410] border border-primary/30 rounded-lg px-3 py-1 text-sm text-accent"
  data-testid={`select-status-${item.id}`}
  >
  <option value="available"> متوفر</option>
@@ -1351,7 +1351,7 @@ export default function EmployeeMenuManagement() {
  className={`${
  item.isNewProduct === 1
  ? "bg-yellow-500 border-yellow-500 text-white"
- : "border-amber-500/30 text-amber-500"
+ : "border-primary/30 text-accent"
  }`}
  disabled={toggleNewProductMutation.isPending}
  data-testid={`button-toggle-new-${item.id}`}
@@ -1401,9 +1401,9 @@ export default function EmployeeMenuManagement() {
 
  {/* Edit Dialog */}
  <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+ <DialogContent className="bg-[#2d1f1a] border-primary/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
  <DialogHeader>
- <DialogTitle className="text-amber-500">تعديل المشروب</DialogTitle>
+ <DialogTitle className="text-accent">تعديل المشروب</DialogTitle>
  </DialogHeader>
  {editingItem && (
  <form onSubmit={handleSubmitEditItem} className="space-y-4">
@@ -1415,7 +1415,7 @@ export default function EmployeeMenuManagement() {
  name="nameAr"
  defaultValue={editingItem.nameAr}
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-name-ar"
  />
  </div>
@@ -1425,7 +1425,7 @@ export default function EmployeeMenuManagement() {
  id="edit-nameEn"
  name="nameEn"
  defaultValue={editingItem.nameEn}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-name-en"
  />
  </div>
@@ -1438,7 +1438,7 @@ export default function EmployeeMenuManagement() {
  name="description"
  defaultValue={editingItem.description}
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-description"
  />
  </div>
@@ -1447,10 +1447,10 @@ export default function EmployeeMenuManagement() {
  <div>
  <Label htmlFor="edit-category" className="text-gray-300">القسم *</Label>
  <Select name="category" defaultValue={editingItem.category} required>
- <SelectTrigger className="bg-[#1a1410] border-amber-500/30 text-white" data-testid="select-edit-category">
+ <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-edit-category">
  <SelectValue placeholder="اختر القسم" />
  </SelectTrigger>
- <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+ <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  <SelectItem value="basic">قهوة أساسية</SelectItem>
  <SelectItem value="hot">قهوة ساخنة</SelectItem>
  <SelectItem value="cold">قهوة باردة </SelectItem>
@@ -1469,7 +1469,7 @@ export default function EmployeeMenuManagement() {
  min="0"
  defaultValue={editingItem.price}
  required
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-price"
  />
  </div>
@@ -1485,7 +1485,7 @@ export default function EmployeeMenuManagement() {
  step="0.01"
  min="0"
  defaultValue={editingItem.oldPrice}
- className="bg-[#1a1410] border-amber-500/30 text-white"
+ className="bg-[#1a1410] border-primary/30 text-white"
  data-testid="input-edit-old-price"
  />
  </div>
@@ -1502,7 +1502,7 @@ export default function EmployeeMenuManagement() {
    />
    <div 
      onClick={() => editFileInputRef.current?.click()}
-     className="border-2 border-dashed border-amber-500/30 rounded-lg p-4 text-center cursor-pointer hover:border-amber-500/60 transition-colors"
+     className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center cursor-pointer hover:border-primary/60 transition-colors"
    >
      {editImagePreview ? (
        <div className="relative">
@@ -1520,7 +1520,7 @@ export default function EmployeeMenuManagement() {
        </div>
      ) : (
        <div className="py-4">
-         <Upload className="w-8 h-8 text-amber-500/50 mx-auto mb-2" />
+         <Upload className="w-8 h-8 text-accent/50 mx-auto mb-2" />
          <p className="text-gray-400 text-sm">انقر لرفع صورة</p>
          <p className="text-gray-500 text-xs mt-1">PNG, JPG حتى 5 ميجابايت</p>
        </div>
@@ -1576,7 +1576,7 @@ export default function EmployeeMenuManagement() {
      
      <div className="space-y-4 py-4">
        <div className="bg-[#1a1410] p-3 rounded-lg border border-green-500/20">
-         <p className="text-gray-400 text-sm">سعر البيع: <span className="text-amber-500 font-bold">{editingRecipeItem?.price} ريال</span></p>
+         <p className="text-gray-400 text-sm">سعر البيع: <span className="text-accent font-bold">{editingRecipeItem?.price} ريال</span></p>
        </div>
        
        <div>
@@ -1589,7 +1589,7 @@ export default function EmployeeMenuManagement() {
              const selected = recipeItems.find(s => s.rawItemId === raw.id);
              
              return (
-               <div key={raw.id} className="flex items-center gap-3 p-2 bg-[#1a1410] rounded-lg border border-amber-500/10">
+               <div key={raw.id} className="flex items-center gap-3 p-2 bg-[#1a1410] rounded-lg border border-primary/10">
                  <Checkbox
                    id={`recipe-edit-${raw.id}`}
                    checked={isSelected}
@@ -1638,7 +1638,7 @@ export default function EmployeeMenuManagement() {
                        <SelectTrigger className="w-20 bg-[#2d1f1a] border-green-500/30 text-white" data-testid={`select-recipe-unit-${raw.id}`}>
                          <SelectValue />
                        </SelectTrigger>
-                       <SelectContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+                       <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
                          <SelectItem value="g">جرام</SelectItem>
                          <SelectItem value="ml">مل</SelectItem>
                          <SelectItem value="kg">كجم</SelectItem>
@@ -1654,7 +1654,7 @@ export default function EmployeeMenuManagement() {
          </div>
          
          {recipeItems.length > 0 && (
-           <div className="bg-gradient-to-r from-[#1a1410] to-[#2d1f1a] p-4 rounded-lg border border-green-500/30 mt-3">
+           <div className="bg-gradient-to-r from-background to-background p-4 rounded-lg border border-green-500/30 mt-3">
              {(() => {
                const { totalCost, breakdown } = calculateRecipeCost(recipeItems);
                const sellingPrice = editingRecipeItem?.price ? parseFloat(String(editingRecipeItem.price)) : 0;
@@ -1762,9 +1762,9 @@ export default function EmployeeMenuManagement() {
 
  {/* Skip Recipe Confirmation Dialog */}
  <AlertDialog open={skipRecipeConfirmOpen} onOpenChange={setSkipRecipeConfirmOpen}>
-   <AlertDialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white">
+   <AlertDialogContent className="bg-[#2d1f1a] border-primary/20 text-white">
      <AlertDialogHeader>
-       <AlertDialogTitle className="text-amber-500">تأكيد إنشاء منتج بدون وصفة</AlertDialogTitle>
+       <AlertDialogTitle className="text-accent">تأكيد إنشاء منتج بدون وصفة</AlertDialogTitle>
        <AlertDialogDescription className="text-gray-300">
          أنت على وشك إنشاء منتج بدون وصفة. هذا يعني أن:
          <ul className="list-disc list-inside mt-2 space-y-1 text-gray-400">
@@ -1772,7 +1772,7 @@ export default function EmployeeMenuManagement() {
            <li>لن يمكن حساب تكلفة المنتج بدقة</li>
            <li>لن يكون المنتج "جاهز للبيع" بالكامل</li>
          </ul>
-         <p className="mt-3 text-amber-400">يمكنك إضافة الوصفة لاحقاً من قائمة المنتجات.</p>
+         <p className="mt-3 text-accent">يمكنك إضافة الوصفة لاحقاً من قائمة المنتجات.</p>
        </AlertDialogDescription>
      </AlertDialogHeader>
      <AlertDialogFooter>

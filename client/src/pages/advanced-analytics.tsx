@@ -233,7 +233,7 @@ export default function AdvancedAnalyticsPage() {
   const totalPaymentAmount = data.paymentMethods.reduce((sum, p) => sum + p.amount, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-card via-slate-800 to-slate-900" dir="rtl">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         <div className="flex items-center justify-between gap-4 mb-6">
           <Button 
@@ -351,7 +351,7 @@ export default function AdvancedAnalyticsPage() {
                     {data.categoryBreakdown.map((cat, idx) => {
                       const percentage = (cat.revenue / totalCategoryRevenue) * 100;
                       const colors = [
-                        "from-amber-500 to-orange-500",
+                        "from-amber-500 to-background0",
                         "from-blue-500 to-cyan-500",
                         "from-purple-500 to-pink-500",
                         "from-green-500 to-emerald-500",
@@ -424,7 +424,7 @@ export default function AdvancedAnalyticsPage() {
             <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Star className="w-5 h-5 text-amber-400" />
+                  <Star className="w-5 h-5 text-accent" />
                   أفضل المنتجات أداءً
                 </CardTitle>
                 <CardDescription className="text-slate-400">
@@ -437,11 +437,11 @@ export default function AdvancedAnalyticsPage() {
                     const maxSales = Math.max(...data.topProducts.map(p => p.sales));
                     const percentage = (product.sales / maxSales) * 100;
                     return (
-                      <div key={product.id} className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-lg">
+                      <div key={product.id} className="flex items-center gap-4 p-4 bg-card/50 rounded-lg">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          idx === 0 ? 'bg-amber-500 text-white' :
+                          idx === 0 ? 'bg-background0 text-white' :
                           idx === 1 ? 'bg-slate-400 text-white' :
-                          idx === 2 ? 'bg-amber-700 text-white' :
+                          idx === 2 ? 'bg-primary text-white' :
                           'bg-slate-700 text-slate-300'
                         }`}>
                           {idx + 1}
@@ -457,7 +457,7 @@ export default function AdvancedAnalyticsPage() {
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
                               <div 
-                                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+                                className="h-full bg-gradient-to-r from-amber-500 to-background0 rounded-full"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
@@ -487,11 +487,11 @@ export default function AdvancedAnalyticsPage() {
                         <p className="text-red-400 text-xs">انخفاض 3% في المبيعات</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-3 bg-amber-900/20 border border-amber-800 rounded-lg">
-                      <AlertTriangle className="w-5 h-5 text-amber-400" />
+                    <div className="flex items-center gap-3 p-3 bg-primary/20 border border-primary rounded-lg">
+                      <AlertTriangle className="w-5 h-5 text-accent" />
                       <div className="flex-1">
                         <p className="text-white text-sm">شاي أخضر</p>
-                        <p className="text-amber-400 text-xs">مخزون منخفض</p>
+                        <p className="text-accent text-xs">مخزون منخفض</p>
                       </div>
                     </div>
                   </div>
@@ -551,17 +551,17 @@ export default function AdvancedAnalyticsPage() {
                   })}
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                  <div className="p-3 bg-slate-900/50 rounded-lg">
+                  <div className="p-3 bg-card/50 rounded-lg">
                     <p className="text-slate-400 text-xs">فترة الصباح</p>
                     <p className="text-white font-bold">6-11</p>
                     <p className="text-cyan-400 text-sm">35% من الطلبات</p>
                   </div>
-                  <div className="p-3 bg-slate-900/50 rounded-lg">
+                  <div className="p-3 bg-card/50 rounded-lg">
                     <p className="text-slate-400 text-xs">فترة الظهيرة</p>
                     <p className="text-white font-bold">12-17</p>
                     <p className="text-cyan-400 text-sm">48% من الطلبات</p>
                   </div>
-                  <div className="p-3 bg-slate-900/50 rounded-lg">
+                  <div className="p-3 bg-card/50 rounded-lg">
                     <p className="text-slate-400 text-xs">فترة المساء</p>
                     <p className="text-white font-bold">18-22</p>
                     <p className="text-cyan-400 text-sm">17% من الطلبات</p>
@@ -587,15 +587,15 @@ export default function AdvancedAnalyticsPage() {
                       </div>
                       <span className="text-2xl font-bold text-green-400">561</span>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-amber-900/20 border border-amber-800 rounded-lg">
+                    <div className="flex items-center justify-between p-4 bg-primary/20 border border-primary rounded-lg">
                       <div className="flex items-center gap-3">
-                        <Clock className="w-6 h-6 text-amber-400" />
+                        <Clock className="w-6 h-6 text-accent" />
                         <div>
                           <p className="text-white">جيد (5-10 دقائق)</p>
-                          <p className="text-amber-400 text-sm">38% من الطلبات</p>
+                          <p className="text-accent text-sm">38% من الطلبات</p>
                         </div>
                       </div>
-                      <span className="text-2xl font-bold text-amber-400">473</span>
+                      <span className="text-2xl font-bold text-accent">473</span>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-red-900/20 border border-red-800 rounded-lg">
                       <div className="flex items-center gap-3">
@@ -682,7 +682,7 @@ export default function AdvancedAnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="p-4 bg-slate-900/50 rounded-lg border border-indigo-700">
+                  <div className="p-4 bg-card/50 rounded-lg border border-indigo-700">
                     <p className="text-indigo-300 text-sm">توقع إيرادات الأسبوع القادم</p>
                     <p className="text-3xl font-bold text-white mt-2">52,450 ر.س</p>
                     <div className="flex items-center gap-1 text-green-400 text-sm mt-2">
@@ -690,7 +690,7 @@ export default function AdvancedAnalyticsPage() {
                       <span>+16% عن الأسبوع الحالي</span>
                     </div>
                   </div>
-                  <div className="p-4 bg-slate-900/50 rounded-lg border border-indigo-700">
+                  <div className="p-4 bg-card/50 rounded-lg border border-indigo-700">
                     <p className="text-indigo-300 text-sm">توقع عدد الطلبات</p>
                     <p className="text-3xl font-bold text-white mt-2">1,445</p>
                     <div className="flex items-center gap-1 text-green-400 text-sm mt-2">
@@ -698,19 +698,19 @@ export default function AdvancedAnalyticsPage() {
                       <span>+200 طلب إضافي</span>
                     </div>
                   </div>
-                  <div className="p-4 bg-slate-900/50 rounded-lg border border-indigo-700">
+                  <div className="p-4 bg-card/50 rounded-lg border border-indigo-700">
                     <p className="text-indigo-300 text-sm">المخزون المطلوب</p>
                     <p className="text-3xl font-bold text-white mt-2">15 كجم</p>
-                    <p className="text-amber-400 text-sm mt-2">قهوة - اطلب قبل الخميس</p>
+                    <p className="text-accent text-sm mt-2">قهوة - اطلب قبل الخميس</p>
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-amber-900/20 border border-amber-700 rounded-lg">
+                <div className="mt-6 p-4 bg-primary/20 border border-primary rounded-lg">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-accent mt-0.5" />
                     <div>
                       <p className="text-white font-medium">تنبيه: ذروة متوقعة</p>
-                      <p className="text-amber-300 text-sm mt-1">
+                      <p className="text-accent text-sm mt-1">
                         يوم السبت القادم متوقع ارتفاع 35% في الطلبات. 
                         تأكد من توفر مخزون كافٍ وجدولة موظفين إضافيين.
                       </p>

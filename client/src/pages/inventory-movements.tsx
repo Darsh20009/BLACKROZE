@@ -69,7 +69,7 @@ const movementTypeConfig: Record<string, { label: string; icon: typeof ArrowUp; 
   purchase: { label: "شراء", icon: ArrowUp, color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", direction: "in" },
   sale: { label: "بيع", icon: ArrowDown, color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", direction: "out" },
   transfer_in: { label: "تحويل وارد", icon: ArrowUp, color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", direction: "in" },
-  transfer_out: { label: "تحويل صادر", icon: ArrowDown, color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200", direction: "out" },
+  transfer_out: { label: "تحويل صادر", icon: ArrowDown, color: "bg-accent text-accent dark:bg-accent dark:text-accent", direction: "out" },
   adjustment: { label: "تعديل", icon: ArrowRightLeft, color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200", direction: "neutral" },
   waste: { label: "تالف", icon: ArrowDown, color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200", direction: "out" },
   return: { label: "إرجاع", icon: ArrowUp, color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200", direction: "in" },

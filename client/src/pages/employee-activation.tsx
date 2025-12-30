@@ -68,8 +68,8 @@ export default function EmployeeActivation() {
  };
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] flex items-center justify-center p-4">
- <Card className="w-full max-w-md bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20">
+ <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background flex items-center justify-center p-4">
+ <Card className="w-full max-w-md bg-gradient-to-br from-background to-background border-primary/20">
  <CardHeader className="space-y-4">
  <div className="flex justify-center">
  <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
@@ -77,7 +77,7 @@ export default function EmployeeActivation() {
  </div>
  </div>
  <div className="text-center">
- <CardTitle className="text-2xl font-bold text-amber-500">تفعيل حساب موظف جديد</CardTitle>
+ <CardTitle className="text-2xl font-bold text-accent">تفعيل حساب موظف جديد</CardTitle>
  <CardDescription className="text-gray-400 mt-2">
  أدخل بياناتك التي سجلها المدير لإنشاء كلمة المرور الخاصةبك
  </CardDescription>
@@ -95,7 +95,7 @@ export default function EmployeeActivation() {
  onChange={(e) => setFullName(e.target.value)}
  required
  placeholder="أدخل اسمك الكامل كما سجله المدير"
- className="bg-[#1a1410] border-amber-500/30 text-white placeholder:text-gray-500"
+ className="bg-[#1a1410] border-primary/30 text-white placeholder:text-gray-500"
  data-testid="input-fullname"
  />
  <p className="text-xs text-gray-400 mt-1">يجب أن يطابق الاسم المسجل لدى المدير</p>
@@ -116,7 +116,7 @@ export default function EmployeeActivation() {
  <p className="text-xs text-gray-400 mt-1">رقم الهاتف المسجل لدى المدير</p>
  </div>
 
- <div className="border-t border-amber-500/20 pt-4">
+ <div className="border-t border-primary/20 pt-4">
  <div className="mb-4">
  <Label htmlFor="password" className="text-gray-300">
  كلمة المرور الجديدة 
@@ -130,13 +130,13 @@ export default function EmployeeActivation() {
  required
  minLength={4}
  placeholder="أدخل كلمة مرور قوية"
- className="bg-[#1a1410] border-amber-500/30 text-white placeholder:text-gray-500 pl-10"
+ className="bg-[#1a1410] border-primary/30 text-white placeholder:text-gray-500 pl-10"
  data-testid="input-password"
  />
  <button
  type="button"
  onClick={() => setShowPassword(!showPassword)}
- className="absolute left-3 top-3 text-amber-500 hover:text-amber-400"
+ className="absolute left-3 top-3 text-accent hover:text-accent"
  >
  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
  </button>
@@ -156,13 +156,13 @@ export default function EmployeeActivation() {
  required
  minLength={4}
  placeholder="أعد إدخال كلمة المرور"
- className="bg-[#1a1410] border-amber-500/30 text-white placeholder:text-gray-500 pl-10"
+ className="bg-[#1a1410] border-primary/30 text-white placeholder:text-gray-500 pl-10"
  data-testid="input-confirm-password"
  />
  <button
  type="button"
  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
- className="absolute left-3 top-3 text-amber-500 hover:text-amber-400"
+ className="absolute left-3 top-3 text-accent hover:text-accent"
  >
  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
  </button>
@@ -170,10 +170,10 @@ export default function EmployeeActivation() {
  </div>
  </div>
 
- <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+ <div className="bg-background0/10 border border-primary/30 rounded-lg p-4">
  <div className="flex items-start gap-2">
- <UserPlus className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
- <div className="text-sm text-amber-500/90">
+ <UserPlus className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+ <div className="text-sm text-accent/90">
  <p className="font-semibold mb-1">تعليمات مهمة:</p>
  <ul className="list-disc list-inside space-y-1">
  <li>تأكد من إدخال رقم الهاتف والاسم المسجلين لدى المدير بدقة</li>
@@ -198,7 +198,7 @@ export default function EmployeeActivation() {
  type="button"
  variant="ghost"
  onClick={() => setLocation("/employee/login")}
- className="text-amber-500 hover:text-amber-400"
+ className="text-accent hover:text-accent"
  data-testid="button-back-to-login"
  >
  العودةإلى تسجيل الدخول

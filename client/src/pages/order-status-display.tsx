@@ -47,7 +47,7 @@ const getOrderTypeDisplay = (order: Order) => {
     return { label: "محلي", icon: Store, color: "bg-green-500/20 text-green-400 border-green-500/50" };
   }
   if (type === 'pickup' || type === 'takeaway') {
-    return { label: "سفري", icon: MapPin, color: "bg-amber-500/20 text-amber-400 border-amber-500/50" };
+    return { label: "سفري", icon: MapPin, color: "bg-background0/20 text-accent border-amber-500/50" };
   }
   if (type === 'delivery') {
     return { label: "توصيل", icon: Truck, color: "bg-blue-500/20 text-blue-400 border-blue-500/50" };
@@ -65,7 +65,7 @@ function OrderCard({ order, isReady, isFullscreen }: { order: Order; isReady: bo
       className={`relative overflow-visible transition-all duration-500 ${
         isReady 
           ? "border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20" 
-          : "border-amber-500/30 bg-amber-500/5"
+          : "border-amber-500/30 bg-background0/5"
       } ${isReady ? "animate-pulse" : ""}`}
       data-testid={`order-card-${order.id}`}
     >
@@ -74,7 +74,7 @@ function OrderCard({ order, isReady, isFullscreen }: { order: Order; isReady: bo
           className={`font-bold mb-3 ${isFullscreen ? 'text-8xl' : 'text-6xl'}`} 
           style={{ fontFamily: 'monospace' }}
         >
-          <span className={isReady ? "text-green-400" : "text-amber-400"}>
+          <span className={isReady ? "text-green-400" : "text-accent"}>
             {lastThree}
           </span>
         </div>
@@ -275,11 +275,11 @@ export default function OrderStatusDisplayPage() {
         <div className={`grid grid-cols-1 ${isFullscreen ? 'lg:grid-cols-2 gap-12' : 'lg:grid-cols-2 gap-8'}`}>
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className={`bg-amber-500/20 rounded-full flex items-center justify-center ${isFullscreen ? 'w-14 h-14' : 'w-10 h-10'}`}>
-                <Clock className={`text-amber-400 ${isFullscreen ? 'h-7 w-7' : 'h-5 w-5'}`} />
+              <div className={`bg-background0/20 rounded-full flex items-center justify-center ${isFullscreen ? 'w-14 h-14' : 'w-10 h-10'}`}>
+                <Clock className={`text-accent ${isFullscreen ? 'h-7 w-7' : 'h-5 w-5'}`} />
               </div>
               <div>
-                <h2 className={`font-bold text-amber-400 ${isFullscreen ? 'text-3xl' : 'text-xl'}`}>
+                <h2 className={`font-bold text-accent ${isFullscreen ? 'text-3xl' : 'text-xl'}`}>
                   جاري التحضير
                 </h2>
                 <p className={`text-muted-foreground ${isFullscreen ? 'text-lg' : 'text-sm'}`}>

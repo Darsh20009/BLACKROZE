@@ -10,11 +10,11 @@ export default function UnifiedHub() {
  return (
   <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950">
    {/* Header Controls */}
-   <div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-amber-500/20 shadow-lg">
+   <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-primary/20 shadow-lg">
    <div className="container mx-auto px-4 py-3">
    <div className="flex items-center justify-between">
    <div className="flex items-center gap-3">
-   <div className="flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-500 text-white px-4 py-2 rounded-lg shadow-lg">
+   <div className="flex items-center gap-2 bg-gradient-to-r from-amber-600 to-background0 text-white px-4 py-2 rounded-lg shadow-lg">
    <Layout className="w-5 h-5" />
    <span className="font-bold text-sm">مركز التحكم الموحد</span>
    </div>
@@ -62,8 +62,8 @@ export default function UnifiedHub() {
    {activeView === "both" && (
    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
    {/* Employee Dashboard Panel */}
-   <div className="bg-slate-900/50 rounded-xl border border-amber-500/20 shadow-2xl overflow-hidden backdrop-blur-sm">
-   <div className="bg-gradient-to-r from-amber-600 to-amber-500 px-4 py-3 flex items-center gap-2">
+   <div className="bg-card/50 rounded-xl border border-primary/20 shadow-2xl overflow-hidden backdrop-blur-sm">
+   <div className="bg-gradient-to-r from-amber-600 to-background0 px-4 py-3 flex items-center gap-2">
    <Users className="w-5 h-5 text-white" />
    <h2 className="text-white font-bold">لوحة الموظفين</h2>
    </div>
@@ -73,7 +73,7 @@ export default function UnifiedHub() {
    </div>
 
    {/* Menu View Panel */}
-   <div className="bg-slate-900/50 rounded-xl border border-amber-500/20 shadow-2xl overflow-hidden backdrop-blur-sm">
+   <div className="bg-card/50 rounded-xl border border-primary/20 shadow-2xl overflow-hidden backdrop-blur-sm">
    <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center gap-2">
    <Coffee className="w-5 h-5 text-white" />
    <h2 className="text-white font-bold">منيو العرض</h2>
@@ -86,21 +86,21 @@ export default function UnifiedHub() {
    )}
 
    {activeView === "employee" && (
-   <div className="bg-slate-900/50 rounded-xl border border-amber-500/20 shadow-2xl p-6 backdrop-blur-sm">
+   <div className="bg-card/50 rounded-xl border border-primary/20 shadow-2xl p-6 backdrop-blur-sm">
    <EmployeeDashboard />
    </div>
    )}
 
    {activeView === "menu" && (
-   <div className="bg-slate-900/50 rounded-xl border border-amber-500/20 shadow-2xl p-6 backdrop-blur-sm">
+   <div className="bg-card/50 rounded-xl border border-primary/20 shadow-2xl p-6 backdrop-blur-sm">
    <MenuView />
    </div>
    )}
    </div>
    {/* Decorative Elements */}
    <div className="fixed inset-0 pointer-events-none">
-   <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl"></div>
-   <div className="absolute bottom-20 right-10 w-96 h-96 bg-amber-600/5 rounded-full blur-3xl"></div>
+   <div className="absolute top-20 left-10 w-72 h-72 bg-background0/5 rounded-full blur-3xl"></div>
+   <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
    </div>
   </div>
  );

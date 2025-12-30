@@ -246,14 +246,14 @@ const categoryConfig: Record<string, { label: string; icon: any; color: string }
 
 const priorityConfig: Record<string, { label: string; color: string }> = {
   low: { label: "منخفض", color: "bg-gray-500" },
-  medium: { label: "متوسط", color: "bg-amber-500" },
-  high: { label: "عالي", color: "bg-orange-500" },
+  medium: { label: "متوسط", color: "bg-background0" },
+  high: { label: "عالي", color: "bg-background0" },
   urgent: { label: "عاجل", color: "bg-red-500" },
 };
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   open: { label: "مفتوح", color: "bg-blue-500", icon: AlertCircle },
-  in_progress: { label: "قيد المعالجة", color: "bg-amber-500", icon: Clock },
+  in_progress: { label: "قيد المعالجة", color: "bg-background0", icon: Clock },
   waiting: { label: "بانتظار الرد", color: "bg-purple-500", icon: Clock },
   resolved: { label: "تم الحل", color: "bg-green-500", icon: CheckCircle },
   closed: { label: "مغلق", color: "bg-gray-500", icon: XCircle },
@@ -336,15 +336,15 @@ export default function SupportSystemPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-amber-500/30">
+          <Card className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-primary/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/60 text-sm">متوسط الرد</p>
                   <p className="text-2xl font-bold text-white mt-1">2 ساعة</p>
                 </div>
-                <div className="p-3 rounded-xl bg-amber-500/20">
-                  <Clock className="w-6 h-6 text-amber-400" />
+                <div className="p-3 rounded-xl bg-background0/20">
+                  <Clock className="w-6 h-6 text-accent" />
                 </div>
               </div>
             </CardContent>
@@ -367,19 +367,19 @@ export default function SupportSystemPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-white/5 border border-white/10 p-1">
-            <TabsTrigger value="tickets" className="data-[state=active]:bg-amber-500 data-[state=active]:text-black">
+            <TabsTrigger value="tickets" className="data-[state=active]:bg-background0 data-[state=active]:text-black">
               <Ticket className="w-4 h-4 ml-2" />
               التذاكر
             </TabsTrigger>
-            <TabsTrigger value="faq" className="data-[state=active]:bg-amber-500 data-[state=active]:text-black">
+            <TabsTrigger value="faq" className="data-[state=active]:bg-background0 data-[state=active]:text-black">
               <HelpCircle className="w-4 h-4 ml-2" />
               الأسئلة الشائعة
             </TabsTrigger>
-            <TabsTrigger value="articles" className="data-[state=active]:bg-amber-500 data-[state=active]:text-black">
+            <TabsTrigger value="articles" className="data-[state=active]:bg-background0 data-[state=active]:text-black">
               <Book className="w-4 h-4 ml-2" />
               قاعدة المعرفة
             </TabsTrigger>
-            <TabsTrigger value="contact" className="data-[state=active]:bg-amber-500 data-[state=active]:text-black">
+            <TabsTrigger value="contact" className="data-[state=active]:bg-background0 data-[state=active]:text-black">
               <MessageCircle className="w-4 h-4 ml-2" />
               تواصل معنا
             </TabsTrigger>
@@ -390,7 +390,7 @@ export default function SupportSystemPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Ticket className="w-5 h-5 text-amber-400" />
+                    <Ticket className="w-5 h-5 text-accent" />
                     تذاكر الدعم
                   </CardTitle>
                   <div className="relative">
@@ -477,7 +477,7 @@ export default function SupportSystemPage() {
             <Card className="bg-white/5 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-amber-400" />
+                  <HelpCircle className="w-5 h-5 text-accent" />
                   الأسئلة الشائعة
                 </CardTitle>
                 <CardDescription className="text-white/60">
@@ -622,7 +622,7 @@ export default function SupportSystemPage() {
         <DialogContent className="bg-[#1a1a2e] border-white/10 text-white max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-amber-400" />
+              <Plus className="w-5 h-5 text-accent" />
               تذكرة دعم جديدة
             </DialogTitle>
           </DialogHeader>
@@ -673,7 +673,7 @@ export default function SupportSystemPage() {
             </div>
             <div className="space-y-2">
               <Label>المرفقات (اختياري)</Label>
-              <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-amber-500/50 transition-all cursor-pointer">
+              <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-primary/50 transition-all cursor-pointer">
                 <Paperclip className="w-8 h-8 text-white/40 mx-auto mb-2" />
                 <p className="text-white/60 text-sm">اسحب الملفات هنا أو انقر للرفع</p>
               </div>
@@ -700,7 +700,7 @@ export default function SupportSystemPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Ticket className="w-5 h-5 text-amber-400" />
+                <Ticket className="w-5 h-5 text-accent" />
                 {selectedTicket?.id}
               </span>
               {selectedTicket && (
@@ -732,12 +732,12 @@ export default function SupportSystemPage() {
                       className={`p-4 rounded-lg ${
                         message.sender === "user" 
                           ? "bg-white/5 mr-8" 
-                          : "bg-amber-500/10 ml-8 border border-amber-500/20"
+                          : "bg-background0/10 ml-8 border border-primary/20"
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          message.sender === "user" ? "bg-white/10" : "bg-amber-500/20"
+                          message.sender === "user" ? "bg-white/10" : "bg-background0/20"
                         }`}>
                           <User className="w-4 h-4 text-white/60" />
                         </div>

@@ -234,13 +234,13 @@ export default function MyCard() {
  const availableFreeCups = (card?.freeCupsEarned || 0) - (card?.freeCupsRedeemed || 0);
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 overflow-hidden relative" data-testid="page-my-card">
+ <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100 overflow-hidden relative" data-testid="page-my-card">
  {/* خلفية فاخرة مع عناصر متحركة*/}
  <div className="absolute inset-0 pointer-events-none">
- <div className="absolute top-20 left-20 w-40 h-40 bg-amber-300/20 rounded-full blur-3xl animate-pulse"></div>
- <div className="absolute bottom-32 right-16 w-32 h-32 bg-orange-300/15 rounded-full blur-2xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
- <div className="absolute top-1/2 left-10 w-28 h-28 bg-amber-400/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '3s'}}></div>
- <div className="absolute top-32 right-32 w-24 h-24 bg-orange-400/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '0.5s'}}></div>
+ <div className="absolute top-20 left-20 w-40 h-40 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+ <div className="absolute bottom-32 right-16 w-32 h-32 bg-accent/15 rounded-full blur-2xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
+ <div className="absolute top-1/2 left-10 w-28 h-28 bg-primary/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '3s'}}></div>
+ <div className="absolute top-32 right-32 w-24 h-24 bg-accent/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '0.5s'}}></div>
  </div>
 
  {/* تأثير Confetti */}
@@ -293,7 +293,7 @@ export default function MyCard() {
  <Button
  variant="ghost"
  onClick={() => setLocation("/menu")}
- className="text-amber-800 hover:text-amber-900 hover:bg-amber-100/50 backdrop-blur-sm"
+ className="text-accent hover:text-accent hover:bg-primary/50 backdrop-blur-sm"
  data-testid="button-back"
  >
  <ArrowRight className="ml-2 h-5 w-5" />
@@ -318,7 +318,7 @@ export default function MyCard() {
  animate={{ opacity: 1, scale: 1 }}
  transition={{ duration: 0.5 }}
  >
- <Card className="p-8 bg-white/90 backdrop-blur-lg shadow-2xl border-2 border-amber-200/50" data-testid="card-form">
+ <Card className="p-8 bg-white/90 backdrop-blur-lg shadow-2xl border-2 border-primary/50" data-testid="card-form">
  <div className="text-center mb-6">
  <motion.div
  initial={{ scale: 0 }}
@@ -327,13 +327,13 @@ export default function MyCard() {
  className="inline-block mb-4"
  >
  <div className="relative">
- <Coffee className="h-20 w-20 text-amber-600 mx-auto" />
+ <Coffee className="h-20 w-20 text-accent mx-auto" />
  <motion.div
  animate={{ rotate: 360 }}
  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
  className="absolute -top-2 -right-2"
  >
- <Sparkles className="h-8 w-8 text-orange-500" />
+ <Sparkles className="h-8 w-8 text-accent" />
  </motion.div>
  </div>
  </motion.div>
@@ -341,14 +341,14 @@ export default function MyCard() {
  <h2 className="text-3xl font-amiri font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent mb-3">
  بطاقة الولاء الذهبية
  </h2>
- <p className="text-amber-700 font-cairo text-lg">
+ <p className="text-accent font-cairo text-lg">
  أدخل اسمك ورقم جوالك لإصدار بطاقة جديدة أو استرجاع بطاقتك الحالية 
  </p>
  </div>
 
  <div className="space-y-5 mb-6">
  <div>
- <label className="block text-sm font-cairo font-semibold text-amber-900 mb-2">
+ <label className="block text-sm font-cairo font-semibold text-accent mb-2">
  الاسم الكامل
  </label>
  <Input
@@ -356,13 +356,13 @@ export default function MyCard() {
  value={customerName}
  onChange={(e) => setCustomerName(e.target.value)}
  placeholder="أدخل اسمك الكامل"
- className="text-right border-amber-300 focus:border-amber-500 bg-amber-50/50 focus:bg-white transition-all"
+ className="text-right border-primary focus:border-primary bg-background/50 focus:bg-white transition-all"
  data-testid="input-customer-name"
  />
  </div>
 
  <div>
- <label className="block text-sm font-cairo font-semibold text-amber-900 mb-2">
+ <label className="block text-sm font-cairo font-semibold text-accent mb-2">
  رقم الجوال (9 أرقام تبدأ بـ 5)
  </label>
  <Input
@@ -370,7 +370,7 @@ export default function MyCard() {
  value={phoneNumber}
  onChange={(e) => setPhoneNumber(e.target.value)}
  placeholder="5xxxxxxxx"
- className="text-right border-amber-300 focus:border-amber-500 bg-amber-50/50 focus:bg-white transition-all"
+ className="text-right border-primary focus:border-primary bg-background/50 focus:bg-white transition-all"
  data-testid="input-phone-number"
  />
  </div>
@@ -385,22 +385,22 @@ export default function MyCard() {
  </Button>
  </div>
 
- <div className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border-2 border-amber-200 shadow-inner">
- <h3 className="font-cairo font-bold text-amber-900 mb-3 flex items-center justify-center gap-2 text-lg">
- <Star className="h-6 w-6 text-amber-600" />
+ <div className="p-5 bg-gradient-to-br from-amber-50 to-background rounded-xl border-2 border-primary shadow-inner">
+ <h3 className="font-cairo font-bold text-accent mb-3 flex items-center justify-center gap-2 text-lg">
+ <Star className="h-6 w-6 text-accent" />
  مميزات البطاقةالذهبية
  </h3>
- <ul className="space-y-3 text-amber-800 font-cairo">
+ <ul className="space-y-3 text-accent font-cairo">
  <li className="flex items-center gap-3 bg-white/60 p-3 rounded-lg">
- <Coffee className="h-5 w-5 text-amber-600 flex-shrink-0" />
+ <Coffee className="h-5 w-5 text-accent flex-shrink-0" />
  <span>احصل على ختم مع كل عمليةشراء</span>
  </li>
  <li className="flex items-center gap-3 bg-white/60 p-3 rounded-lg">
- <Sparkles className="h-5 w-5 text-orange-600 flex-shrink-0" />
+ <Sparkles className="h-5 w-5 text-accent flex-shrink-0" />
  <span className="font-bold">6 أختام = قهوة مجانية! </span>
  </li>
  <li className="flex items-center gap-3 bg-white/60 p-3 rounded-lg">
- <Gift className="h-5 w-5 text-amber-600 flex-shrink-0" />
+ <Gift className="h-5 w-5 text-accent flex-shrink-0" />
  <span>خصم 10% عند 5 أختام</span>
  </li>
  </ul>
@@ -415,7 +415,7 @@ export default function MyCard() {
  initial={{ opacity: 0, y: -20, scale: 0.9 }}
  animate={{ opacity: 1, y: 0, scale: 1 }}
  transition={{ type: "spring", stiffness: 200 }}
- className="relative overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white p-5 rounded-2xl text-center font-cairo font-bold text-xl shadow-2xl"
+ className="relative overflow-hidden bg-gradient-to-r from-amber-500 via-primary/50 to-background0 text-white p-5 rounded-2xl text-center font-cairo font-bold text-xl shadow-2xl"
  data-testid="banner-discount"
  >
  <motion.div
@@ -460,9 +460,9 @@ export default function MyCard() {
  animate={{ opacity: 1, y: 0 }}
  transition={{ delay: 0.1 }}
  >
- <Card className="p-6 bg-white/90 backdrop-blur-lg shadow-xl border-2 border-amber-200/50" data-testid="card-redeem-section">
- <h3 className="text-2xl font-amiri font-bold text-amber-900 mb-4 text-center flex items-center justify-center gap-2">
- <Gift className="h-7 w-7 text-amber-600" />
+ <Card className="p-6 bg-white/90 backdrop-blur-lg shadow-xl border-2 border-primary/50" data-testid="card-redeem-section">
+ <h3 className="text-2xl font-amiri font-bold text-accent mb-4 text-center flex items-center justify-center gap-2">
+ <Gift className="h-7 w-7 text-accent" />
  أضف ختم جديد 
  </h3>
  <div className="flex gap-2">
@@ -471,7 +471,7 @@ export default function MyCard() {
  value={redeemCode}
  onChange={(e) => setRedeemCode(e.target.value)}
  placeholder="أدخل الكود هنا"
- className="text-right border-amber-300 focus:border-amber-500 bg-amber-50/50 focus:bg-white text-lg"
+ className="text-right border-primary focus:border-primary bg-background/50 focus:bg-white text-lg"
  data-testid="input-redeem-code"
  onKeyDown={(e) => {
  if (e.key === 'Enter') {
@@ -503,7 +503,7 @@ export default function MyCard() {
  {/* Background Gradient */}
  <div className="absolute -inset-2 bg-gradient-to-br from-amber-400 via-orange-400 to-amber-600 rounded-3xl opacity-20 blur-xl"></div>
  
- <div className="relative bg-gradient-to-br from-[#F5E6D3] via-[#FFF8F0] to-[#F5E6D3] rounded-3xl shadow-2xl overflow-hidden border-4 border-[#8B5A3C]/30 backdrop-blur-sm">
+ <div className="relative bg-gradient-to-br from-background via-primary/5 to-background rounded-3xl shadow-2xl overflow-hidden border-4 border-[#8B5A3C]/30 backdrop-blur-sm">
  {/* Decorative Elements */}
  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-amber-300/20 via-transparent to-transparent rounded-full -translate-y-1/2 translate-x-1/2"></div>
  <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-orange-300/20 via-transparent to-transparent rounded-full translate-y-1/2 -translate-x-1/2"></div>
@@ -521,14 +521,14 @@ export default function MyCard() {
  />
  </motion.div>
  
- <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#6B4423] via-[#8B5A3C] to-[#6B4423] bg-clip-text text-transparent mb-2 relative z-10" data-testid="text-card-header" style={{fontFamily: 'Cairo, sans-serif'}}>
+ <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-background via-primary/5 to-background bg-clip-text text-transparent mb-2 relative z-10" data-testid="text-card-header" style={{fontFamily: 'Cairo, sans-serif'}}>
  CLUNY CAFE
  </h1>
  <p className="text-lg sm:text-2xl font-semibold text-[#8B5A3C] mb-1 relative z-10" style={{fontFamily: 'Arial, sans-serif'}}>
  CLUNY CAFE Loyalty
  </p>
  <div className="flex items-center justify-center gap-2 text-sm text-[#8B5A3C] relative z-10 font-cairo mt-2">
- <span className="w-8 h-0.5 bg-gradient-to-r from-amber-600 to-orange-500"></span>
+ <span className="w-8 h-0.5 bg-gradient-to-r from-amber-600 to-background0"></span>
  <span>بطاقة الولاء الذهبية</span>
  <span className="w-8 h-0.5 bg-gradient-to-r from-orange-500 to-amber-600"></span>
  </div>
@@ -591,16 +591,16 @@ export default function MyCard() {
  </div>
 
  {/* معلومات العميل */}
- <div className="grid grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-5 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 rounded-2xl border-2 border-amber-200/60 shadow-inner">
+ <div className="grid grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-5 bg-gradient-to-br from-amber-50 via-primary/5 to-background rounded-2xl border-2 border-primary/60 shadow-inner">
  <div className="text-right">
- <div className="text-xs sm:text-sm text-amber-700 font-cairo font-semibold mb-1">الاسم الكامل</div>
- <div className="text-sm sm:text-lg font-bold text-amber-900 font-cairo truncate" data-testid="text-card-name">
+ <div className="text-xs sm:text-sm text-accent font-cairo font-semibold mb-1">الاسم الكامل</div>
+ <div className="text-sm sm:text-lg font-bold text-accent font-cairo truncate" data-testid="text-card-name">
  {card?.customerName}
  </div>
  </div>
  <div className="text-right">
- <div className="text-xs sm:text-sm text-amber-700 font-cairo font-semibold mb-1">رقم الجوال</div>
- <div className="text-sm sm:text-lg font-bold text-amber-900 font-cairo" data-testid="text-phone-number">
+ <div className="text-xs sm:text-sm text-accent font-cairo font-semibold mb-1">رقم الجوال</div>
+ <div className="text-sm sm:text-lg font-bold text-accent font-cairo" data-testid="text-phone-number">
  {card?.phoneNumber}
  </div>
  </div>
@@ -619,7 +619,7 @@ export default function MyCard() {
  whileHover={isFilled ? { scale: 1.15 } : undefined}
  className={`aspect-square rounded-xl flex items-center justify-center relative transform transition-all duration-300 cursor-pointer ${
  isFilled
- ? "bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 border-2 border-amber-700 shadow-lg"
+ ? "bg-gradient-to-br from-amber-500 via-primary/50 to-amber-600 border-2 border-primary shadow-lg"
  : "bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-dashed border-gray-300 hover:border-gray-400"
  }`}
  data-testid={`stamp-slot-${index}`}
@@ -654,7 +654,7 @@ export default function MyCard() {
  initial={{ opacity: 0, y: 10 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ delay: 0.3 }}
- className="flex flex-col items-center p-4 sm:p-6 bg-gradient-to-br from-white to-amber-50 rounded-2xl border-2 border-amber-300 shadow-lg"
+ className="flex flex-col items-center p-4 sm:p-6 bg-gradient-to-br from-card to-background rounded-2xl border-2 border-primary shadow-lg"
  >
  <motion.div
  whileHover={{ scale: 1.05 }}
@@ -666,11 +666,11 @@ export default function MyCard() {
  transition={{ type: "spring", delay: 0.1 }}
  src={qrDataUrl}
  alt="QR Code"
- className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-amber-400 rounded-2xl shadow-lg"
+ className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-primary rounded-2xl shadow-lg"
  data-testid="img-qr-code"
  />
  </motion.div>
- <div className="text-center mt-3 text-xs sm:text-sm text-amber-800 font-cairo font-semibold px-2">
+ <div className="text-center mt-3 text-xs sm:text-sm text-accent font-cairo font-semibold px-2">
  اعرض هذا الكود للكاشير لاستخدام المشروب المجاني
  </div>
  </motion.div>
@@ -678,7 +678,7 @@ export default function MyCard() {
 
  {/* رقم البطاقة */}
  <div className="text-center p-3 bg-gray-100 rounded-lg border border-gray-300">
- <div className="text-xs text-gray-600 font-cairo mb-1">رقم البطاقة</div>
+ <div className="text-xs text-muted-foreground font-cairo mb-1">رقم البطاقة</div>
  <div className="text-lg sm:text-xl font-bold text-gray-800 font-mono" data-testid="text-card-number">
  {card?.cardNumber}
  </div>
@@ -709,22 +709,22 @@ export default function MyCard() {
  animate={{ opacity: 1, y: 0 }}
  transition={{ delay: 0.4 }}
  >
- <Card className="p-5 bg-gradient-to-br from-amber-50/90 to-orange-50/90 backdrop-blur-sm border-2 border-amber-200/50 shadow-lg">
- <h3 className="font-cairo font-bold text-amber-900 mb-3 text-lg flex items-center gap-2">
- <Sparkles className="h-5 w-5 text-amber-600" />
+ <Card className="p-5 bg-gradient-to-br from-amber-50/90 to-background/90 backdrop-blur-sm border-2 border-primary/50 shadow-lg">
+ <h3 className="font-cairo font-bold text-accent mb-3 text-lg flex items-center gap-2">
+ <Sparkles className="h-5 w-5 text-accent" />
  كيف تستخدم بطاقتك:
  </h3>
- <ul className="space-y-2.5 text-sm text-amber-800 font-cairo">
+ <ul className="space-y-2.5 text-sm text-accent font-cairo">
  <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-amber-600 font-bold flex-shrink-0">1.</span>
+ <span className="text-accent font-bold flex-shrink-0">1.</span>
  <span>احصل على كود مع كل عمليةشراء من الكاشير</span>
  </li>
  <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-amber-600 font-bold flex-shrink-0">2.</span>
+ <span className="text-accent font-bold flex-shrink-0">2.</span>
  <span>أدخل الكود في الحقل أعلاه للحصول على ختم</span>
  </li>
  <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-orange-600 font-bold flex-shrink-0">3.</span>
+ <span className="text-accent font-bold flex-shrink-0">3.</span>
  <span className="font-semibold">عند 5 أختام، احصل على خصم 10%</span>
  </li>
  <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
@@ -732,7 +732,7 @@ export default function MyCard() {
  <span className="font-bold">عند 6 أختام، احصل على قهوة مجانية!</span>
  </li>
  <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-amber-600 font-bold flex-shrink-0">5.</span>
+ <span className="text-accent font-bold flex-shrink-0">5.</span>
  <span>اعرض QR للكاشير لاستخدام قهوتك المجانية </span>
  </li>
  </ul>

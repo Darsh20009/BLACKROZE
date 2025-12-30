@@ -213,7 +213,7 @@ export default function InventorySmartPage() {
       return { status: "out", label: "نفد", color: "bg-destructive", textColor: "text-destructive" };
     }
     if (currentQty <= minLevel) {
-      return { status: "low", label: "منخفض", color: "bg-orange-500", textColor: "text-orange-600 dark:text-orange-400" };
+      return { status: "low", label: "منخفض", color: "bg-background0", textColor: "text-accent dark:text-accent" };
     }
     if (currentQty >= maxLevel * 0.8) {
       return { status: "high", label: "مرتفع", color: "bg-green-500", textColor: "text-green-600 dark:text-green-400" };
@@ -337,10 +337,10 @@ export default function InventorySmartPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">مخزون منخفض</p>
-                <p className="text-4xl font-bold text-orange-600 dark:text-orange-400" data-testid="text-low-stock">{lowStockItems}</p>
+                <p className="text-4xl font-bold text-accent dark:text-accent" data-testid="text-low-stock">{lowStockItems}</p>
               </div>
-              <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30">
-                <TrendingDown className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+              <div className="p-3 rounded-full bg-accent dark:bg-accent/30">
+                <TrendingDown className="h-8 w-8 text-accent dark:text-accent" />
               </div>
             </div>
           </CardContent>
@@ -595,7 +595,7 @@ export default function InventorySmartPage() {
                         <div className={`px-4 py-2 flex items-center gap-2 text-sm ${
                           stockStatus.status === "out" 
                             ? "bg-destructive/10 text-destructive" 
-                            : "bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
+                            : "bg-accent dark:bg-accent/20 text-accent dark:text-accent"
                         }`}>
                           <AlertTriangle className="h-4 w-4" />
                           {stockStatus.status === "out" ? "نفد المخزون - يرجى إعادة التعبئة" : "المخزون منخفض - يرجى الطلب"}

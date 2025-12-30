@@ -301,7 +301,7 @@ export default function CashierTableOrders() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-amber-500">إدارة طلبات الطاولات</h1>
+            <h1 className="text-3xl font-bold text-accent">إدارة طلبات الطاولات</h1>
             <p className="text-gray-400">
               مرحباً {employee?.fullName}
             </p>
@@ -327,9 +327,9 @@ export default function CashierTableOrders() {
 
           {/* Unassigned Orders */}
           <TabsContent value="pending">
-            <Card className="border-amber-500/20 bg-[#54513f]">
+            <Card className="border-primary/20 bg-[#54513f]">
               <CardHeader>
-                <CardTitle className="text-amber-500 text-right">الطلبات الجديدة</CardTitle>
+                <CardTitle className="text-accent text-right">الطلبات الجديدة</CardTitle>
               </CardHeader>
               <CardContent>
                 {filteredUnassignedOrders.length === 0 ? (
@@ -342,13 +342,13 @@ export default function CashierTableOrders() {
                       const StatusIcon = getStatusIcon(order.tableStatus);
                       const branch = branches.find(b => b._id === order.branchId);
                       return (
-                        <Card key={order.id} className="bg-[#1a1410] border-amber-500/10">
+                        <Card key={order.id} className="bg-[#1a1410] border-primary/10">
                           <CardContent className="p-4">
                             <div className="flex flex-wrap items-center justify-between gap-4">
                               <div className="flex-1 space-y-2">
                                 {branch && (
                                   <div className="flex items-center gap-2 mb-2">
-                                    <MapPin className="w-4 h-4 text-amber-600" />
+                                    <MapPin className="w-4 h-4 text-accent" />
                                     <span className="text-xs bg-gradient-to-r from-amber-600 to-amber-700 text-white px-2 py-1 rounded">
                                       {branch.nameAr}
                                     </span>
@@ -412,9 +412,9 @@ export default function CashierTableOrders() {
 
           {/* My Orders */}
           <TabsContent value="my-orders">
-            <Card className="border-amber-500/20 bg-[#54513f]">
+            <Card className="border-primary/20 bg-[#54513f]">
               <CardHeader>
-                <CardTitle className="text-amber-500 text-right">طلباتي</CardTitle>
+                <CardTitle className="text-accent text-right">طلباتي</CardTitle>
               </CardHeader>
               <CardContent>
                 {filteredMyOrders.length === 0 ? (
@@ -426,7 +426,7 @@ export default function CashierTableOrders() {
                     {filteredMyOrders.map((order) => {
                       const StatusIcon = getStatusIcon(order.tableStatus);
                       return (
-                        <Card key={order.id} className="bg-[#1a1410] border-amber-500/10">
+                        <Card key={order.id} className="bg-[#1a1410] border-primary/10">
                           <CardContent className="p-4">
                             <div className="space-y-4">
                               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -448,7 +448,7 @@ export default function CashierTableOrders() {
                                     <span className="font-medium">العناصر:</span>{" "}
                                     {Array.isArray(order.items) ? order.items.map((item: any) => `${item.nameAr} (${item.quantity})`).join(", ") : "لا توجد عناصر"}
                                   </div>
-                                  <div className="font-bold text-lg text-amber-500">
+                                  <div className="font-bold text-lg text-accent">
                                     {order.totalAmount.toFixed(2)} ر.س
                                   </div>
                                 </div>
@@ -456,9 +456,9 @@ export default function CashierTableOrders() {
 
                               {/* Status Controls */}
                               {order.tableStatus !== "delivered" && order.tableStatus !== "cancelled" && (
-                                <div className="border-t border-amber-500/20 pt-4 space-y-3">
+                                <div className="border-t border-primary/20 pt-4 space-y-3">
                                   <div>
-                                    <Label className="text-amber-400 text-sm mb-2 block">تحديث حالة الطلب:</Label>
+                                    <Label className="text-accent text-sm mb-2 block">تحديث حالة الطلب:</Label>
                                     <Select
                                       value={order.tableStatus}
                                       onValueChange={(value) =>
@@ -512,9 +512,9 @@ export default function CashierTableOrders() {
 
           {/* Tables Management */}
           <TabsContent value="tables">
-            <Card className="border-amber-500/20 bg-[#54513f]">
+            <Card className="border-primary/20 bg-[#54513f]">
               <CardHeader>
-                <CardTitle className="text-amber-500 text-right">إدارة الطاولات</CardTitle>
+                <CardTitle className="text-accent text-right">إدارة الطاولات</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">

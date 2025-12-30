@@ -111,7 +111,7 @@ interface ZATCASettings {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  pending: { label: "قيد الانتظار", color: "bg-amber-500", icon: Clock },
+  pending: { label: "قيد الانتظار", color: "bg-background0", icon: Clock },
   submitted: { label: "تم الإرسال", color: "bg-blue-500", icon: Send },
   accepted: { label: "مقبولة", color: "bg-green-500", icon: CheckCircle },
   rejected: { label: "مرفوضة", color: "bg-red-500", icon: XCircle },
@@ -200,18 +200,18 @@ export default function ZATCAInvoicesPage() {
   const totalVat = invoices.filter(i => i.status === 'accepted').reduce((sum, i) => sum + i.vatAmount, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-[#1a1410] dark:via-[#1f1815] dark:to-[#231c17]" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-yellow-50 dark:from-background dark:via-primary/5 dark:to-background" dir="rtl">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         <div className="flex items-center justify-between gap-4 mb-6">
           <Button 
             variant="ghost" 
             onClick={() => setLocation("/manager/accounting")}
-            className="text-amber-700 dark:text-amber-400"
+            className="text-accent dark:text-accent"
           >
             <ArrowLeft className="w-4 h-4 ml-2" />
             العودة
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-accent dark:text-accent flex items-center gap-2">
             <Receipt className="w-8 h-8" />
             الفوترة الإلكترونية - ZATCA
           </h1>
@@ -234,14 +234,14 @@ export default function ZATCAInvoicesPage() {
         </div>
 
         {(!settings?.isConfigured) && (
-          <Card className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-900/20">
+          <Card className="mb-6 border-primary bg-background dark:bg-primary/20">
             <CardContent className="flex items-center gap-4 p-4">
-              <AlertTriangle className="w-8 h-8 text-amber-600" />
+              <AlertTriangle className="w-8 h-8 text-accent" />
               <div>
-                <p className="font-medium text-amber-800 dark:text-amber-400">لم يتم تكوين إعدادات ZATCA</p>
-                <p className="text-sm text-amber-600">يرجى إعداد بيانات المنشأة والرقم الضريبي قبل إرسال الفواتير</p>
+                <p className="font-medium text-accent dark:text-accent">لم يتم تكوين إعدادات ZATCA</p>
+                <p className="text-sm text-accent">يرجى إعداد بيانات المنشأة والرقم الضريبي قبل إرسال الفواتير</p>
               </div>
-              <Button onClick={() => setIsSettingsOpen(true)} className="mr-auto bg-amber-600 hover:bg-amber-700">
+              <Button onClick={() => setIsSettingsOpen(true)} className="mr-auto bg-primary hover:bg-primary">
                 إعداد الآن
               </Button>
             </CardContent>
@@ -253,11 +253,11 @@ export default function ZATCAInvoicesPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-amber-100 text-sm">قيد الانتظار</p>
+                  <p className="text-accent text-sm">قيد الانتظار</p>
                   <p className="text-3xl font-bold mt-1">{pendingCount}</p>
-                  <p className="text-amber-200 text-xs mt-1">فاتورة</p>
+                  <p className="text-accent text-xs mt-1">فاتورة</p>
                 </div>
-                <Clock className="w-12 h-12 text-amber-200" />
+                <Clock className="w-12 h-12 text-accent" />
               </div>
             </CardContent>
           </Card>
@@ -303,7 +303,7 @@ export default function ZATCAInvoicesPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-amber-100 dark:bg-amber-900/30">
+          <TabsList className="grid w-full grid-cols-3 bg-primary dark:bg-primary/30">
             <TabsTrigger value="invoices" className="flex items-center gap-1">
               <FileText className="w-4 h-4" />
               الفواتير
@@ -359,7 +359,7 @@ export default function ZATCAInvoicesPage() {
               <CardContent className="p-0">
                 {isInvoicesLoading ? (
                   <div className="flex justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
                   </div>
                 ) : (
                   <Table>
@@ -388,7 +388,7 @@ export default function ZATCAInvoicesPage() {
                             </TableCell>
                             <TableCell>{invoice.customerName}</TableCell>
                             <TableCell className="font-medium">{invoice.totalAmount.toFixed(2)} ر.س</TableCell>
-                            <TableCell className="text-amber-600">{invoice.vatAmount.toFixed(2)} ر.س</TableCell>
+                            <TableCell className="text-accent">{invoice.vatAmount.toFixed(2)} ر.س</TableCell>
                             <TableCell className="text-sm">
                               {format(new Date(invoice.createdAt), "dd/MM/yyyy", { locale: ar })}
                             </TableCell>
@@ -448,7 +448,7 @@ export default function ZATCAInvoicesPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-amber-600" />
+                    <Building2 className="w-5 h-5 text-accent" />
                     بيانات المنشأة
                   </CardTitle>
                 </CardHeader>
@@ -512,11 +512,11 @@ export default function ZATCAInvoicesPage() {
                         {settings?.vatNumber ? (
                           <CheckCircle className="w-5 h-5 text-green-500" />
                         ) : (
-                          <AlertTriangle className="w-5 h-5 text-amber-500" />
+                          <AlertTriangle className="w-5 h-5 text-accent" />
                         )}
                         <span>الرقم الضريبي</span>
                       </div>
-                      <Badge variant="outline" className={settings?.vatNumber ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}>
+                      <Badge variant="outline" className={settings?.vatNumber ? "bg-green-50 text-green-700" : "bg-background text-accent"}>
                         {settings?.vatNumber ? 'مسجل' : 'غير مسجل'}
                       </Badge>
                     </div>
@@ -546,7 +546,7 @@ export default function ZATCAInvoicesPage() {
                       كل فاتورة تحتوي على رمز QR يتضمن بيانات TLV المطلوبة
                     </p>
                   </div>
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                  <div className="p-4 bg-background dark:bg-primary/20 rounded-lg">
                     <h4 className="font-medium mb-2">التكامل مع ZATCA</h4>
                     <p className="text-sm text-muted-foreground">
                       إرسال الفواتير تلقائياً لمنصة FATOORA للتحقق والاعتماد
@@ -578,9 +578,9 @@ export default function ZATCAInvoicesPage() {
                       <span>المبلغ الخاضع للضريبة</span>
                       <span className="font-bold">{invoices.reduce((s, i) => s + i.taxableAmount, 0).toFixed(2)} ر.س</span>
                     </div>
-                    <div className="flex justify-between p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <div className="flex justify-between p-3 bg-background dark:bg-primary/20 rounded-lg border border-primary dark:border-primary">
                       <span className="font-medium">ضريبة القيمة المضافة (15%)</span>
-                      <span className="font-bold text-amber-600">{invoices.reduce((s, i) => s + i.vatAmount, 0).toFixed(2)} ر.س</span>
+                      <span className="font-bold text-accent">{invoices.reduce((s, i) => s + i.vatAmount, 0).toFixed(2)} ر.س</span>
                     </div>
                     <div className="flex justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                       <span className="font-medium">إجمالي المبالغ</span>
@@ -600,7 +600,7 @@ export default function ZATCAInvoicesPage() {
                     <div>
                       <h4 className="text-sm font-medium mb-2">حسب الحالة</h4>
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="flex justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded">
+                        <div className="flex justify-between p-2 bg-background dark:bg-primary/20 rounded">
                           <span className="text-sm">قيد الانتظار</span>
                           <Badge variant="outline">{pendingCount}</Badge>
                         </div>
@@ -729,7 +729,7 @@ export default function ZATCAInvoicesPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">ضريبة القيمة المضافة</p>
-                    <p className="font-medium text-amber-600">{selectedInvoice.vatAmount.toFixed(2)} ر.س</p>
+                    <p className="font-medium text-accent">{selectedInvoice.vatAmount.toFixed(2)} ر.س</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">الإجمالي</p>
@@ -750,7 +750,7 @@ export default function ZATCAInvoicesPage() {
               <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                 إغلاق
               </Button>
-              <Button className="bg-amber-600 hover:bg-amber-700">
+              <Button className="bg-primary hover:bg-primary">
                 <Printer className="w-4 h-4 ml-2" />
                 طباعة
               </Button>
@@ -810,7 +810,7 @@ export default function ZATCAInvoicesPage() {
               <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
                 إلغاء
               </Button>
-              <Button className="bg-amber-600 hover:bg-amber-700">
+              <Button className="bg-primary hover:bg-primary">
                 حفظ الإعدادات
               </Button>
             </DialogFooter>

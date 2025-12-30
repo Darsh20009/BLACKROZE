@@ -119,9 +119,9 @@ const unitLabels: Record<string, string> = {
 };
 
 const categoryLabels: Record<string, { label: string; icon: any; color: string }> = {
-  coffee: { label: "قهوة", icon: Coffee, color: "text-amber-600" },
+  coffee: { label: "قهوة", icon: Coffee, color: "text-accent" },
   dairy: { label: "ألبان", icon: Droplet, color: "text-blue-500" },
-  packaging: { label: "تغليف", icon: Box, color: "text-gray-600" },
+  packaging: { label: "تغليف", icon: Box, color: "text-muted-foreground" },
   sweetener: { label: "محليات", icon: Droplet, color: "text-yellow-500" },
   other: { label: "أخرى", icon: Package, color: "text-muted-foreground" },
 };
@@ -220,24 +220,24 @@ export default function UnifiedInventoryRecipesPage() {
     if (item.currentStock <= item.minStockThreshold) {
       return { status: "critical", color: "bg-red-500", text: "منخفض جداً", percentage: Math.min(percentage, 100) };
     } else if (item.currentStock <= item.minStockThreshold * 1.5) {
-      return { status: "warning", color: "bg-amber-500", text: "منخفض", percentage: Math.min(percentage, 100) };
+      return { status: "warning", color: "bg-background0", text: "منخفض", percentage: Math.min(percentage, 100) };
     }
     return { status: "good", color: "bg-green-500", text: "جيد", percentage: Math.min(percentage, 100) };
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-[#1a1410] dark:via-[#1f1815] dark:to-[#231c17]" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-yellow-50 dark:from-background dark:via-primary/5 dark:to-background" dir="rtl">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         <div className="flex items-center justify-between gap-4 mb-6">
           <Button 
             variant="ghost" 
             onClick={() => setLocation("/employee/dashboard")}
-            className="text-amber-700 dark:text-amber-400"
+            className="text-accent dark:text-accent"
           >
             <ArrowLeft className="w-4 h-4 ml-2" />
             العودة
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-accent dark:text-accent flex items-center gap-2">
             <Package className="w-8 h-8" />
             إدارة المخزون والوصفات
           </h1>
@@ -291,7 +291,7 @@ export default function UnifiedInventoryRecipesPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-amber-100 dark:bg-amber-900/30">
+          <TabsList className="grid w-full grid-cols-5 bg-primary dark:bg-primary/30">
             <TabsTrigger value="overview" className="flex items-center gap-1">
               <BarChart3 className="w-4 h-4" />
               نظرة عامة
@@ -351,11 +351,11 @@ export default function UnifiedInventoryRecipesPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-amber-100 text-sm">الوصفات النشطة</p>
+                      <p className="text-accent text-sm">الوصفات النشطة</p>
                       <p className="text-3xl font-bold mt-1">{activeRecipesCount}</p>
-                      <p className="text-amber-200 text-xs mt-1">وصفة</p>
+                      <p className="text-accent text-xs mt-1">وصفة</p>
                     </div>
-                    <ChefHat className="w-12 h-12 text-amber-200" />
+                    <ChefHat className="w-12 h-12 text-accent" />
                   </div>
                 </CardContent>
               </Card>
@@ -448,7 +448,7 @@ export default function UnifiedInventoryRecipesPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <ChefHat className="w-5 h-5 text-amber-600" />
+                    <ChefHat className="w-5 h-5 text-accent" />
                     الوصفات الأكثر استخداماً
                   </CardTitle>
                 </CardHeader>
@@ -479,7 +479,7 @@ export default function UnifiedInventoryRecipesPage() {
           <TabsContent value="ingredients" className="space-y-4">
             <div className="flex justify-between items-center">
               <CardTitle>قائمة المواد الخام</CardTitle>
-              <Button onClick={() => setIsAddIngredientOpen(true)} className="bg-amber-600 hover:bg-amber-700">
+              <Button onClick={() => setIsAddIngredientOpen(true)} className="bg-primary hover:bg-primary">
                 <Plus className="w-4 h-4 ml-2" />
                 إضافة مادة جديدة
               </Button>
@@ -489,7 +489,7 @@ export default function UnifiedInventoryRecipesPage() {
               <CardContent className="p-0">
                 {isIngredientsLoading ? (
                   <div className="flex justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
                   </div>
                 ) : (
                   <Table>
@@ -571,7 +571,7 @@ export default function UnifiedInventoryRecipesPage() {
           <TabsContent value="recipes" className="space-y-4">
             <div className="flex justify-between items-center">
               <CardTitle>قائمة الوصفات</CardTitle>
-              <Button onClick={() => setIsAddRecipeOpen(true)} className="bg-amber-600 hover:bg-amber-700">
+              <Button onClick={() => setIsAddRecipeOpen(true)} className="bg-primary hover:bg-primary">
                 <Plus className="w-4 h-4 ml-2" />
                 إضافة وصفة جديدة
               </Button>
@@ -581,7 +581,7 @@ export default function UnifiedInventoryRecipesPage() {
               <CardContent className="p-0">
                 {isRecipesLoading ? (
                   <div className="flex justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
                   </div>
                 ) : (
                   <Table>
@@ -600,7 +600,7 @@ export default function UnifiedInventoryRecipesPage() {
                         <TableRow key={recipe.id || recipe._id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <ChefHat className="w-4 h-4 text-amber-600" />
+                              <ChefHat className="w-4 h-4 text-accent" />
                               <div>
                                 <p className="font-medium">{recipe.nameAr}</p>
                                 {recipe.nameEn && <p className="text-xs text-muted-foreground">{recipe.nameEn}</p>}
@@ -611,7 +611,7 @@ export default function UnifiedInventoryRecipesPage() {
                           <TableCell>
                             <Badge variant="outline">{recipe.ingredients?.length || 0} مكون</Badge>
                           </TableCell>
-                          <TableCell className="font-medium text-amber-600">
+                          <TableCell className="font-medium text-accent">
                             {(recipe.totalCost || 0).toFixed(2)} ر.س
                           </TableCell>
                           <TableCell>
@@ -679,8 +679,8 @@ export default function UnifiedInventoryRecipesPage() {
                       return (
                         <div key={item.id || item._id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                           <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-full ${stockStatus.status === 'critical' ? 'bg-red-100 dark:bg-red-900' : 'bg-amber-100 dark:bg-amber-900'}`}>
-                              <AlertTriangle className={`w-6 h-6 ${stockStatus.status === 'critical' ? 'text-red-600' : 'text-amber-600'}`} />
+                            <div className={`p-3 rounded-full ${stockStatus.status === 'critical' ? 'bg-red-100 dark:bg-red-900' : 'bg-primary dark:bg-primary'}`}>
+                              <AlertTriangle className={`w-6 h-6 ${stockStatus.status === 'critical' ? 'text-red-600' : 'text-accent'}`} />
                             </div>
                             <div>
                               <p className="font-medium">{item.nameAr}</p>
@@ -817,7 +817,7 @@ export default function UnifiedInventoryRecipesPage() {
               <Button 
                 onClick={handleAddIngredient}
                 disabled={!newIngredient.nameAr || createIngredientMutation.isPending}
-                className="bg-amber-600 hover:bg-amber-700"
+                className="bg-primary hover:bg-primary"
               >
                 {createIngredientMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "إضافة"}
               </Button>

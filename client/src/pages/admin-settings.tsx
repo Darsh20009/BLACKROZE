@@ -35,11 +35,11 @@ export default function AdminSettings() {
   };
 
   const SettingSection = ({ icon: Icon, title, description, children }: any) => (
-    <Card className="border-0 bg-white dark:bg-slate-900">
+    <Card className="border-0 bg-white dark:bg-card">
       <CardHeader className="pb-4">
         <div className="flex items-center gap-3">
-          <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-lg">
-            <Icon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+          <div className="bg-accent dark:bg-accent/30 p-3 rounded-lg">
+            <Icon className="w-5 h-5 text-accent dark:text-accent" />
           </div>
           <div>
             <CardTitle className="text-lg">{title}</CardTitle>
@@ -54,7 +54,7 @@ export default function AdminSettings() {
   );
 
   return (
-    <div className="p-6 space-y-6 bg-white dark:bg-slate-950 min-h-screen">
+    <div className="p-6 space-y-6 bg-white dark:bg-background min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -63,7 +63,7 @@ export default function AdminSettings() {
         </div>
         <Button 
           onClick={handleSave}
-          className="bg-orange-600 hover:bg-orange-700"
+          className="bg-accent hover:bg-accent"
           data-testid="button-save-settings"
         >
           <Save className="w-4 h-4 ml-2" />
@@ -179,7 +179,7 @@ export default function AdminSettings() {
                 className="sr-only peer"
                 data-testid="toggle-email-notifications"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
             </label>
           </div>
         </div>
@@ -223,14 +223,14 @@ export default function AdminSettings() {
         title="إدارة الفروع"
         description="إضافة وتعديل فروع المقهى"
       >
-        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-100 dark:border-orange-800">
+        <div className="p-4 bg-background dark:bg-accent/20 rounded-lg border border-orange-100 dark:border-orange-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold text-orange-800 dark:text-orange-300">إضافة فرع جديد</p>
-              <p className="text-sm text-orange-600 dark:text-orange-400">يمكنك إضافة فرع جديد وتعيين مدير له من هنا</p>
+              <p className="font-bold text-accent dark:text-accent">إضافة فرع جديد</p>
+              <p className="text-sm text-accent dark:text-accent">يمكنك إضافة فرع جديد وتعيين مدير له من هنا</p>
             </div>
             <Button 
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-accent hover:bg-accent"
               onClick={() => navigate('/admin/branches')}
             >
               <Plus className="w-4 h-4 ml-2" />

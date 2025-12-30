@@ -216,7 +216,7 @@ export default function OwnerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4" dir="rtl">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -232,7 +232,7 @@ export default function OwnerDashboard() {
             <Button
               variant="outline"
               onClick={fetchStats}
-              className="border-amber-500/50 text-amber-500"
+              className="border-primary/50 text-accent"
               data-testid="button-refresh"
             >
               <RefreshCw className="w-4 h-4 ml-2" />
@@ -241,7 +241,7 @@ export default function OwnerDashboard() {
             <Button
               variant="outline"
               onClick={() => setLocation("/manager/dashboard")}
-              className="border-amber-500/50 text-amber-500"
+              className="border-primary/50 text-accent"
               data-testid="button-back"
             >
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -252,7 +252,7 @@ export default function OwnerDashboard() {
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-spin w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full mx-auto"></div>
+            <div className="animate-spin w-10 h-10 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
             <p className="text-gray-400 mt-4">جاري التحميل...</p>
           </div>
         ) : (
@@ -298,12 +298,12 @@ export default function OwnerDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-amber-500/20">
+              <Card className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-primary/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5 text-amber-400" />
+                    <ShoppingCart className="w-5 h-5 text-accent" />
                     <div>
-                      <p className="text-amber-400 text-2xl font-bold">
+                      <p className="text-accent text-2xl font-bold">
                         {stats?.collections.orders?.count || 0}
                       </p>
                       <p className="text-gray-400 text-xs">الطلبات</p>
@@ -313,9 +313,9 @@ export default function OwnerDashboard() {
               </Card>
             </div>
 
-            <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-6">
+            <Card className="bg-gradient-to-br from-background to-background border-primary/20 mb-6">
               <CardHeader>
-                <CardTitle className="text-amber-500 flex items-center gap-2">
+                <CardTitle className="text-accent flex items-center gap-2">
                   <Database className="w-5 h-5" />
                   مجموعات قاعدة البيانات
                 </CardTitle>
@@ -336,16 +336,16 @@ export default function OwnerDashboard() {
                         }}
                         className={`p-4 rounded-lg border cursor-pointer transition-all ${
                           selectedCollection === key
-                            ? 'border-amber-500 bg-amber-500/10'
-                            : 'border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/5'
+                            ? 'border-primary bg-background0/10'
+                            : 'border-primary/20 hover:border-primary/50 hover:bg-background0/5'
                         }`}
                         data-testid={`collection-${key}`}
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          <Icon className="w-5 h-5 text-amber-500" />
+                          <Icon className="w-5 h-5 text-accent" />
                           <span className="text-white font-medium">{value.nameAr}</span>
                         </div>
-                        <p className="text-2xl font-bold text-amber-500">{value.count}</p>
+                        <p className="text-2xl font-bold text-accent">{value.count}</p>
                         <p className="text-gray-500 text-xs">{key}</p>
                       </div>
                     );
@@ -355,10 +355,10 @@ export default function OwnerDashboard() {
             </Card>
 
             {selectedCollection && (
-              <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-6">
+              <Card className="bg-gradient-to-br from-background to-background border-primary/20 mb-6">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle className="text-amber-500">
+                    <CardTitle className="text-accent">
                       {stats?.collections[selectedCollection]?.nameAr || selectedCollection}
                     </CardTitle>
                     <CardDescription className="text-gray-400">
@@ -374,7 +374,7 @@ export default function OwnerDashboard() {
                             حذف الكل
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-[#2d1f1a] border-amber-500/20">
+                        <DialogContent className="bg-[#2d1f1a] border-primary/20">
                           <DialogHeader>
                             <DialogTitle className="text-red-500">تأكيد الحذف</DialogTitle>
                             <DialogDescription className="text-gray-400">
@@ -422,7 +422,7 @@ export default function OwnerDashboard() {
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b border-amber-500/20">
+                            <tr className="border-b border-primary/20">
                               {Object.keys(collectionData.data[0]).slice(0, 6).map((key) => (
                                 <th key={key} className="text-right py-2 px-3 text-gray-400 font-medium">
                                   {key}
@@ -433,7 +433,7 @@ export default function OwnerDashboard() {
                           </thead>
                           <tbody>
                             {collectionData.data.map((item, index) => (
-                              <tr key={item.id || item._id || index} className="border-b border-amber-500/10">
+                              <tr key={item.id || item._id || index} className="border-b border-primary/10">
                                 {Object.entries(item).slice(0, 6).map(([key, value]) => (
                                   <td key={key} className="py-2 px-3 text-white">
                                     {typeof value === 'object' 
@@ -465,7 +465,7 @@ export default function OwnerDashboard() {
                             size="sm"
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="border-amber-500/50 text-amber-500"
+                            className="border-primary/50 text-accent"
                             data-testid="button-prev-page"
                           >
                             <ChevronRight className="w-4 h-4" />
@@ -478,7 +478,7 @@ export default function OwnerDashboard() {
                             size="sm"
                             onClick={() => setCurrentPage(p => Math.min(collectionData.pagination.pages, p + 1))}
                             disabled={currentPage === collectionData.pagination.pages}
-                            className="border-amber-500/50 text-amber-500"
+                            className="border-primary/50 text-accent"
                             data-testid="button-next-page"
                           >
                             <ChevronLeft className="w-4 h-4" />

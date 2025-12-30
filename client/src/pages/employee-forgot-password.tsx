@@ -93,17 +93,17 @@ export default function EmployeeForgotPassword() {
  }}
  dir="rtl"
  >
- <Card className="w-full max-w-md border-amber-900/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
+ <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-900/50">
  <Coffee className="w-10 h-10 text-white" />
  </div>
  </div>
- <CardTitle className="text-3xl font-bold text-amber-100">
+ <CardTitle className="text-3xl font-bold text-accent">
  نسيت كلمة المرور؟
  </CardTitle>
- <CardDescription className="text-amber-200/70 text-lg">
+ <CardDescription className="text-accent/70 text-lg">
  {step === 'username' && 'أدخل اسم المستخدم لتغيير كلمة المرور'}
  {step === 'password' && 'أدخل كلمة المرور الجديدة'}
  </CardDescription>
@@ -113,14 +113,14 @@ export default function EmployeeForgotPassword() {
  {step === 'username' && (
  <form onSubmit={handleUsernameSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="username" className="text-amber-100">اسم المستخدم</Label>
+ <Label htmlFor="username" className="text-accent">اسم المستخدم</Label>
  <Input
  id="username"
  type="text"
  placeholder="أدخل اسم المستخدم الخاص بك"
  value={username}
  onChange={(e) => setUsername(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30"
  data-testid="input-username"
  required
  />
@@ -142,7 +142,7 @@ export default function EmployeeForgotPassword() {
  {step === 'password' && (
  <form onSubmit={handlePasswordSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="newPassword" className="text-amber-100">كلمة المرور الجديدة</Label>
+ <Label htmlFor="newPassword" className="text-accent">كلمة المرور الجديدة</Label>
  <div className="relative">
  <Input
  id="newPassword"
@@ -150,14 +150,14 @@ export default function EmployeeForgotPassword() {
  placeholder="أدخل كلمة المرور الجديدة"
  value={newPassword}
  onChange={(e) => setNewPassword(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
  data-testid="input-new-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowNewPassword(!showNewPassword)}
- className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
+ className="absolute left-3 top-2.5 text-accent hover:text-accent"
  data-testid="button-toggle-new-password"
  >
  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -166,7 +166,7 @@ export default function EmployeeForgotPassword() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="confirmPassword" className="text-amber-100">تأكيد كلمة المرور</Label>
+ <Label htmlFor="confirmPassword" className="text-accent">تأكيد كلمة المرور</Label>
  <div className="relative">
  <Input
  id="confirmPassword"
@@ -174,20 +174,20 @@ export default function EmployeeForgotPassword() {
  placeholder="أعد إدخال كلمة المرور"
  value={confirmPassword}
  onChange={(e) => setConfirmPassword(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
  data-testid="input-confirm-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
- className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
+ className="absolute left-3 top-2.5 text-accent hover:text-accent"
  data-testid="button-toggle-confirm-password"
  >
  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
  </button>
  </div>
- <p className="text-xs text-amber-200/50 mt-1">
+ <p className="text-xs text-accent/50 mt-1">
  كلمة المرور يجب أن تكون على الأقل 4 أحرف
  </p>
  </div>
@@ -215,7 +215,7 @@ export default function EmployeeForgotPassword() {
  navigate("/employee/login");
  }
  }}
- className="text-amber-500 hover:text-amber-400 text-sm"
+ className="text-accent hover:text-accent text-sm"
  data-testid="button-back"
  >
  {step === 'password' ? "رجوع" : "العودة لتسجيل الدخول"}

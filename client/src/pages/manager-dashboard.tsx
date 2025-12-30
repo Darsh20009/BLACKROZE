@@ -1039,7 +1039,7 @@ export default function ManagerDashboard() {
  <Button 
  data-testid="button-add-branch"
  onClick={() => setIsAddBranchOpen(true)}
- className="bg-orange-600 hover:bg-orange-700"
+ className="bg-accent hover:bg-accent"
  >
  <Plus className="w-4 h-4 ml-2" />
  إضافة فرع
@@ -1209,7 +1209,7 @@ export default function ManagerDashboard() {
  )}
 
  {showBranchResults && branchSearchResults.length > 0 && (
- <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+ <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-card border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
  {branchSearchResults.map((result, index) => (
  <button
  key={index}
@@ -1227,7 +1227,7 @@ export default function ManagerDashboard() {
  )}
 
  {showBranchResults && branchSearchResults.length === 0 && branchSearchQuery && !isSearchingBranch && (
- <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 p-3">
+ <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-card border border-border rounded-md shadow-lg z-50 p-3">
  <p className="text-sm text-muted-foreground text-right">لم يتم العثور على نتائج</p>
  </div>
  )}
@@ -1357,7 +1357,7 @@ export default function ManagerDashboard() {
  )}
 
  {showBranchResults && branchSearchResults.length > 0 && (
- <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+ <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-card border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
  {branchSearchResults.map((result, index) => (
  <button
  key={index}
@@ -1375,7 +1375,7 @@ export default function ManagerDashboard() {
  )}
 
  {showBranchResults && branchSearchResults.length === 0 && branchSearchQuery && !isSearchingBranch && (
- <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 p-3">
+ <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-card border border-border rounded-md shadow-lg z-50 p-3">
  <p className="text-sm text-muted-foreground text-right">لم يتم العثور على نتائج</p>
  </div>
  )}

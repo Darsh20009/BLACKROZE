@@ -384,7 +384,7 @@ export default function EmployeeAttendance() {
                 </span>
               </div>
               <div>
-                <h2 className="text-lg font-bold text-foreground" data-testid="text-employee-name">
+                <h2 className="text-lg font-bold font-playfair text-foreground" data-testid="text-employee-name">
                   {employee.fullName}
                 </h2>
                 <p className="text-muted-foreground text-sm">{employee.jobTitle || 'موظف'}</p>
@@ -627,7 +627,7 @@ export default function EmployeeAttendance() {
               <Button
                 onClick={handleCheckOut}
                 disabled={isLoading || !location || !photoUrl}
-                className="w-full h-14 bg-orange-600 hover:bg-orange-700 text-lg"
+                className="w-full h-14 bg-accent hover:bg-accent text-lg"
                 data-testid="button-check-out"
               >
                 {isLoading ? (

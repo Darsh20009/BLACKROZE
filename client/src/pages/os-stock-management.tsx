@@ -61,9 +61,9 @@ export default function OSStockManagement() {
     switch (type) {
       case "in": return "text-green-600";
       case "out": return "text-red-600";
-      case "waste": return "text-orange-600";
+      case "waste": return "text-accent";
       case "adjustment": return "text-blue-600";
-      default: return "text-gray-600";
+      default: return "text-muted-foreground";
     }
   };
 
@@ -135,17 +135,17 @@ export default function OSStockManagement() {
 
       {/* Stock Alerts */}
       {alerts.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+        <Card className="border-orange-200 bg-background dark:bg-accent/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-600" />
+              <AlertTriangle className="w-5 h-5 text-accent" />
               تنبيهات المخزون المنخفض
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {alerts.slice(0, 5).map((alert: any, i: number) => (
-                <div key={i} className="p-3 bg-white dark:bg-slate-900 rounded border border-orange-200">
+                <div key={i} className="p-3 bg-white dark:bg-card rounded border border-orange-200">
                   <p className="font-medium">{alert.rawItemName}</p>
                   <p className="text-sm text-muted-foreground">المخزون الحالي: {alert.currentQuantity} - الحد الأدنى: {alert.thresholdQuantity}</p>
                 </div>

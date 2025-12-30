@@ -108,7 +108,7 @@ const categoryConfig: Record<string, { label: string; icon: any; gradient: strin
   ingredient: { 
     label: "مكون", 
     icon: Coffee,
-    gradient: "from-amber-500 to-orange-500"
+    gradient: "from-amber-500 to-background0"
   },
   packaging: { 
     label: "تغليف", 
@@ -374,8 +374,8 @@ export default function InventoryStockPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="relative">
-            <Warehouse className="h-16 w-16 text-amber-600 animate-pulse mx-auto" />
-            <Loader2 className="h-8 w-8 animate-spin text-amber-500 absolute -bottom-2 -right-2" />
+            <Warehouse className="h-16 w-16 text-accent animate-pulse mx-auto" />
+            <Loader2 className="h-8 w-8 animate-spin text-accent absolute -bottom-2 -right-2" />
           </div>
           <p className="text-muted-foreground mt-4 text-lg">جاري تحميل المخزون...</p>
         </div>
@@ -384,7 +384,7 @@ export default function InventoryStockPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/10 p-4 md:p-6" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-background/30 dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/10 p-4 md:p-6" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -401,7 +401,7 @@ export default function InventoryStockPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               onClick={() => setIsNewBatchOpen(true)}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/20"
+              className="bg-gradient-to-r from-amber-500 to-background0 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/20"
               data-testid="button-new-batch"
             >
               <PackagePlus className="h-4 w-4 ml-2" />
@@ -481,7 +481,7 @@ export default function InventoryStockPage() {
         </div>
 
         {(lowStockItems > 0 || outOfStockItems > 0) && (
-          <Card className="border-2 border-yellow-300 dark:border-yellow-700 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 shadow-lg">
+          <Card className="border-2 border-yellow-300 dark:border-yellow-700 bg-gradient-to-r from-yellow-50 to-background dark:from-yellow-950/30 dark:to-amber-950/30 shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
                 <Bell className="h-5 w-5 animate-pulse" />
@@ -814,8 +814,8 @@ export default function InventoryStockPage() {
           <DialogContent dir="rtl" className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                  <PackagePlus className="h-5 w-5 text-amber-600" />
+                <div className="p-2 rounded-lg bg-primary dark:bg-primary/30">
+                  <PackagePlus className="h-5 w-5 text-accent" />
                 </div>
                 إضافة دفعة جديدة
               </DialogTitle>
@@ -908,7 +908,7 @@ export default function InventoryStockPage() {
               <Button 
                 onClick={handleSubmitNewBatch}
                 disabled={newBatchMutation.isPending}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                className="bg-gradient-to-r from-amber-500 to-background0 hover:from-amber-600 hover:to-orange-600"
                 data-testid="button-confirm-new-batch"
               >
                 {newBatchMutation.isPending ? (

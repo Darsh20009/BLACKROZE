@@ -521,19 +521,19 @@ export default function AccountingDashboardPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-[#1a1410] dark:via-[#1f1815] dark:to-[#231c17]" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-yellow-50 dark:from-background dark:via-primary/5 dark:to-background" dir="rtl">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         <div className="flex items-center justify-between gap-4 mb-6">
           <Button 
             variant="ghost" 
             onClick={() => setLocation("/employee/dashboard")}
-            className="text-amber-700 dark:text-amber-400"
+            className="text-accent dark:text-accent"
             data-testid="button-back"
           >
             <ArrowLeft className="w-4 h-4 ml-2" />
             العودة
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold text-amber-800 dark:text-amber-400">
+          <h1 className="text-2xl md:text-3xl font-bold text-accent dark:text-accent">
             نظام المحاسبة المتكامل
           </h1>
           <div className="w-20"></div>
@@ -568,7 +568,7 @@ export default function AccountingDashboardPage() {
 
           <Button 
             onClick={() => setIsAddExpenseOpen(true)}
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-primary hover:bg-primary"
             data-testid="button-add-expense"
           >
             <Plus className="w-4 h-4 ml-2" />
@@ -577,7 +577,7 @@ export default function AccountingDashboardPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-amber-100 dark:bg-amber-900/30">
+          <TabsList className="grid w-full grid-cols-4 bg-primary dark:bg-primary/30">
             <TabsTrigger value="overview" data-testid="tab-overview">نظرة عامة</TabsTrigger>
             <TabsTrigger value="expenses" data-testid="tab-expenses">المصروفات</TabsTrigger>
             <TabsTrigger value="revenues" data-testid="tab-revenues">الإيرادات</TabsTrigger>
@@ -587,7 +587,7 @@ export default function AccountingDashboardPage() {
           <TabsContent value="overview" className="space-y-6">
             {isDashboardLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-accent" />
               </div>
             ) : dashboardData ? (
               <>
@@ -621,14 +621,14 @@ export default function AccountingDashboardPage() {
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between gap-2">
                         <div>
-                          <p className="text-orange-100 text-sm flex items-center gap-1">
+                          <p className="text-accent text-sm flex items-center gap-1">
                             تكلفة المكونات (COGS)
                             <Eye className="w-3 h-3" />
                           </p>
                           <p className="text-3xl font-bold mt-1" data-testid="text-total-cogs">{dashboardData.totalCogs.toFixed(2)}</p>
-                          <p className="text-orange-200 text-xs mt-1">ريال سعودي - انقر للتفاصيل</p>
+                          <p className="text-accent text-xs mt-1">ريال سعودي - انقر للتفاصيل</p>
                         </div>
-                        <Package className="w-12 h-12 text-orange-200" />
+                        <Package className="w-12 h-12 text-accent" />
                       </div>
                     </CardContent>
                   </Card>
@@ -706,9 +706,9 @@ export default function AccountingDashboardPage() {
                         </p>
                         <p className="text-xs text-muted-foreground">ر.س</p>
                       </div>
-                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-center">
+                      <div className="p-4 bg-background dark:bg-primary/20 rounded-lg text-center">
                         <p className="text-muted-foreground text-sm">هامش صافي الربح</p>
-                        <p className={`text-2xl font-bold ${dashboardData.profitMargin >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                        <p className={`text-2xl font-bold ${dashboardData.profitMargin >= 0 ? 'text-accent' : 'text-red-600'}`}>
                           {dashboardData.profitMargin.toFixed(1)}%
                         </p>
                         <p className="text-xs text-muted-foreground">من الإيرادات</p>
@@ -723,7 +723,7 @@ export default function AccountingDashboardPage() {
                         </div>
                         <div className="flex justify-between">
                           <span>ضريبة القيمة المضافة</span>
-                          <span className="font-medium text-amber-600">-{dashboardData.totalVat.toFixed(2)} ر.س</span>
+                          <span className="font-medium text-accent">-{dashboardData.totalVat.toFixed(2)} ر.س</span>
                         </div>
                         <div className="flex justify-between">
                           <span>تكلفة المكونات (COGS)</span>
@@ -752,7 +752,7 @@ export default function AccountingDashboardPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-amber-600" />
+                      <BarChart3 className="w-5 h-5 text-accent" />
                       صافي الربح اليومي (آخر 7 أيام)
                     </CardTitle>
                   </CardHeader>
@@ -909,8 +909,8 @@ export default function AccountingDashboardPage() {
                   <Card>
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full">
-                          <ShoppingCart className="w-6 h-6 text-amber-600" />
+                        <div className="p-3 bg-primary dark:bg-primary/30 rounded-full">
+                          <ShoppingCart className="w-6 h-6 text-accent" />
                         </div>
                         <div>
                           <p className="text-muted-foreground text-sm">عدد الطلبات</p>
@@ -972,7 +972,7 @@ export default function AccountingDashboardPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-amber-600" />
+                        <TrendingUp className="w-5 h-5 text-accent" />
                         المنتجات الأكثر مبيعاً
                       </CardTitle>
                     </CardHeader>
@@ -1020,7 +1020,7 @@ export default function AccountingDashboardPage() {
               <CardContent>
                 {isExpensesLoading ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
                   </div>
                 ) : (
                   <Table>
@@ -1090,7 +1090,7 @@ export default function AccountingDashboardPage() {
               <CardContent>
                 {isRevenuesLoading ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
                   </div>
                 ) : (
                   <Table>
@@ -1136,16 +1136,16 @@ export default function AccountingDashboardPage() {
           <TabsContent value="reports" className="space-y-6">
             {isDashboardLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-accent" />
               </div>
             ) : dashboardData ? (
               <>
                 {/* Report Header with Export Buttons */}
-                <Card className="bg-gradient-to-l from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200 dark:border-amber-800">
+                <Card className="bg-gradient-to-l from-amber-50 to-background dark:from-amber-900/20 dark:to-orange-900/20 border-primary dark:border-primary">
                   <CardHeader>
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-400">
+                        <CardTitle className="flex items-center gap-2 text-accent dark:text-accent">
                           <FileText className="w-6 h-6" />
                           مركز التقارير المالية
                         </CardTitle>
@@ -1205,13 +1205,13 @@ export default function AccountingDashboardPage() {
                         <p className="text-2xl font-bold text-green-800 dark:text-green-300">{dashboardData.totalRevenue.toFixed(2)}</p>
                         <p className="text-xs text-green-600">ر.س</p>
                       </div>
-                      <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+                      <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-900/20 rounded-xl border border-accent dark:border-accent">
                         <div className="flex items-center gap-2 mb-2">
-                          <Package className="w-5 h-5 text-orange-600" />
-                          <span className="text-sm text-orange-700 dark:text-orange-400 font-medium">تكلفة المكونات</span>
+                          <Package className="w-5 h-5 text-accent" />
+                          <span className="text-sm text-accent dark:text-accent font-medium">تكلفة المكونات</span>
                         </div>
-                        <p className="text-2xl font-bold text-orange-800 dark:text-orange-300">{dashboardData.totalCogs.toFixed(2)}</p>
-                        <p className="text-xs text-orange-600">ر.س</p>
+                        <p className="text-2xl font-bold text-accent dark:text-accent">{dashboardData.totalCogs.toFixed(2)}</p>
+                        <p className="text-xs text-accent">ر.س</p>
                       </div>
                       <div className="p-4 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
                         <div className="flex items-center gap-2 mb-2">
@@ -1253,12 +1253,12 @@ export default function AccountingDashboardPage() {
                           </TableRow>
                           <TableRow>
                             <TableCell className="font-medium">ضريبة القيمة المضافة (المحصلة)</TableCell>
-                            <TableCell className="text-amber-600">{dashboardData.totalVat.toFixed(2)} ر.س</TableCell>
+                            <TableCell className="text-accent">{dashboardData.totalVat.toFixed(2)} ر.س</TableCell>
                             <TableCell>{dashboardData.totalRevenue > 0 ? ((dashboardData.totalVat / dashboardData.totalRevenue) * 100).toFixed(1) : 0}%</TableCell>
                           </TableRow>
                           <TableRow>
                             <TableCell className="font-medium">تكلفة المكونات (COGS)</TableCell>
-                            <TableCell className="text-orange-600">{dashboardData.totalCogs.toFixed(2)} ر.س</TableCell>
+                            <TableCell className="text-accent">{dashboardData.totalCogs.toFixed(2)} ر.س</TableCell>
                             <TableCell>{dashboardData.totalRevenue > 0 ? ((dashboardData.totalCogs / dashboardData.totalRevenue) * 100).toFixed(1) : 0}%</TableCell>
                           </TableRow>
                           <TableRow className="bg-green-50/50 dark:bg-green-900/20">
@@ -1484,14 +1484,14 @@ export default function AccountingDashboardPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Briefcase className="w-5 h-5 text-amber-600" />
+                      <Briefcase className="w-5 h-5 text-accent" />
                       مؤشرات الأداء الرئيسية (KPIs)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-amber-600" />
+                        <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-accent" />
                         <p className="text-2xl font-bold">{dashboardData.orderCount}</p>
                         <p className="text-sm text-muted-foreground">عدد الطلبات</p>
                       </div>
@@ -1553,7 +1553,7 @@ export default function AccountingDashboardPage() {
               {(drilldownType === 'revenue' || drilldownType === 'orders') && (
                 isOrdersLoading ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
                   </div>
                 ) : (
                   <Table>
@@ -1576,7 +1576,7 @@ export default function AccountingDashboardPage() {
                             <TableCell className="font-medium">{order.orderNumber}</TableCell>
                             <TableCell>{order.customerName || 'عميل'}</TableCell>
                             <TableCell className="text-green-600 font-medium">{order.totalAmount?.toFixed(2)} ر.س</TableCell>
-                            <TableCell className="text-orange-600">{(order.costOfGoods || 0).toFixed(2)} ر.س</TableCell>
+                            <TableCell className="text-accent">{(order.costOfGoods || 0).toFixed(2)} ر.س</TableCell>
                             <TableCell className={profit >= 0 ? 'text-blue-600 font-medium' : 'text-red-600'}>
                               {profit.toFixed(2)} ر.س
                             </TableCell>
@@ -1607,7 +1607,7 @@ export default function AccountingDashboardPage() {
                     <h4 className="font-semibold mb-2">تكلفة المكونات حسب الطلب</h4>
                     {isOrdersLoading ? (
                       <div className="flex justify-center py-4">
-                        <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+                        <Loader2 className="w-6 h-6 animate-spin text-accent" />
                       </div>
                     ) : (
                       <Table>
@@ -1626,8 +1626,8 @@ export default function AccountingDashboardPage() {
                               <TableRow key={order.id}>
                                 <TableCell className="font-medium">{order.orderNumber}</TableCell>
                                 <TableCell>{order.totalAmount?.toFixed(2)} ر.س</TableCell>
-                                <TableCell className="text-orange-600 font-medium">{order.costOfGoods?.toFixed(2)} ر.س</TableCell>
-                                <TableCell className={margin >= 50 ? 'text-green-600' : margin >= 30 ? 'text-amber-600' : 'text-red-600'}>
+                                <TableCell className="text-accent font-medium">{order.costOfGoods?.toFixed(2)} ر.س</TableCell>
+                                <TableCell className={margin >= 50 ? 'text-green-600' : margin >= 30 ? 'text-accent' : 'text-red-600'}>
                                   {margin.toFixed(1)}%
                                 </TableCell>
                               </TableRow>
@@ -1642,7 +1642,7 @@ export default function AccountingDashboardPage() {
                     <h4 className="font-semibold mb-2">حركات المخزون</h4>
                     {isStockLoading ? (
                       <div className="flex justify-center py-4">
-                        <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+                        <Loader2 className="w-6 h-6 animate-spin text-accent" />
                       </div>
                     ) : (
                       <Table>
@@ -1685,7 +1685,7 @@ export default function AccountingDashboardPage() {
               {drilldownType === 'expenses' && (
                 isExpensesLoading ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
                   </div>
                 ) : (
                   <Table>
@@ -1815,7 +1815,7 @@ export default function AccountingDashboardPage() {
               <Button 
                 onClick={handleAddExpense}
                 disabled={!newExpense.category || !newExpense.description || !newExpense.amount || createExpenseMutation.isPending}
-                className="bg-amber-600 hover:bg-amber-700"
+                className="bg-primary hover:bg-primary"
                 data-testid="button-submit-expense"
               >
                 {createExpenseMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "إضافة"}
