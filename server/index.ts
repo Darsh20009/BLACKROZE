@@ -35,8 +35,9 @@ async function connectDatabase() {
     console.log("✅ MongoDB connected successfully");
     
     // Run seeds in background after connection
-    const { runSeeds } = await import("./seed");
-    await runSeeds();
+    // Removed runSeeds call to prevent repeated re-initialization on Render
+    // const { runSeeds } = await import("./seed");
+    // await runSeeds();
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
     // Don't exit - let the server continue running for health checks
