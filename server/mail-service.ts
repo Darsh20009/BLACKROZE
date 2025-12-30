@@ -96,7 +96,7 @@ export async function sendOrderNotificationEmail(
   }
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <cluny.cafe2026@gmail.com>";
+    const senderEmail = process.env.SMTP_FROM || "cluny.cafe2026@gmail.com";
     
     const statusAr =
       orderStatus === "completed"
@@ -127,7 +127,6 @@ export async function sendOrderNotificationEmail(
     const mailOptions = {
       from: senderEmail,
       to: customerEmail,
-      replyTo: 'noreply@cluny.cafe',
       subject: `تحديث طلبك - ${orderId}`,
       headers: {
         'X-Priority': '3',
