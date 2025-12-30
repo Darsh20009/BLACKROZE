@@ -322,7 +322,7 @@ export default function ManagerDashboard() {
  };
 
  const response = await fetch(`/api/branches/${branchData.id}`, {
- method: "PATCH",
+ method: "PUT",
  headers: {
  "Content-Type": "application/json",
  },
@@ -330,8 +330,12 @@ export default function ManagerDashboard() {
  credentials: "include",
  });
  if (!response.ok) {
+ try {
  const error = await response.json();
  throw new Error(error.error || "Failed to update branch");
+ } catch (parseError) {
+ throw new Error("Failed to update branch - Server error");
+ }
  }
  return response.json();
  },
