@@ -6,14 +6,27 @@ import { useEffect, useState } from "react";
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");
+    if (hasSeenWelcome) {
+      setShowWelcome(false);
+      setLocation("/menu");
+      return;
+    }
+    localStorage.setItem("hasSeenWelcome", "true");
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [setLocation]);
+
+  if (!showWelcome) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
