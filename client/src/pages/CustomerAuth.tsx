@@ -161,28 +161,28 @@ export default function CustomerAuth() {
  <div 
  className="min-h-screen flex items-center justify-center p-4"
  style={{
- background: "linear-gradient(135deg, #1a1410 0%, #2d1810 50%, #1a1410 100%)",
+ background: "linear-gradient(135deg, hsl(175 20% 10%) 0%, hsl(175 18% 18%) 50%, hsl(175 20% 10%) 100%)",
  }}
  dir="rtl"
  >
- <Card className="w-full max-w-md border-amber-900/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
+ <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-foreground/5 to-foreground/10 backdrop-blur shadow-2xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
- <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-900/50">
- <Coffee className="w-10 h-10 text-white" />
+ <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent to-accent/90 flex items-center justify-center shadow-lg shadow-accent/50">
+ <Coffee className="w-10 h-10 text-card" />
  </div>
  </div>
- <CardTitle className="text-3xl font-bold text-amber-100">
- مرحباً بك في كوب
+ <CardTitle className="text-3xl font-bold text-card">
+ مرحباً بك في CLUNY CAFE
  </CardTitle>
- <CardDescription className="text-amber-200/70 text-lg">
- سجل دخولك للحصول على بطاقة كوبي الخاصةبك
+ <CardDescription className="text-card/80 text-lg">
+ سجل دخولك للحصول على حسابك الخاص
  </CardDescription>
  </CardHeader>
 
  <CardContent>
  <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "register")} className="w-full">
- <TabsList className="h-10 items-center justify-center rounded-md p-1 grid w-full grid-cols-2 bg-stone-800/50 text-[#d37107]">
+ <TabsList className="h-10 items-center justify-center rounded-md p-1 grid w-full grid-cols-2 bg-primary/20 text-primary">
  <TabsTrigger value="login" data-testid="tab-login">تسجيل دخول</TabsTrigger>
  <TabsTrigger value="register" data-testid="tab-register">حساب جديد</TabsTrigger>
  </TabsList>
@@ -190,7 +190,7 @@ export default function CustomerAuth() {
  <TabsContent value="login" className="space-y-5 mt-5">
  <form onSubmit={handleLogin} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="login-identifier" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="login-identifier" className="text-card flex items-center gap-2">
  <Mail className="w-4 h-4" />
  رقم الجوال أو البريد الإلكتروني
  </Label>
@@ -202,13 +202,13 @@ export default function CustomerAuth() {
  data-testid="input-identifier"
  required
  />
- <p className="text-xs text-amber-200/50 mt-1">
+ <p className="text-xs text-card/70 mt-1">
  يمكنك تسجيل الدخول بالجوال (9 أرقام يبدأ بـ 5) أو البريد الإلكتروني
  </p>
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="login-password" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="login-password" className="text-card flex items-center gap-2">
  <Lock className="w-4 h-4" />
  كلمة المرور
  </Label>
@@ -219,14 +219,14 @@ export default function CustomerAuth() {
  placeholder="أدخل كلمة المرور"
  value={password}
  onChange={(e) => setPassword(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
+ className="bg-primary/20 border-primary/50 text-card placeholder:text-card/60 focus:border-accent focus:ring-accent/30 pl-10"
  data-testid="input-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowPassword(!showPassword)}
- className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
+ className="absolute left-3 top-2.5 text-accent hover:text-accent/80"
  data-testid="button-toggle-password"
  >
  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -235,7 +235,7 @@ export default function CustomerAuth() {
  <button
  type="button"
  onClick={() => navigate("/forgot-password")}
- className="text-xs text-amber-400/80 hover:text-amber-300 transition-colors underline-offset-4 hover:underline"
+ className="text-xs text-accent/80 hover:text-accent transition-colors underline-offset-4 hover:underline"
  data-testid="link-forgot-password"
  >
  نسيت كلمة المرور؟
@@ -245,7 +245,7 @@ export default function CustomerAuth() {
  <Button
  type="submit"
  disabled={loading}
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-900/50 transition-all duration-300 hover:scale-[1.02]"
+ className="w-full h-12 text-lg font-bold bg-gradient-to-r from-accent to-accent/90 hover:from-accent/90 hover:to-accent/80 text-card shadow-lg shadow-accent/50 transition-all duration-300 hover:scale-[1.02]"
  data-testid="button-login"
  >
  {loading ? (
