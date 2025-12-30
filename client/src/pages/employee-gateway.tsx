@@ -14,7 +14,7 @@ export default function EmployeeGateway() {
  const handleSubmit = (e: React.FormEvent) => {
  e.preventDefault();
  
- if (password === "1802009") {
+ if (password === "c2030") {
  setLocation("/employee/login");
  } else {
  setError("كلمة المرور غير صحيحة ");
