@@ -34,17 +34,17 @@ async function getTransporter() {
     const { smtpHost, smtpPort, smtpUser, smtpPass } = await loadSecretsFromReplit();
 
     if (!smtpUser || !smtpPass) {
-      console.warn("⚠️ SMTP credentials not configured. Using Google Sheets for logging.");
+      console.warn("⚠️ SMTP credentials not configured. Email service disabled.");
       transporterInitialized = true;
       return null;
     }
 
     try {
-      console.log(`📧 Attempting to connect to SMTP: ${smtpHost}:${smtpPort} with user ${smtpUser}`);
+      console.log(`📧 Creating SMTP transporter for ${smtpHost}:${smtpPort}`);
       transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
-        secure: smtpPort === 465, // SSL for 465, STARTTLS for others
+        secure: smtpPort === 465,
         auth: {
           user: smtpUser,
           pass: smtpPass,
@@ -53,25 +53,26 @@ async function getTransporter() {
           rejectUnauthorized: false,
           minVersion: 'TLSv1.2'
         },
-        debug: true,
-        logger: true,
-        connectionTimeout: 20000,
-        greetingTimeout: 20000,
-        socketTimeout: 20000
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000
       });
       
-      await transporter.verify();
-      console.log("✅ SMTP transporter verified and ready");
+      // Mark as initialized immediately - don't wait for verify to prevent blocking
       transporterInitialized = true;
-    } catch (error: any) {
-      console.error("❌ SMTP Verification Error Details:", {
-        message: error.message,
-        code: error.code,
-        command: error.command,
-        response: error.response,
-        stack: error.stack
+      console.log("✅ SMTP transporter created (verification on first use)");
+      
+      // Verify in background, don't block startup
+      transporter.verify().then(() => {
+        console.log("✅ SMTP connection verified");
+      }).catch((err: any) => {
+        console.warn("⚠️ SMTP verification failed:", err.message);
+        console.log("   Will retry on next email send...");
       });
-      // Don't set initialized to true on error so we can retry on next request
+      
+    } catch (error: any) {
+      console.error("❌ Error creating SMTP transporter:", error.message);
+      transporterInitialized = true;
       return null;
     }
 
@@ -89,13 +90,13 @@ export async function sendOrderNotificationEmail(
   orderTotal: number,
   originalOrder?: any
 ) {
-  const transporter = await getTransporter();
-  if (!transporter) {
-    console.warn("⚠️ SMTP transporter not available. Order notification skipped.");
-    return false;
-  }
-
   try {
+    const transporter = await getTransporter();
+    if (!transporter) {
+      console.warn("⚠️ Email service not available for order notification.");
+      return false;
+    }
+
     const senderEmail = process.env.SMTP_FROM || "cluny@ma3k.online";
     
     const statusAr =
