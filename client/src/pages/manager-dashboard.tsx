@@ -16,7 +16,7 @@ import BranchLocationPicker from "@/components/branch-location-picker";
 import { 
  Coffee, Users, ShoppingBag, TrendingUp, DollarSign, 
  Package, MapPin, Layers, ArrowLeft, Calendar, Warehouse,
- UserCheck, Receipt, BarChart3, Download, TrendingDown, Activity, Plus, Trash2, ExternalLink, Edit2
+ UserCheck, Receipt, BarChart3, Download, TrendingDown, Activity, Plus, Trash2, ExternalLink, Edit2, Search
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { 
@@ -50,6 +50,10 @@ export default function ManagerDashboard() {
  latitude: 24.7136,
  longitude: 46.6753,
  });
+ const [branchSearchQuery, setBranchSearchQuery] = useState<string>("");
+ const [branchSearchResults, setBranchSearchResults] = useState<Array<{ name: string; lat: string; lon: string }>>([]);
+ const [showBranchResults, setShowBranchResults] = useState(false);
+ const [isSearchingBranch, setIsSearchingBranch] = useState(false);
  const [managerAssignmentType, setManagerAssignmentType] = useState<"existing" | "new">("existing");
  const [selectedManagerId, setSelectedManagerId] = useState<string>("");
  const [newManagerForm, setNewManagerForm] = useState({
@@ -93,6 +97,47 @@ export default function ManagerDashboard() {
 
  const isAdmin = manager?.role === "admin";
  const managerBranchId = manager?.branchId;
+
+ const searchBranchLocations = async (query: string) => {
+ if (query.length < 2) {
+ setBranchSearchResults([]);
+ return;
+ }
+ 
+ setIsSearchingBranch(true);
+ try {
+ const response = await fetch(
+ `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`
+ );
+ const data = await response.json();
+ setBranchSearchResults(data || []);
+ setShowBranchResults(true);
+ } catch (error) {
+ console.error("Error searching branch locations:", error);
+ setBranchSearchResults([]);
+ } finally {
+ setIsSearchingBranch(false);
+ }
+ };
+
+ const handleBranchSearchChange = (value: string) => {
+ setBranchSearchQuery(value);
+ setTimeout(() => {
+ searchBranchLocations(value);
+ }, 500);
+ };
+
+ const handleSelectBranchLocation = (location: { name: string; lat: string; lon: string }) => {
+ setBranchForm({
+ ...branchForm,
+ address: location.name,
+ latitude: parseFloat(location.lat),
+ longitude: parseFloat(location.lon),
+ });
+ setBranchSearchQuery("");
+ setShowBranchResults(false);
+ setBranchSearchResults([]);
+ };
 
  const { data: allEmployees = [] } = useQuery<Employee[]>({
  queryKey: ["/api/employees"],
@@ -1095,6 +1140,51 @@ export default function ManagerDashboard() {
  )}
  </div>
  
+ <div className="grid gap-4">
+ <div className="grid gap-2 relative">
+ <Label>اسم الفرع - ابحث عن الموقع</Label>
+ <div className="relative">
+ <Input
+ type="text"
+ placeholder="ابحث عن الفرع... (مثال: الرياض، الدمام)"
+ value={branchSearchQuery}
+ onChange={(e) => handleBranchSearchChange(e.target.value)}
+ onFocus={() => branchSearchQuery && setShowBranchResults(true)}
+ className="text-right pr-10"
+ data-testid="input-branch-search"
+ />
+ {isSearchingBranch && (
+ <div className="absolute right-3 top-3 text-primary">
+ <div className="animate-spin">⟳</div>
+ </div>
+ )}
+
+ {showBranchResults && branchSearchResults.length > 0 && (
+ <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+ {branchSearchResults.map((result, index) => (
+ <button
+ key={index}
+ onClick={() => handleSelectBranchLocation(result)}
+ className="w-full text-right px-4 py-3 hover:bg-primary/10 dark:hover:bg-primary/20 border-b border-border last:border-b-0 transition-colors"
+ data-testid={`branch-location-result-${index}`}
+ >
+ <div className="flex items-end gap-2 justify-end">
+ <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+ <span className="text-sm text-foreground">{result.name}</span>
+ </div>
+ </button>
+ ))}
+ </div>
+ )}
+
+ {showBranchResults && branchSearchResults.length === 0 && branchSearchQuery && !isSearchingBranch && (
+ <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 p-3">
+ <p className="text-sm text-muted-foreground text-right">لم يتم العثور على نتائج</p>
+ </div>
+ )}
+ </div>
+ </div>
+
  <div className="grid gap-2">
  <Label>موقع الفرع على الخريطة</Label>
  <div className="h-[250px] rounded-lg overflow-hidden border border-border">
@@ -1107,6 +1197,7 @@ export default function ManagerDashboard() {
  <div className="flex gap-4 text-xs text-muted-foreground">
  <span>خط العرض: {branchForm.latitude.toFixed(6)}</span>
  <span>خط الطول: {branchForm.longitude.toFixed(6)}</span>
+ </div>
  </div>
  </div>
  
@@ -1197,6 +1288,51 @@ export default function ManagerDashboard() {
  />
  </div>
 
+ <div className="grid gap-4">
+ <div className="grid gap-2 relative">
+ <Label>اسم الفرع - ابحث عن الموقع</Label>
+ <div className="relative">
+ <Input
+ type="text"
+ placeholder="ابحث عن الفرع... (مثال: الرياض، الدمام)"
+ value={branchSearchQuery}
+ onChange={(e) => handleBranchSearchChange(e.target.value)}
+ onFocus={() => branchSearchQuery && setShowBranchResults(true)}
+ className="text-right pr-10"
+ data-testid="input-branch-search-edit"
+ />
+ {isSearchingBranch && (
+ <div className="absolute right-3 top-3 text-primary">
+ <div className="animate-spin">⟳</div>
+ </div>
+ )}
+
+ {showBranchResults && branchSearchResults.length > 0 && (
+ <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+ {branchSearchResults.map((result, index) => (
+ <button
+ key={index}
+ onClick={() => handleSelectBranchLocation(result)}
+ className="w-full text-right px-4 py-3 hover:bg-primary/10 dark:hover:bg-primary/20 border-b border-border last:border-b-0 transition-colors"
+ data-testid={`branch-location-result-edit-${index}`}
+ >
+ <div className="flex items-end gap-2 justify-end">
+ <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+ <span className="text-sm text-foreground">{result.name}</span>
+ </div>
+ </button>
+ ))}
+ </div>
+ )}
+
+ {showBranchResults && branchSearchResults.length === 0 && branchSearchQuery && !isSearchingBranch && (
+ <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-border rounded-md shadow-lg z-50 p-3">
+ <p className="text-sm text-muted-foreground text-right">لم يتم العثور على نتائج</p>
+ </div>
+ )}
+ </div>
+ </div>
+
  <div className="grid gap-2">
  <Label>موقع الفرع على الخريطة</Label>
  <div className="h-[250px] rounded-lg overflow-hidden border border-border">
@@ -1209,6 +1345,7 @@ export default function ManagerDashboard() {
  <div className="flex gap-4 text-xs text-muted-foreground">
  <span>خط العرض: {branchForm.latitude.toFixed(6)}</span>
  <span>خط الطول: {branchForm.longitude.toFixed(6)}</span>
+ </div>
  </div>
  </div>
 
