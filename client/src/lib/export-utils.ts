@@ -2,16 +2,33 @@
  * Export utility functions for CSV and PDF exports
  */
 
+/**
+ * Sanitize data for export by removing MongoDB internal fields
+ */
+export function sanitizeForExport(data: any[]): any[] {
+  return data.map((item) => {
+    const sanitized: any = {};
+    Object.keys(item).forEach((key) => {
+      // Skip MongoDB internal fields and private fields
+      if (!key.startsWith("_") && key !== "__v" && key !== "password" && key !== "token") {
+        sanitized[key] = item[key];
+      }
+    });
+    return sanitized;
+  });
+}
+
 export function exportToCSV(data: any[], filename: string) {
   if (!data || data.length === 0) {
     console.error("No data to export");
     return;
   }
 
-  const headers = Object.keys(data[0]);
+  const cleanData = sanitizeForExport(data);
+  const headers = Object.keys(cleanData[0]);
   const csvContent = [
     headers.join(","),
-    ...data.map((row) => headers.map((header) => `"${row[header] || ""}"`).join(",")),
+    ...cleanData.map((row) => headers.map((header) => `"${row[header] || ""}"`).join(",")),
   ].join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

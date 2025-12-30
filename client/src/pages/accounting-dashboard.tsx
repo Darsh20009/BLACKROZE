@@ -390,9 +390,22 @@ export default function AccountingDashboardPage() {
     return branch?.nameAr || "غير محدد";
   };
 
+  const sanitizeForExport = (items: any[]) => {
+    return items.map((item) => {
+      const sanitized: any = {};
+      Object.keys(item).forEach((key) => {
+        if (!key.startsWith("_") && key !== "__v" && key !== "password" && key !== "token") {
+          sanitized[key] = item[key];
+        }
+      });
+      return sanitized;
+    });
+  };
+
   const exportToExcel = (data: any[], filename: string, headers: string[]) => {
     import('xlsx').then((XLSX) => {
-      const ws = XLSX.utils.json_to_sheet(data);
+      const cleanData = sanitizeForExport(data);
+      const ws = XLSX.utils.json_to_sheet(cleanData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'تقرير');
       XLSX.writeFile(wb, `${filename}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
