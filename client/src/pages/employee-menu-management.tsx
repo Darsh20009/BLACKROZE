@@ -897,38 +897,129 @@ export default function EmployeeMenuManagement() {
                      </div>
                    </div>
                  <div className="space-y-2 mt-4">
-                   <Label htmlFor="availableSizes" className="text-gray-300">الأحجام المتوفرة (اختياري)</Label>
-                   <p className="text-gray-500 text-xs mb-2">أدخل الحجم والسعر بتنسيق: كبير: 20، وسط: 15 (كل حجم في سطر)</p>
-                   <Textarea
-                     id="availableSizes"
-                     placeholder="كبير: 20&#10;وسط: 15"
-                     className="bg-[#1a1410] border-primary/30 text-white min-h-[100px]"
-                     onChange={(e) => {
-                       const lines = e.target.value.split('\n').filter(l => l.includes(':'));
-                       const sizes = lines.map(l => {
-                         const [name, price] = l.split(':').map(s => s.trim());
-                         return { nameAr: name, nameEn: name, price: Number(price) || 0 };
-                       });
-                       setStep1Data(prev => prev ? {...prev, availableSizes: sizes} : null);
-                     }}
-                   />
+                   <div className="flex items-center justify-between">
+                     <Label className="text-gray-300">الأحجام المتوفرة (اختياري)</Label>
+                     <Button
+                       type="button"
+                       size="sm"
+                       variant="outline"
+                       onClick={() => setStep1Data(prev => prev ? {...prev, availableSizes: [...(prev.availableSizes || []), {nameAr: '', nameEn: '', price: 0}]} : null)}
+                       className="border-primary/50 text-accent text-xs"
+                     >
+                       <Plus className="w-3 h-3 ml-1" />
+                       إضافة حجم
+                     </Button>
+                   </div>
+                   {step1Data?.availableSizes && step1Data.availableSizes.length > 0 && (
+                     <div className="space-y-2 bg-[#1a1410] p-3 rounded-lg border border-primary/20">
+                       {step1Data.availableSizes.map((size, idx) => (
+                         <div key={idx} className="flex gap-2 items-end">
+                           <div className="flex-1">
+                             <Input
+                               placeholder="الحجم (كبير، وسط، صغير)"
+                               value={size.nameAr || ''}
+                               onChange={(e) => {
+                                 const updated = [...(step1Data.availableSizes || [])];
+                                 updated[idx] = {...updated[idx], nameAr: e.target.value, nameEn: e.target.value};
+                                 setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
+                               }}
+                               className="bg-[#2d1f1a] border-primary/30 text-white text-sm"
+                             />
+                           </div>
+                           <div className="w-24">
+                             <Input
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               placeholder="السعر"
+                               value={size.price || 0}
+                               onChange={(e) => {
+                                 const updated = [...(step1Data.availableSizes || [])];
+                                 updated[idx] = {...updated[idx], price: parseFloat(e.target.value) || 0};
+                                 setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
+                               }}
+                               className="bg-[#2d1f1a] border-primary/30 text-white text-sm text-center"
+                             />
+                           </div>
+                           <Button
+                             type="button"
+                             size="sm"
+                             variant="ghost"
+                             onClick={() => {
+                               const updated = step1Data.availableSizes?.filter((_, i) => i !== idx) || [];
+                               setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
+                             }}
+                             className="text-red-400 hover:text-red-300"
+                           >
+                             <X className="w-4 h-4" />
+                           </Button>
+                         </div>
+                       ))}
+                     </div>
+                   )}
                  </div>
+
                  <div className="space-y-2 mt-4">
-                   <Label htmlFor="addons" className="text-gray-300">الإضافات المتوفرة (اختياري)</Label>
-                   <p className="text-gray-500 text-xs mb-2">أدخل الإضافات بتنسيق: حليب إضافي: 5، نكهة فانيلا: 3 (كل إضافة في سطر)</p>
-                   <Textarea
-                     id="addons"
-                     placeholder="حليب إضافي: 5&#10;نكهة فانيلا: 3"
-                     className="bg-[#1a1410] border-primary/30 text-white min-h-[100px]"
-                     onChange={(e) => {
-                       const lines = e.target.value.split('\n').filter(l => l.includes(':'));
-                       const addons = lines.map(l => {
-                         const [name, price] = l.split(':').map(s => s.trim());
-                         return { nameAr: name, nameEn: name, price: Number(price) || 0 };
-                       });
-                       setStep1Data(prev => prev ? {...prev, addons: addons as any} : null);
-                     }}
-                   />
+                   <div className="flex items-center justify-between">
+                     <Label className="text-gray-300">الإضافات المتوفرة (اختياري)</Label>
+                     <Button
+                       type="button"
+                       size="sm"
+                       variant="outline"
+                       onClick={() => setStep1Data(prev => prev ? {...prev, addons: [...(prev.addons || []), {nameAr: '', nameEn: '', price: 0}]} : null)}
+                       className="border-primary/50 text-accent text-xs"
+                     >
+                       <Plus className="w-3 h-3 ml-1" />
+                       إضافة إضافة
+                     </Button>
+                   </div>
+                   {step1Data?.addons && step1Data.addons.length > 0 && (
+                     <div className="space-y-2 bg-[#1a1410] p-3 rounded-lg border border-primary/20">
+                       {step1Data.addons.map((addon, idx) => (
+                         <div key={idx} className="flex gap-2 items-end">
+                           <div className="flex-1">
+                             <Input
+                               placeholder="الإضافة (حليب، نكهة، إلخ)"
+                               value={addon.nameAr || ''}
+                               onChange={(e) => {
+                                 const updated = [...(step1Data.addons || [])];
+                                 updated[idx] = {...updated[idx], nameAr: e.target.value, nameEn: e.target.value};
+                                 setStep1Data(prev => prev ? {...prev, addons: updated} : null);
+                               }}
+                               className="bg-[#2d1f1a] border-primary/30 text-white text-sm"
+                             />
+                           </div>
+                           <div className="w-24">
+                             <Input
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               placeholder="السعر"
+                               value={addon.price || 0}
+                               onChange={(e) => {
+                                 const updated = [...(step1Data.addons || [])];
+                                 updated[idx] = {...updated[idx], price: parseFloat(e.target.value) || 0};
+                                 setStep1Data(prev => prev ? {...prev, addons: updated} : null);
+                               }}
+                               className="bg-[#2d1f1a] border-primary/30 text-white text-sm text-center"
+                             />
+                           </div>
+                           <Button
+                             type="button"
+                             size="sm"
+                             variant="ghost"
+                             onClick={() => {
+                               const updated = step1Data.addons?.filter((_, i) => i !== idx) || [];
+                               setStep1Data(prev => prev ? {...prev, addons: updated} : null);
+                             }}
+                             className="text-red-400 hover:text-red-300"
+                           >
+                             <X className="w-4 h-4" />
+                           </Button>
+                         </div>
+                       ))}
+                     </div>
+                   )}
                  </div>
  <div>
  <Label htmlFor="price" className="text-gray-300">السعر (ريال) *</Label>
