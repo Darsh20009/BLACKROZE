@@ -28,9 +28,9 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
-    minify: 'esbuild',
-    target: 'esnext',
-    cssMinify: true,
+    minify: process.env.NODE_ENV === 'production' ? 'esbuild' : false,
+    target: 'es2020',
+    cssMinify: process.env.NODE_ENV === 'production',
     rollupOptions: {
       output: {
         manualChunks: {

@@ -358,12 +358,12 @@ export default function ManagerEmployees() {
  إضافة موظف جديد
  </Button>
  </DialogTrigger>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white max-w-2xl">
+ <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto">
  <DialogHeader>
  <DialogTitle className="text-amber-500">إضافة موظف جديد</DialogTitle>
  </DialogHeader>
- <form onSubmit={handleSubmitNew} className="space-y-4">
- <div className="grid grid-cols-2 gap-4">
+ <form onSubmit={handleSubmitNew} className="space-y-3 sm:space-y-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
  <Label htmlFor="fullName" className="text-gray-300">الاسم الكامل *</Label>
  <Input
@@ -386,7 +386,7 @@ export default function ManagerEmployees() {
  </div>
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
  <Label htmlFor="phone" className="text-gray-300">رقم الهاتف *</Label>
  <Input
@@ -417,7 +417,7 @@ export default function ManagerEmployees() {
  </div>
 
  {/* Role and Branch Selection - Admin only */}
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
  <Label className="text-gray-300 flex items-center gap-1">
  <Shield className="w-4 h-4" />
@@ -458,7 +458,7 @@ export default function ManagerEmployees() {
  )}
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
  <Label htmlFor="shiftStartTime" className="text-gray-300">وقت بداية الدوام</Label>
  <Input
@@ -539,7 +539,7 @@ export default function ManagerEmployees() {
    </div>
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
  <Label htmlFor="deviceBalance" className="text-gray-300">رصيد الأجهزة</Label>
  <Input
@@ -624,7 +624,7 @@ export default function ManagerEmployees() {
  </p>
  </div>
 
- <div className="flex justify-end gap-2">
+ <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
  <Button
  type="button"
  variant="outline"
@@ -634,7 +634,7 @@ export default function ManagerEmployees() {
  setSelectedImage(null);
  setUploadedImageUrl(null);
  }}
- className="border-gray-600 text-gray-300"
+ className="border-gray-600 text-gray-300 w-full sm:w-auto"
  data-testid="button-cancel-add"
  >
  إلغاء
@@ -642,7 +642,7 @@ export default function ManagerEmployees() {
  <Button
  type="submit"
  disabled={createEmployeeMutation.isPending}
- className="bg-gradient-to-r from-amber-500 to-amber-700"
+ className="bg-gradient-to-r from-amber-500 to-amber-700 w-full sm:w-auto"
  data-testid="button-submit-add"
  >
  {createEmployeeMutation.isPending ? "جاري الإضافة..." : "إضافة الموظف"}
@@ -732,12 +732,12 @@ export default function ManagerEmployees() {
 
  {editingEmployee && (
  <Dialog open={!!editingEmployee} onOpenChange={() => setEditingEmployee(null)}>
- <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white max-w-2xl">
+ <DialogContent className="bg-[#2d1f1a] border-amber-500/20 text-white w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto">
  <DialogHeader>
  <DialogTitle className="text-amber-500">تعديل بيانات الموظف</DialogTitle>
  </DialogHeader>
- <form onSubmit={handleSubmitEdit} className="space-y-4">
- <div className="grid grid-cols-2 gap-4">
+ <form onSubmit={handleSubmitEdit} className="space-y-3 sm:space-y-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
  <Label htmlFor="edit-fullName" className="text-gray-300">الاسم الكامل *</Label>
  <Input
@@ -763,7 +763,7 @@ export default function ManagerEmployees() {
  </div>
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
  <Label htmlFor="edit-jobTitle" className="text-gray-300">الوظيفة*</Label>
  <Select name="jobTitle" defaultValue={editingEmployee.jobTitle} required>
@@ -780,7 +780,7 @@ export default function ManagerEmployees() {
  </div>
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
  <div>
  <Label htmlFor="edit-shiftStartTime" className="text-gray-300">وقت بداية الدوام</Label>
  <Input
