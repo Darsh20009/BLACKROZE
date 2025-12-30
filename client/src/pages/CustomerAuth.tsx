@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhoneInput } from "@/components/phone-input";
 import { SmartIdentifierInput } from "@/components/smart-identifier-input";
-import { Coffee, Phone, User, Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { Phone, User, Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import clunyLogo from "@assets/cluny-logo.png";
 
 export default function CustomerAuth() {
  const [, navigate] = useLocation();
@@ -168,8 +169,8 @@ export default function CustomerAuth() {
  <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-foreground/5 to-foreground/10 backdrop-blur shadow-2xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
- <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent to-accent/90 flex items-center justify-center shadow-lg shadow-accent/50">
- <Coffee className="w-10 h-10 text-card" />
+ <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg shadow-accent/50">
+ <img src={clunyLogo} alt="CLUNY CAFE" className="w-full h-full object-cover" />
  </div>
  </div>
  <CardTitle className="text-3xl font-bold text-card">
