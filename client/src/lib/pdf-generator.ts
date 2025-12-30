@@ -19,7 +19,7 @@ export const generatePDF = async (
  paymentMethod: PaymentMethod
 ): Promise<Blob> => {
  // Generate QR code for website URL
- const websiteUrl = 'https://qahwa.ma3k.online';
+ const websiteUrl = 'https://cluny.ma3k.online';
  const qrCodeDataURL = await QRCode.toDataURL(websiteUrl, {
  width: 120,
  margin: 2,
@@ -170,7 +170,7 @@ export const generatePDF = async (
  <span style="font-weight: bold;"> رمز الاستجابة السريع:</span> يحتوي على رابط موقع CLUNY CAFE
  </p>
  <p style="margin: 8px 0 0 0; font-size: 12px; text-align: center; color: #8B6F47;">
- امسح الرمز للوصول إلى <span style="font-weight: bold; color: #D4AF37;">qahwa.ma3k.online</span> وطلب المزيد من منتجاتنا اللذيذة 
+ امسح الرمز للوصول إلى <span style="font-weight: bold; color: #D4AF37;">cluny.ma3k.online</span> وطلب المزيد من منتجاتنا اللذيذة 
  </p>
  </div>
 
