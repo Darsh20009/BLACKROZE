@@ -2008,6 +2008,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ]
           }).lean().exec();
           console.log(`[GET /api/coffee-items] Found ${items.length} items for tenant ${tenantId}`);
+          if (items.length > 0) {
+            console.log(`[GET /api/coffee-items] Item details:`, items.slice(0, 2).map((i: any) => ({
+              id: i.id,
+              nameAr: i.nameAr,
+              tenantId: i.tenantId,
+              publishedBranches: i.publishedBranches,
+              createdByBranchId: i.createdByBranchId
+            })));
+          }
 
       
       // Batch fetch recipes and raw items for performance
@@ -2034,12 +2043,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const itemRecipes = recipesByItem.get(item.id) || [];
         const recipeAvailable = itemRecipes.length === 0 ? false : itemRecipes.every((r: any) => rawItemMap.has(r.rawItemId?.toString()));
         
-        const publishedBranches = item.publishedBranches || [];
+        // Handle legacy items: if no publishedBranches, show to all
+        let publishedBranches = item.publishedBranches || [];
+        if (publishedBranches.length === 0 && !item.createdByBranchId) {
+          // Legacy item with no branch assignment - show to all branches
+          publishedBranches = ['*']; // special marker for "all branches"
+        }
+        
         const branchAvailability = (item.branchAvailability || []) as Array<{branchId: string, isAvailable: number}>;
         
           // Build availability map - only for published branches
           const availabilityByBranch: {[key: string]: {isAvailable: number, status: string}} = {};
-          const branchesToCheck = publishedBranches.length > 0 ? publishedBranches : (isEmployee && req.employee?.branchId ? [req.employee.branchId] : []);
+          const branchesToCheck = publishedBranches.includes('*') ? (requestedBranchId ? [requestedBranchId] : []) : (publishedBranches.length > 0 ? publishedBranches : (isEmployee && req.employee?.branchId ? [req.employee.branchId] : []));
           
           for (const branchId of branchesToCheck) {
             const branchInfo = branchAvailability.find((b: any) => b.branchId === branchId);
@@ -2070,11 +2085,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter by branch for customers if requested
       let finalItems = enrichedItems;
       if (!isEmployee && requestedBranchId) {
-        // For customers: show items published to their branch OR all items if no branch filtering
+        // For customers: show items published to their branch OR legacy items (with '*' marker) OR all items if no branch filtering
         finalItems = enrichedItems.filter((item: any) => {
           const publishedBranches = item.publishedBranches || [];
-          // Show item if: it's published to this branch, OR no branches are published (show all)
-          return publishedBranches.length === 0 || publishedBranches.includes(requestedBranchId);
+          // Show item if: it's published to this branch, OR it's a legacy item (marked with '*'), OR no branches are published
+          return publishedBranches.includes('*') || publishedBranches.length === 0 || publishedBranches.includes(requestedBranchId);
         });
       } else if (!isEmployee) {
         // For customers without branch: show all items
