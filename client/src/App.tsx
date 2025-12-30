@@ -109,6 +109,7 @@ const SupportSystem = lazy(() => import("@/pages/support-system"));
 const StockOrganizationDashboard = lazy(() => import("@/pages/stock-organization-dashboard"));
 const DeliveryServiceStatus = lazy(() => import("@/pages/delivery-service-status"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
+const EmployeeHome = lazy(() => import("@/pages/employee-home"));
 const PageLoader = () => <div className="w-full h-screen flex items-center justify-center bg-background" />;
 
 function Router() {
@@ -177,6 +178,7 @@ function Router() {
  
  {/* Employee auth routes (public) */}
  <Route path="/employee"><EmployeeSplash /></Route>
+ <Route path="/employee/home">{() => <AuthGuard userType="employee"><EmployeeHome /></AuthGuard>}</Route>
  <Route path="/employee/gateway"><EmployeeGateway /></Route>
  <Route path="/employee/login"><EmployeeLogin /></Route>
  <Route path="/employee/forgot-password"><EmployeeForgotPassword /></Route>
