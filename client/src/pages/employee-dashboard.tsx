@@ -319,58 +319,58 @@ export default function EmployeeDashboard() {
   const roleVariant = getRoleVariant(employee.role || "cashier");
 
   return (
-    <div dir="rtl" className="flex h-screen bg-white dark:bg-slate-950">
+    <div dir="rtl" className="flex h-screen bg-[#F7F8F8] dark:bg-slate-950">
       <EmployeeSidebar employee={employee} onLogout={handleLogout} />
       <main className="flex-1 overflow-auto">
-        <div className="min-h-screen bg-background p-6">
+        <div className="min-h-screen bg-[#F7F8F8] p-6">
           <div className="max-w-6xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold">لوحة تحكم الموظف</h1>
-                <p className="text-muted-foreground mt-1">أهلاً {employee?.fullName}</p>
+                <h1 className="text-3xl font-bold text-[#1F2D2E]">لوحة تحكم الموظف</h1>
+                <p className="text-[#6B7C7D] mt-1">أهلاً {employee?.fullName}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="profile" data-testid="tab-profile">
+            <TabsList className="grid w-full grid-cols-2 bg-[#E2E6E6]">
+              <TabsTrigger value="profile" data-testid="tab-profile" className="data-[state=active]:bg-[#9FB2B3] data-[state=active]:text-white">
                 <User className="w-4 h-4 ml-2" />
                 الملف الشخصي
               </TabsTrigger>
-              <TabsTrigger value="card" data-testid="tab-card">
+              <TabsTrigger value="card" data-testid="tab-card" className="data-[state=active]:bg-[#9FB2B3] data-[state=active]:text-white">
                 <IdCard className="w-4 h-4 ml-2" />
                 بطاقة الموظف
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="profile">
-              <Card>
-                <div className="h-24 bg-primary"></div>
+              <Card className="border-[#E2E6E6]">
+                <div className="h-24 bg-[#9FB2B3]"></div>
                 <CardContent className="pt-0 -mt-12">
                   <div className="flex flex-col items-center">
-                    <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center border-4 border-card mb-4">
-                      <User className="w-12 h-12 text-primary-foreground" />
+                    <div className="w-24 h-24 bg-[#9FB2B3] rounded-full flex items-center justify-center border-4 border-white mb-4">
+                      <User className="w-12 h-12 text-white" />
                     </div>
                     
-                    <h2 className="text-2xl font-bold text-primary mb-2 text-center" data-testid="text-employee-name">
+                    <h2 className="text-2xl font-bold text-[#1F2D2E] mb-2 text-center" data-testid="text-employee-name">
                       {employee.fullName}
                     </h2>
                     
-                    <Badge variant={roleVariant} className="mb-2" data-testid="badge-role">
+                    <Badge className="bg-[#B58B5A] text-white hover:bg-[#B58B5A]/90 mb-2 border-none" data-testid="badge-role">
                       {roleArabic}
                     </Badge>
                     
                     {employee.title && (
                       <div className="flex items-center gap-2 mb-4">
-                        <Award className="w-4 h-4 text-primary" />
-                        <span className="text-muted-foreground" data-testid="text-title">{employee.title}</span>
+                        <Award className="w-4 h-4 text-[#B58B5A]" />
+                        <span className="text-[#6B7C7D]" data-testid="text-title">{employee.title}</span>
                       </div>
                     )}
                     
-                    <div className="text-center text-muted-foreground text-sm">
+                    <div className="text-center text-[#6B7C7D] text-sm">
                       <p>معرف الموظف: {employee.id?.slice(0, 8) || 'غير متوفر'}</p>
                       <p className="mt-1">اسم المستخدم: {employee.username}</p>
                     </div>

@@ -97,13 +97,13 @@ export function EmployeeLayout({
           <SidebarHeader className="border-b p-4">
             <div className="flex items-center gap-3">
               <Avatar>
-                <AvatarFallback className="bg-primary text-primary-foreground">
+                <AvatarFallback className="bg-[#9FB2B3] text-white">
                   {employee?.nameAr?.charAt(0) || "م"}
                 </AvatarFallback>
               </Avatar>
               <div className="group-data-[collapsible=icon]:hidden">
-                <p className="font-medium text-sm">{employee?.nameAr || "موظف"}</p>
-                <Badge variant="secondary" className="text-xs">
+                <p className="font-medium text-sm text-[#1F2D2E]">{employee?.nameAr || "موظف"}</p>
+                <Badge className="bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white text-xs border-none">
                   {roleLabels[employee?.role || ""] || employee?.role}
                 </Badge>
               </div>

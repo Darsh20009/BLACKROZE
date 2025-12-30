@@ -257,13 +257,13 @@ export default function KitchenDisplay() {
               </Badge>
 
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-primary/10">
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                   انتظار: {pendingOrders.length}
                 </Badge>
-                <Badge variant="outline" className="bg-yellow-500/10">
+                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
                   تحضير: {preparingOrders.length}
                 </Badge>
-                <Badge variant="outline" className="bg-green-500/10">
+                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
                   جاهز: {readyOrders.length}
                 </Badge>
               </div>
@@ -299,7 +299,7 @@ export default function KitchenDisplay() {
                 variant="outline"
                 size="sm"
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className={soundEnabled ? "border-green-500 text-green-500" : "border-muted text-muted-foreground"}
+                className={soundEnabled ? "border-primary text-primary" : "border-muted text-muted-foreground"}
                 data-testid="button-toggle-sound"
               >
                 {soundEnabled ? <Volume2 className="h-4 w-4 ml-1" /> : <VolumeX className="h-4 w-4 ml-1" />}
@@ -310,7 +310,7 @@ export default function KitchenDisplay() {
                 variant="outline"
                 size="sm"
                 onClick={() => setAutoRefresh(!autoRefresh)}
-                className={autoRefresh ? "border-green-500 text-green-500" : ""}
+                className={autoRefresh ? "border-primary text-primary" : ""}
                 data-testid="button-toggle-auto-refresh"
               >
                 <RefreshCw className={`h-4 w-4 ml-1 ${autoRefresh ? "animate-spin" : ""}`} />

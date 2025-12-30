@@ -352,42 +352,42 @@ export default function EmployeeAttendance() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1410] via-[#2d1f1a] to-[#1a1410] p-4" dir="rtl">
+    <div className="min-h-screen bg-background p-4" dir="rtl">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
-              <Coffee className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <Coffee className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-amber-500">تسجيل الحضور</h1>
-              <p className="text-gray-400 text-xs">{formattedDate}</p>
+              <h1 className="text-xl font-bold text-primary">تسجيل الحضور</h1>
+              <p className="text-muted-foreground text-xs">{formattedDate}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            className="text-gray-400 hover:text-red-500"
+            className="text-muted-foreground hover:text-destructive"
             data-testid="button-logout"
           >
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
 
-        <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-4">
+        <Card className="bg-card border-border mb-4">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
-                <span className="text-white text-lg font-bold">
+              <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                <span className="text-primary text-lg font-bold">
                   {employee.fullName?.charAt(0) || 'م'}
                 </span>
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white" data-testid="text-employee-name">
+                <h2 className="text-lg font-bold text-foreground" data-testid="text-employee-name">
                   {employee.fullName}
                 </h2>
-                <p className="text-gray-400 text-sm">{employee.jobTitle || 'موظف'}</p>
+                <p className="text-muted-foreground text-sm">{employee.jobTitle || 'موظف'}</p>
               </div>
             </div>
           </CardContent>
@@ -407,9 +407,9 @@ export default function EmployeeAttendance() {
         )}
 
         {attendanceStatus && (
-          <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-4">
+          <Card className="bg-card border-border mb-4">
             <CardHeader className="pb-2">
-              <CardTitle className="text-amber-500 flex items-center gap-2">
+              <CardTitle className="text-primary flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
                 حالة اليوم والاجازات
               </CardTitle>
@@ -418,13 +418,13 @@ export default function EmployeeAttendance() {
               {/* Check-in/Check-out Status */}
               <div className="space-y-2">
                 {attendanceStatus.hasCheckedOut ? (
-                  <div className="flex items-center gap-2 text-green-500">
+                  <div className="flex items-center gap-2 text-green-600">
                     <CheckCircle2 className="w-5 h-5" />
                     <span>تم الانصراف</span>
                   </div>
                 ) : attendanceStatus.hasCheckedIn ? (
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-blue-400">
+                    <div className="flex items-center gap-2 text-primary">
                       <Clock className="w-5 h-5" />
                       <span>
                         وقت الحضور: {new Date(attendanceStatus.attendance?.checkInTime || '').toLocaleTimeString('ar-SA')}
@@ -437,7 +437,7 @@ export default function EmployeeAttendance() {
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 text-gray-400">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <XCircle className="w-5 h-5" />
                     <span>لم يتم التحضير بعد</span>
                   </div>
@@ -445,21 +445,21 @@ export default function EmployeeAttendance() {
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-amber-500/20"></div>
+              <div className="h-px bg-border"></div>
 
               {/* Check-in & Check-out Times */}
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-amber-950/30 rounded-lg p-3">
+                <div className="bg-primary/5 rounded-lg p-3">
                   <p className="text-muted-foreground text-xs mb-1">وقت الحضور</p>
-                  <p className="text-amber-400 font-semibold" data-testid="text-checkin-time">
+                  <p className="text-primary font-semibold" data-testid="text-checkin-time">
                     {attendanceStatus.todayCheckIn 
                       ? new Date(attendanceStatus.todayCheckIn).toLocaleTimeString('ar-SA')
                       : 'لم يسجل بعد'}
                   </p>
                 </div>
-                <div className="bg-amber-950/30 rounded-lg p-3">
+                <div className="bg-primary/5 rounded-lg p-3">
                   <p className="text-muted-foreground text-xs mb-1">وقت الانصراف</p>
-                  <p className="text-amber-400 font-semibold" data-testid="text-checkout-time">
+                  <p className="text-primary font-semibold" data-testid="text-checkout-time">
                     {attendanceStatus.todayCheckOut 
                       ? new Date(attendanceStatus.todayCheckOut).toLocaleTimeString('ar-SA')
                       : 'لم يسجل بعد'}
@@ -468,16 +468,16 @@ export default function EmployeeAttendance() {
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-amber-500/20"></div>
+              <div className="h-px bg-border"></div>
 
               {/* Leave Balance */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-amber-400">
+                  <div className="flex items-center gap-2 text-primary">
                     <Briefcase className="w-5 h-5" />
                     <span className="text-sm">رصيد الاجازات</span>
                   </div>
-                  <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                  <Badge className="bg-primary/10 text-primary border-primary/20">
                     {attendanceStatus.leaveBalance || 0} يوم
                   </Badge>
                 </div>
@@ -490,7 +490,7 @@ export default function EmployeeAttendance() {
               {/* Apply for Leave Button */}
               <Button 
                 onClick={() => setLocation("/employee/leave-request")}
-                className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                className="w-full gap-2 bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white"
                 data-testid="button-apply-leave"
               >
                 <FileText className="w-4 h-4" />
@@ -500,9 +500,9 @@ export default function EmployeeAttendance() {
           </Card>
         )}
 
-        <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-4">
+        <Card className="bg-card border-border mb-4">
           <CardHeader className="pb-2">
-            <CardTitle className="text-amber-500 flex items-center gap-2">
+            <CardTitle className="text-primary flex items-center gap-2">
               <MapPin className="w-5 h-5" />
               الموقع
             </CardTitle>
@@ -510,7 +510,7 @@ export default function EmployeeAttendance() {
           <CardContent>
             {locationError ? (
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-red-400">
+                <div className="flex items-center gap-2 text-destructive">
                   <AlertCircle className="w-5 h-5" />
                   <span className="text-sm">{locationError}</span>
                 </div>
@@ -518,7 +518,7 @@ export default function EmployeeAttendance() {
                   variant="outline"
                   size="sm"
                   onClick={getLocation}
-                  className="border-amber-500/50 text-amber-500"
+                  className="border-primary/50 text-primary"
                   data-testid="button-retry-location"
                 >
                   <RefreshCw className="w-4 h-4 ml-1" />
@@ -526,12 +526,12 @@ export default function EmployeeAttendance() {
                 </Button>
               </div>
             ) : location ? (
-              <div className="flex items-center gap-2 text-green-500">
+              <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle2 className="w-5 h-5" />
                 <span>تم تحديد الموقع</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-gray-400">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>جاري تحديد الموقع...</span>
               </div>
@@ -539,13 +539,13 @@ export default function EmployeeAttendance() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-[#2d1f1a] to-[#1a1410] border-amber-500/20 mb-6">
+        <Card className="bg-card border-border mb-6">
           <CardHeader className="pb-2">
-            <CardTitle className="text-amber-500 flex items-center gap-2">
+            <CardTitle className="text-primary flex items-center gap-2">
               <Camera className="w-5 h-5" />
               صورة الحضور
             </CardTitle>
-            <CardDescription className="text-gray-400 text-xs">
+            <CardDescription className="text-muted-foreground text-xs">
               التقط صورة سيلفي للتأكيد
             </CardDescription>
           </CardHeader>
@@ -561,7 +561,7 @@ export default function EmployeeAttendance() {
                 />
                 <Button
                   onClick={capturePhoto}
-                  className="w-full bg-amber-500 hover:bg-amber-600"
+                  className="w-full bg-primary hover:bg-primary/90"
                   data-testid="button-capture"
                 >
                   <Camera className="w-4 h-4 ml-2" />
@@ -579,13 +579,13 @@ export default function EmployeeAttendance() {
                   <Button
                     variant="outline"
                     onClick={retakePhoto}
-                    className="flex-1 border-amber-500/50 text-amber-500"
+                    className="flex-1 border-primary/50 text-primary"
                     data-testid="button-retake"
                   >
                     إعادة التقاط
                   </Button>
                   {photoUrl && (
-                    <div className="flex items-center text-green-500 text-sm">
+                    <div className="flex items-center text-green-600 text-sm">
                       <CheckCircle2 className="w-4 h-4 ml-1" />
                       تم الرفع
                     </div>
@@ -596,7 +596,7 @@ export default function EmployeeAttendance() {
               <Button
                 onClick={startCamera}
                 variant="outline"
-                className="w-full border-amber-500/50 text-amber-500"
+                className="w-full border-primary/50 text-primary"
                 data-testid="button-start-camera"
               >
                 <Camera className="w-4 h-4 ml-2" />
@@ -613,7 +613,7 @@ export default function EmployeeAttendance() {
               <Button
                 onClick={handleCheckIn}
                 disabled={isLoading || !location || !photoUrl}
-                className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-lg"
+                className="w-full h-14 bg-green-600 hover:bg-green-700 text-lg"
                 data-testid="button-check-in"
               >
                 {isLoading ? (
@@ -627,7 +627,7 @@ export default function EmployeeAttendance() {
               <Button
                 onClick={handleCheckOut}
                 disabled={isLoading || !location || !photoUrl}
-                className="w-full h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-lg"
+                className="w-full h-14 bg-orange-600 hover:bg-orange-700 text-lg"
                 data-testid="button-check-out"
               >
                 {isLoading ? (
@@ -640,6 +640,21 @@ export default function EmployeeAttendance() {
             )}
           </div>
         )}
+
+        <div className="mt-6">
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/employee/dashboard")}
+            className="w-full text-muted-foreground hover:text-primary"
+            data-testid="button-back-dashboard"
+          >
+            العودة للوحة التحكم
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
         <div className="mt-6">
           <Button

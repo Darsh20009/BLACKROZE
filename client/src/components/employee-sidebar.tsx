@@ -32,16 +32,16 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
   const showManagerItems = ['manager', 'owner', 'admin'].includes(employee?.role || '');
 
   return (
-    <div className="hidden lg:flex w-64 bg-gradient-to-b from-orange-50 to-white dark:from-slate-900 dark:to-slate-950 border-l border-orange-200 dark:border-orange-900/30 flex-col h-screen sticky top-0">
+    <div className="hidden lg:flex w-64 bg-[#F7F8F8] dark:bg-slate-950 border-l border-[#E2E6E6] dark:border-slate-800 flex-col h-screen sticky top-0">
       {/* Logo */}
-      <div className="p-6 border-b border-orange-200 dark:border-orange-900/30">
+      <div className="p-6 border-b border-[#E2E6E6] dark:border-slate-800">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-[#B58B5A] rounded-full flex items-center justify-center">
             <Coffee className="w-5 h-5 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-orange-600 dark:text-orange-400">CLUNY CAFE</h2>
+          <h2 className="text-xl font-bold text-[#1F2D2E] dark:text-white">CLUNY CAFE</h2>
         </div>
-        <p className="text-xs text-muted-foreground">الموظف: {employee?.fullName || 'جاري التحميل...'}</p>
+        <p className="text-xs text-[#6B7C7D]">الموظف: {employee?.fullName || 'جاري التحميل...'}</p>
       </div>
 
       {/* Navigation */}
@@ -55,8 +55,8 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
               onClick={() => navigate(item.path)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm ${
                 isActive
-                  ? 'bg-orange-600 text-white shadow-lg'
-                  : 'text-foreground hover:bg-orange-100 dark:hover:bg-orange-900/20'
+                  ? 'bg-[#9FB2B3] text-white shadow-sm'
+                  : 'text-[#1F2D2E] dark:text-slate-300 hover:bg-[#C7D6D7]/30'
               }`}
               data-testid={`sidebar-link-${item.label}`}
             >
@@ -68,8 +68,8 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
 
         {showManagerItems && (
           <>
-            <div className="my-4 border-t border-orange-200 dark:border-orange-900/30 pt-4">
-              <p className="px-4 text-xs font-bold text-orange-600 dark:text-orange-400 uppercase">القائمة الإدارية</p>
+            <div className="my-4 border-t border-[#E2E6E6] dark:border-slate-800 pt-4">
+              <p className="px-4 text-xs font-bold text-[#B58B5A] uppercase">القائمة الإدارية</p>
             </div>
             {managerMenuItems.map((item) => {
               const Icon = item.icon;
@@ -80,8 +80,8 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
                   onClick={() => navigate(item.path)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm ${
                     isActive
-                      ? 'bg-orange-600 text-white shadow-lg'
-                      : 'text-foreground hover:bg-orange-100 dark:hover:bg-orange-900/20'
+                      ? 'bg-[#9FB2B3] text-white shadow-sm'
+                      : 'text-[#1F2D2E] dark:text-slate-300 hover:bg-[#C7D6D7]/30'
                   }`}
                   data-testid={`sidebar-link-${item.label}`}
                 >
@@ -95,11 +95,11 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
       </nav>
 
       {/* Logout Button */}
-      <div className="p-4 border-t border-orange-200 dark:border-orange-900/30 space-y-2">
+      <div className="p-4 border-t border-[#E2E6E6] dark:border-slate-800 space-y-2">
         <Button
           onClick={onLogout}
           variant="outline"
-          className="w-full justify-start text-sm"
+          className="w-full justify-start text-sm border-[#E2E6E6] text-[#6B7C7D] hover:bg-red-50 hover:text-red-600"
           data-testid="button-logout-sidebar"
         >
           <LogOut className="w-4 h-4 ml-2" />
