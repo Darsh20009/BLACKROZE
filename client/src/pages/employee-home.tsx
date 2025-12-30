@@ -137,7 +137,7 @@ export default function EmployeeHome() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-accent">لوحة التحكم</h1>
-                <p className="text-gray-400 text-sm">مرحباً {employee.fullName || employee.name}</p>
+                <p className="text-gray-400 text-sm">مرحباً {employee.fullName}</p>
               </div>
             </div>
             <Button 
@@ -158,7 +158,7 @@ export default function EmployeeHome() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-400 text-sm">الوظيفة</p>
-                    <p className="text-white font-bold text-lg">{employee.position || employee.role}</p>
+                    <p className="text-white font-bold text-lg">{employee.jobTitle || employee.role}</p>
                   </div>
                   <Badge className="bg-primary/20 text-primary">{employee.role === "manager" ? "مدير" : "موظف"}</Badge>
                 </div>
