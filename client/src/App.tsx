@@ -117,7 +117,7 @@ function Router() {
  <Switch>
  {/* Public routes */}
  <Route path="/welcome"><WelcomePage /></Route>
- <Route path="/" component={MenuPage} />
+ <Route path="/" component={WelcomePage} />
  <Route path="/0"><EmployeeSplash /></Route>
  <Route path="/tenant/signup"><TenantSignup /></Route>
  <Route path="/auth">
