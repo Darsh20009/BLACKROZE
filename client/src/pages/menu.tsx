@@ -98,6 +98,7 @@ const MenuPage = memo(function MenuPage() {
     { id: "hot", nameAr: "قهوة ساخنة", nameEn: "Hot Coffee", icon: Flame },
     { id: "cold", nameAr: "قهوة باردة", nameEn: "Cold Coffee", icon: Snowflake },
     { id: "specialty", nameAr: "المشروبات الإضافية", nameEn: "Specialty Drinks", icon: Star },
+    { id: "drinks", nameAr: "المشروبات", nameEn: "Drinks", icon: Coffee },
     { id: "desserts", nameAr: "الحلويات", nameEn: "Desserts", icon: Cake },
   ];
 

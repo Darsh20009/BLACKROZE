@@ -37,6 +37,7 @@ export interface ICoffeeItem extends Document {
   createdByEmployeeId?: string;
   createdByBranchId?: string;
   publishedBranches?: string[];
+  isGiftable?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -58,6 +59,7 @@ const CoffeeItemSchema = new Schema<ICoffeeItem>({
   isNewProduct: { type: Number, default: 0 },
   sku: { type: String, sparse: true }, // SKU for product identification
   sizeML: { type: Number }, // Size in milliliters (optional if using availableSizes)
+  isGiftable: { type: Boolean, default: false },
   availableSizes: [{
     nameAr: { type: String, required: true },
     nameEn: { type: String },
