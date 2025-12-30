@@ -107,12 +107,6 @@ export async function sendOrderNotificationEmail(
               ? "ملغي"
               : "قيد المعالجة";
 
-    // TurboSMTP Re-envelope: Send from TurboSMTP while showing notification email
-    // The actual sending happens through TurboSMTP (pro.eu.turbo-smtp.com)
-    // but the "From" address shows the notification email
-    const notificationEmail = process.env.NOTIFICATION_EMAIL || "cluny.cafe2026@gmail.com";
-    const senderEmail = `CLUNY CAFE <${notificationEmail}>`;
-    
     // Get status color based on status
     const statusColor = 
       orderStatus === "completed" ? "#4CAF50" :
@@ -129,9 +123,16 @@ export async function sendOrderNotificationEmail(
       "⏳";
 
     const mailOptions = {
-      from: senderEmail,
+      from: '"CLUNY CAFE" <cluny.cafe2026@gmail.com>',
+      replyTo: "cluny.cafe2026@gmail.com",
       to: customerEmail,
-      subject: `${statusEmoji} تحديث طلبك - ${orderId}`,
+      subject: `تحديث طلبك - ${orderId}`,
+      headers: {
+        'X-Priority': '3',
+        'X-MSMail-Priority': 'Normal',
+        'Importance': 'Normal',
+        'X-Mailer': 'CLUNY CAFE Order System v1.0'
+      },
       html: `
         <div style="font-family: 'Arial', sans-serif; direction: rtl; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0; margin: 0;">
           <!-- Header with Logo -->
