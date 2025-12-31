@@ -713,6 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: employee.username,
         role: employee.role,
         branchId: employee.branchId,
+        tenantId: employee.tenantId,
         fullName: employee.fullName,
       };
 
@@ -759,6 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: employee.username,
         role: employee.role,
         branchId: employee.branchId,
+        tenantId: employee.tenantId,
         fullName: employee.fullName,
       };
 
