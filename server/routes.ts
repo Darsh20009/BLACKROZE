@@ -4686,21 +4686,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             obj._id = id.toString();
           }
 
-          // A table is available if it has NO active reservations
+          // Check if table is occupied from database (isOccupied = 1)
+          const dbIsOccupied = obj.isOccupied === 1 || obj.isOccupied === '1' || obj.isOccupied === true;
+          
+          // Also check for active reservations
           const hasActiveReservation = obj.reservedFor && 
             obj.reservedFor.status && 
             (obj.reservedFor.status === 'pending' || obj.reservedFor.status === 'confirmed');
           
+          // A table is occupied if EITHER it has isOccupied=1 in DB OR it has active reservation
+          const isOccupied = dbIsOccupied || hasActiveReservation;
+          
           return {
             ...obj,
-            isAvailable: !hasActiveReservation,
-            isOccupied: hasActiveReservation ? 1 : 0
+            isAvailable: !isOccupied,
+            isOccupied: isOccupied ? 1 : 0
           };
         });
 
-      
+      console.log(`[GET /api/tables/status] Fetched ${tablesWithStatus.length} tables for branch ${branchId}`);
       res.json(tablesWithStatus);
     } catch (error) {
+      console.error('[GET /api/tables/status] Error:', error);
       res.status(500).json({ error: "Failed to fetch table status" });
     }
   });
