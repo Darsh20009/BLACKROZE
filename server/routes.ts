@@ -2548,13 +2548,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const enrichedItems = await Promise.all(cartItems.map(async (cartItem: any) => {
         try {
           const coffeeItem = await CoffeeItemModel.findOne({ id: cartItem.coffeeItemId }).lean();
+          const doc = serializeDoc(cartItem);
+          // Force use our custom ID for frontend consistency
+          if (cartItem.id) doc.id = cartItem.id;
+          
           return {
-            ...serializeDoc(cartItem),
+            ...doc,
             coffeeItem: coffeeItem ? serializeDoc(coffeeItem) : null
           };
         } catch (err) {
           console.error(`Error enriching cart item ${cartItem.id}:`, err);
-          return { ...serializeDoc(cartItem), coffeeItem: null };
+          const doc = serializeDoc(cartItem);
+          if (cartItem.id) doc.id = cartItem.id;
+          return { ...doc, coffeeItem: null };
         }
       }));
 
@@ -2596,7 +2602,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.status(201).json(serializeDoc(cartItem));
+      // Ensure the returned object has the same 'id' we use for lookup
+      const result = serializeDoc(cartItem);
+      result.id = cartItemId;
+      res.status(201).json(result);
     } catch (error) {
       console.error("Cart error:", error);
       res.status(500).json({ error: "Failed to add item to cart", details: error instanceof Error ? error.message : String(error) });

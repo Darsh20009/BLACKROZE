@@ -119,26 +119,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Update quantity mutation
   const updateQuantityMutation = useMutation({
-  mutationFn: async ({ cartItemId, quantity }: { cartItemId: string; quantity: number }) => {
-  const response = await apiRequest("PUT", `/api/cart/${sessionId}/${cartItemId}`, {
-  quantity,
-  });
-  return response.json();
-  },
-  onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
-  },
+    mutationFn: async ({ cartItemId, quantity }: { cartItemId: string; quantity: number }) => {
+      console.log(`Updating quantity for ${cartItemId} to ${quantity}`);
+      const response = await apiRequest("PUT", `/api/cart/${sessionId}/${cartItemId}`, {
+        quantity,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+    },
   });
 
   // Remove from cart mutation
   const removeFromCartMutation = useMutation({
-  mutationFn: async (cartItemId: string) => {
-  const response = await apiRequest("DELETE", `/api/cart/${sessionId}/${cartItemId}`);
-  return response.json();
-  },
-  onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
-  },
+    mutationFn: async (cartItemId: string) => {
+      console.log(`Removing item ${cartItemId} from cart`);
+      const response = await apiRequest("DELETE", `/api/cart/${sessionId}/${cartItemId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+    },
   });
 
   // Clear cart mutation
