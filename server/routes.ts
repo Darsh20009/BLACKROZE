@@ -164,7 +164,8 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
     const result = await storage.deductInventoryForOrder(
       orderId,
       branchId,
-      orderItems
+      orderItems,
+      order.employeeId || 'system'
     );
 
     // Log warnings if any

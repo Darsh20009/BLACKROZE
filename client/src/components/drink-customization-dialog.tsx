@@ -199,6 +199,12 @@ export default function DrinkCustomizationDialog({
       totalAddonsPrice: calculateAddonsPrice(),
       notes: notes.trim() || undefined,
     };
+    if (selectedSize) {
+      const sizeInfo = coffeeItem?.availableSizes?.find(s => s.nameAr === selectedSize);
+      if (sizeInfo) {
+        customization.notes = `${customization.notes ? customization.notes + ' - ' : ''}الحجم: ${sizeInfo.nameAr}`;
+      }
+    }
     onConfirm(customization, quantity);
   };
 
@@ -225,7 +231,18 @@ export default function DrinkCustomizationDialog({
     setNotes("");
   };
 
-  const basePrice = Number(coffeeItem?.price || 0);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (coffeeItem?.availableSizes && coffeeItem.availableSizes.length > 0) {
+      const defaultSize = coffeeItem.availableSizes[0];
+      setSelectedSize(defaultSize.nameAr);
+    }
+  }, [coffeeItem]);
+
+  const basePrice = selectedSize 
+    ? Number(coffeeItem?.availableSizes?.find(s => s.nameAr === selectedSize)?.price || coffeeItem?.price || 0)
+    : Number(coffeeItem?.price || 0);
   const addonsPrice = calculateAddonsPrice();
   const totalItemPrice = (basePrice + addonsPrice) * quantity;
 
@@ -250,9 +267,44 @@ export default function DrinkCustomizationDialog({
         ) : (
           <ScrollArea className="flex-1 max-h-[50vh]">
             <div className="space-y-4 p-1">
+              {coffeeItem.availableSizes && coffeeItem.availableSizes.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Coffee className="w-4 h-4" />
+                    <span>الحجم</span>
+                    <Badge variant="outline" className="text-xs">اختر واحد</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {coffeeItem.availableSizes.map(size => (
+                      <div
+                        key={size.nameAr}
+                        className={`relative rounded-md border p-3 cursor-pointer transition-all ${
+                          selectedSize === size.nameAr
+                            ? 'border-primary bg-primary/10' 
+                            : 'border-border hover-elevate'
+                        }`}
+                        onClick={() => setSelectedSize(size.nameAr)}
+                        data-testid={`size-${size.nameAr}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{size.nameAr}</p>
+                            <p className="text-xs text-primary">{size.price} ر.س</p>
+                          </div>
+                          {selectedSize === size.nameAr && (
+                            <Check className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Separator className="mt-3" />
+                </div>
+              )}
+
               {Object.entries(groupedAddons).map(([category, addons]) => {
                 const categoryInfo = CATEGORY_INFO[category] || CATEGORY_INFO.other;
-                const isSingleSelect = category === 'sugar' || category === 'milk' || category === 'size';
+                const isSingleSelect = category === 'sugar' || category === 'milk' || category === 'size' || category.toLowerCase() === 'size';
                 const CategoryIcon = categoryInfo.icon;
 
                 return (
