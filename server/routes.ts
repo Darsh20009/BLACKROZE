@@ -2002,6 +2002,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           let tenantId = req.session?.employee?.tenantId || req.query.tenantId;
           
+          // If employee is logged in but tenantId is missing, try to look it up from their branch
+          if (isEmployee && !tenantId && req.session?.employee?.branchId) {
+            const branch = await BranchModel.findById(req.session.employee.branchId).lean();
+            if (branch && (branch as any).tenantId) {
+              tenantId = (branch as any).tenantId;
+            } else if (branch) {
+              tenantId = `tenant-${req.session.employee.branchId}`;
+            }
+          }
+          
           // For customers: look up tenant from branch if not in session
           if (!tenantId && requestedBranchId) {
             const branch = await BranchModel.findById(requestedBranchId).lean();
