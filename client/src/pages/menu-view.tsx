@@ -642,8 +642,6 @@ export default function MenuView() {
  )}
  </div>
 
- </div>
-
       <AddToCartModal
         item={selectedItemForCart as any}
         isOpen={isModalOpen}
