@@ -2007,6 +2007,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const branch = await BranchModel.findById(requestedBranchId).lean();
             if (branch && (branch as any).tenantId) {
               tenantId = (branch as any).tenantId;
+            } else if (branch) {
+              // If branch exists but has no tenantId, use the branch ID as fallback tenant
+              tenantId = `tenant-${requestedBranchId}`;
             }
           }
           
@@ -2124,7 +2127,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Branch assignment required" });
       }
 
-      const tenantId = req.employee.tenantId;
+      // Get tenantId from employee or fallback to branch
+      let tenantId = req.employee.tenantId;
+      if (!tenantId) {
+        const branch = await BranchModel.findById(req.employee.branchId).lean();
+        if (branch && (branch as any).tenantId) {
+          tenantId = (branch as any).tenantId;
+        }
+      }
       const items = await CoffeeItemModel.find({ 
         $or: [
           { tenantId: tenantId },
@@ -2155,14 +2165,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertCoffeeItemSchema.parse(bodyData);
 
       // Check if employee has branchId (required)
-      if (!req.employee?.branchId || !req.employee?.tenantId) {
-        return res.status(403).json({ error: "Branch and tenant assignment required to create items" });
+      if (!req.employee?.branchId) {
+        return res.status(403).json({ error: "Branch assignment required to create items" });
+      }
+
+      // Get tenantId from employee or fallback to branch
+      let tenantId = req.employee.tenantId;
+      if (!tenantId) {
+        const branch = await BranchModel.findById(req.employee.branchId).lean();
+        if (branch && (branch as any).tenantId) {
+          tenantId = (branch as any).tenantId;
+        } else {
+          // If branch doesn't have tenantId, create a tenant based on branch
+          tenantId = `tenant-${req.employee.branchId}`;
+        }
       }
 
       // If adopting from another item, get the original
       if (adoptFromItemId) {
         const originalItem = await storage.getCoffeeItem(adoptFromItemId);
-        if (!originalItem || originalItem.tenantId !== req.employee.tenantId) {
+        if (!originalItem || originalItem.tenantId !== tenantId) {
           return res.status(404).json({ error: "Original item not found" });
         }
 
@@ -2201,7 +2223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set creator information and tenantId
       (validatedData as any).createdByEmployeeId = req.employee.id;
       (validatedData as any).createdByBranchId = req.employee.branchId;
-      (validatedData as any).tenantId = req.employee.tenantId;
+      (validatedData as any).tenantId = tenantId;
 
       // Ensure id is present if not provided (though storage might handle it)
       if (!validatedData.id) {
