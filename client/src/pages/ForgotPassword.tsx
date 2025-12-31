@@ -22,6 +22,13 @@ export default function ForgotPassword() {
  const [step, setStep] = useState<'email' | 'phone' | 'password'>('email');
  const [verifiedEmail, setVerifiedEmail] = useState("");
 
+ // Set SEO metadata
+ useEffect(() => {
+   document.title = "نسيت كلمة المرور - CLUNY CAFE | إعادة تعيين";
+   const metaDesc = document.querySelector('meta[name="description"]');
+   if (metaDesc) metaDesc.setAttribute('content', 'نسيت كلمة المرور؟ أعد تعيين كلمة مرورك على CLUNY CAFE بسهولة');
+ }, []);
+
  const handleEmailSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
  
@@ -166,23 +173,23 @@ export default function ForgotPassword() {
  <div 
  className="min-h-screen flex items-center justify-center p-4"
  style={{
- background: "linear-gradient(135deg, #1a1410 0%, #2d1810 50%, #1a1410 100%)",
+ background: "linear-gradient(135deg, hsl(165, 15%, 97%) 0%, hsl(165, 12%, 88%) 50%, hsl(165, 15%, 97%) 100%)",
  }}
  dir="rtl"
  >
- <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
+ <Card className="w-full max-w-md border-primary/30 bg-card backdrop-blur shadow-xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
- <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-900/50">
+ <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30">
  <Coffee className="w-10 h-10 text-white" />
  </div>
  </div>
- <CardTitle className="text-3xl font-bold text-accent">
+ <CardTitle className="text-3xl font-bold text-foreground">
  {step === 'email' && 'نسيت كلمة المرور؟'}
  {step === 'phone' && 'تحقق من رقم الجوال'}
  {step === 'password' && 'كلمة المرور الجديدة '}
  </CardTitle>
- <CardDescription className="text-accent/70 text-lg">
+ <CardDescription className="text-muted-foreground text-lg">
  {step === 'email' && 'أدخل بريدك الإلكتروني لإعادةتعيين كلمة المرور'}
  {step === 'phone' && 'أدخل رقم الجوال المرتبط بالبريد الإلكتروني'}
  {step === 'password' && 'أدخل كلمة المرور الجديدة وقم بتأكيدها'}
@@ -193,7 +200,7 @@ export default function ForgotPassword() {
  {step === 'email' && (
  <form onSubmit={handleEmailSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="email" className="text-accent flex items-center gap-2">
+ <Label htmlFor="email" className="text-foreground flex items-center gap-2">
  <Mail className="w-4 h-4" />
  البريد الإلكتروني
  </Label>
@@ -203,12 +210,12 @@ export default function ForgotPassword() {
  placeholder="example@email.com"
  value={email}
  onChange={(e) => setEmail(e.target.value)}
- className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30"
+ className="bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/30"
  dir="ltr"
  data-testid="input-email"
  required
  />
- <p className="text-xs text-accent/50 mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  أدخل البريد الإلكتروني الذي استخدمته عند إنشاء الحساب
  </p>
  </div>
@@ -216,12 +223,12 @@ export default function ForgotPassword() {
  <Button
  type="submit"
  disabled={loading}
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-900/50 transition-all duration-300 hover:scale-[1.02]"
+ className="w-full h-12 text-lg font-bold bg-gradient-to-r from-accent to-accent/90 hover:from-accent/95 hover:to-accent/85 text-accent-foreground shadow-lg shadow-accent/30 transition-all duration-300"
  data-testid="button-submit"
  >
  {loading ? (
  <div className="flex items-center gap-2">
- <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+ <div className="w-5 h-5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
  <span>جارٍ التحقق...</span>
  </div>
  ) : (
@@ -237,7 +244,7 @@ export default function ForgotPassword() {
  {step === 'phone' && (
  <form onSubmit={handlePhoneSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="phone" className="text-accent">رقم الجوال</Label>
+ <Label htmlFor="phone" className="text-foreground">رقم الجوال</Label>
  <PhoneInput
  id="phone"
  value={phone}
@@ -246,7 +253,7 @@ export default function ForgotPassword() {
  data-testid="input-phone"
  required
  />
- <p className="text-xs text-accent/50 mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  أدخل رقم الجوال بدون الصفر (9 أرقام تبدأ بـ 5)
  </p>
  </div>
@@ -254,12 +261,12 @@ export default function ForgotPassword() {
  <Button
  type="submit"
  disabled={loading}
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-900/50 transition-all duration-300 hover:scale-[1.02]"
+ className="w-full h-12 text-lg font-bold bg-gradient-to-r from-accent to-accent/90 hover:from-accent/95 hover:to-accent/85 text-accent-foreground shadow-lg shadow-accent/30 transition-all duration-300"
  data-testid="button-verify-phone"
  >
  {loading ? (
  <div className="flex items-center gap-2">
- <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+ <div className="w-5 h-5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
  <span>جارٍ التحقق...</span>
  </div>
  ) : (
@@ -275,7 +282,7 @@ export default function ForgotPassword() {
  {step === 'password' && (
  <form onSubmit={handlePasswordSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="newPassword" className="text-accent">كلمة المرور الجديدة </Label>
+ <Label htmlFor="newPassword" className="text-foreground">كلمة المرور الجديدة </Label>
  <div className="relative">
  <Input
  id="newPassword"
@@ -283,14 +290,14 @@ export default function ForgotPassword() {
  placeholder="أدخل كلمة المرور الجديدة "
  value={newPassword}
  onChange={(e) => setNewPassword(e.target.value)}
- className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
+ className="bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/30 pl-10"
  data-testid="input-new-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowNewPassword(!showNewPassword)}
- className="absolute left-3 top-2.5 text-accent hover:text-accent"
+ className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground"
  data-testid="button-toggle-new-password"
  >
  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -299,7 +306,7 @@ export default function ForgotPassword() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="confirmPassword" className="text-accent">تأكيد كلمة المرور</Label>
+ <Label htmlFor="confirmPassword" className="text-foreground">تأكيد كلمة المرور</Label>
  <div className="relative">
  <Input
  id="confirmPassword"
@@ -307,20 +314,20 @@ export default function ForgotPassword() {
  placeholder="أدخل كلمة المرور مرة أخرى"
  value={confirmPassword}
  onChange={(e) => setConfirmPassword(e.target.value)}
- className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
+ className="bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/30 pl-10"
  data-testid="input-confirm-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
- className="absolute left-3 top-2.5 text-accent hover:text-accent"
+ className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground"
  data-testid="button-toggle-confirm-password"
  >
  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
  </button>
  </div>
- <p className="text-xs text-accent/50 mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  كلمة المرور يجب أن تكون 4 أحرف على الأقل
  </p>
  </div>
@@ -328,12 +335,12 @@ export default function ForgotPassword() {
  <Button
  type="submit"
  disabled={loading}
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-900/50 transition-all duration-300 hover:scale-[1.02]"
+ className="w-full h-12 text-lg font-bold bg-gradient-to-r from-accent to-accent/90 hover:from-accent/95 hover:to-accent/85 text-accent-foreground shadow-lg shadow-accent/30 transition-all duration-300"
  data-testid="button-reset-password"
  >
  {loading ? (
  <div className="flex items-center gap-2">
- <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+ <div className="w-5 h-5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
  <span>جارٍ التغيير...</span>
  </div>
  ) : (
@@ -350,7 +357,7 @@ export default function ForgotPassword() {
  <button
  type="button"
  onClick={() => navigate("/auth")}
- className="text-accent/70 hover:text-accent transition-colors text-sm underline-offset-4 hover:underline"
+ className="text-muted-foreground hover:text-foreground transition-colors text-sm underline-offset-4 hover:underline"
  data-testid="link-back"
  >
  العودةلتسجيل الدخول

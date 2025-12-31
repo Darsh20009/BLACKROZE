@@ -21,6 +21,13 @@ export default function ResetPassword() {
  const [resetSuccess, setResetSuccess] = useState(false);
  const [token, setToken] = useState("");
 
+ // Set SEO metadata
+ useEffect(() => {
+   document.title = "إعادة تعيين كلمة المرور - CLUNY CAFE";
+   const metaDesc = document.querySelector('meta[name="description"]');
+   if (metaDesc) metaDesc.setAttribute('content', 'إعادة تعيين كلمة المرور على CLUNY CAFE - أدخل كلمة مرور جديدة آمنة');
+ }, []);
+
  useEffect(() => {
  const params = new URLSearchParams(window.location.search);
  const resetToken = params.get("token");
@@ -123,13 +130,13 @@ export default function ResetPassword() {
  <div 
  className="min-h-screen flex items-center justify-center p-4"
  style={{
- background: "linear-gradient(135deg, #1a1410 0%, #2d1810 50%, #1a1410 100%)",
+ background: "linear-gradient(135deg, hsl(165, 15%, 97%) 0%, hsl(165, 12%, 88%) 50%, hsl(165, 15%, 97%) 100%)",
  }}
  dir="rtl"
  >
  <div className="text-center">
- <div className="w-16 h-16 border-4 border-primary/30 border-t-amber-600 rounded-full animate-spin mx-auto mb-4" />
- <p className="text-accent">جارٍ التحقق من الرابط...</p>
+ <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+ <p className="text-foreground">جارٍ التحقق من الرابط...</p>
  </div>
  </div>
  );
@@ -143,14 +150,14 @@ export default function ResetPassword() {
  <div 
  className="min-h-screen flex items-center justify-center p-4"
  style={{
- background: "linear-gradient(135deg, #1a1410 0%, #2d1810 50%, #1a1410 100%)",
+ background: "linear-gradient(135deg, hsl(165, 15%, 97%) 0%, hsl(165, 12%, 88%) 50%, hsl(165, 15%, 97%) 100%)",
  }}
  dir="rtl"
  >
- <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
+ <Card className="w-full max-w-md border-primary/30 bg-card backdrop-blur shadow-xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
- <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-900/50">
+ <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30">
  {resetSuccess ? (
  <CheckCircle className="w-10 h-10 text-white" />
  ) : (
@@ -158,10 +165,10 @@ export default function ResetPassword() {
  )}
  </div>
  </div>
- <CardTitle className="text-3xl font-bold text-accent">
+ <CardTitle className="text-3xl font-bold text-foreground">
  {resetSuccess ? "تم التغيير بنجاح!" : "إعادةتعيين كلمة المرور"}
  </CardTitle>
- <CardDescription className="text-accent/70 text-lg">
+ <CardDescription className="text-muted-foreground text-lg">
  {resetSuccess ? "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة " : "أدخل كلمة المرور الجديدة "}
  </CardDescription>
  </CardHeader>
@@ -170,7 +177,7 @@ export default function ResetPassword() {
  {!resetSuccess ? (
  <form onSubmit={handleSubmit} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="new-password" className="text-accent flex items-center gap-2">
+ <Label htmlFor="new-password" className="text-foreground flex items-center gap-2">
  <Lock className="w-4 h-4" />
  كلمة المرور الجديدة 
  </Label>
@@ -181,14 +188,14 @@ export default function ResetPassword() {
  placeholder="أدخل كلمة المرور الجديدة "
  value={newPassword}
  onChange={(e) => setNewPassword(e.target.value)}
- className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
+ className="bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/30 pl-10"
  data-testid="input-new-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowNewPassword(!showNewPassword)}
- className="absolute left-3 top-2.5 text-accent hover:text-accent"
+ className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground"
  data-testid="button-toggle-new-password"
  >
  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -197,7 +204,7 @@ export default function ResetPassword() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="confirm-password" className="text-accent flex items-center gap-2">
+ <Label htmlFor="confirm-password" className="text-foreground flex items-center gap-2">
  <Lock className="w-4 h-4" />
  تأكيد كلمة المرور
  </Label>
@@ -208,20 +215,20 @@ export default function ResetPassword() {
  placeholder="أعد إدخال كلمة المرور"
  value={confirmPassword}
  onChange={(e) => setConfirmPassword(e.target.value)}
- className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
+ className="bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/30 pl-10"
  data-testid="input-confirm-password"
  required
  />
  <button
  type="button"
  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
- className="absolute left-3 top-2.5 text-accent hover:text-accent"
+ className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground"
  data-testid="button-toggle-confirm-password"
  >
  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
  </button>
  </div>
- <p className="text-xs text-accent/50 mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  كلمة المرور يجب أن تكون على الأقل 4 أحرف
  </p>
  </div>
@@ -229,12 +236,12 @@ export default function ResetPassword() {
  <Button
  type="submit"
  disabled={loading}
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-900/50 transition-all duration-300 hover:scale-[1.02]"
+ className="w-full h-12 text-lg font-bold bg-gradient-to-r from-accent to-accent/90 hover:from-accent/95 hover:to-accent/85 text-accent-foreground shadow-lg shadow-accent/30 transition-all duration-300"
  data-testid="button-submit"
  >
  {loading ? (
  <div className="flex items-center gap-2">
- <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+ <div className="w-5 h-5 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
  <span>جارٍ التغيير...</span>
  </div>
  ) : (
