@@ -348,20 +348,24 @@ export default function POSSystem() {
       const res = await apiRequest("GET", "/api/coffee-items");
       const data = await res.json();
       console.log("POS: Fetched products:", data);
-      if (data && Array.isArray(data)) {
+      
+      // Filter out invalid items and ensure unique IDs
+      const validItems = Array.isArray(data) ? data.filter(item => item && (item.id || item._id)) : [];
+      
+      if (validItems.length > 0) {
         await db.products.clear();
-        await db.products.bulkAdd(data.map((item: any) => ({
-          id: item.id || item._id,
-          nameAr: item.nameAr,
-          price: Number(item.price),
-          category: item.category,
+        await db.products.bulkAdd(validItems.map((item: any) => ({
+          id: String(item.id || item._id),
+          nameAr: item.nameAr || "منتج بدون اسم",
+          price: Number(item.price) || 0,
+          category: item.category || "general",
           imageUrl: item.imageUrl,
-          isAvailable: item.isAvailable,
+          isAvailable: item.isAvailable ?? 1,
           tenantId: item.tenantId,
           updatedAt: Date.now()
         })));
       }
-      return data;
+      return validItems;
     }
   });
 
