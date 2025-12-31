@@ -37,6 +37,8 @@ export default function EmployeeMenuManagement() {
  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
  const [editingItem, setEditingItem] = useState<CoffeeItem | null>(null);
+ const [editableSizes, setEditableSizes] = useState<Array<{nameAr: string; price: number}>>([]);
+ const [editableAddons, setEditableAddons] = useState<Array<{nameAr: string; price: number; category?: string}>>([]);
  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
  const [selectedImage, setSelectedImage] = useState<File | null>(null);
  const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -636,6 +638,8 @@ export default function EmployeeMenuManagement() {
  oldPrice: formData.get("oldPrice") ? parseFloat(formData.get("oldPrice") as string) : undefined,
  category: formData.get("category") as string,
  imageUrl: imageUrl,
+ availableSizes: editableSizes.length > 0 ? editableSizes : editingItem.availableSizes,
+ addons: editableAddons.length > 0 ? editableAddons : editingItem.addons,
  };
 
  updateItemMutation.mutate({ id: editingItem.id, updates });
@@ -644,6 +648,8 @@ export default function EmployeeMenuManagement() {
 
  const handleEdit = (item: CoffeeItem) => {
  setEditingItem(item);
+ setEditableSizes(item.availableSizes || []);
+ setEditableAddons(item.addons || []);
  setIsEditDialogOpen(true);
  };
 
@@ -1821,6 +1827,118 @@ export default function EmployeeMenuManagement() {
    </div>
  </div>
  </div>
+ </div>
+
+ {/* Editable Sizes */}
+ <div className="space-y-2">
+   <Label className="text-gray-300">الأحجام المتاحة</Label>
+   <div className="space-y-2">
+     {editableSizes.map((size, idx) => (
+       <div key={idx} className="flex gap-2 items-end">
+         <Input
+           type="text"
+           placeholder="اسم الحجم"
+           value={size.nameAr}
+           onChange={(e) => {
+             const newSizes = [...editableSizes];
+             newSizes[idx].nameAr = e.target.value;
+             setEditableSizes(newSizes);
+           }}
+           className="bg-[#1a1410] border-primary/30 text-white flex-1"
+           data-testid={`input-edit-size-name-${idx}`}
+         />
+         <Input
+           type="number"
+           placeholder="السعر"
+           value={size.price}
+           onChange={(e) => {
+             const newSizes = [...editableSizes];
+             newSizes[idx].price = parseFloat(e.target.value) || 0;
+             setEditableSizes(newSizes);
+           }}
+           className="bg-[#1a1410] border-primary/30 text-white w-24"
+           data-testid={`input-edit-size-price-${idx}`}
+         />
+         <Button
+           type="button"
+           size="sm"
+           variant="outline"
+           onClick={() => setEditableSizes(editableSizes.filter((_, i) => i !== idx))}
+           className="border-red-500/30 text-red-500"
+           data-testid={`button-delete-size-${idx}`}
+         >
+           <X className="w-4 h-4" />
+         </Button>
+       </div>
+     ))}
+   </div>
+   <Button
+     type="button"
+     size="sm"
+     variant="outline"
+     onClick={() => setEditableSizes([...editableSizes, {nameAr: '', price: 0}])}
+     className="border-green-500/30 text-green-400 w-full"
+     data-testid="button-add-edit-size"
+   >
+     <Plus className="w-4 h-4 ml-1" />
+     إضافة حجم
+   </Button>
+ </div>
+
+ {/* Editable Addons */}
+ <div className="space-y-2">
+   <Label className="text-gray-300">الإضافات المتاحة</Label>
+   <div className="space-y-2">
+     {editableAddons.map((addon, idx) => (
+       <div key={idx} className="flex gap-2 items-end">
+         <Input
+           type="text"
+           placeholder="اسم الإضافة"
+           value={addon.nameAr}
+           onChange={(e) => {
+             const newAddons = [...editableAddons];
+             newAddons[idx].nameAr = e.target.value;
+             setEditableAddons(newAddons);
+           }}
+           className="bg-[#1a1410] border-primary/30 text-white flex-1"
+           data-testid={`input-edit-addon-name-${idx}`}
+         />
+         <Input
+           type="number"
+           placeholder="السعر"
+           value={addon.price}
+           onChange={(e) => {
+             const newAddons = [...editableAddons];
+             newAddons[idx].price = parseFloat(e.target.value) || 0;
+             setEditableAddons(newAddons);
+           }}
+           className="bg-[#1a1410] border-primary/30 text-white w-24"
+           data-testid={`input-edit-addon-price-${idx}`}
+         />
+         <Button
+           type="button"
+           size="sm"
+           variant="outline"
+           onClick={() => setEditableAddons(editableAddons.filter((_, i) => i !== idx))}
+           className="border-red-500/30 text-red-500"
+           data-testid={`button-delete-addon-${idx}`}
+         >
+           <X className="w-4 h-4" />
+         </Button>
+       </div>
+     ))}
+   </div>
+   <Button
+     type="button"
+     size="sm"
+     variant="outline"
+     onClick={() => setEditableAddons([...editableAddons, {nameAr: '', price: 0, category: 'other'}])}
+     className="border-green-500/30 text-green-400 w-full"
+     data-testid="button-add-edit-addon"
+   >
+     <Plus className="w-4 h-4 ml-1" />
+     إضافة إضافة
+   </Button>
  </div>
 
  <div className="flex justify-end gap-2">
