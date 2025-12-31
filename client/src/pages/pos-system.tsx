@@ -264,11 +264,11 @@ export default function POSSystem() {
     const loadEmployee = async () => {
       const storedEmployee = localStorage.getItem("currentEmployee");
       if (storedEmployee) {
-        const parsed = JSON.parse(storedEmployee);
-        if (!parsed._id && parsed.id) parsed._id = parsed.id;
-        
-        if (!parsed.branchId) {
-          try {
+        try {
+          const parsed = JSON.parse(storedEmployee);
+          if (!parsed._id && parsed.id) parsed._id = parsed.id;
+          
+          if (!parsed.branchId) {
             const response = await fetch('/api/verify-session');
             if (response.ok) {
               const data = await response.json();
@@ -277,25 +277,30 @@ export default function POSSystem() {
                 localStorage.setItem("currentEmployee", JSON.stringify(parsed));
               }
             }
-          } catch (error) {
-            console.error("Error fetching branch info:", error);
           }
+          setEmployee(parsed);
+        } catch (e) {
+          console.error("Error parsing employee:", e);
+          setLocation("/employee/gateway");
         }
-        setEmployee(parsed);
       } else {
         setLocation("/employee/gateway");
       }
     };
     loadEmployee();
     
-    const savedParkedOrders = localStorage.getItem("parkedOrders");
-    if (savedParkedOrders) {
-      setParkedOrders(JSON.parse(savedParkedOrders));
-    }
-    
-    const savedOfflineOrders = localStorage.getItem("offlineOrders");
-    if (savedOfflineOrders) {
-      setOfflineOrders(JSON.parse(savedOfflineOrders));
+    try {
+      const savedParkedOrders = localStorage.getItem("parkedOrders");
+      if (savedParkedOrders) {
+        setParkedOrders(JSON.parse(savedParkedOrders));
+      }
+      
+      const savedOfflineOrders = localStorage.getItem("offlineOrders");
+      if (savedOfflineOrders) {
+        setOfflineOrders(JSON.parse(savedOfflineOrders));
+      }
+    } catch (e) {
+      console.error("Error loading saved data:", e);
     }
   }, [setLocation]);
 
@@ -342,30 +347,41 @@ export default function POSSystem() {
 
   const { data: productsData, isLoading } = useQuery<any[]>({
     queryKey: ["/api/coffee-items"],
-    staleTime: 1000 * 60 * 5, // 5 minutes instead of 24h for development
+    staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/coffee-items");
-      const data = await res.json();
-      console.log("POS: Fetched products:", data);
-      
-      // Filter out invalid items and ensure unique IDs
-      const validItems = Array.isArray(data) ? data.filter(item => item && (item.id || item._id)) : [];
-      
-      if (validItems.length > 0) {
-        await db.products.clear();
-        await db.products.bulkAdd(validItems.map((item: any) => ({
-          id: String(item.id || item._id),
-          nameAr: item.nameAr || "منتج بدون اسم",
-          price: Number(item.price) || 0,
-          category: item.category || "general",
-          imageUrl: item.imageUrl,
-          isAvailable: item.isAvailable ?? 1,
-          tenantId: item.tenantId,
-          updatedAt: Date.now()
-        })));
+      try {
+        const res = await fetch("/api/coffee-items", {
+          headers: { "Accept": "application/json" }
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        
+        const validItems = Array.isArray(data) ? data.filter(item => item && (item.id || item._id)) : [];
+        
+        if (validItems.length > 0) {
+          try {
+            await db.products.clear();
+            const localProducts = validItems.map((item: any) => ({
+              id: String(item.id || item._id),
+              nameAr: item.nameAr || "منتج بدون اسم",
+              price: Number(item.price) || 0,
+              category: item.category || "general",
+              imageUrl: item.imageUrl,
+              isAvailable: item.isAvailable ?? 1,
+              tenantId: item.tenantId,
+              updatedAt: Date.now()
+            }));
+            await db.products.bulkAdd(localProducts);
+          } catch (dexieError) {
+            console.error("Dexie update error:", dexieError);
+          }
+        }
+        return validItems;
+      } catch (error) {
+        console.error("POS Query Error:", error);
+        return [];
       }
-      return validItems;
     }
   });
 
@@ -379,8 +395,13 @@ export default function POSSystem() {
   });
 
   const coffeeItems = useMemo(() => {
-    const items = isOffline ? (offlineProducts || []) : (productsData || []);
-    return Array.isArray(items) ? items : [];
+    try {
+      const items = isOffline ? (offlineProducts || []) : (productsData || []);
+      return Array.isArray(items) ? items : [];
+    } catch (e) {
+      console.error("Error computing coffeeItems:", e);
+      return [];
+    }
   }, [productsData, offlineProducts, isOffline]);
 
   const syncOfflineOrders = async () => {
@@ -526,28 +547,43 @@ export default function POSSystem() {
   }, [toast]);
 
   const CATEGORIES = useMemo(() => {
-    const cats = Array.from(new Set(coffeeItems.map((item: any) => item.categoryAr || item.category || "أخرى")));
-    return ["all", ...cats];
+    try {
+      const items = Array.isArray(coffeeItems) ? coffeeItems : [];
+      const cats = Array.from(new Set(items.map((item: any) => item?.categoryAr || item?.category || "أخرى")));
+      return ["all", ...cats];
+    } catch (e) {
+      console.error("Error computing categories:", e);
+      return ["all"];
+    }
   }, [coffeeItems]);
 
   const filteredItems = useMemo(() => {
-    return coffeeItems.filter((item: any) => {
-      const matchesSearch = item.nameAr?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (item.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesCategory = selectedCategory === "all" || 
-                              (item.categoryAr === selectedCategory) ||
-                              (item.category === selectedCategory);
-      return matchesSearch && matchesCategory;
-    });
+    try {
+      const items = Array.isArray(coffeeItems) ? coffeeItems : [];
+      return items.filter((item: any) => {
+        if (!item) return false;
+        const matchesSearch = (item.nameAr?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                              (item.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesCategory = selectedCategory === "all" || 
+                                (item.categoryAr === selectedCategory) ||
+                                (item.category === selectedCategory);
+        return matchesSearch && matchesCategory;
+      });
+    } catch (e) {
+      console.error("Error filtering items:", e);
+      return [];
+    }
   }, [coffeeItems, searchQuery, selectedCategory]);
 
   const addToOrder = (coffeeItem: CoffeeItem) => {
+    if (!coffeeItem) return;
     setCustomizingItem(coffeeItem);
     setEditingLineItemId(null);
     setShowCustomizationDialog(true);
   };
 
   const openEditCustomization = (orderItem: OrderItem) => {
+    if (!orderItem || !orderItem.coffeeItem) return;
     setCustomizingItem(orderItem.coffeeItem);
     setEditingLineItemId(orderItem.lineItemId);
     setShowCustomizationDialog(true);
@@ -595,11 +631,12 @@ export default function POSSystem() {
   };
 
   const updateQuantity = (lineItemId: string, newQuantity: number) => {
+    if (!lineItemId) return;
     if (newQuantity <= 0) {
-      setOrderItems(orderItems.filter(item => item.lineItemId !== lineItemId));
+      setOrderItems(orderItems.filter(item => item && item.lineItemId !== lineItemId));
     } else {
       setOrderItems(orderItems.map(item =>
-        item.lineItemId === lineItemId ? { ...item, quantity: newQuantity } : item
+        item && item.lineItemId === lineItemId ? { ...item, quantity: newQuantity } : item
       ));
     }
   };
@@ -1063,8 +1100,8 @@ export default function POSSystem() {
     );
   }
 
-  const visibleCategories = CATEGORIES.slice(categoryPage * categoriesPerPage, (categoryPage + 1) * categoriesPerPage);
-  const totalPages = Math.ceil(CATEGORIES.length / categoriesPerPage);
+  const visibleCategories = Array.isArray(CATEGORIES) ? CATEGORIES.slice(categoryPage * categoriesPerPage, (categoryPage + 1) * categoriesPerPage) : ["all"];
+  const totalPages = Array.isArray(CATEGORIES) ? Math.ceil(CATEGORIES.length / categoriesPerPage) : 1;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col" dir="rtl">
@@ -1244,7 +1281,7 @@ export default function POSSystem() {
               <ScrollArea className="flex-1 -mx-2 sm:-mx-2 px-2 sm:px-2">
                 {isLoading ? (
                   <LoadingState message="جاري تحميل المنتجات..." />
-                ) : filteredItems.length === 0 ? (
+                ) : !Array.isArray(filteredItems) || filteredItems.length === 0 ? (
                   <EmptyState 
                     title="لا توجد منتجات مطابقة"
                     description="جرب البحث بكلمات أخرى"
@@ -1253,7 +1290,8 @@ export default function POSSystem() {
                 ) : (
                   <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-4">
                     {filteredItems.map((item: any) => {
-                      const inCart = orderItems.find(oi => oi.coffeeItem.id === item.id);
+                      if (!item || !item.id) return null;
+                      const inCart = orderItems.find(oi => oi.coffeeItem && oi.coffeeItem.id === item.id);
                       return (
                         <Card
                           key={item.id}
@@ -1390,7 +1428,8 @@ export default function POSSystem() {
                 ) : (
                   <div className="space-y-3">
                     {orderItems.map((item, itemIndex) => {
-                      const basePrice = Number(item.coffeeItem.price);
+                      if (!item || !item.coffeeItem) return null;
+                      const basePrice = Number(item.coffeeItem.price || 0);
                       const addonsPrice = item.customization?.totalAddonsPrice || 0;
                       const itemTotalBeforeDiscount = (basePrice + addonsPrice) * item.quantity;
                       const itemTotal = itemTotalBeforeDiscount - (item.itemDiscount || 0);
