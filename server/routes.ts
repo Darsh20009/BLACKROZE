@@ -3377,7 +3377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limitNum = limit ? parseInt(limit as string) : undefined;
       const offsetNum = offset ? parseInt(offset as string) : undefined;
 
-      const allOrders = await storage.getOrders(undefined, limitNum, offsetNum);
+      const allOrders = await storage.getOrders(limitNum, offsetNum);
 
       // Admin and owner see all orders, others see only their branch
       const orders = filterByBranch(allOrders, req.employee as any);
