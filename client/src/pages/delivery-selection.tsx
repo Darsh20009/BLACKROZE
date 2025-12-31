@@ -126,14 +126,14 @@ export default function DeliverySelectionPage() {
         // Ensure id is present
         const id = actualData.id || actualData._id || (t._id ? t._id.toString() : null);
         
-        // Debug each table
-        
         return {
           ...actualData,
           id: id,
           _id: id,
-          // Correct availability check supporting both boolean and number formats
-          isAvailable: actualData.isAvailable === true || (typeof actualData.isOccupied === 'number' ? actualData.isOccupied === 0 : actualData.isOccupied === false)
+          // Use isAvailable from server (computed correctly from isOccupied)
+          // Server returns isAvailable=true if table is not occupied
+          isAvailable: actualData.isAvailable !== undefined ? actualData.isAvailable : (actualData.isOccupied === 0),
+          isOccupied: actualData.isOccupied !== undefined ? actualData.isOccupied : 0
         };
       })
       .filter((t: any) => t.id); // Ensure only tables with valid IDs are shown
@@ -519,8 +519,8 @@ export default function DeliverySelectionPage() {
                                               console.error('[ERROR] Table missing id:', table);
                                               return null;
                                             }
-                                            // Handle both possible status field names and values
-                                            const isAvailable = table.isAvailable === true || (typeof table.isOccupied === 'number' ? table.isOccupied === 0 : table.isOccupied === false);
+                                            // Use isAvailable directly from server data (it's computed from isOccupied)
+                                            const isAvailable = table.isAvailable === true;
                                             const statusText = isAvailable ? '(متاحة)' : '(مشغولة)';
                                             return (
                                               <SelectItem key={tableId} value={tableId} disabled={!isAvailable} data-testid={`table-option-${table.tableNumber}`}>
