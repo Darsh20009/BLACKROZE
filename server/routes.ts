@@ -2225,7 +2225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (validatedData.coffeeStrength === undefined) validatedData.coffeeStrength = originalItem.coffeeStrength;
         
         // Create a new ID for the adopted item in this branch
-        validatedData.id = `${adoptFromItemId}-${req.employee.branchId}`;
+        validatedData.id = `${adoptFromItemId}-${req.employee?.branchId}`;
       }
 
       // For non-admin managers, enforce their branch ID in publishedBranches
@@ -3380,7 +3380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allOrders = await storage.getOrders(undefined, limitNum, offsetNum);
 
       // Admin and owner see all orders, others see only their branch
-      const orders = filterByBranch(allOrders, req.employee);
+      const orders = filterByBranch(allOrders, req.employee as any);
 
       const coffeeItems = await storage.getCoffeeItems();
 
@@ -4359,7 +4359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               isActivated: 0, // Not activated - needs password setup
               branchId: branchId,
               tenantId: tenantId, // Pass tenantId to manager creation
-            });
+            } as any);
             
             await storage.updateBranch(branchId, {
               managerName: newManagerData.fullName,
@@ -4393,7 +4393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActivated: 1,
           branchId: branchId,
           tenantId: tenantId
-        });
+        } as any);
         
         await storage.updateBranch(branchId, {
           managerName: `مدير ${branchNameAr}`,
