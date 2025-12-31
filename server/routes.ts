@@ -2176,15 +2176,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { insertCoffeeItemSchema } = await import("@shared/schema");
       const { adoptFromItemId, ...bodyData } = req.body;
-      
-      const validatedData = insertCoffeeItemSchema.parse(bodyData);
 
       // Check if employee has branchId (required)
       if (!req.employee?.branchId) {
         return res.status(403).json({ error: "Branch assignment required to create items" });
       }
 
-      // Get tenantId from employee or fallback to branch
+      // Get tenantId from employee or fallback to branch - DO THIS BEFORE VALIDATION
       let tenantId = req.employee.tenantId;
       if (!tenantId) {
         const branch = await BranchModel.findById(req.employee.branchId).lean();
@@ -2195,6 +2193,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tenantId = `tenant-${req.employee.branchId}`;
         }
       }
+
+      // Add tenantId to bodyData BEFORE validation
+      bodyData.tenantId = tenantId;
+      
+      const validatedData = insertCoffeeItemSchema.parse(bodyData);
 
       // If adopting from another item, get the original
       if (adoptFromItemId) {
@@ -2235,10 +2238,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.availabilityStatus = 'available';
       }
 
-      // Set creator information and tenantId
+      // Set creator information
       (validatedData as any).createdByEmployeeId = req.employee.id;
       (validatedData as any).createdByBranchId = req.employee.branchId;
-      (validatedData as any).tenantId = tenantId;
 
       // Ensure id is present if not provided (though storage might handle it)
       if (!validatedData.id) {

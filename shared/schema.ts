@@ -1662,6 +1662,7 @@ export const AttendanceModel = mongoose.model<IAttendance>("Attendance", Attenda
 
 export const insertCoffeeItemSchema = z.object({
   id: z.string(),
+  tenantId: z.string().optional(),
   nameAr: z.string(),
   nameEn: z.string().optional(),
   description: z.string(),
