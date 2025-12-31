@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/lib/cart-store";
-import { ArrowRight, Plus, Minus, Check, X, Coffee } from "lucide-react";
+import { ArrowRight, Plus, Minus, Check, X, Coffee, Heart, Share2, Info } from "lucide-react";
 import { useState } from "react";
 import type { CoffeeItem, Branch } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { getCoffeeImage } from "@/lib/coffee-data-clean";
 
 export default function ProductDetails() {
   const [, params] = useRoute("/product/:id");
@@ -193,9 +194,9 @@ export default function ProductDetails() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Image */}
           <div className="relative" data-testid="section-product-image">
-            {item.imageUrl ? (
+            {item.imageUrl || getCoffeeImage(item.id) ? (
               <img 
-                src={item.imageUrl}
+                src={item.imageUrl || getCoffeeImage(item.id)}
                 alt={item.nameAr}
                 className="w-full h-96 object-cover rounded-2xl shadow-lg"
                 onError={(e) => {
@@ -211,7 +212,7 @@ export default function ProductDetails() {
             ) : null}
             <div
               data-testid="image-placeholder"
-              className={`w-full h-96 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 ${item.imageUrl && item.imageUrl !== "" ? 'hidden' : ''}`}
+              className={`w-full h-96 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 ${(item.imageUrl || getCoffeeImage(item.id)) ? 'hidden' : ''}`}
             >
               <Coffee className="w-20 h-20 text-primary/40" />
               <p className="text-lg font-medium text-muted-foreground">صورة المشروب</p>

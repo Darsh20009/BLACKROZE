@@ -180,6 +180,9 @@ const MenuPage = memo(function MenuPage() {
                 alt="CLUNY CAFE" 
                 className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-full" 
                 data-testid="logo-header"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo.png";
+                }}
               />
               <div>
                 <h1 className="font-amiri text-lg sm:text-2xl font-bold text-foreground" data-testid="text-header-title">
