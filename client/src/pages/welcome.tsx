@@ -36,7 +36,7 @@ export default function WelcomePage() {
             <img src="/logo.png" alt="CLUNY CAFE" className="w-10 h-10 rounded-full" />
             <span className="text-xl font-playfair font-semibold text-foreground">CLUNY CAFE</span>
           </div>
-          <Button onClick={() => setLocation("/menu")} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button onClick={() => setLocation("/menu")} className="bg-[#9FB2B3] hover:bg-[#9FB2B3]/90 text-[#B58B5A]-foreground">
             اطلب الآن
           </Button>
         </div>
@@ -45,7 +45,7 @@ export default function WelcomePage() {
       <section className="relative h-screen flex items-center justify-center overflow-hidden pt-20">
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
-            className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"
+            className="absolute top-20 left-10 w-72 h-72 bg-[#9FB2B3]/10 rounded-full blur-3xl"
             animate={{
               scale: [1, 1.1, 1],
               x: [0, 20, 0],
@@ -69,7 +69,7 @@ export default function WelcomePage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="relative w-48 h-48 mx-auto mb-8 rounded-full bg-gradient-to-br from-primary to-primary/80 p-3 shadow-2xl">
+            <div className="relative w-48 h-48 mx-auto mb-8 rounded-full bg-gradient-to-br from-[#9FB2B3] to-[#9FB2B3]/80 p-3 shadow-2xl">
               <img src="/logo.png" alt="CLUNY CAFE Logo" className="w-full h-full object-contain rounded-full bg-background" />
             </div>
           </motion.div>
@@ -109,7 +109,7 @@ export default function WelcomePage() {
             <Button
               onClick={() => setLocation("/menu")}
               size="lg"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-6 rounded-lg text-lg font-semibold shadow-lg"
+              className="bg-[#9FB2B3] hover:bg-[#9FB2B3]/90 text-[#B58B5A]-foreground px-12 py-6 rounded-lg text-lg font-semibold shadow-lg"
             >
               استكشف قائمتنا
             </Button>
@@ -151,7 +151,7 @@ export default function WelcomePage() {
               return (
                 <motion.div
                   key={i}
-                  className="p-8 rounded-lg bg-background border border-border hover:border-primary/50 transition-all duration-300 hover-elevate"
+                  className="p-8 rounded-lg bg-background border border-border hover:border-[#9FB2B3]/50 transition-all duration-300 hover-elevate"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: i * 0.1 }}
@@ -203,10 +203,10 @@ export default function WelcomePage() {
         </div>
       </section>
       {/* CTA Section */}
-      <section className="py-24 px-4 bg-gradient-to-r from-primary to-primary/90">
+      <section className="py-24 px-4 bg-gradient-to-r from-[#9FB2B3] to-[#9FB2B3]/90">
         <div className="max-w-4xl mx-auto text-center">
           <motion.h2
-            className="text-5xl font-playfair mb-6 text-primary-foreground font-light"
+            className="text-5xl font-playfair mb-6 text-[#B58B5A]-foreground font-light"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
@@ -216,7 +216,7 @@ export default function WelcomePage() {
           </motion.h2>
 
           <motion.p
-            className="text-xl mb-10 text-primary-foreground/90 font-cairo"
+            className="text-xl mb-10 text-[#B58B5A]-foreground/90 font-cairo"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.1 }}
@@ -251,7 +251,7 @@ export default function WelcomePage() {
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">القائمة</h4>
-              <a href="/menu" className="text-sm text-muted-foreground hover:text-primary font-cairo">استكشف القائمة</a>
+              <a href="/menu" className="text-sm text-muted-foreground hover:text-[#B58B5A] font-cairo">استكشف القائمة</a>
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">الموقع</h4>
