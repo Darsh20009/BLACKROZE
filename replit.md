@@ -3,7 +3,7 @@
 
 ---
 
-## 🎨 Rebranding Info (December 30, 2025)
+## 🎨 Rebranding Info (December 31, 2025)
 - **Brand Name:** CLUNY CAFE (Customer) / CLUNY SYSTEMS (Employee)
 - **Primary Color:** #9FB2B3 (Muted Sage/Dusty Blue-Green)
 - **Database:** MongoDB Atlas - CLUNY-CAFE Project
@@ -23,6 +23,14 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 
 ## Current Progress (December 31, 2025)
 
+### 🚀 PAGE PERMISSIONS & PWA FIXES - COMPLETED
+- ✅ Created PageGuard component for page-level access control based on `allowedPages` field
+- ✅ Updated AuthGuard to extract and expose allowedPages from employee data
+- ✅ Fixed PWA manifest.json - Updated icon references to use /logo.png with all sizes
+- ✅ Fixed PWA employee-manifest.json - Updated for CLUNY SYSTEMS with proper icon sizes
+- ✅ Fixed favicon configuration - All manifest files properly linked in index.html
+- ✅ Dynamic manifest switching based on employee/customer routes working correctly
+
 ### 🚀 BUG FIXES - COMPLETED
 - ✅ Fixed drink creation silently failing - removed strict branchId requirement
 - ✅ Added fallback values for missing tenantId and branchId (demo-tenant, default-branch)
@@ -37,10 +45,6 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Navigation bar with new branding
 - ✅ Feature cards with coffee brown accents
 - ✅ Root route (/) now displays Welcome page
-- ⏳ Database migration setup
-- ⏳ Logo asset integration (awaiting PNG)
-- ⏳ Employee portal (CLUNY SYSTEMS) updates
-- ⏳ Menu page and components rebrand
 
 ## System Architecture
 
@@ -76,27 +80,32 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - **Unified Inventory Model:** RawItem is the single source of truth for all inventory
 - **Recipe Management:** Uses RecipeItem model linking CoffeeItem to RawItem
 
+### Sprint 2 - Employee Portal & Permissions (December 31, 2025)
+- **Page-Level Permissions:** PageGuard component for granular access control
+- **Employee Data Model:** Includes `allowedPages` field for customizable page access
+- **PWA Configuration:** Separate manifests for customer and employee portals
+- **Dynamic Manifest Switching:** Automatically switches between CLUNY CAFE and CLUNY SYSTEMS based on route
+
 ### Technical Stack
 - **Backend:** Node.js, Express.js, MongoDB with Mongoose, Zod for validation
 - **Frontend:** React, TypeScript, Vite, TanStack Query, shadcn/ui, Tailwind CSS, Wouter
+- **Security:** AuthGuard (role-based), PageGuard (page-level permissions), local storage for session management
 
-## TODO - What Needs To Be Done
-⏳ **Pending Logo Asset:** Need to upload CLUNY CAFE logo PNG for:
-  - Splash screen
-  - Favicon
-  - Welcome page header
-  - Brand assets throughout app
+## Key Components
+- **PageGuard.tsx** - Controls access to specific pages based on employee's `allowedPages` field
+- **AuthGuard.tsx** - Enhanced to read allowedPages from employee data
+- **manifest.json** - Customer portal PWA configuration with CLUNY CAFE branding
+- **employee-manifest.json** - Employee portal PWA configuration with CLUNY SYSTEMS branding
+- **index.html** - Dynamic manifest and favicon switching based on route
 
-⏳ **Brand Text Replacements:** Replace remaining "CLUNY CAFE" references in:
-  - Client components (splash.tsx, user-guide.tsx, menu.tsx, etc.)
-  - Documentation files
-  - Comments and strings
-
-⏳ **Welcome/Home Page Redesign:** Using new colors and typography
-
-⏳ **Git Cleanup:** Remove old cluny references from repository
+## How Page Permissions Work
+1. Admin/Owner/Manager have access to all pages
+2. Regular employees can only access pages listed in their `allowedPages` array
+3. Wrap employee routes with `<PageGuard requiredPage="page-name">` to enforce permissions
+4. If employee lacks permission, they're redirected to /unauthorized
 
 ## Deployment
 - Built with npm + Vite
 - Express backend serves on port 5000
 - Production: `npm run build` then `node ./dist/index.cjs`
+- PWA works offline with service worker registration
