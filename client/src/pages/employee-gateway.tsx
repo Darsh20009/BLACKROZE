@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ export default function EmployeeGateway() {
   const [error, setError] = useState("");
 
   // Set SEO metadata
-  React.useEffect(() => {
+  useEffect(() => {
     document.title = "بوابة الموظفين - CLUNY CAFE | نظام الإدارة";
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', 'بوابة دخول الموظفين لنظام إدارة CLUNY CAFE - نظام متكامل لإدارة الطلبات والمبيعات');
