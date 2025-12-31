@@ -6055,17 +6055,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload drink image
-  app.post("/api/upload-drink-image", requireAuth, requireManager, drinkUpload.single('image'), (req, res) => {
-    try {
+  app.post("/api/upload-drink-image", requireAuth, requireManager, (req, res) => {
+    drinkUpload.single('image')(req, res, (err) => {
+      if (err) {
+        console.error('Upload error:', err);
+        return res.status(400).json({ error: err.message || "فشل رفع الصورة" });
+      }
       if (!req.file) {
         return res.status(400).json({ error: "لم يتم رفع صورة" });
       }
-
       const fileUrl = `/attached_assets/drinks/${req.file.filename}`;
       res.json({ url: fileUrl, filename: req.file.filename });
-    } catch (error) {
-      res.status(500).json({ error: "فشل رفع الصورة" });
-    }
+    });
   });
 
   // Configure multer for size image uploads
@@ -6096,16 +6097,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload size image
-  app.post("/api/upload-size-image", requireAuth, requireManager, sizeUpload.single('image'), (req, res) => {
-    try {
+  app.post("/api/upload-size-image", requireAuth, requireManager, (req, res) => {
+    sizeUpload.single('image')(req, res, (err) => {
+      if (err) {
+        console.error('Upload error:', err);
+        return res.status(400).json({ error: err.message || "فشل رفع الصورة" });
+      }
       if (!req.file) {
         return res.status(400).json({ error: "لم يتم رفع صورة" });
       }
       const fileUrl = `/attached_assets/sizes/${req.file.filename}`;
       res.json({ url: fileUrl, filename: req.file.filename });
-    } catch (error) {
-      res.status(500).json({ error: "فشل رفع الصورة" });
-    }
+    });
   });
 
   // Configure multer for addon image uploads
@@ -6136,7 +6139,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload addon image
-  app.post("/api/upload-addon-image", requireAuth, requireManager, addonUpload.single('image'), (req, res) => {
+  app.post("/api/upload-addon-image", requireAuth, requireManager, (req, res) => {
+    addonUpload.single('image')(req, res, (err) => {
+      if (err) {
+        console.error('Upload error:', err);
+        return res.status(400).json({ error: err.message || "فشل رفع الصورة" });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: "لم يتم رفع صورة" });
+      }
+      const fileUrl = `/attached_assets/addons/${req.file.filename}`;
+      res.json({ url: fileUrl, filename: req.file.filename });
+      return;
+    });
+  });
+  
+  app.post("/old-upload-addon-image", requireAuth, requireManager, addonUpload.single('image'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "لم يتم رفع صورة" });

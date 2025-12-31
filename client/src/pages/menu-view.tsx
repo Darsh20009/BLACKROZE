@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCoffeeImage } from "@/lib/coffee-data-clean";
 import QRCodeComponent from "@/components/qr-code";
-import { ArrowLeft, Coffee, Star, Sparkles, Grid3X3, Layers, Tv, QrCode, Zap, Palette } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Coffee, Star, Sparkles, Grid3X3, Layers, Tv, QrCode, Zap, Palette, ShoppingCart } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { AddToCartModal } from "@/components/add-to-cart-modal";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface CoffeeItem {
  id: string;
@@ -21,9 +24,12 @@ interface CoffeeItem {
 
 export default function MenuView() {
  const [, setLocation] = useLocation();
+ const { toast } = useToast();
  const [viewMode, setViewMode] = useState<'elegant' | 'showcase' | 'grid' | 'mosaic' | 'waterfall' | 'tv-display' | 'window-display'>('elegant');
  const [currentIndex, setCurrentIndex] = useState(0);
  const [isAutoPlay, setIsAutoPlay] = useState(true);
+ const [selectedItemForCart, setSelectedItemForCart] = useState<any>(null);
+ const [isModalOpen, setIsModalOpen] = useState(false);
 
  // Fetch coffee items
  const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
@@ -625,6 +631,19 @@ export default function MenuView() {
  )}
  </div>
 
+ </div>
+
+      <AddToCartModal
+        item={selectedItemForCart as any}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddToCart={(item) => {
+          toast({
+            title: "تمت الإضافة",
+            description: `تم إضافة ${item.name} إلى السلة`,
+          });
+        }}
+      />
  </div>
  );
 }
