@@ -2575,7 +2575,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create a unique ID for this cart entry based on item + options
-      const cartItemId = `${coffeeItemId}-${selectedSize || 'default'}-${(selectedAddons || []).sort().join(',')}`;
+      // selectedSize can be an object with nameAr or just a string
+      const sizeName = typeof selectedSize === 'object' ? selectedSize?.nameAr : selectedSize;
+      const cartItemId = `${coffeeItemId}-${sizeName || 'default'}-${(selectedAddons || []).sort().join(',')}`;
       
       let cartItem = await CartItemModel.findOne({ sessionId, id: cartItemId });
       
@@ -2588,7 +2590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sessionId,
           coffeeItemId,
           quantity: quantity || 1,
-          selectedSize,
+          selectedSize: sizeName,
           selectedAddons: selectedAddons || [],
           createdAt: new Date()
         });
