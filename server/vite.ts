@@ -63,7 +63,12 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      res.status(200).set({ 
+        "Content-Type": "text/html",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+      }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
@@ -80,10 +85,23 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Set specific cache headers for static assets (JS, CSS, images)
+  // These files are hashed by Vite, so they can be cached long-term
+  app.use(express.static(distPath, {
+    maxAge: '1y',
+    immutable: true,
+    index: false // Don't serve index.html via express.static to handle it manually with no-cache
+  }));
 
-  // fall through to index.html if the file doesn't exist
+  // Fall through to index.html with NO-CACHE headers
+  // This ensures the browser always checks for the latest index.html which points to new hashed assets
   app.use("*", (_req, res) => {
+    res.set({
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+      "Surrogate-Control": "no-store"
+    });
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
