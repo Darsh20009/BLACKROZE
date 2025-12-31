@@ -28,6 +28,7 @@ export function AuthGuard({
       try {
         let isAuthenticated = false;
         let userRole = "";
+        let allowedPages: string[] = [];
 
         switch (userType) {
           case "customer": {
@@ -42,6 +43,7 @@ export function AuthGuard({
               const parsed = JSON.parse(employee);
               isAuthenticated = true;
               userRole = parsed.role || "";
+              allowedPages = parsed.allowedPages || [];
             }
             break;
           }
@@ -55,6 +57,7 @@ export function AuthGuard({
               if (allowedManagerRoles.includes(parsed.role)) {
                 isAuthenticated = true;
                 userRole = parsed.role || "manager";
+                allowedPages = parsed.allowedPages || [];
               }
             }
             break;

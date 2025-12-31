@@ -2,7 +2,7 @@
   "name": "CLUNY SYSTEMS - نظام إدارة CLUNY CAFE",
   "short_name": "CLUNY SYSTEMS",
   "description": "نظام إدارة الموظفين والعمليات والطلبات في كافيه CLUNY - نظام متكامل لإدارة العمليات",
-  "start_url": "https://cluny.ma3k.online/employee",
+  "start_url": "/employee/home",
   "display": "standalone",
   "background_color": "#F7F8F8",
   "theme_color": "#9FB2B3",
@@ -15,15 +15,51 @@
   "icons": [
     {
       "src": "/employee-logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/employee-logo.png",
-      "sizes": "512x512",
+      "sizes": "48x48 72x72 96x96 128x128 144x144 152x152 192x192 384x384 512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/employee-logo.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "CLUNY SYSTEMS - لوحة التحكم"
+    },
+    {
+      "src": "/employee-logo.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CLUNY SYSTEMS - إدارة الطلبات"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "نقاط البيع",
+      "short_name": "البيع",
+      "description": "نظام نقاط البيع السريعة",
+      "url": "/employee/pos",
+      "icons": [{ "src": "/employee-logo.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "الطلبات",
+      "short_name": "الطلبات",
+      "description": "عرض الطلبات الحالية",
+      "url": "/employee/orders",
+      "icons": [{ "src": "/employee-logo.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "المطبخ",
+      "short_name": "المطبخ",
+      "description": "شاشة عرض المطبخ",
+      "url": "/employee/kitchen",
+      "icons": [{ "src": "/employee-logo.png", "sizes": "96x96", "type": "image/png" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "permissions": ["notifications"]
 }
