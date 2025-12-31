@@ -248,7 +248,7 @@ export async function sendReferralEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <info@qahwakup.com>`,
+      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
       to: customerEmail,
       subject: "انضم إلى برنامج الإحالات الخاص بنا",
       html: `
@@ -286,7 +286,7 @@ export async function sendLoyaltyPointsEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <info@qahwakup.com>`,
+      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
       to: customerEmail,
       subject: "لقد حصلت على نقاط جديدة!",
       html: `
@@ -322,7 +322,7 @@ export async function sendPromotionEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <info@qahwakup.com>`,
+      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
       to: customerEmail,
       subject: promotionTitle,
       html: `
@@ -362,7 +362,7 @@ export async function sendReservationConfirmationEmail(
   }
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <ma3k.2025@gmail.com>";
+    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <cluny@ma3k.online>";
     const formattedDate = new Date(reservationDate).toLocaleDateString('ar');
     await transporter.sendMail({
       from: senderEmail,
@@ -409,7 +409,7 @@ export async function sendReservationExpiryWarningEmail(
   if (!transporter) return false;
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <ma3k.2025@gmail.com>";
+    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <cluny@ma3k.online>";
     const expiryTimeFormatted = new Date(expiryTime).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
     await transporter.sendMail({
       from: senderEmail,
@@ -447,7 +447,7 @@ export async function sendWelcomeEmail(customerEmail: string, customerName: stri
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <info@qahwakup.com>`,
+      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
       to: customerEmail,
       subject: "أهلاً بك في CLUNY CAFE! ☕",
       html: `
@@ -475,7 +475,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <info@qahwakup.com>`,
+      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
       to: customerEmail,
       subject: "نسيت شيئاً في عربتك؟ 🛒",
       html: `
@@ -484,7 +484,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
           <p>لاحظنا أنك تركت بعض الأصناف الرائعة في عربة التسوق الخاصة بك.</p>
           <p>لا تدع قهوتك تبرد! عد الآن وأكمل طلبك قبل نفاد الكمية.</p>
           <div style="margin: 20px 0;">
-            <a href="https://qahwakup.com/checkout" style="background-color: #8B5A2B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">أكمل الطلب الآن</a>
+            <a href="https://cluny.ma3k.online/checkout" style="background-color: #8B5A2B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">أكمل الطلب الآن</a>
           </div>
         </div>
       `,

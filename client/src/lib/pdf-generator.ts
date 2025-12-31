@@ -42,30 +42,29 @@ export const generatePDF = async (
  line-height: 1.6;
  `;
 
- // Get payment method details
- const paymentMethodNames: Record<PaymentMethod, string> = {
- cash: 'الدفع نقداً',
- pos: 'جهاز نقاط البيع (POS)',
- delivery: 'الدفع عند التوصيل',
- stc: 'STC Pay',
- alinma: 'Alinma Pay',
- ur: 'Ur Pay',
- barq: 'Barq',
- rajhi: 'بنك الراجحي',
- 'qahwa-card': 'بطاقة كوبي (مجاني)'
- };
+  const paymentMethodNames: any = {
+    cash: 'الدفع نقداً',
+    pos: 'جهاز نقاط البيع (POS)',
+    delivery: 'الدفع عند التوصيل',
+    stc: 'STC Pay',
+    alinma: 'Alinma Pay',
+    ur: 'Ur Pay',
+    barq: 'Barq',
+    rajhi: 'بنك الراجحي',
+    'qahwa-card': 'بطاقة كوبي (مجاني)'
+  };
 
- const paymentDetails: Record<PaymentMethod, string> = {
- cash: 'الدفع عند الاستلام',
- pos: 'الدفع عبر جهاز POS',
- delivery: 'ادفع عند استلام الطلب',
- stc: '+966532441566',
- alinma: '+966532441566',
- ur: '+966532441566',
- barq: '+966532441566',
- rajhi: 'SA78 8000 0539 6080 1942 4738',
- 'qahwa-card': 'مشروب مجاني من بطاقة الولاء'
- };
+  const paymentDetails: any = {
+    cash: 'الدفع عند الاستلام',
+    pos: 'الدفع عبر جهاز POS',
+    delivery: 'ادفع عند استلام الطلب',
+    stc: '+966532441566',
+    alinma: '+966532441566',
+    ur: '+966532441566',
+    barq: '+966532441566',
+    rajhi: 'SA78 8000 0539 6080 1942 4738',
+    'qahwa-card': 'مشروب مجاني من بطاقة الولاء'
+  };
 
  content.innerHTML = `
  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 4px solid #D4AF37; padding-bottom: 25px; background: linear-gradient(135deg, #FFF8DC, #FFFBEB); border-radius: 15px 15px 0 0; padding: 25px 20px;">
@@ -238,7 +237,7 @@ export const generatePDF = async (
  const lineHeight = 7;
  
  // Header
- pdf.text('Qahwat Kob - Coffee Invoice', 105, yPosition, { align: 'center' });
+ pdf.text('CLUNY CAFE - Coffee Invoice', 105, yPosition, { align: 'center' });
  yPosition += lineHeight * 2;
  
  // Order details

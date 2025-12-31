@@ -201,7 +201,7 @@ export default function CheckoutModal() {
  const handlePaymentConfirmed = async (order: any) => {
  try {
  // Generate PDF invoice
- const pdfBlob = await generatePDF(order, cartItems, selectedPaymentMethod!);
+ const pdfBlob = await generatePDF(order, cartItems as any, selectedPaymentMethod as any);
 
  // Create download link
  const url = URL.createObjectURL(pdfBlob);

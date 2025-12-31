@@ -376,7 +376,7 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
             className="gap-2"
             data-testid="button-apple-wallet"
             onClick={() => {
-              const url = `${window.location.origin}/api/loyalty/cards/${card.id || card._id}/apple-wallet-pass`;
+              const url = `https://cluny.ma3k.online/api/loyalty/cards/${card.id || card._id}/apple-wallet-pass`;
               window.open(url, '_blank');
             }}
           >
