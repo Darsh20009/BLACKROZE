@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/lib/cart-store";
-import { ArrowRight, Plus, Minus, Check, X } from "lucide-react";
+import { ArrowRight, Plus, Minus, Check, X, Coffee } from "lucide-react";
 import { useState } from "react";
 import type { CoffeeItem, Branch } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -193,15 +193,29 @@ export default function ProductDetails() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Image */}
           <div className="relative" data-testid="section-product-image">
-            <img 
-              src={item.imageUrl || "/images/default-coffee.png"}
-              alt={item.nameAr}
-              className="w-full h-96 object-cover rounded-2xl shadow-lg"
-              onError={(e) => {
-                e.currentTarget.src = "/images/default-coffee.png";
-              }}
-              data-testid="img-product"
-            />
+            {item.imageUrl ? (
+              <img 
+                src={item.imageUrl}
+                alt={item.nameAr}
+                className="w-full h-96 object-cover rounded-2xl shadow-lg"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    const placeholder = parent.querySelector('[data-testid="image-placeholder"]') as HTMLElement;
+                    if (placeholder) placeholder.style.display = 'flex';
+                  }
+                }}
+                data-testid="img-product"
+              />
+            ) : null}
+            <div
+              data-testid="image-placeholder"
+              className={`w-full h-96 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 ${item.imageUrl ? 'hidden' : ''}`}
+            >
+              <Coffee className="w-20 h-20 text-primary/40" />
+              <p className="text-lg font-medium text-muted-foreground">صورة المشروب</p>
+            </div>
             {/* Status and Discount Badges */}
             <div className="flex gap-2 flex-wrap absolute top-4 left-4">
               {oldPriceNum > 0 && (
