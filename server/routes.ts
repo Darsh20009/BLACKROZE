@@ -708,14 +708,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create session (no password verification for QR)
+      // Create session
       req.session.employee = {
         id: employee.id,
         username: employee.username,
         role: employee.role,
         branchId: employee.branchId,
-        tenantId: employee.tenantId,
         fullName: employee.fullName,
-      };
+      } as any;
 
       // Save session before responding
       req.session.save((err) => {
@@ -760,9 +760,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: employee.username,
         role: employee.role,
         branchId: employee.branchId,
-        tenantId: employee.tenantId,
         fullName: employee.fullName,
-      };
+      } as any;
 
       // Save session before responding
       req.session.save((err) => {

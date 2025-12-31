@@ -1713,6 +1713,7 @@ export const insertEmployeeSchema = z.object({
 
 export interface IEmployee extends Document {
   id: string;
+  tenantId?: string;
   username: string;
   password?: string;
   fullName: string;
@@ -1724,6 +1725,7 @@ export interface IEmployee extends Document {
   shiftTime?: string;
   shiftStartTime?: string;
   shiftEndTime?: string;
+  workDays?: string[];
   commissionPercentage?: number;
   deviceBalance?: number;
   isActivated: number;
@@ -1748,6 +1750,7 @@ export interface IEmployee extends Document {
 
 const EmployeeSchema = new Schema<IEmployee>({
   id: { type: String, required: true, unique: true },
+  tenantId: { type: String },
   username: { type: String, required: true, unique: true },
   password: { type: String },
   fullName: { type: String, required: true },
@@ -1759,6 +1762,7 @@ const EmployeeSchema = new Schema<IEmployee>({
   shiftTime: { type: String },
   shiftStartTime: { type: String },
   shiftEndTime: { type: String },
+  workDays: [{ type: String }],
   commissionPercentage: { type: Number },
   deviceBalance: { type: Number, default: 0 },
   isActivated: { type: Number, default: 0 },
