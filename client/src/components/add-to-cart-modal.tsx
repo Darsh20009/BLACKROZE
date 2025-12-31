@@ -16,7 +16,7 @@ import {
   Checkbox,
 } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { X, Plus, Minus, ShoppingCart } from "lucide-react";
+import { X, Plus, Minus, ShoppingCart, Coffee } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -47,14 +47,12 @@ export function AddToCartModal({
 
   const itemAddons = useMemo(() => {
     if (!item) return [];
-    // Filter addons that are associated with this item or are generic add-ons
     return allAddons.filter(addon => addon.isAvailable === 1);
   }, [item, allAddons]);
 
   const handleAddToCart = () => {
     if (!item) return;
 
-    // Validate size selection if item has sizes
     if (item.availableSizes && item.availableSizes.length > 0 && !selectedSize) {
       toast({
         title: "تنبيه",
@@ -75,12 +73,15 @@ export function AddToCartModal({
       quantity,
       selectedSize: selectedSize || "default",
       sizePrice: sizeData?.price,
+      sizeML: sizeData?.sizeML,
+      sizeSku: sizeData?.sku,
       addons: selectedAddons.map((addonId) => {
         const addon = allAddons.find((a) => a.id === addonId);
         return {
           id: addonId,
           name: addon?.nameAr,
           price: addon?.price ?? 0,
+          rawItemId: addon?.rawItemId,
         };
       }),
     };
@@ -110,22 +111,27 @@ export function AddToCartModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && resetModal()}>
-      <DialogContent className="max-w-md bg-white dark:bg-slate-950 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl bg-gradient-to-b from-slate-950 to-slate-900 dark:bg-slate-950 max-h-[90vh] overflow-y-auto border-primary/20">
         <DialogHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <DialogTitle className="text-2xl font-bold text-right">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <DialogTitle className="text-3xl font-bold text-right text-primary mb-2">
                 {item.nameAr}
               </DialogTitle>
-              <p className="text-sm text-secondary mt-1">{item.description}</p>
+              <p className="text-sm text-secondary text-right">{item.description}</p>
+            </div>
+            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-primary/20 bg-slate-800">
+              {item.imageUrl && (
+                <img src={item.imageUrl} alt={item.nameAr} className="w-full h-full object-cover" />
+              )}
             </div>
           </div>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Image */}
+          {/* Main Image */}
           {item.imageUrl && (
-            <div className="w-full h-48 rounded-lg overflow-hidden">
+            <div className="w-full h-64 rounded-lg overflow-hidden border border-primary/20 shadow-lg">
               <img
                 src={item.imageUrl}
                 alt={item.nameAr}
@@ -134,14 +140,12 @@ export function AddToCartModal({
             </div>
           )}
 
-          {/* Sizes */}
+          {/* Sizes Selection - Creative Card Layout */}
           {item.availableSizes && item.availableSizes.length > 0 && (
-            <div>
-              <Label className="text-base font-semibold mb-3 block">
-                اختر الحجم
-              </Label>
+            <div className="space-y-3">
+              <Label className="text-lg font-bold text-primary">✨ اختر الحجم المفضل</Label>
               <RadioGroup value={selectedSize || ""} onValueChange={setSelectedSize}>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {item.availableSizes.map((size) => (
                     <div key={size.nameAr}>
                       <RadioGroupItem
@@ -151,15 +155,21 @@ export function AddToCartModal({
                       />
                       <Label
                         htmlFor={`size-${size.nameAr}`}
-                        className={`block p-3 rounded-lg border-2 cursor-pointer text-center transition ${
+                        className={`block p-4 rounded-xl border-2 cursor-pointer text-center transition transform hover:scale-105 ${
                           selectedSize === size.nameAr
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50"
+                            ? "border-primary bg-primary/20 shadow-lg shadow-primary/50"
+                            : "border-slate-700 hover:border-primary/50 bg-slate-800/50"
                         }`}
                       >
-                        <div className="font-semibold">{size.nameAr}</div>
-                        <div className="text-sm text-secondary">
-                          {size.price} ر.س
+                        {size.imageUrl && (
+                          <div className="w-full h-20 rounded-lg overflow-hidden mb-2">
+                            <img src={size.imageUrl} alt={size.nameAr} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="font-bold text-primary">{size.nameAr}</div>
+                        {size.sizeML && <div className="text-xs text-secondary">{size.sizeML} مل</div>}
+                        <div className="text-sm text-accent mt-1 font-semibold">
+                          {size.price.toFixed(2)} ر.س
                         </div>
                       </Label>
                     </div>
@@ -169,20 +179,18 @@ export function AddToCartModal({
             </div>
           )}
 
-          {/* Addons/Extras */}
+          {/* Addons Selection - Creative Grid */}
           {itemAddons.length > 0 && (
-            <div>
-              <Label className="text-base font-semibold mb-3 block">
-                إضافات إبداعية
-              </Label>
-              <div className="space-y-2">
+            <div className="space-y-3">
+              <Label className="text-lg font-bold text-primary">🎨 الإضافات الإبداعية</Label>
+              <div className="grid grid-cols-2 gap-3">
                 {itemAddons.map((addon) => (
                   <Card
                     key={addon.id}
-                    className={`p-3 cursor-pointer border-2 transition ${
+                    className={`p-3 cursor-pointer border-2 transition transform hover:scale-105 ${
                       selectedAddons.includes(addon.id)
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/30"
+                        ? "border-primary bg-primary/10 shadow-lg shadow-primary/30"
+                        : "border-slate-700 hover:border-primary/50 bg-slate-800/50"
                     }`}
                     onClick={() => {
                       setSelectedAddons((prev) =>
@@ -192,24 +200,27 @@ export function AddToCartModal({
                       );
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <Checkbox
-                          checked={selectedAddons.includes(addon.id)}
-                          onCheckedChange={() => {}}
-                          className="cursor-pointer"
-                        />
-                        <div>
-                          <div className="font-semibold text-sm">
-                            {addon.nameAr}
-                          </div>
+                    <div className="space-y-2">
+                      {addon.imageUrl && (
+                        <div className="w-full h-24 rounded-lg overflow-hidden">
+                          <img src={addon.imageUrl} alt={addon.nameAr} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="font-semibold text-sm text-white">{addon.nameAr}</div>
                           <Badge variant="secondary" className="text-xs mt-1">
                             {addon.category}
                           </Badge>
                         </div>
+                        <Checkbox
+                          checked={selectedAddons.includes(addon.id)}
+                          onCheckedChange={() => {}}
+                          className="cursor-pointer mt-1"
+                        />
                       </div>
                       <div className="text-sm font-bold text-primary">
-                        +{addon.price} ر.س
+                        +{addon.price.toFixed(2)} ر.س
                       </div>
                     </div>
                   </Card>
@@ -218,37 +229,40 @@ export function AddToCartModal({
             </div>
           )}
 
-          {/* Quantity */}
-          <div className="flex items-center justify-between">
-            <Label className="font-semibold">الكمية</Label>
-            <div className="flex items-center gap-2 bg-secondary/20 rounded-lg p-2">
+          {/* Quantity Selector */}
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 flex items-center justify-between">
+            <Label className="font-semibold text-primary">الكمية</Label>
+            <div className="flex items-center gap-3 bg-slate-900 rounded-lg p-2">
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="h-8 w-8"
+                className="h-8 w-8 hover:bg-primary/20"
                 data-testid="button-decrease-quantity"
               >
-                <Minus className="w-4 h-4" />
+                <Minus className="w-4 h-4 text-primary" />
               </Button>
-              <span className="w-8 text-center font-semibold">{quantity}</span>
+              <span className="w-8 text-center font-bold text-lg text-primary">{quantity}</span>
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={() => setQuantity(quantity + 1)}
-                className="h-8 w-8"
+                className="h-8 w-8 hover:bg-primary/20"
                 data-testid="button-increase-quantity"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 text-primary" />
               </Button>
             </div>
           </div>
 
-          {/* Total Price */}
-          <Card className="p-4 bg-primary/5 border-primary/20">
+          {/* Total Price - Highlighted */}
+          <Card className="p-4 bg-gradient-to-r from-primary/20 to-primary/10 border-primary/50">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-secondary">السعر الإجمالي</span>
-              <span className="text-2xl font-bold text-primary">
+              <div className="flex items-center gap-2">
+                <Coffee className="w-5 h-5 text-primary" />
+                <span className="text-sm text-secondary">الإجمالي</span>
+              </div>
+              <span className="text-3xl font-bold text-primary">
                 {totalPrice.toFixed(2)} ر.س
               </span>
             </div>
@@ -257,10 +271,10 @@ export function AddToCartModal({
           {/* Add to Cart Button */}
           <Button
             onClick={handleAddToCart}
-            className="w-full bg-primary hover:bg-primary/90 text-white py-3 text-lg font-bold rounded-lg"
+            className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white py-6 text-lg font-bold rounded-lg shadow-lg"
             data-testid="button-add-to-cart"
           >
-            <ShoppingCart className="w-5 h-5 mr-2" />
+            <ShoppingCart className="w-5 h-5 ml-2" />
             إضافة إلى السلة
           </Button>
         </div>

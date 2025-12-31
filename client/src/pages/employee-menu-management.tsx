@@ -932,48 +932,105 @@ export default function EmployeeMenuManagement() {
                      </Button>
                    </div>
                    {step1Data?.availableSizes && step1Data.availableSizes.length > 0 && (
-                     <div className="space-y-2 bg-[#1a1410] p-3 rounded-lg border border-primary/20">
+                     <div className="space-y-3 bg-[#1a1410] p-3 rounded-lg border border-primary/20">
                        {step1Data.availableSizes.map((size, idx) => (
-                         <div key={idx} className="flex gap-2 items-end">
-                           <div className="flex-1">
-                             <Input
-                               placeholder="الحجم (كبير، وسط، صغير)"
-                               value={size.nameAr || ''}
-                               onChange={(e) => {
-                                 const updated = [...(step1Data.availableSizes || [])];
-                                 updated[idx] = {...updated[idx], nameAr: e.target.value, nameEn: e.target.value};
+                         <div key={idx} className="bg-[#2d1f1a] p-3 rounded-lg border border-primary/10 space-y-2">
+                           <div className="flex gap-2 items-end">
+                             <div className="flex-1">
+                               <Input
+                                 placeholder="الحجم (كبير، وسط، صغير)"
+                                 value={size.nameAr || ''}
+                                 onChange={(e) => {
+                                   const updated = [...(step1Data.availableSizes || [])];
+                                   updated[idx] = {...updated[idx], nameAr: e.target.value, nameEn: e.target.value};
+                                   setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
+                                 }}
+                                 className="bg-[#1a1410] border-primary/30 text-white text-sm"
+                               />
+                             </div>
+                             <div className="w-24">
+                               <Input
+                                 type="number"
+                                 step="0.01"
+                                 min="0"
+                                 placeholder="السعر"
+                                 value={size.price || 0}
+                                 onChange={(e) => {
+                                   const updated = [...(step1Data.availableSizes || [])];
+                                   updated[idx] = {...updated[idx], price: parseFloat(e.target.value) || 0};
+                                   setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
+                                 }}
+                                 className="bg-[#1a1410] border-primary/30 text-white text-sm text-center"
+                               />
+                             </div>
+                             <Button
+                               type="button"
+                               size="sm"
+                               variant="ghost"
+                               onClick={() => {
+                                 const updated = step1Data.availableSizes?.filter((_, i) => i !== idx) || [];
                                  setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
                                }}
-                               className="bg-[#2d1f1a] border-primary/30 text-white text-sm"
-                             />
+                               className="text-red-400 hover:text-red-300"
+                             >
+                               <X className="w-4 h-4" />
+                             </Button>
                            </div>
-                           <div className="w-24">
-                             <Input
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               placeholder="السعر"
-                               value={size.price || 0}
-                               onChange={(e) => {
-                                 const updated = [...(step1Data.availableSizes || [])];
-                                 updated[idx] = {...updated[idx], price: parseFloat(e.target.value) || 0};
-                                 setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
+                           <div className="text-xs text-gray-400">صورة الحجم (اختياري)</div>
+                           <div className="flex gap-2 items-center">
+                             <div 
+                               className="w-16 h-16 border border-dashed border-primary/30 rounded cursor-pointer hover:border-primary/60 flex items-center justify-center flex-shrink-0 bg-[#1a1410]"
+                               onClick={() => {
+                                 const input = document.createElement('input');
+                                 input.type = 'file';
+                                 input.accept = 'image/*';
+                                 input.onchange = async (e) => {
+                                   const file = (e.target as HTMLInputElement).files?.[0];
+                                   if (file) {
+                                     try {
+                                       const formData = new FormData();
+                                       formData.append('image', file);
+                                       const response = await fetch('/api/upload-size-image', {
+                                         method: 'POST',
+                                         body: formData,
+                                         credentials: 'include'
+                                       });
+                                       const data = await response.json();
+                                       if (data.url) {
+                                         const updated = [...(step1Data.availableSizes || [])];
+                                         updated[idx] = {...updated[idx], imageUrl: data.url};
+                                         setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
+                                       }
+                                     } catch (err) {
+                                       console.error('Error uploading size image:', err);
+                                     }
+                                   }
+                                 };
+                                 input.click();
                                }}
-                               className="bg-[#2d1f1a] border-primary/30 text-white text-sm text-center"
-                             />
+                             >
+                               {size.imageUrl ? (
+                                 <img src={size.imageUrl} alt={size.nameAr} className="w-full h-full object-cover rounded" />
+                               ) : (
+                                 <Upload className="w-4 h-4 text-accent/50" />
+                               )}
+                             </div>
+                             {size.imageUrl && (
+                               <Button
+                                 type="button"
+                                 size="sm"
+                                 variant="ghost"
+                                 onClick={() => {
+                                   const updated = [...(step1Data.availableSizes || [])];
+                                   updated[idx] = {...updated[idx], imageUrl: undefined};
+                                   setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
+                                 }}
+                                 className="text-red-400 hover:text-red-300"
+                               >
+                                 <X className="w-4 h-4" />
+                               </Button>
+                             )}
                            </div>
-                           <Button
-                             type="button"
-                             size="sm"
-                             variant="ghost"
-                             onClick={() => {
-                               const updated = step1Data.availableSizes?.filter((_, i) => i !== idx) || [];
-                               setStep1Data(prev => prev ? {...prev, availableSizes: updated} : null);
-                             }}
-                             className="text-red-400 hover:text-red-300"
-                           >
-                             <X className="w-4 h-4" />
-                           </Button>
                          </div>
                        ))}
                      </div>
@@ -998,48 +1055,105 @@ export default function EmployeeMenuManagement() {
                      </Button>
                    </div>
                    {step1Data?.addons && step1Data.addons.length > 0 && (
-                     <div className="space-y-2 bg-[#1a1410] p-3 rounded-lg border border-primary/20">
+                     <div className="space-y-3 bg-[#1a1410] p-3 rounded-lg border border-primary/20">
                        {step1Data.addons.map((addon, idx) => (
-                         <div key={idx} className="flex gap-2 items-end">
-                           <div className="flex-1">
-                             <Input
-                               placeholder="الإضافة (حليب، نكهة، إلخ)"
-                               value={addon.nameAr || ''}
-                               onChange={(e) => {
-                                 const updated = [...(step1Data.addons || [])];
-                                 updated[idx] = {...updated[idx], nameAr: e.target.value, nameEn: e.target.value};
+                         <div key={idx} className="bg-[#2d1f1a] p-3 rounded-lg border border-primary/10 space-y-2">
+                           <div className="flex gap-2 items-end">
+                             <div className="flex-1">
+                               <Input
+                                 placeholder="الإضافة (حليب، نكهة، إلخ)"
+                                 value={addon.nameAr || ''}
+                                 onChange={(e) => {
+                                   const updated = [...(step1Data.addons || [])];
+                                   updated[idx] = {...updated[idx], nameAr: e.target.value, nameEn: e.target.value};
+                                   setStep1Data(prev => prev ? {...prev, addons: updated} : null);
+                                 }}
+                                 className="bg-[#1a1410] border-primary/30 text-white text-sm"
+                               />
+                           </div>
+                             <div className="w-24">
+                               <Input
+                                 type="number"
+                                 step="0.01"
+                                 min="0"
+                                 placeholder="السعر"
+                                 value={addon.price || 0}
+                                 onChange={(e) => {
+                                   const updated = [...(step1Data.addons || [])];
+                                   updated[idx] = {...updated[idx], price: parseFloat(e.target.value) || 0};
+                                   setStep1Data(prev => prev ? {...prev, addons: updated} : null);
+                                 }}
+                                 className="bg-[#1a1410] border-primary/30 text-white text-sm text-center"
+                               />
+                             </div>
+                             <Button
+                               type="button"
+                               size="sm"
+                               variant="ghost"
+                               onClick={() => {
+                                 const updated = step1Data.addons?.filter((_, i) => i !== idx) || [];
                                  setStep1Data(prev => prev ? {...prev, addons: updated} : null);
                                }}
-                               className="bg-[#2d1f1a] border-primary/30 text-white text-sm"
-                             />
+                               className="text-red-400 hover:text-red-300"
+                             >
+                               <X className="w-4 h-4" />
+                             </Button>
                            </div>
-                           <div className="w-24">
-                             <Input
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               placeholder="السعر"
-                               value={addon.price || 0}
-                               onChange={(e) => {
-                                 const updated = [...(step1Data.addons || [])];
-                                 updated[idx] = {...updated[idx], price: parseFloat(e.target.value) || 0};
-                                 setStep1Data(prev => prev ? {...prev, addons: updated} : null);
+                           <div className="text-xs text-gray-400">صورة الإضافة (اختياري)</div>
+                           <div className="flex gap-2 items-center">
+                             <div 
+                               className="w-16 h-16 border border-dashed border-primary/30 rounded cursor-pointer hover:border-primary/60 flex items-center justify-center flex-shrink-0 bg-[#1a1410]"
+                               onClick={() => {
+                                 const input = document.createElement('input');
+                                 input.type = 'file';
+                                 input.accept = 'image/*';
+                                 input.onchange = async (e) => {
+                                   const file = (e.target as HTMLInputElement).files?.[0];
+                                   if (file) {
+                                     try {
+                                       const formData = new FormData();
+                                       formData.append('image', file);
+                                       const response = await fetch('/api/upload-addon-image', {
+                                         method: 'POST',
+                                         body: formData,
+                                         credentials: 'include'
+                                       });
+                                       const data = await response.json();
+                                       if (data.url) {
+                                         const updated = [...(step1Data.addons || [])];
+                                         updated[idx] = {...updated[idx], imageUrl: data.url};
+                                         setStep1Data(prev => prev ? {...prev, addons: updated} : null);
+                                       }
+                                     } catch (err) {
+                                       console.error('Error uploading addon image:', err);
+                                     }
+                                   }
+                                 };
+                                 input.click();
                                }}
-                               className="bg-[#2d1f1a] border-primary/30 text-white text-sm text-center"
-                             />
+                             >
+                               {addon.imageUrl ? (
+                                 <img src={addon.imageUrl} alt={addon.nameAr} className="w-full h-full object-cover rounded" />
+                               ) : (
+                                 <Upload className="w-4 h-4 text-accent/50" />
+                               )}
+                             </div>
+                             {addon.imageUrl && (
+                               <Button
+                                 type="button"
+                                 size="sm"
+                                 variant="ghost"
+                                 onClick={() => {
+                                   const updated = [...(step1Data.addons || [])];
+                                   updated[idx] = {...updated[idx], imageUrl: undefined};
+                                   setStep1Data(prev => prev ? {...prev, addons: updated} : null);
+                                 }}
+                                 className="text-red-400 hover:text-red-300"
+                               >
+                                 <X className="w-4 h-4" />
+                               </Button>
+                             )}
                            </div>
-                           <Button
-                             type="button"
-                             size="sm"
-                             variant="ghost"
-                             onClick={() => {
-                               const updated = step1Data.addons?.filter((_, i) => i !== idx) || [];
-                               setStep1Data(prev => prev ? {...prev, addons: updated} : null);
-                             }}
-                             className="text-red-400 hover:text-red-300"
-                           >
-                             <X className="w-4 h-4" />
-                           </Button>
                          </div>
                        ))}
                      </div>

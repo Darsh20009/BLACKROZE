@@ -249,6 +249,17 @@ export default function MenuView() {
  {categoryTitles[currentItem.category] || currentItem.category}
  </span>
  </div>
+                <Button
+                  onClick={() => {
+                    setSelectedItemForCart(currentItem);
+                    setIsModalOpen(true);
+                  }}
+                  className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 py-4 text-lg rounded-2xl shadow-lg"
+                  data-testid="button-add-to-cart"
+                >
+                  <ShoppingCart className="w-5 h-5 ml-2" />
+                  إضافة إلى السلة
+                </Button>
  </div>
  </div>
  </div>
