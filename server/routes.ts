@@ -2199,6 +2199,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedData = insertCoffeeItemSchema.parse(bodyData);
 
+      // CRITICAL: Always ensure tenantId is the computed one, not from request body
+      (validatedData as any).tenantId = tenantId;
+
       // If adopting from another item, get the original
       if (adoptFromItemId) {
         const originalItem = await storage.getCoffeeItem(adoptFromItemId);
