@@ -550,10 +550,19 @@ export default function POSSystem() {
     try {
       const items = Array.isArray(coffeeItems) ? coffeeItems : [];
       const cats = Array.from(new Set(items.map((item: any) => item?.categoryAr || item?.category || "أخرى")));
-      return ["all", ...cats];
+      const categoryObjects = [
+        { id: "all", name: "الكل", icon: Coffee, color: "text-primary" },
+        ...cats.map(cat => ({ 
+          id: cat, 
+          name: cat, 
+          icon: Coffee, 
+          color: "text-primary" 
+        }))
+      ];
+      return categoryObjects;
     } catch (e) {
       console.error("Error computing categories:", e);
-      return ["all"];
+      return [{ id: "all", name: "الكل", icon: Coffee, color: "text-primary" }];
     }
   }, [coffeeItems]);
 
