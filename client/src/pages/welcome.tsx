@@ -9,6 +9,11 @@ export default function WelcomePage() {
   const [showWelcome, setShowWelcome] = useState(true);
 
   useEffect(() => {
+    // Set metadata for welcome page
+    document.title = "CLUNY CAFE | أفضل تجربة قهوة رقمية - اطلب قهوتك الآن";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'استمتع بأفضل قهوة محضرة بعناية فائقة من CLUNY CAFE - اطلب الآن واستمتع بتجربة قهوة استثنائية على cluny.ma3k.online');
+
     const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");
     if (hasSeenWelcome) {
       setShowWelcome(false);

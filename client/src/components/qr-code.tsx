@@ -25,7 +25,8 @@ export default function QRCodeComponent({
 
  const generateQRDataURL = (text: string) => {
  // Enhanced QR code with coffee theme colors
- return `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(text)}&bgcolor=FFFBEB&color=92400E&qzone=3&format=png&ecc=M`;
+ const finalUrl = text.includes('http') ? text : `https://cluny.ma3k.online${text}`;
+ return `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(finalUrl)}&bgcolor=FFFBEB&color=92400E&qzone=3&format=png&ecc=M`;
  };
 
  return (

@@ -8,6 +8,11 @@ export default function EmployeeSplash() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Set metadata for employee splash
+    document.title = "نظام الموظفين - CLUNY CAFE | نظام إدارة متكامل";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'نظام إدارة الموظفين والعمليات في كافيه CLUNY - نظام متكامل لإدارة الطلبات والمبيعات');
+
     const timer = setTimeout(() => {
       setIsLoading(false);
       setTimeout(() => setLocation("/employee/gateway"), 600);

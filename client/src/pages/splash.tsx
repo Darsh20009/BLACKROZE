@@ -5,6 +5,13 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import clunyLogo from "@/assets/cluny-logo.png";
 
+// Set page metadata
+if (typeof document !== 'undefined') {
+  document.title = "CLUNY CAFE | أفضل تجربة قهوة رقمية";
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  if (ogTitle) ogTitle.setAttribute('content', 'CLUNY CAFE | أفضل تجربة قهوة رقمية');
+}
+
 export default function SplashScreen() {
  const [, setLocation] = useLocation();
  const [showLogo, setShowLogo] = useState(false);

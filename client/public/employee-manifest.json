@@ -1,8 +1,8 @@
 {
-  "name": "CLUNY SYSTEMS - نظام إدارة الموظفين",
+  "name": "CLUNY SYSTEMS - نظام إدارة CLUNY CAFE",
   "short_name": "CLUNY SYSTEMS",
-  "description": "نظام إدارة الموظفين والعمليات في CLUNY CAFE",
-  "start_url": "/employee",
+  "description": "نظام إدارة الموظفين والعمليات والطلبات في كافيه CLUNY - نظام متكامل لإدارة العمليات",
+  "start_url": "https://cluny.ma3k.online/employee",
   "display": "standalone",
   "background_color": "#F7F8F8",
   "theme_color": "#9FB2B3",

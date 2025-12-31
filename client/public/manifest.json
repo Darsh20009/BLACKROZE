@@ -1,8 +1,8 @@
 {
-  "name": "CLUNY CAFE - كافيه كلوني",
+  "name": "CLUNY CAFE - كافيه كلوني | أفضل تجربة قهوة رقمية",
   "short_name": "CLUNY",
-  "description": "تجربة قهوة فاخرة وأصيلة - اطلب قهوتك المفضلة مع CLUNY CAFE",
-  "start_url": "/",
+  "description": "استمتع بأفضل قهوة محضرة بعناية فائقة من CLUNY CAFE - اطلب الآن واستمتع بتجربة قهوة استثنائية",
+  "start_url": "https://cluny.ma3k.online/",
   "display": "standalone",
   "background_color": "#F7F8F8",
   "theme_color": "#9FB2B3",
