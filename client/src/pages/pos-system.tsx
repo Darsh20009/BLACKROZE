@@ -182,7 +182,6 @@ export default function POSSystem() {
   
   const [posConnected, setPosConnected] = useState(false);
   const [cashDrawerOpen, setCashDrawerOpen] = useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number>(() => {
     const saved = localStorage.getItem('lastSyncTime');
@@ -304,14 +303,71 @@ export default function POSSystem() {
     }
   }, [setLocation]);
 
+  const syncOfflineOrders = useCallback(async () => {
+    if (offlineOrders.length === 0 || syncingOffline) return;
+    
+    setSyncingOffline(true);
+    
+    try {
+      const sessionVerify = await fetch('/api/verify-session', { credentials: 'include' });
+      if (!sessionVerify.ok) {
+        toast({ 
+          title: "يرجى تسجيل الدخول", 
+          description: "سيتم مزامنة الطلبات بعد تسجيل الدخول", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      const syncedOrders: string[] = [];
+      const failedOrders: typeof offlineOrders = [];
+      
+      for (const order of offlineOrders) {
+        try {
+          const response = await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify(order),
+          });
+          
+          if (response.ok) {
+            syncedOrders.push(order.offlineId);
+          } else {
+            failedOrders.push(order);
+          }
+        } catch (error) {
+          console.error("Failed to sync order:", error);
+          failedOrders.push(order);
+        }
+      }
+      
+      if (failedOrders.length > 0) {
+        setOfflineOrders(failedOrders);
+        localStorage.setItem("offlineOrders", JSON.stringify(failedOrders));
+        toast({ 
+          title: "مزامنة جزئية", 
+          description: `تم رفع ${syncedOrders.length} طلب، ${failedOrders.length} طلب فشل`, 
+          variant: "destructive" 
+        });
+      } else {
+        setOfflineOrders([]);
+        localStorage.removeItem("offlineOrders");
+        toast({ title: "تمت المزامنة", description: `تم رفع ${syncedOrders.length} طلب محفوظ`, className: "bg-green-600 text-white" });
+      }
+    } finally {
+      setSyncingOffline(false);
+    }
+  }, [offlineOrders, syncingOffline, toast]);
+
   useEffect(() => {
     const handleOnline = () => {
-      setIsOffline(false);
+      setIsOnline(true);
       toast({ title: "تم استعادة الاتصال", description: "جاري مزامنة الطلبات المحفوظة...", className: "bg-green-600 text-white" });
       syncOfflineOrders();
     };
     const handleOffline = () => {
-      setIsOffline(true);
+      setIsOnline(false);
       toast({ title: "انقطع الاتصال", description: "النظام يعمل في وضع عدم الاتصال", variant: "destructive" });
     };
     
@@ -322,7 +378,7 @@ export default function POSSystem() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [toast]);
+  }, [toast, syncOfflineOrders]);
 
   useEffect(() => {
     const checkPosConnection = async () => {
@@ -396,70 +452,14 @@ export default function POSSystem() {
 
   const coffeeItems = useMemo(() => {
     try {
-      const items = isOffline ? (offlineProducts || []) : (productsData || []);
+      const items = !isOnline ? (offlineProducts || []) : (productsData || []);
       return Array.isArray(items) ? items : [];
     } catch (e) {
       console.error("Error computing coffeeItems:", e);
       return [];
     }
-  }, [productsData, offlineProducts, isOffline]);
+  }, [productsData, offlineProducts, isOnline]);
 
-  const syncOfflineOrders = async () => {
-    if (offlineOrders.length === 0 || syncingOffline) return;
-    
-    setSyncingOffline(true);
-    
-    try {
-      const sessionVerify = await fetch('/api/verify-session', { credentials: 'include' });
-      if (!sessionVerify.ok) {
-        toast({ 
-          title: "يرجى تسجيل الدخول", 
-          description: "سيتم مزامنة الطلبات بعد تسجيل الدخول", 
-          variant: "destructive" 
-        });
-        return;
-      }
-      
-      const syncedOrders: string[] = [];
-      const failedOrders: typeof offlineOrders = [];
-      
-      for (const order of offlineOrders) {
-        try {
-          const response = await fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: 'include',
-            body: JSON.stringify(order),
-          });
-          
-          if (response.ok) {
-            syncedOrders.push(order.offlineId);
-          } else {
-            failedOrders.push(order);
-          }
-        } catch (error) {
-          console.error("Failed to sync order:", error);
-          failedOrders.push(order);
-        }
-      }
-      
-      if (failedOrders.length > 0) {
-        setOfflineOrders(failedOrders);
-        localStorage.setItem("offlineOrders", JSON.stringify(failedOrders));
-        toast({ 
-          title: "مزامنة جزئية", 
-          description: `تم رفع ${syncedOrders.length} طلب، ${failedOrders.length} طلب فشل`, 
-          variant: "destructive" 
-        });
-      } else {
-        setOfflineOrders([]);
-        localStorage.removeItem("offlineOrders");
-        toast({ title: "تمت المزامنة", description: `تم رفع ${syncedOrders.length} طلب محفوظ`, className: "bg-green-600 text-white" });
-      }
-    } finally {
-      setSyncingOffline(false);
-    }
-  };
 
   const checkCustomer = useCallback(async (phone: string) => {
     if (phone.length === 9 && phone.startsWith('5')) {
@@ -1148,7 +1148,7 @@ export default function POSSystem() {
                   </Badge>
                 )}
                 
-                {offlineOrders.length > 0 && !isOffline && (
+                {offlineOrders.length > 0 && isOnline && (
                   <Button 
                     variant="outline" 
                     size="sm" 
