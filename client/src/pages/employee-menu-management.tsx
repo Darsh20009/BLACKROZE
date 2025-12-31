@@ -795,7 +795,22 @@ export default function EmployeeMenuManagement() {
  {employee?.role === "manager" && (
  <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
   setIsAddDialogOpen(open);
-  if (!open) {
+  if (open) {
+    // Initialize step1Data when opening the dialog
+    setStep1Data({
+      nameAr: '',
+      nameEn: '',
+      description: '',
+      category: 'hot',
+      price: 0,
+      oldPrice: 0,
+      coffeeStrength: 'classic',
+      availableSizes: [],
+      addons: [],
+      isGiftable: false
+    });
+    setAddStep(1);
+  } else {
     setAddStep(1);
     setStep1Data(null);
     setSelectedIngredients([]);
@@ -891,7 +906,10 @@ export default function EmployeeMenuManagement() {
                        <Switch 
                          id="isGiftable" 
                          checked={step1Data?.isGiftable || false}
-                         onCheckedChange={(checked) => setStep1Data(prev => prev ? {...prev, isGiftable: checked} : null)}
+                         onCheckedChange={(checked) => setStep1Data(prev => ({
+                           ...(prev || {}),
+                           isGiftable: checked
+                         }))}
                        />
                        <Label htmlFor="isGiftable" className="text-gray-300">قابل للإهداء</Label>
                      </div>
@@ -903,7 +921,10 @@ export default function EmployeeMenuManagement() {
                        type="button"
                        size="sm"
                        variant="outline"
-                       onClick={() => setStep1Data(prev => prev ? {...prev, availableSizes: [...(prev.availableSizes || []), {nameAr: '', nameEn: '', price: 0}]} : null)}
+                       onClick={() => setStep1Data(prev => ({
+                         ...(prev || {}),
+                         availableSizes: [...(prev?.availableSizes || []), {nameAr: '', nameEn: '', price: 0}]
+                       }))}
                        className="border-primary/50 text-accent text-xs"
                      >
                        <Plus className="w-3 h-3 ml-1" />
@@ -966,7 +987,10 @@ export default function EmployeeMenuManagement() {
                        type="button"
                        size="sm"
                        variant="outline"
-                       onClick={() => setStep1Data(prev => prev ? {...prev, addons: [...(prev.addons || []), {nameAr: '', nameEn: '', price: 0}]} : null)}
+                       onClick={() => setStep1Data(prev => ({
+                         ...(prev || {}),
+                         addons: [...(prev?.addons || []), {nameAr: '', nameEn: '', price: 0}]
+                       }))}
                        className="border-primary/50 text-accent text-xs"
                      >
                        <Plus className="w-3 h-3 ml-1" />
