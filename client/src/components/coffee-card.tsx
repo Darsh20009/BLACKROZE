@@ -57,7 +57,14 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
             className="w-full h-40 sm:h-48 md:h-52 object-cover transition-all duration-700 group-hover:scale-110 brightness-95 group-hover:brightness-105"
             loading="lazy"
             onError={(e) => {
-              e.currentTarget.src = "/images/default-coffee.png";
+              const target = e.currentTarget as HTMLImageElement;
+              if (target.src.includes('attached_assets')) {
+                // If it was an uploaded image that failed, try the placeholder system
+                target.src = getCoffeeImage(item.id);
+              } else {
+                // Final fallback
+                target.src = "/logo.png";
+              }
             }}
             data-testid={`img-coffee-${item.id}`}
           />
