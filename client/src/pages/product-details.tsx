@@ -286,9 +286,9 @@ export default function ProductDetails() {
             )}
 
             {/* Sizes Section */}
-            {item.availableSizes && item.availableSizes.length > 0 && (
-              <div className="space-y-3" data-testid="section-sizes">
-                <h3 className="text-lg font-semibold text-foreground">الحجم</h3>
+            <div className="space-y-3" data-testid="section-sizes">
+              <h3 className="text-lg font-semibold text-foreground">الحجم</h3>
+              {item.availableSizes && item.availableSizes.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3">
                   {item.availableSizes.map((size, index) => (
                     <Button
@@ -306,14 +306,16 @@ export default function ProductDetails() {
                     </Button>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground">حجم واحد متاح</p>
+              )}
+            </div>
 
             {/* Add-ons Section */}
-            {Object.keys(addonsByCategory).length > 0 && (
-              <div className="space-y-4" data-testid="section-addons">
-                <h3 className="text-lg font-semibold text-foreground">الإضافات</h3>
-                {Object.entries(addonsByCategory).map(([category, addons]: [string, any]) => (
+            <div className="space-y-4" data-testid="section-addons">
+              <h3 className="text-lg font-semibold text-foreground">الإضافات</h3>
+              {Object.keys(addonsByCategory).length > 0 ? (
+                Object.entries(addonsByCategory).map(([category, addons]: [string, any]) => (
                   <div key={category} className="space-y-2">
                     <p className="text-sm font-medium text-muted-foreground">{category}</p>
                     <div className="space-y-2">
@@ -350,9 +352,11 @@ export default function ProductDetails() {
                       ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">لا توجد إضافات متاحة</p>
+              )}
+            </div>
 
             {/* Price */}
             <div className="space-y-2" data-testid="section-pricing">
