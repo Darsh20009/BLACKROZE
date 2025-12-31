@@ -2262,6 +2262,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const item = await storage.createCoffeeItem(validatedData);
       
+      // Save addons if provided
+      if (req.body.addons && Array.isArray(req.body.addons) && req.body.addons.length > 0) {
+        for (const addon of req.body.addons) {
+          if (addon.nameAr && !addon.id) {
+            addon.id = nanoid();
+          }
+          try {
+            // Save addon to ProductAddon
+            await ProductAddonModel.findOneAndUpdate(
+              { id: addon.id },
+              { $set: { id: addon.id, ...addon, category: addon.category || 'other', createdAt: new Date() } },
+              { upsert: true, new: true }
+            );
+            // Link addon to coffee item
+            await CoffeeItemAddonModel.findOneAndUpdate(
+              { coffeeItemId: item.id, addonId: addon.id },
+              { $set: { coffeeItemId: item.id, addonId: addon.id, isDefault: 0, minQuantity: 0, maxQuantity: 10, createdAt: new Date() } },
+              { upsert: true }
+            );
+          } catch (err) {
+            console.error("Error saving addon:", err);
+          }
+        }
+      }
+      
       console.log(`[CREATE COFFEE ITEM] Created item:`, {
         id: item.id,
         nameAr: item.nameAr,

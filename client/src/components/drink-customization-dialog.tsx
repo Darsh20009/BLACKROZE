@@ -81,11 +81,30 @@ export default function DrinkCustomizationDialog({
 
   const { data: allAddons = [], isLoading: loadingAddons } = useQuery<ProductAddon[]>({
     queryKey: ["/api/product-addons"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/product-addons");
+        if (!res.ok) return [];
+        return res.json();
+      } catch {
+        return [];
+      }
+    }
   });
 
   const { data: coffeeAddons = [], isLoading: loadingCoffeeAddons } = useQuery<CoffeeItemAddon[]>({
     queryKey: ["/api/coffee-items", coffeeItem?.id, "addons"],
     enabled: !!coffeeItem?.id,
+    queryFn: async () => {
+      if (!coffeeItem?.id) return [];
+      try {
+        const res = await fetch(`/api/coffee-items/${coffeeItem.id}/addons`);
+        if (!res.ok) return [];
+        return res.json();
+      } catch {
+        return [];
+      }
+    }
   });
 
   useEffect(() => {
