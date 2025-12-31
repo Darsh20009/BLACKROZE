@@ -282,19 +282,19 @@ function AppContent() {
 }
 
 function App() {
- return (
- <div className="dark">
- <QueryClientProvider client={queryClient}>
- <TooltipProvider>
- <CustomerProvider>
- <CartProvider>
- <AppContent />
- </CartProvider>
- </CustomerProvider>
- </TooltipProvider>
- </QueryClientProvider>
- </div>
- );
+  return (
+    <div className="dark min-h-screen bg-background text-foreground font-ibm-arabic antialiased" dir="rtl">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <CustomerProvider>
+            <CartProvider>
+              <AppContent />
+            </CartProvider>
+          </CustomerProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </div>
+  );
 }
 
 export default App;
