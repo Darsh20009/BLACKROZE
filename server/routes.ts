@@ -2260,11 +2260,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.id = nanoid();
       }
 
-      const item = await storage.createCoffeeItem(validatedData);
+      // Create coffee item using MongoDB directly to ensure all fields including imageUrl, availableSizes, and addons are saved
+      const newCoffeeItem = new CoffeeItemModel({
+        id: validatedData.id,
+        tenantId: tenantId,
+        nameAr: validatedData.nameAr,
+        nameEn: validatedData.nameEn,
+        description: validatedData.description,
+        price: validatedData.price,
+        oldPrice: validatedData.oldPrice,
+        category: validatedData.category,
+        imageUrl: validatedData.imageUrl,
+        isAvailable: validatedData.isAvailable ?? 1,
+        availabilityStatus: validatedData.availabilityStatus || 'available',
+        coffeeStrength: validatedData.coffeeStrength,
+        isNewProduct: validatedData.isNewProduct,
+        publishedBranches: validatedData.publishedBranches || [branchId],
+        createdByEmployeeId: validatedData.createdByEmployeeId,
+        createdByBranchId: validatedData.createdByBranchId,
+        availableSizes: validatedData.availableSizes || [],
+        isGiftable: (validatedData as any).isGiftable || false,
+      });
       
-      // Save addons if provided
-      if (req.body.addons && Array.isArray(req.body.addons) && req.body.addons.length > 0) {
-        for (const addon of req.body.addons) {
+      const item = await newCoffeeItem.save();
+      const itemData = item.toObject ? item.toObject() : item;
+      
+      // Save addons if provided - they're already in availableSizes, but also link them for backward compatibility
+      if ((validatedData as any).addons && Array.isArray((validatedData as any).addons) && (validatedData as any).addons.length > 0) {
+        for (const addon of (validatedData as any).addons) {
           if (addon.nameAr && !addon.id) {
             addon.id = nanoid();
           }
@@ -2277,8 +2300,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             // Link addon to coffee item
             await CoffeeItemAddonModel.findOneAndUpdate(
-              { coffeeItemId: item.id, addonId: addon.id },
-              { $set: { coffeeItemId: item.id, addonId: addon.id, isDefault: 0, minQuantity: 0, maxQuantity: 10, createdAt: new Date() } },
+              { coffeeItemId: itemData.id, addonId: addon.id },
+              { $set: { coffeeItemId: itemData.id, addonId: addon.id, isDefault: 0, minQuantity: 0, maxQuantity: 10, createdAt: new Date() } },
               { upsert: true }
             );
           } catch (err) {
@@ -2288,14 +2311,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`[CREATE COFFEE ITEM] Created item:`, {
-        id: item.id,
-        nameAr: item.nameAr,
-        tenantId: item.tenantId,
+        id: itemData.id,
+        nameAr: itemData.nameAr,
+        tenantId: itemData.tenantId,
+        imageUrl: itemData.imageUrl,
+        availableSizes: itemData.availableSizes?.length || 0,
         branchId,
-        publishedBranches: item.publishedBranches
+        publishedBranches: itemData.publishedBranches
       });
 
-      res.status(201).json(item);
+      res.status(201).json(itemData);
     } catch (error) {
       console.error("[CREATE COFFEE ITEM] Error:", error);
       if (error instanceof Error && 'issues' in error) {

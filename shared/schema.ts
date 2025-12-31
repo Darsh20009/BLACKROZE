@@ -1678,6 +1678,23 @@ export const insertCoffeeItemSchema = z.object({
   createdByEmployeeId: z.string().optional(),
   createdByBranchId: z.string().optional(),
   publishedBranches: z.array(z.string()).optional(),
+  availableSizes: z.array(z.object({
+    nameAr: z.string(),
+    nameEn: z.string().optional(),
+    price: z.number(),
+    sizeML: z.number().optional(),
+    sku: z.string().optional(),
+    imageUrl: z.string().optional(),
+  })).optional(),
+  addons: z.array(z.object({
+    id: z.string().optional(),
+    nameAr: z.string(),
+    nameEn: z.string().optional(),
+    price: z.number(),
+    category: z.string().optional(),
+    imageUrl: z.string().optional(),
+  })).optional(),
+  isGiftable: z.boolean().optional(),
 });
 
 export const insertEmployeeSchema = z.object({
