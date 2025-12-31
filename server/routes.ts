@@ -1999,7 +1999,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const requestedBranchId = (req.query.branchId as string);
           const isEmployee = !!req.session?.employee;
-          const tenantId = req.session?.employee?.tenantId || req.query.tenantId || 'demo-tenant';
+          
+          let tenantId = req.session?.employee?.tenantId || req.query.tenantId;
+          
+          // For customers: look up tenant from branch if not in session
+          if (!tenantId && requestedBranchId) {
+            const branch = await BranchModel.findById(requestedBranchId).lean();
+            if (branch && (branch as any).tenantId) {
+              tenantId = (branch as any).tenantId;
+            }
+          }
+          
+          // Fallback to demo-tenant if still no tenant found
+          tenantId = tenantId || 'demo-tenant';
           
           // Fetch all items for this tenant, with fallback to items without tenantId (legacy items)
           let items = await CoffeeItemModel.find({ 

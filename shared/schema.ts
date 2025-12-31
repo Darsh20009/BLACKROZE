@@ -572,6 +572,7 @@ export const DeliveryIntegrationModel = mongoose.model<IDeliveryIntegration>("De
 
 export interface IBranch extends Document {
   id: string;
+  tenantId: string;
   cafeId: string;
   nameAr: string;
   nameEn?: string;
@@ -598,6 +599,7 @@ export interface IBranch extends Document {
 
 const BranchSchema = new Schema<IBranch>({
   id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
   cafeId: { type: String, required: true },
   nameAr: { type: String, required: true },
   nameEn: { type: String },
