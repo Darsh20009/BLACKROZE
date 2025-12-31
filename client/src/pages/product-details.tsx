@@ -211,7 +211,7 @@ export default function ProductDetails() {
             ) : null}
             <div
               data-testid="image-placeholder"
-              className={`w-full h-96 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 ${item.imageUrl ? 'hidden' : ''}`}
+              className={`w-full h-96 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 ${item.imageUrl && item.imageUrl !== "" ? 'hidden' : ''}`}
             >
               <Coffee className="w-20 h-20 text-primary/40" />
               <p className="text-lg font-medium text-muted-foreground">صورة المشروب</p>
