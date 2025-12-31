@@ -342,16 +342,23 @@ export default function POSSystem() {
 
   const { data: productsData, isLoading } = useQuery<any[]>({
     queryKey: ["/api/coffee-items"],
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
-    gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    staleTime: 1000 * 60 * 5, // 5 minutes instead of 24h for development
+    gcTime: 1000 * 60 * 10,
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/coffee-items");
       const data = await res.json();
+      console.log("POS: Fetched products:", data);
       if (data && Array.isArray(data)) {
         await db.products.clear();
         await db.products.bulkAdd(data.map((item: any) => ({
-          ...item,
-          price: Number(item.price)
+          id: item.id || item._id,
+          nameAr: item.nameAr,
+          price: Number(item.price),
+          category: item.category,
+          imageUrl: item.imageUrl,
+          isAvailable: item.isAvailable,
+          tenantId: item.tenantId,
+          updatedAt: Date.now()
         })));
       }
       return data;
