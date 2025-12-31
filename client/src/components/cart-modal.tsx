@@ -17,7 +17,7 @@ export default function CartModal() {
 
   const handleCheckout = () => {
     hideCart();
-    showCheckout();
+    window.location.href = "/delivery";
   };
 
   const renderPrice = (price: any) => {

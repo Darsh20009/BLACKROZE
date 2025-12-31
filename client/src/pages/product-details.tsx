@@ -95,6 +95,10 @@ export default function ProductDetails() {
   const handleAddToCart = () => {
     if (item) {
       addToCart(item.id, quantity, selectedSize, selectedAddons);
+      toast({
+        title: "تمت الإضافة للسلة",
+        description: `تم إضافة ${item.nameAr} بنجاح`,
+      });
       setLocation("/menu");
     }
   };

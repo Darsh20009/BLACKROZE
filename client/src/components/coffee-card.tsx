@@ -25,9 +25,15 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    // Always go to details if there are sizes OR add-ons, or if it's a specialty drink
-    // This ensures the "pop-up" logic (details page) is always shown for customization
-    handleViewDetails();
+    // If it's a basic product with no sizes, add to cart directly
+    // Otherwise, go to details page for customization
+    if (!hasSizes) {
+      addToCart(item.id, 1);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 2000);
+    } else {
+      handleViewDetails();
+    }
   };
 
   const handleViewDetails = () => {
