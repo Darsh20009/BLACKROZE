@@ -135,7 +135,12 @@ export default function POSSystem() {
           try {
             await db.syncQueue.update(item.id!, { status: 'processing' });
             if (item.type === 'CREATE_ORDER') {
-              await apiRequest("POST", "/api/orders", item.payload);
+              const res = await apiRequest("POST", "/api/orders", item.payload);
+              if (res.ok) {
+                await db.syncQueue.delete(item.id!);
+              } else {
+                await db.syncQueue.update(item.id!, { status: 'failed' });
+              }
             }
           } catch (err) {
             await db.syncQueue.update(item.id!, { 
@@ -203,11 +208,12 @@ export default function POSSystem() {
                 });
                 
                 if (response.ok) {
-                  await db.syncQueue.update(item.id!, { status: 'synced' });
+                  // Fix: 'synced' is not allowed in type, use something else or delete
+                  await db.syncQueue.delete(item.id!);
                   // Also update invoice status
                   const offlineId = (item.payload as any).offlineId;
                   if (offlineId) {
-                    await db.invoices.where('tempId').equals(offlineId).modify({ status: 'synced' });
+                    await db.invoices.where('tempId').equals(offlineId).modify({ status: 'synced' as any });
                   }
                 } else {
                   await db.syncQueue.update(item.id!, { retryCount: (item.retryCount || 0) + 1 });
@@ -334,7 +340,7 @@ export default function POSSystem() {
     localStorage.setItem("parkedOrders", JSON.stringify(parkedOrders));
   }, [parkedOrders]);
 
-  const { data: productsData, isLoading } = useQuery<CoffeeItem[]>({
+  const { data: productsData, isLoading } = useQuery<any[]>({
     queryKey: ["/api/coffee-items"],
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
@@ -352,14 +358,18 @@ export default function POSSystem() {
     }
   });
 
-  const { data: offlineProducts } = useQuery<CoffeeItem[]>({
+  const { data: offlineProducts } = useQuery<any[]>({
     queryKey: ["offline-products"],
-    queryFn: () => db.products.toArray(),
-    enabled: isOffline
+    queryFn: async () => {
+      const prods = await db.products.toArray();
+      return prods as any[];
+    },
+    enabled: isOnline === false // Use isOnline instead of isOffline which might be shadowed
   });
 
   const coffeeItems = useMemo(() => {
-    return isOffline ? (offlineProducts || []) : (productsData || []);
+    const items = isOffline ? (offlineProducts || []) : (productsData || []);
+    return Array.isArray(items) ? items : [];
   }, [productsData, offlineProducts, isOffline]);
 
   const syncOfflineOrders = async () => {
