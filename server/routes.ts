@@ -4971,7 +4971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Table not found" });
       }
 
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const baseUrl = `https://cluny.ma3k.online`;
       const tableUrl = `${baseUrl}/table-menu/${table.qrToken}`;
       
       // Get branch info for QR card

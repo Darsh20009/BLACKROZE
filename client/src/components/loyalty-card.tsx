@@ -25,9 +25,10 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
   useEffect(() => {
     if (qrCanvasRef.current && card.qrToken) {
       const qrSize = compact ? 100 : 160;
+      const cardUrl = `https://cluny.ma3k.online/loyalty-verify?token=${card.qrToken}`;
       QRCode.toCanvas(
         qrCanvasRef.current,
-        card.qrToken,
+        cardUrl,
         {
           width: qrSize,
           margin: 1,
@@ -42,7 +43,7 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
         }
       );
 
-      QRCode.toDataURL(card.qrToken, {
+      QRCode.toDataURL(cardUrl, {
         width: 400,
         margin: 2,
         errorCorrectionLevel: 'H',
