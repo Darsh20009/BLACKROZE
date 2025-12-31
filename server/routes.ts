@@ -164,8 +164,7 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
     const result = await storage.deductInventoryForOrder(
       orderId,
       branchId,
-      orderItems,
-      employeeId
+      orderItems
     );
 
     // Log warnings if any
@@ -377,7 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/warehouses", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
     const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
-    const warehouse = await WarehouseModel.create({ ...req.body, tenantId, id: nanoid() });
+    const warehouse = await WarehouseModel.create({ ...req.body, tenantId });
     res.json(serializeDoc(warehouse));
   });
 
@@ -866,7 +865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...bodyData,
         permissions: bodyData.permissions || [],
         allowedPages: bodyData.allowedPages || [],
-        tenantId,
+        tenantId: tenantId as any,
         id: nanoid(),
         isActivated: bodyData.password ? 1 : 0,
         createdAt: new Date(),
@@ -1083,7 +1082,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/discount-codes/employee/:employeeId", async (req, res) => {
     try {
       const { employeeId } = req.params;
-      const codes = await storage.getDiscountCodesByEmployee(employeeId);
+      // Using standard discount code lookup if specific method missing
+      const { DiscountCodeModel } = await import("@shared/schema");
+      const codes = await DiscountCodeModel.find({ employeeId }).lean();
       res.json(codes);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch discount codes" });
