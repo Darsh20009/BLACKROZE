@@ -846,7 +846,9 @@ export class DBStorage implements IStorage {
   async getCoffeeItems(): Promise<CoffeeItem[]> {
     const items = await CoffeeItemModel.find().lean();
     return (items as any[]).map(i => {
-      const doc = { ...i, id: i.id || (i as any)._id?.toString() };
+      // Use the custom id field if it exists, otherwise fall back to MongoDB _id
+      const id = (i as any).id || (i as any)._id?.toString();
+      const doc = { ...i, id };
       delete (doc as any)._id;
       delete (doc as any).__v;
       return doc as any as CoffeeItem;
@@ -854,9 +856,22 @@ export class DBStorage implements IStorage {
   }
 
   async getCoffeeItem(id: string): Promise<CoffeeItem | undefined> {
-    const item = await CoffeeItemModel.findOne({ id }).lean();
+    // Try finding by custom id first, then by MongoDB _id
+    let item = await CoffeeItemModel.findOne({ id }).lean();
+    if (!item) {
+      // Fallback to MongoDB _id if it looks like an ObjectId
+      try {
+        const { default: mongoose } = await import('mongoose');
+        if (mongoose.Types.ObjectId.isValid(id)) {
+          item = await CoffeeItemModel.findById(id).lean();
+        }
+      } catch (e) {
+        // Ignore and return undefined
+      }
+    }
     if (!item) return undefined;
-    const doc = { ...item, id: item.id || (item as any)._id?.toString() };
+    const finalId = (item as any).id || (item as any)._id?.toString();
+    const doc = { ...item, id: finalId };
     delete (doc as any)._id;
     delete (doc as any).__v;
     return doc as any as CoffeeItem;
@@ -865,7 +880,8 @@ export class DBStorage implements IStorage {
   async getCoffeeItemsByCategory(category: string): Promise<CoffeeItem[]> {
     const items = await CoffeeItemModel.find({ category }).lean();
     return (items as any[]).map(i => {
-      const doc = { ...i, id: i.id || (i as any)._id?.toString() };
+      const finalId = (i as any).id || (i as any)._id?.toString();
+      const doc = { ...i, id: finalId };
       delete (doc as any)._id;
       delete (doc as any).__v;
       return doc as any as CoffeeItem;
@@ -875,23 +891,49 @@ export class DBStorage implements IStorage {
   async createCoffeeItem(item: InsertCoffeeItem): Promise<CoffeeItem> {
     const newItem = await CoffeeItemModel.create(item);
     const doc = newItem.toObject();
-    doc.id = (newItem._id as any).toString();
+    // Preserve the custom id field from the input item
+    if (!doc.id && (newItem as any)._id) {
+      doc.id = (newItem._id as any).toString();
+    }
     delete (doc as any)._id;
     delete (doc as any).__v;
     return doc as CoffeeItem;
   }
 
   async updateCoffeeItem(id: string, updates: Partial<CoffeeItem>): Promise<CoffeeItem | undefined> {
-    const updated = await CoffeeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean() as any;
+    let updated = await CoffeeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean() as any;
+    if (!updated) {
+      // Fallback to MongoDB _id
+      try {
+        const { default: mongoose } = await import('mongoose');
+        if (mongoose.Types.ObjectId.isValid(id)) {
+          updated = await CoffeeItemModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean() as any;
+        }
+      } catch (e) {
+        // Ignore
+      }
+    }
     if (!updated) return undefined;
-    const doc = { ...updated, id: updated.id || (updated as any)._id?.toString() };
+    const finalId = (updated as any).id || (updated as any)._id?.toString();
+    const doc = { ...updated, id: finalId };
     delete (doc as any)._id;
     delete (doc as any).__v;
     return doc as any as CoffeeItem;
   }
 
   async deleteCoffeeItem(id: string): Promise<boolean> {
-    const result = await CoffeeItemModel.deleteOne({ id });
+    let result = await CoffeeItemModel.deleteOne({ id });
+    if (result.deletedCount === 0) {
+      // Fallback to MongoDB _id
+      try {
+        const { default: mongoose } = await import('mongoose');
+        if (mongoose.Types.ObjectId.isValid(id)) {
+          result = await CoffeeItemModel.deleteOne({ _id: id });
+        }
+      } catch (e) {
+        // Ignore
+      }
+    }
     return result.deletedCount > 0;
   }
 
