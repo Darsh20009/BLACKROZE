@@ -426,6 +426,7 @@ export default function POSSystem() {
               imageUrl: item.imageUrl,
               isAvailable: item.isAvailable ?? 1,
               tenantId: item.tenantId,
+              availableSizes: item.availableSizes || [],
               updatedAt: Date.now()
             }));
             await db.products.bulkAdd(localProducts);

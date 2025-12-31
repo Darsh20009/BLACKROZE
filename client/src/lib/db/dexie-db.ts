@@ -8,6 +8,7 @@ export interface LocalProduct {
   imageUrl?: string;
   isAvailable: number;
   tenantId: string;
+  availableSizes?: Array<{ nameAr: string; nameEn?: string; price: number; sizeML?: number; sku?: string; imageUrl?: string }>;
   updatedAt: number;
 }
 
