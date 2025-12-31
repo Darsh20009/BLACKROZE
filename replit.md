@@ -21,7 +21,14 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - Iterative development approach.
 - Work in Fast mode with small, focused chunks.
 
-## Current Progress (December 30, 2025)
+## Current Progress (December 31, 2025)
+
+### 🚀 BUG FIXES - COMPLETED
+- ✅ Fixed drink creation silently failing - removed strict branchId requirement
+- ✅ Added fallback values for missing tenantId and branchId (demo-tenant, default-branch)
+- ✅ Fixed table status API - now correctly reflects database occupancy
+- ✅ Added proper logging for debugging drink and table operations
+- ✅ Emergency fallback for fetching all items when tenant-specific query fails
 
 ### 🚀 REBRANDING PHASE - Phase 1 Complete
 - ✅ Updated color system to Muted Sage palette
