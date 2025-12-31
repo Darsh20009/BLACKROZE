@@ -114,21 +114,27 @@ export default function ManagerEmployees() {
  const isAdminOrOwner = currentManager?.role === "admin" || currentManager?.role === "owner";
  const managerBranchId = currentManager?.branchId;
 
- const { data: employees = [], isLoading } = useQuery<Employee[]>({
- queryKey: ["/api/employees"],
- enabled: !!currentManager,
- select: (data: Employee[]) => {
- // Admin/Owner see all employees, managers see only their branch employees
- if (isAdminOrOwner) return data;
- return data.filter(emp => emp.branchId === managerBranchId);
- },
- });
+  const { data: employees, isLoading, isError, error } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
+    enabled: !!currentManager,
+    retry: 1
+  });
 
- // Get branches for admin to assign employees
- const { data: branches = [] } = useQuery<Branch[]>({
- queryKey: ["/api/branches"],
- enabled: !!currentManager && isAdminOrOwner,
- });
+  // Derived state for filtered employees
+  const displayEmployees = Array.isArray(employees) 
+    ? (isAdminOrOwner ? employees : employees.filter(emp => emp && emp.branchId === managerBranchId))
+    : [];
+
+  if (isError) {
+    console.error("Failed to fetch employees:", error);
+  }
+
+  // Get branches for admin to assign employees
+  const { data: branches = [] } = useQuery<Branch[]>({
+    queryKey: ["/api/branches"],
+    enabled: !!currentManager && isAdminOrOwner,
+    select: (data) => data || [],
+  });
 
  const createEmployeeMutation = useMutation({
  mutationFn: async (data: any) => {
@@ -630,30 +636,30 @@ export default function ManagerEmployees() {
  </p>
  </div>
 
- <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
- <Button
- type="button"
- variant="outline"
- onClick={() => {
- setIsAddDialogOpen(false);
- setImagePreview(null);
- setSelectedImage(null);
- setUploadedImageUrl(null);
- }}
- className="border-gray-600 text-gray-300 w-full sm:w-auto"
- data-testid="button-cancel-add"
- >
- إلغاء
- </Button>
- <Button
- type="submit"
- disabled={createEmployeeMutation.isPending}
- className="bg-gradient-to-r from-amber-500 to-amber-700 w-full sm:w-auto"
- data-testid="button-submit-add"
- >
- {createEmployeeMutation.isPending ? "جاري الإضافة..." : "إضافة الموظف"}
- </Button>
- </div>
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setIsAddDialogOpen(false);
+            setImagePreview(null);
+            setSelectedImage(null);
+            setUploadedImageUrl(null);
+          }}
+          className="border-gray-600 text-gray-300 w-full sm:w-auto hover-elevate"
+          data-testid="button-cancel-add"
+        >
+          إلغاء
+        </Button>
+        <Button
+          type="submit"
+          disabled={createEmployeeMutation.isPending}
+          className="bg-gradient-to-r from-amber-500 to-amber-700 w-full sm:w-auto hover-elevate active-elevate-2"
+          data-testid="button-submit-add"
+        >
+          {createEmployeeMutation.isPending ? "جاري الإضافة..." : "إضافة الموظف"}
+        </Button>
+      </div>
  </form>
  </DialogContent>
  </Dialog>
@@ -700,12 +706,12 @@ export default function ManagerEmployees() {
  <div className="flex items-center gap-2 text-gray-300">
  <User className="w-4 h-4 text-accent" />
  <span className="text-sm">{employee.jobTitle}</span>
- <Badge
- className={employee.isActivated ? "bg-green-500" : "bg-background0"}
- data-testid={`badge-status-${employee.id}`}
- >
- {employee.isActivated ? "مفعّل" : "غير مفعّل"}
- </Badge>
+            <Badge
+              className={employee.isActivated ? "bg-green-500" : "bg-gray-500"}
+              data-testid={`badge-status-${employee.id}`}
+            >
+              {employee.isActivated ? "مفعّل" : "غير مفعّل"}
+            </Badge>
  </div>
 
  <div className="flex items-center gap-2 text-gray-300">
