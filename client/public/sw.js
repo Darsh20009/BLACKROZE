@@ -1,92 +1,65 @@
-// Qahwa Cup Service Worker for PWA Support
-const CACHE_NAME = 'qahwa-cup-v2';
-const STATIC_ASSETS = [
+const CACHE_VERSION = 'v1';
+const CACHE_NAME = `cluny-cache-${CACHE_VERSION}`;
+
+const urlsToCache = [
   '/',
+  '/index.html',
   '/manifest.json',
   '/employee-manifest.json',
-  '/app-icon.png',
-  '/employee-icon.png',
-  '/browserconfig.xml'
+  '/logo.png',
+  '/employee-logo.png',
+  '/favicon.ico',
+  '/favicon.png'
 ];
 
-// Install event - cache static assets
-self.addEventListener('install', (event) => {
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(urlsToCache).catch(err => {
+        console.log('Cache addAll error:', err);
+      });
     })
   );
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+          .filter(name => name.startsWith('cluny-cache-') && name !== CACHE_NAME)
+          .map(name => caches.delete(name))
       );
     })
   );
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
-self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
-  
-  // Skip API requests - always go to network
-  if (event.request.url.includes('/api/')) return;
-  
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Clone response to cache it
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+    caches.match(event.request).then(response => {
+      if (response) {
         return response;
-      })
-      .catch(() => {
-        // Fallback to cache
-        return caches.match(event.request);
-      })
-  );
-});
-
-// Handle push notifications (for future use)
-self.addEventListener('push', (event) => {
-  const data = event.data?.json() || {};
-  const title = data.title || 'قهوة كوب';
-  
-  // Check if it's an employee notification
-  const isEmployee = data.type === 'employee';
-  
-  const options = {
-    body: data.body || 'لديك إشعار جديد',
-    icon: isEmployee ? '/employee-icon.png' : '/app-icon.png',
-    badge: isEmployee ? '/employee-icon.png' : '/app-icon.png',
-    dir: 'rtl',
-    lang: 'ar',
-    vibrate: [200, 100, 200],
-    data: data.url || '/',
-    tag: data.tag || 'default',
-    renotify: true
-  };
-  
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
-});
-
-// Handle notification click
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  event.waitUntil(
-    clients.openWindow(event.notification.data || '/')
+      }
+      return fetch(event.request)
+        .then(response => {
+          if (!response || response.status !== 200 || response.type === 'error') {
+            return response;
+          }
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match('/index.html');
+        });
+    })
   );
 });
