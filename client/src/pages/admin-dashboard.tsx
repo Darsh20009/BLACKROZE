@@ -27,6 +27,13 @@ export default function AdminDashboard() {
     avgOrderValue: 0,
   });
 
+  // Set SEO metadata
+  useEffect(() => {
+    document.title = "لوحة تحكم الإدارة - CLUNY CAFE | إحصائيات شاملة";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الإدارة في CLUNY CAFE - إحصائيات المبيعات والموظفين والطلبات');
+  }, []);
+
   const { data: employees } = useQuery({
     queryKey: ['/api/employees'],
     queryFn: async () => {

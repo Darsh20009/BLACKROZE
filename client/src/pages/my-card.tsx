@@ -28,6 +28,13 @@ export default function MyCard() {
  const { toast } = useToast();
  const [hasCard, setHasCard] = useState(false);
  const [card, setCard] = useState<LoyaltyCard | null>(null);
+
+ // Set SEO metadata
+ useEffect(() => {
+   document.title = "بطاقة الولاء - CLUNY CAFE | اكسب المكافآت";
+   const metaDesc = document.querySelector('meta[name="description"]');
+   if (metaDesc) metaDesc.setAttribute('content', 'بطاقة الولاء CLUNY CAFE - اجمع الطوابع واحصل على قهوة مجانية وعروض حصرية');
+ }, []);
  const [qrDataUrl, setQrDataUrl] = useState("");
  const [redeemCode, setRedeemCode] = useState("");
  const [showConfetti, setShowConfetti] = useState(false);

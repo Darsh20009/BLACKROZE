@@ -48,6 +48,13 @@ export default function EmployeeDashboard() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Set SEO metadata
+  useEffect(() => {
+    document.title = "لوحة تحكم الموظف - CLUNY CAFE | إدارة الطلبات";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الموظفين في CLUNY CAFE - تتبع الطلبات والإجازات والإشعارات');
+  }, []);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [kitchenOrders, setKitchenOrders] = useState<Order[]>([]);

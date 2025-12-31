@@ -10,6 +10,13 @@ export default function CartPage() {
  const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCartStore();
  const [, setLocation] = useLocation();
 
+ // Set SEO metadata
+ useEffect(() => {
+   document.title = "سلة التسوق - CLUNY CAFE | اكتمل طلبك";
+   const metaDesc = document.querySelector('meta[name="description"]');
+   if (metaDesc) metaDesc.setAttribute('content', 'سلة التسوق الخاصة بك في CLUNY CAFE - أضف المزيد من القهوة المفضلة وانتقل للدفع');
+ }, []);
+
  const totalPrice = getTotalPrice();
 
  if (cartItems.length === 0) {

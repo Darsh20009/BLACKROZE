@@ -15,6 +15,13 @@ export default function CustomerLogin() {
  const [name, setName] = useState("");
  const [phone, setPhone] = useState("");
 
+ // Set SEO metadata
+ useEffect(() => {
+   document.title = "تسجيل دخول العملاء - CLUNY CAFE | ادخل الآن";
+   const metaDesc = document.querySelector('meta[name="description"]');
+   if (metaDesc) metaDesc.setAttribute('content', 'تسجيل دخول عملاء CLUNY CAFE - سجل الآن واستمتع بعروضنا الحصرية والمكافآت');
+ }, []);
+
  const handleRegister = () => {
  if (!name.trim() || !phone.trim()) {
  toast({

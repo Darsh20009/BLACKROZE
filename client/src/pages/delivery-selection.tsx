@@ -43,6 +43,13 @@ export default function DeliverySelectionPage() {
   const { setDeliveryInfo, cartItems } = useCartStore();
   const { toast } = useToast();
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+
+  // Set SEO metadata
+  useEffect(() => {
+    document.title = "اختيار الفرع - CLUNY CAFE | توصيل سريع";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'اختر فرع CLUNY CAFE الأقرب إليك للتوصيل السريع أو الاستلام');
+  }, []);
   const [dineIn, setDineIn] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [locationError, setLocationError] = useState<string>('');
