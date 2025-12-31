@@ -468,9 +468,11 @@ export default function EmployeeMenuManagement() {
      price,
      oldPrice: formData.get("oldPrice") as string || "",
      coffeeStrength: selectedCoffeeStrength,
-     imageUrl,
+     imageUrl: imageUrl || step1Data?.imageUrl,
      branchAvailability: selectedBranches.length > 0 ? selectedBranches : undefined,
      isGiftable: false, // Default value, will be updated by UI if needed
+     availableSizes: step1Data?.availableSizes || [],
+     addons: (step1Data as any)?.addons || [],
    });
    setAddStep(2);
  };

@@ -2540,22 +2540,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { sessionId } = req.params;
       const cartItems = await CartItemModel.find({ sessionId }).lean();
 
-      if (cartItems.length === 0) {
+      if (!cartItems || cartItems.length === 0) {
         return res.json([]);
       }
 
       // Enrich cart items with coffee details efficiently
       const enrichedItems = await Promise.all(cartItems.map(async (cartItem: any) => {
-        const coffeeItem = await CoffeeItemModel.findOne({ id: cartItem.coffeeItemId }).lean();
-        return {
-          ...serializeDoc(cartItem),
-          coffeeItem: serializeDoc(coffeeItem)
-        };
+        try {
+          const coffeeItem = await CoffeeItemModel.findOne({ id: cartItem.coffeeItemId }).lean();
+          return {
+            ...serializeDoc(cartItem),
+            coffeeItem: coffeeItem ? serializeDoc(coffeeItem) : null
+          };
+        } catch (err) {
+          console.error(`Error enriching cart item ${cartItem.id}:`, err);
+          return { ...serializeDoc(cartItem), coffeeItem: null };
+        }
       }));
 
-      res.json(enrichedItems.filter(item => item.coffeeItem));
+      res.json(enrichedItems.filter(item => item && item.coffeeItem));
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch cart items" });
+      console.error("Fetch cart error:", error);
+      res.status(500).json({ error: "Failed to fetch cart items", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2590,7 +2596,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(serializeDoc(cartItem));
     } catch (error) {
-      res.status(500).json({ error: "Failed to add item to cart" });
+      console.error("Cart error:", error);
+      res.status(500).json({ error: "Failed to add item to cart", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2650,6 +2657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create order (supports both customer and employee)
   app.post("/api/orders", async (req: AuthRequest, res) => {
     try {
+      console.log("Creating order with body:", JSON.stringify(req.body, null, 2));
       const { 
         items, totalAmount, paymentMethod, paymentDetails, paymentReceiptUrl,
         customerInfo, customerId, customerNotes, freeItemsDiscount, usedFreeDrinks, 
