@@ -47,9 +47,9 @@
     <link rel="manifest" href="/manifest.json" id="main-manifest">
     
     <!-- Favicon & Apple Touch Icons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" id="main-favicon">
     <link rel="icon" type="image/png" sizes="16x16" href="/logo.png">
-    <link rel="shortcut icon" href="/logo.png">
+    <link rel="shortcut icon" href="/logo.png" id="main-shortcut-icon">
     <link rel="apple-touch-icon" href="/logo.png">
     <link rel="apple-touch-icon" sizes="57x57" href="/logo.png">
     <link rel="apple-touch-icon" sizes="60x60" href="/logo.png">
@@ -167,8 +167,15 @@
             icon.href = '/employee-logo.png';
           });
           
-          document.querySelector('link[rel="icon"]').href = '/employee-logo.png';
-          document.querySelector('link[rel="shortcut icon"]').href = '/employee-logo.png';
+          const favicon = document.getElementById('main-favicon');
+          if (favicon) favicon.href = '/employee-logo.png';
+          
+          const shortcutIcon = document.getElementById('main-shortcut-icon');
+          if (shortcutIcon) shortcutIcon.href = '/employee-logo.png';
+          
+          // Force update for some browsers
+          const existingIcon = document.querySelector('link[rel="icon"]');
+          if (existingIcon) existingIcon.href = '/employee-logo.png';
         }
       })();
     </script>
