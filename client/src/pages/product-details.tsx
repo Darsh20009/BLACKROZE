@@ -94,7 +94,7 @@ export default function ProductDetails() {
 
   const handleAddToCart = () => {
     if (item) {
-      addToCart(item.id, quantity);
+      addToCart(item.id, quantity, selectedSize, selectedAddons);
       setLocation("/menu");
     }
   };

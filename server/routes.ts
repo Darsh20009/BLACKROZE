@@ -2538,26 +2538,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/cart/:sessionId", async (req, res) => {
     try {
       const { sessionId } = req.params;
-      const cartItems = await storage.getCartItems(sessionId);
+      const cartItems = await CartItemModel.find({ sessionId }).lean();
 
       if (cartItems.length === 0) {
         return res.json([]);
       }
 
-      // Get all coffee items once instead of multiple queries
-      const allCoffeeItems = await storage.getCoffeeItems();
-      const coffeeItemsMap = new Map(allCoffeeItems.map(item => [item.id, serializeDoc(item)]));
-
       // Enrich cart items with coffee details efficiently
-      const enrichedItems = cartItems.map((cartItem) => {
-        const serializedCart = serializeDoc(cartItem);
+      const enrichedItems = await Promise.all(cartItems.map(async (cartItem: any) => {
+        const coffeeItem = await CoffeeItemModel.findOne({ id: cartItem.coffeeItemId }).lean();
         return {
-          ...serializedCart,
-          coffeeItem: coffeeItemsMap.get(cartItem.coffeeItemId)
+          ...serializeDoc(cartItem),
+          coffeeItem: serializeDoc(coffeeItem)
         };
-      }).filter(item => item.coffeeItem); // Filter out items where coffee doesn't exist
+      }));
 
-      res.json(enrichedItems);
+      res.json(enrichedItems.filter(item => item.coffeeItem));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch cart items" });
     }
@@ -2566,52 +2562,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add item to cart
   app.post("/api/cart", async (req, res) => {
     try {
-      const validatedData = insertCartItemSchema.parse(req.body);
-
-      // Verify coffee item exists
-      const coffeeItem = await storage.getCoffeeItem(validatedData.coffeeItemId);
-      if (!coffeeItem) {
-        return res.status(404).json({ error: "Coffee item not found" });
+      const { sessionId, coffeeItemId, quantity, selectedSize, selectedAddons } = req.body;
+      
+      if (!sessionId || !coffeeItemId) {
+        return res.status(400).json({ error: "Session ID and Coffee Item ID are required" });
       }
 
-      const cartItem = await storage.addToCart(validatedData);
+      // Create a unique ID for this cart entry based on item + options
+      const cartItemId = `${coffeeItemId}-${selectedSize || 'default'}-${(selectedAddons || []).sort().join(',')}`;
+      
+      let cartItem = await CartItemModel.findOne({ sessionId, id: cartItemId });
+      
+      if (cartItem) {
+        cartItem.quantity += (quantity || 1);
+        await cartItem.save();
+      } else {
+        cartItem = await CartItemModel.create({
+          id: cartItemId,
+          sessionId,
+          coffeeItemId,
+          quantity: quantity || 1,
+          selectedSize,
+          selectedAddons: selectedAddons || [],
+          createdAt: new Date()
+        });
+      }
+      
       res.status(201).json(serializeDoc(cartItem));
     } catch (error) {
-      if (error instanceof Error && 'issues' in error) {
-        return res.status(400).json({ error: "Validation error", details: error.issues });
-      }
       res.status(500).json({ error: "Failed to add item to cart" });
     }
   });
 
   // Update cart item quantity
-  app.put("/api/cart/:sessionId/:coffeeItemId", async (req, res) => {
+  app.put("/api/cart/:sessionId/:cartItemId", async (req, res) => {
     try {
-      const { sessionId, coffeeItemId } = req.params;
+      const { sessionId, cartItemId } = req.params;
       const { quantity } = req.body;
 
       if (typeof quantity !== 'number' || quantity < 0) {
         return res.status(400).json({ error: "Invalid quantity" });
       }
 
-      const updatedItem = await storage.updateCartItemQuantity(sessionId, coffeeItemId, quantity);
-      if (!updatedItem && quantity > 0) {
+      const cartItem = await CartItemModel.findOneAndUpdate(
+        { sessionId, id: cartItemId },
+        { $set: { quantity } },
+        { new: true }
+      );
+
+      if (!cartItem && quantity > 0) {
         return res.status(404).json({ error: "Cart item not found" });
       }
 
-      res.json(updatedItem ? serializeDoc(updatedItem) : { message: "Item removed from cart" });
+      res.json(cartItem ? serializeDoc(cartItem) : { message: "Item removed from cart" });
     } catch (error) {
       res.status(500).json({ error: "Failed to update cart item quantity" });
     }
   });
 
   // Remove item from cart
-  app.delete("/api/cart/:sessionId/:coffeeItemId", async (req, res) => {
+  app.delete("/api/cart/:sessionId/:cartItemId", async (req, res) => {
     try {
-      const { sessionId, coffeeItemId } = req.params;
-      const removed = await storage.removeFromCart(sessionId, coffeeItemId);
+      const { sessionId, cartItemId } = req.params;
+      const result = await CartItemModel.deleteOne({ sessionId, id: cartItemId });
 
-      if (!removed) {
+      if (result.deletedCount === 0) {
         return res.status(404).json({ error: "Cart item not found" });
       }
 

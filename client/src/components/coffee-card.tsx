@@ -25,12 +25,9 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    setIsAnimating(true);
-    addToCart(item.id, 1);
-
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 1000);
+    // Always go to details if there are sizes OR add-ons, or if it's a specialty drink
+    // This ensures the "pop-up" logic (details page) is always shown for customization
+    handleViewDetails();
   };
 
   const handleViewDetails = () => {

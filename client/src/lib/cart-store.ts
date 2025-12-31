@@ -5,44 +5,47 @@ import type { CoffeeItem } from "@shared/schema";
 
 // Enhanced cart item type with coffee details
 interface EnrichedCartItem {
- coffeeItemId: string;
- quantity: number;
- sessionId: string;
- coffeeItem?: CoffeeItem;
+  id: string; // Unique ID for each cart entry (productId + size + addons)
+  coffeeItemId: string;
+  quantity: number;
+  sessionId: string;
+  coffeeItem?: CoffeeItem;
+  selectedSize?: string;
+  selectedAddons?: string[];
 }
 
 export interface DeliveryInfo {
- type: 'pickup' | 'delivery' | 'dine-in';
- branchId?: string;
- branchName?: string;
- branchAddress?: string;
- dineIn?: boolean;
- tableId?: string;
- tableNumber?: string;
- arrivalTime?: string;
- address?: {
- fullAddress: string;
- lat: number;
- lng: number;
- zone: string;
- };
- deliveryFee?: number;
+  type: 'pickup' | 'delivery' | 'dine-in';
+  branchId?: string;
+  branchName?: string;
+  branchAddress?: string;
+  dineIn?: boolean;
+  tableId?: string;
+  tableNumber?: string;
+  arrivalTime?: string;
+  address?: {
+    fullAddress: string;
+    lat: number;
+    lng: number;
+    zone: string;
+  };
+  deliveryFee?: number;
 }
 
 interface CartContextType {
- // State
- cartItems: EnrichedCartItem[];
- isCartOpen: boolean;
- isCheckoutOpen: boolean;
- sessionId: string;
- isLoading: boolean;
- deliveryInfo: DeliveryInfo | null;
+  // State
+  cartItems: EnrichedCartItem[];
+  isCartOpen: boolean;
+  isCheckoutOpen: boolean;
+  sessionId: string;
+  isLoading: boolean;
+  deliveryInfo: DeliveryInfo | null;
 
- // Actions
- addToCart: (coffeeItemId: string, quantity?: number) => void;
- removeFromCart: (coffeeItemId: string) => void;
- updateQuantity: (coffeeItemId: string, quantity: number) => void;
- clearCart: () => void;
+  // Actions
+  addToCart: (coffeeItemId: string, quantity?: number, selectedSize?: string | null, selectedAddons?: string[]) => void;
+  removeFromCart: (cartItemId: string) => void;
+  updateQuantity: (cartItemId: string, quantity: number) => void;
+  clearCart: () => void;
  
  // Delivery Actions
  setDeliveryInfo: (info: DeliveryInfo) => void;
@@ -99,70 +102,72 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
  // Add to cart mutation
  const addToCartMutation = useMutation({
- mutationFn: async ({ coffeeItemId, quantity }: { coffeeItemId: string; quantity: number }) => {
- const response = await apiRequest("POST", "/api/cart", {
- sessionId,
- coffeeItemId,
- quantity,
- });
- return response.json();
- },
- onSuccess: () => {
- queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
- },
- });
+  mutationFn: async ({ coffeeItemId, quantity, selectedSize, selectedAddons }: { coffeeItemId: string; quantity: number; selectedSize?: string | null; selectedAddons?: string[] }) => {
+  const response = await apiRequest("POST", "/api/cart", {
+  sessionId,
+  coffeeItemId,
+  quantity,
+  selectedSize,
+  selectedAddons,
+  });
+  return response.json();
+  },
+  onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+  },
+  });
 
- // Update quantity mutation
- const updateQuantityMutation = useMutation({
- mutationFn: async ({ coffeeItemId, quantity }: { coffeeItemId: string; quantity: number }) => {
- const response = await apiRequest("PUT", `/api/cart/${sessionId}/${coffeeItemId}`, {
- quantity,
- });
- return response.json();
- },
- onSuccess: () => {
- queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
- },
- });
+  // Update quantity mutation
+  const updateQuantityMutation = useMutation({
+  mutationFn: async ({ cartItemId, quantity }: { cartItemId: string; quantity: number }) => {
+  const response = await apiRequest("PUT", `/api/cart/${sessionId}/${cartItemId}`, {
+  quantity,
+  });
+  return response.json();
+  },
+  onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+  },
+  });
 
- // Remove from cart mutation
- const removeFromCartMutation = useMutation({
- mutationFn: async (coffeeItemId: string) => {
- const response = await apiRequest("DELETE", `/api/cart/${sessionId}/${coffeeItemId}`);
- return response.json();
- },
- onSuccess: () => {
- queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
- },
- });
+  // Remove from cart mutation
+  const removeFromCartMutation = useMutation({
+  mutationFn: async (cartItemId: string) => {
+  const response = await apiRequest("DELETE", `/api/cart/${sessionId}/${cartItemId}`);
+  return response.json();
+  },
+  onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+  },
+  });
 
- // Clear cart mutation
- const clearCartMutation = useMutation({
- mutationFn: async () => {
- const response = await apiRequest("DELETE", `/api/cart/${sessionId}`);
- return response.json();
- },
- onSuccess: () => {
- queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
- },
- });
+  // Clear cart mutation
+  const clearCartMutation = useMutation({
+  mutationFn: async () => {
+  const response = await apiRequest("DELETE", `/api/cart/${sessionId}`);
+  return response.json();
+  },
+  onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+  },
+  });
 
- // Cart actions
- const addToCart = (coffeeItemId: string, quantity: number = 1) => {
- addToCartMutation.mutate({ coffeeItemId, quantity });
- };
+  // Cart actions
+  const addToCart = (coffeeItemId: string, quantity: number = 1, selectedSize?: string | null, selectedAddons?: string[]) => {
+  addToCartMutation.mutate({ coffeeItemId, quantity, selectedSize, selectedAddons });
+  };
 
- const removeFromCart = (coffeeItemId: string) => {
- removeFromCartMutation.mutate(coffeeItemId);
- };
+  const removeFromCart = (cartItemId: string) => {
+  removeFromCartMutation.mutate(cartItemId);
+  };
 
- const updateQuantity = (coffeeItemId: string, quantity: number) => {
- if (quantity <= 0) {
- removeFromCart(coffeeItemId);
- } else {
- updateQuantityMutation.mutate({ coffeeItemId, quantity });
- }
- };
+  const updateQuantity = (cartItemId: string, quantity: number) => {
+  if (quantity <= 0) {
+  removeFromCart(cartItemId);
+  } else {
+  updateQuantityMutation.mutate({ cartItemId, quantity });
+  }
+  };
 
  const clearCart = () => {
  clearCartMutation.mutate();
@@ -186,27 +191,35 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
  const showCheckout = () => setIsCheckoutOpen(true);
  const hideCheckout = () => setIsCheckoutOpen(false);
 
- // Computed values
- const getTotalPrice = (): number => {
- return cartItems.reduce((total, item) => {
- if (!item.coffeeItem?.price) return total;
- 
- // Handle MongoDB Decimal128 and other formats
- let price = 0;
- if (typeof item.coffeeItem.price === 'number') {
- price = item.coffeeItem.price;
- } else if (typeof item.coffeeItem.price === 'string') {
- price = parseFloat(item.coffeeItem.price);
- } else if (item.coffeeItem.price && typeof item.coffeeItem.price === 'object' && '$numberDecimal' in item.coffeeItem.price) {
- // Handle MongoDB Decimal128 format
- price = parseFloat((item.coffeeItem.price as any).$numberDecimal);
- } else {
- price = parseFloat(String(item.coffeeItem.price));
- }
- 
- return total + (isNaN(price) ? 0 : price * item.quantity);
- }, 0);
- };
+    // Computed values
+    const getTotalPrice = (): number => {
+    return cartItems.reduce((total, item) => {
+    if (!item.coffeeItem?.price) return total;
+    
+    // Handle MongoDB Decimal128 and other formats
+    let price = 0;
+    let itemPrice = item.coffeeItem.price;
+
+    // Use size price if available
+    if (item.selectedSize && item.coffeeItem.availableSizes) {
+      const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
+      if (size) itemPrice = size.price;
+    }
+
+    if (typeof itemPrice === 'number') {
+    price = itemPrice;
+    } else if (typeof itemPrice === 'string') {
+    price = parseFloat(itemPrice);
+    } else if (itemPrice && typeof itemPrice === 'object' && '$numberDecimal' in itemPrice) {
+    // Handle MongoDB Decimal128 format
+    price = parseFloat((itemPrice as any).$numberDecimal);
+    } else {
+    price = parseFloat(String(itemPrice));
+    }
+    
+    return total + (isNaN(price) ? 0 : price * item.quantity);
+    }, 0);
+    };
 
  const getTotalItems = (): number => {
  return cartItems.reduce((total, item) => total + item.quantity, 0);

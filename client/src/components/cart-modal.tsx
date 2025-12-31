@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/cart-store";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 
@@ -52,49 +53,75 @@ export default function CartModal() {
               <div className="space-y-4" data-testid="section-cart-items">
                 {cartItems.map((item) => (
                   <div 
-                    key={item.coffeeItemId} 
-                    className="flex justify-between items-center bg-card/80 hover:bg-card/90 rounded-xl p-4 border border-primary/20 shadow-md backdrop-blur-sm transition-all duration-300"
-                    data-testid={`cart-modal-item-${item.coffeeItemId}`}
+                    key={item.id} 
+                    className="flex flex-col bg-card/80 hover:bg-card/90 rounded-xl p-4 border border-primary/20 shadow-md backdrop-blur-sm transition-all duration-300"
+                    data-testid={`cart-modal-item-${item.id}`}
                   >
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground" data-testid={`text-cart-item-name-${item.coffeeItemId}`}>
-                        {item.coffeeItem?.nameAr}
-                      </h4>
-                      <p className="text-sm text-muted-foreground" data-testid={`text-cart-item-details-${item.coffeeItemId}`}>
-                        {renderPrice(item.coffeeItem?.price)} ريال × {item.quantity}
-                      </p>
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground" data-testid={`text-cart-item-name-${item.id}`}>
+                          {item.coffeeItem?.nameAr}
+                        </h4>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.selectedSize && (
+                            <Badge variant="outline" className="text-[10px] py-0 h-4">
+                              الحجم: {item.selectedSize}
+                            </Badge>
+                          )}
+                          {item.selectedAddons && item.selectedAddons.length > 0 && (
+                            <Badge variant="secondary" className="text-[10px] py-0 h-4">
+                              إضافات: {item.selectedAddons.length}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary" data-testid={`text-cart-item-price-${item.id}`}>
+                          {(() => {
+                            let itemPrice = item.coffeeItem?.price || 0;
+                            if (item.selectedSize && item.coffeeItem?.availableSizes) {
+                              const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
+                              if (size) itemPrice = size.price;
+                            }
+                            return (Number(itemPrice) * item.quantity).toFixed(2);
+                          })()} ريال
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
+
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-primary/10">
+                      <div className="flex items-center space-x-2 space-x-reverse">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                          className="h-7 w-7 rounded-full"
+                          data-testid={`button-cart-decrease-${item.id}`}
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="font-semibold text-foreground w-6 text-center text-sm" data-testid={`text-cart-quantity-${item.id}`}>
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="h-7 w-7 rounded-full"
+                          data-testid={`button-cart-increase-${item.id}`}
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
-                        onClick={() => updateQuantity(item.coffeeItemId, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
-                        className="h-8 w-8"
-                        data-testid={`button-cart-decrease-${item.coffeeItemId}`}
+                        onClick={() => removeFromCart(item.id)}
+                        className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        data-testid={`button-cart-remove-${item.id}`}
                       >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <span className="font-semibold text-foreground w-8 text-center" data-testid={`text-cart-quantity-${item.coffeeItemId}`}>
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => updateQuantity(item.coffeeItemId, item.quantity + 1)}
-                        className="h-8 w-8"
-                        data-testid={`button-cart-increase-${item.coffeeItemId}`}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => removeFromCart(item.coffeeItemId)}
-                        className="h-8 w-8 mr-2"
-                        data-testid={`button-cart-remove-${item.coffeeItemId}`}
-                      >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
