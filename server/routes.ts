@@ -2014,11 +2014,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // For customers: look up tenant from branch if not in session
           if (!tenantId && requestedBranchId) {
-            const branch = await BranchModel.findById(requestedBranchId).lean();
-            if (branch && (branch as any).tenantId) {
-              tenantId = (branch as any).tenantId;
-            } else if (branch) {
-              // If branch exists but has no tenantId, use the branch ID as fallback tenant
+            try {
+              const branch = await BranchModel.findOne({ id: requestedBranchId }).lean();
+              if (branch && (branch as any).tenantId) {
+                tenantId = (branch as any).tenantId;
+              } else if (branch) {
+                // If branch exists but has no tenantId, use the branch ID as fallback tenant
+                tenantId = `tenant-${requestedBranchId}`;
+              } else {
+                // If branch doesn't exist, use fallback
+                tenantId = `tenant-${requestedBranchId}`;
+              }
+            } catch {
+              // If lookup fails, use fallback
               tenantId = `tenant-${requestedBranchId}`;
             }
           }
@@ -2111,16 +2119,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Filter by branch for customers if requested
       let finalItems = enrichedItems;
-      if (!isEmployee && requestedBranchId) {
-        // For customers: show items published to their branch OR legacy items (with '*' marker) OR all items if no branch filtering
+      // For customers: show ALL items regardless of publishedBranches (customers can see any drink)
+      if (isEmployee && requestedBranchId) {
+        // For employees: filter by their branch only
         finalItems = enrichedItems.filter((item: any) => {
           const publishedBranches = item.publishedBranches || [];
-          // Show item if: it's published to this branch, OR it's a legacy item (marked with '*'), OR no branches are published
           return publishedBranches.includes('*') || publishedBranches.length === 0 || publishedBranches.includes(requestedBranchId);
         });
-      } else if (!isEmployee) {
-        // For customers without branch: show all items
-        finalItems = enrichedItems;
       }
       
       res.json(finalItems);
