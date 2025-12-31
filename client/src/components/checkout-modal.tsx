@@ -406,9 +406,9 @@ export default function CheckoutModal() {
  </span>
  <span className="text-muted-foreground mr-2">× {item.quantity}</span>
  </div>
- <span className="font-semibold text-primary" data-testid={`text-checkout-price-${item.coffeeItemId}`}>
- {(parseFloat(item.coffeeItem?.price || "0") * item.quantity).toFixed(2)} ريال
- </span>
+                          <span className="font-semibold text-primary" data-testid={`text-checkout-price-${item.coffeeItemId}`}>
+                            {(parseFloat(typeof item.coffeeItem?.price === 'object' && item.coffeeItem?.price !== null && '$numberDecimal' in item.coffeeItem.price ? (item.coffeeItem.price as any).$numberDecimal : String(item.coffeeItem?.price || "0")) * item.quantity).toFixed(2)} ريال
+                          </span>
  </div>
  ))}
  </div>
@@ -472,11 +472,11 @@ export default function CheckoutModal() {
  className="w-full p-3 rounded-lg border border-border bg-background text-foreground"
  >
  <option value="">-- اختر فرعاً --</option>
- {branches.map((branch: any) => (
- <option key={branch.id} value={branch.id}>
- {branch.nameAr} - {branch.location}
- </option>
- ))}
+                          {Array.isArray(branches) && branches.map((branch: any) => (
+                            <option key={branch.id} value={branch.id}>
+                              {branch.nameAr} - {branch.location}
+                            </option>
+                          ))}
  </select>
  </div>
  )}
