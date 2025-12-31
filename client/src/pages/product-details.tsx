@@ -191,14 +191,14 @@ export default function ProductDetails() {
           العودة للمنيو
         </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           {/* Product Image */}
           <div className="relative" data-testid="section-product-image">
             {item.imageUrl || getCoffeeImage(item.id) ? (
               <img 
                 src={item.imageUrl || getCoffeeImage(item.id)}
                 alt={item.nameAr}
-                className="w-full h-96 object-cover rounded-2xl shadow-lg"
+                className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-2xl shadow-lg"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = 'none';
                   const parent = e.currentTarget.parentElement;
@@ -290,19 +290,21 @@ export default function ProductDetails() {
             <div className="space-y-3" data-testid="section-sizes">
               <h3 className="text-lg font-semibold text-foreground">الحجم</h3>
               {item.availableSizes && item.availableSizes.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {item.availableSizes.map((size, index) => (
                     <Button
                       key={index}
                       variant={selectedSize === size.nameAr ? "default" : "outline"}
                       onClick={() => setSelectedSize(size.nameAr)}
-                      className="text-sm"
+                      className="text-sm h-11 sm:h-10 justify-between px-4"
                       data-testid={`button-size-${size.nameAr}`}
                     >
-                      <span>{size.nameAr}</span>
-                      {size.sizeML && <span className="text-xs mr-2">({size.sizeML} مل)</span>}
+                      <div className="flex items-center gap-2">
+                        <span>{size.nameAr}</span>
+                        {size.sizeML && <span className="text-[10px] opacity-70">({size.sizeML} مل)</span>}
+                      </div>
                       {size.price !== item.price && (
-                        <span className="mr-2">+{(size.price - (typeof item.price === 'number' ? item.price : parseFloat(String(item.price || 0)))).toFixed(2)} ر.س</span>
+                        <span className="text-xs font-bold">+{(size.price - (typeof item.price === 'number' ? item.price : parseFloat(String(item.price || 0)))).toFixed(2)} ر.س</span>
                       )}
                     </Button>
                   ))}
@@ -460,20 +462,25 @@ export default function ProductDetails() {
               </div>
             </div>
 
-            {/* Add to Cart Button */}
-            <Button
-              onClick={handleAddToCart}
-              size="lg"
-              disabled={item.isAvailable === 0 || (item.availabilityStatus !== undefined && item.availabilityStatus !== 'available')}
-              className="w-full btn-primary text-accent-foreground py-6 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              data-testid="button-add-to-cart"
-            >
-              <Plus className="w-5 h-5 ml-2" />
-              {item.availabilityStatus === 'out_of_stock' ? ' نفذت الكمية ' :
-              item.availabilityStatus === 'coming_soon' ? ' قريباً' :
-              item.availabilityStatus === 'temporarily_unavailable' ? '⏸ غير متوفر مؤقتاً' :
-              'أضف للسلة '}
-            </Button>
+            {/* Add to Cart Button - Mobile Sticky */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-50 lg:relative lg:p-0 lg:bg-transparent lg:border-0">
+              <Button
+                onClick={handleAddToCart}
+                size="lg"
+                disabled={item.isAvailable === 0 || (item.availabilityStatus !== undefined && item.availabilityStatus !== 'available')}
+                className="w-full btn-primary text-accent-foreground py-6 sm:py-7 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-xl lg:shadow-none"
+                data-testid="button-add-to-cart"
+              >
+                <Plus className="w-5 h-5 ml-2" />
+                {item.availabilityStatus === 'out_of_stock' ? ' نفذت الكمية ' :
+                item.availabilityStatus === 'coming_soon' ? ' قريباً' :
+                item.availabilityStatus === 'temporarily_unavailable' ? '⏸ غير متوفر مؤقتاً' :
+                'أضف للسلة '}
+              </Button>
+            </div>
+            
+            {/* Spacer for sticky button on mobile */}
+            <div className="h-20 lg:hidden" />
           </div>
         </div>
       </div>

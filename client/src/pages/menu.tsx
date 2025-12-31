@@ -192,20 +192,22 @@ const MenuPage = memo(function MenuPage() {
               </div>
             </div>
             
-            <div className="flex items-center gap-1 sm:gap-3">
-              
+            <div className="flex items-center gap-2 sm:gap-3">
               <PWAInstallButton />
 
               {selectedBranch && (
                 <div className="relative">
-                  <Badge 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setIsBranchSelectorOpen(!isBranchSelectorOpen)}
-                    className="bg-primary/10 border-primary/30 text-primary px-3 py-1 rounded-full animate-in fade-in zoom-in duration-500 cursor-pointer hover:bg-primary/20 transition-colors text-[10px] sm:text-xs"
+                    className="h-8 bg-primary/10 border-primary/30 text-primary px-2 sm:px-3 rounded-full hover:bg-primary/20 transition-colors text-[10px] sm:text-xs flex items-center gap-1"
                   >
-                    <MapPin className="w-3 h-3 ml-1" />
-                    {branches.find(b => ((b as any).id || (b as any)._id) === selectedBranch)?.nameAr}
-                  </Badge>
+                    <MapPin className="w-3 h-3" />
+                    <span className="truncate max-w-[80px] sm:max-w-none">
+                      {branches.find(b => ((b as any).id || (b as any)._id) === selectedBranch)?.nameAr}
+                    </span>
+                  </Button>
 
                   {isBranchSelectorOpen && (
                     <div className="absolute top-full mt-2 left-0 w-64 bg-background border border-border rounded-xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -338,28 +340,27 @@ const MenuPage = memo(function MenuPage() {
                   <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-primary/20"></div>
                 </div>
 
-                {/* Badges Grid - Positioned at the Bottom */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 w-full">
-                  {branches.map((branch, index) => {
-                    const branchLat = (branch as any).location?.latitude || 24.7136;
-                    const branchLng = (branch as any).location?.longitude || 46.6753;
-                    const distance = calculateDistance(userLocation.lat, userLocation.lng, branchLat, branchLng);
-                    const distanceText = distance > 1000 ? `${(distance / 1000).toFixed(1)} كم` : `${Math.round(distance)} متر`;
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 w-full">
+              {branches.map((branch, index) => {
+                const branchLat = (branch as any).location?.latitude || 24.7136;
+                const branchLng = (branch as any).location?.longitude || 24.7136;
+                const distance = calculateDistance(userLocation.lat, userLocation.lng, branchLat, branchLng);
+                const distanceText = distance > 1000 ? `${(distance / 1000).toFixed(1)} كم` : `${Math.round(distance)} متر`;
 
-                    return (
-                      <button
-                        key={(branch as any).id || (branch as any)._id}
-                        onClick={() => setSelectedBranch((branch as any).id || (branch as any)._id || "")}
-                        style={{ animationDelay: `${index * 50}ms` }}
-                        className="group relative flex flex-col items-center p-3 sm:p-4 rounded-xl border-2 border-primary/5 bg-card hover:border-primary hover:bg-primary/[0.02] transition-all duration-300 shadow-sm hover:shadow-xl text-center animate-in slide-in-from-bottom-2"
-                      >
-                        <MapPin className="w-4 h-4 text-primary/40 group-hover:text-primary mb-1.5 transition-colors duration-500" />
-                        <h3 className="font-amiri font-bold text-foreground text-[11px] sm:text-[13px] leading-tight mb-1">{branch.nameAr}</h3>
-                        <span className="text-[9px] sm:text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full">{distanceText}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                return (
+                  <button
+                    key={(branch as any).id || (branch as any)._id}
+                    onClick={() => setSelectedBranch((branch as any).id || (branch as any)._id || "")}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="group relative flex flex-col items-center p-3 sm:p-4 rounded-xl border-2 border-primary/10 bg-card hover:border-primary hover:bg-primary/[0.05] transition-all duration-300 shadow-sm active:scale-95 text-center animate-in slide-in-from-bottom-2"
+                  >
+                    <MapPin className="w-4 h-4 text-primary/60 group-hover:text-primary mb-1.5 transition-colors" />
+                    <h3 className="font-amiri font-bold text-foreground text-[11px] sm:text-[13px] leading-tight mb-1">{branch.nameAr}</h3>
+                    <span className="text-[9px] sm:text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{distanceText}</span>
+                  </button>
+                );
+              })}
+            </div>
               </div>
             </div>
           )}
@@ -372,17 +373,17 @@ const MenuPage = memo(function MenuPage() {
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
                   className={`
-                    flex items-center gap-2 transition-all duration-300 px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base lg:text-lg font-semibold rounded-full shadow-md sm:shadow-lg hover:shadow-lg sm:hover:shadow-xl transform hover:-translate-y-0.5 sm:hover:-translate-y-1
+                    flex items-center gap-2 transition-all duration-300 px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base font-semibold rounded-full shadow-md transform active:scale-95
                     ${selectedCategory === category.id 
-                      ? "bg-primary text-primary-foreground btn-primary glow-effect" 
-                      : "bg-card/80 border-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50"
+                      ? "bg-primary text-primary-foreground btn-primary scale-105" 
+                      : "bg-card/80 border-2 border-primary/30 text-primary hover:bg-primary/10"
                     }
                   `}
                   data-testid={`button-category-${category.id}`}
                   style={{animationDelay: `${index * 0.1 + 0.8}s`}}
                 >
-                  <Icon className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 ml-1 sm:ml-2" />
-                  <span className="text-xs sm:text-sm md:text-base">{category.nameAr}</span>
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>{category.nameAr}</span>
                 </button>
               );
             })}
