@@ -6065,6 +6065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "لم يتم رفع صورة" });
       }
       const fileUrl = `/attached_assets/drinks/${req.file.filename}`;
+      console.log(`[UPLOAD] Drink image uploaded successfully: ${fileUrl}`);
       res.json({ url: fileUrl, filename: req.file.filename });
     });
   });
