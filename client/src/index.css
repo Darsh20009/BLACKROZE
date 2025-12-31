@@ -975,3 +975,25 @@
     animation: shimmer 2s infinite;
   }
 }
+/* Print styles for invoice */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  [data-testid="invoice-preview"],
+  [data-testid="invoice-preview"] * {
+    visibility: visible;
+  }
+  
+  [data-testid="invoice-preview"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
