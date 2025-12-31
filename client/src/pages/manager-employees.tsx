@@ -55,6 +55,8 @@ export default function ManagerEmployees() {
     { id: 'manage_inventory', label: 'إدارة المخزون' },
     { id: 'view_reports', label: 'عرض التقارير' },
     { id: 'manage_employees', label: 'إدارة الموظفين' },
+    { id: 'manage_branches', label: 'إدارة الفروع' },
+    { id: 'manage_settings', label: 'إعدادات النظام' },
   ];
 
   const PAGES_OPTIONS = [
@@ -62,7 +64,11 @@ export default function ManagerEmployees() {
     { id: '/employee/orders', label: 'الطلبات' },
     { id: '/employee/inventory', label: 'المخزون' },
     { id: '/employee/accounting', label: 'المحاسبة' },
+    { id: '/employee/attendance', label: 'التحضير' },
+    { id: '/employee/availability', label: 'التوفر' },
+    { id: '/employee/cashier', label: 'الكاشير' },
     { id: '/manager/dashboard', label: 'لوحة التحكم' },
+    { id: '/manager/employees', label: 'إدارة الموظفين' },
   ];
 
 
@@ -73,25 +79,25 @@ export default function ManagerEmployees() {
  if (managerData) {
  const parsed = JSON.parse(managerData);
  
- // Verify session is still valid on backend
- try {
- const response = await fetch("/api/verify-session", { credentials: "include" });
- if (!response.ok) {
- // Session expired, clear localStorage and redirect
- localStorage.removeItem("currentEmployee");
- setLocation("/employee/gateway");
- return;
- }
- // Update with server data if needed
- const data = await response.json();
- if (data.employee) {
- const updatedManager = { ...parsed, ...data.employee };
- localStorage.setItem("currentEmployee", JSON.stringify(updatedManager));
- setCurrentManager(updatedManager);
- } else {
- setCurrentManager(parsed);
- }
- } catch (error) {
+      // Verify session is still valid on backend
+      try {
+        const response = await fetch("/api/verify-session", { credentials: "include" });
+        if (!response.ok) {
+          // Session expired, clear localStorage and redirect
+          localStorage.removeItem("currentEmployee");
+          setLocation("/employee/gateway");
+          return;
+        }
+        // Update with server data if needed
+        const data = await response.json();
+        if (data && data.employee) {
+          const updatedManager = { ...parsed, ...data.employee };
+          localStorage.setItem("currentEmployee", JSON.stringify(updatedManager));
+          setCurrentManager(updatedManager);
+        } else {
+          setCurrentManager(parsed);
+        }
+      } catch (error) {
  console.error("Session verification error:", error);
  localStorage.removeItem("currentEmployee");
  setLocation("/employee/gateway");
@@ -653,16 +659,16 @@ export default function ManagerEmployees() {
  </Dialog>
  </div>
 
- {isLoading ? (
- <div className="text-center text-accent py-12">جاري تحميل الموظفين...</div>
- ) : (
- <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
- {employees.map((employee) => (
- <Card
- key={employee.id}
- className="bg-gradient-to-br from-background to-background border-primary/20 overflow-hidden"
- data-testid={`card-employee-${employee.id}`}
- >
+      {isLoading ? (
+        <div className="text-center text-accent py-12">جاري تحميل الموظفين...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {(employees || []).map((employee) => (
+            <Card
+              key={employee.id}
+              className="bg-gradient-to-br from-background to-background border-primary/20 overflow-hidden hover-elevate"
+              data-testid={`card-employee-${employee.id}`}
+            >
  <CardHeader className="bg-gradient-to-r from-amber-500/20 to-amber-700/20">
  <div className="flex items-center justify-between">
  <CardTitle className="text-accent flex items-center gap-2">
