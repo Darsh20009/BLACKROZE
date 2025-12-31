@@ -19,6 +19,13 @@ export default function MyOrders() {
  const { customer } = useCustomer();
  const customerId = customer?._id || customer?.id;
 
+ // Set SEO metadata
+ useEffect(() => {
+   document.title = "طلباتي - CLUNY CAFE | متابعة الطلبات والحالة";
+   const metaDesc = document.querySelector('meta[name="description"]');
+   if (metaDesc) metaDesc.setAttribute('content', 'متابع طلباتك السابقة والحالية في CLUNY CAFE - تتبع آني للحالة والتوصيل');
+ }, []);
+
  const { data: orders = [], isLoading, refetch } = useQuery<OrderDisplay[]>({
  queryKey: ["/api/customers", customerId, "orders"],
  enabled: !!customerId,

@@ -11,6 +11,13 @@ export default function EmployeeGateway() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
+  // Set SEO metadata
+  React.useEffect(() => {
+    document.title = "بوابة الموظفين - CLUNY CAFE | نظام الإدارة";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'بوابة دخول الموظفين لنظام إدارة CLUNY CAFE - نظام متكامل لإدارة الطلبات والمبيعات');
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     

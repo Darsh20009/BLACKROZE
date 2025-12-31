@@ -18,6 +18,13 @@ export default function EmployeeLogin() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const qrScannerRef = useRef<Html5QrcodeScanner | null>(null);
 
+  // Set SEO metadata
+  useEffect(() => {
+    document.title = "تسجيل دخول الموظفين - CLUNY CAFE | نظام الإدارة";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'تسجيل دخول الموظفين في نظام CLUNY CAFE - نظام متطور لإدارة العمليات والمبيعات');
+  }, []);
+
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username?: string; employeeId?: string; password?: string }) => {
       const isQRLogin = !!credentials.employeeId && !credentials.username;

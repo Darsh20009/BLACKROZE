@@ -21,6 +21,13 @@ export default function CheckoutPage() {
  const [, setLocation] = useLocation();
  const { cartItems, clearCart, getTotalPrice, deliveryInfo, getFinalTotal } = useCartStore();
  const { toast } = useToast();
+
+ // Set SEO metadata
+ useEffect(() => {
+   document.title = "إتمام الشراء - CLUNY CAFE | سهل وآمن";
+   const metaDesc = document.querySelector('meta[name="description"]');
+   if (metaDesc) metaDesc.setAttribute('content', 'إتمام عملية الشراء بأمان وسهولة في CLUNY CAFE - خيارات دفع متعددة وتوصيل سريع');
+ }, []);
  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
  const [secondaryPaymentMethod, setSecondaryPaymentMethod] = useState<PaymentMethod | null>(null);
  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState("");

@@ -59,6 +59,13 @@ export default function ManagerDashboard() {
  const [, setLocation] = useLocation();
  const [manager, setManager] = useState<Employee | null>(null);
  const [dateFilter, setDateFilter] = useState<"today" | "week" | "month" | "all">("all");
+
+ // Set SEO metadata
+ useEffect(() => {
+   document.title = "لوحة تحكم المدير - CLUNY CAFE | إدارة المبيعات والعمليات";
+   const metaDesc = document.querySelector('meta[name="description"]');
+   if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم المدير في CLUNY CAFE - إدارة شاملة للمبيعات والموظفين والفروع والمخزون');
+ }, []);
  const [isAddBranchOpen, setIsAddBranchOpen] = useState(false);
  const [isEditBranchOpen, setIsEditBranchOpen] = useState(false);
  const [editingBranch, setEditingBranch] = useState<any>(null);

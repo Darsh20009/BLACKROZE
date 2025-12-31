@@ -41,6 +41,15 @@ const MenuPage = memo(function MenuPage() {
   const { isAuthenticated } = useCustomer();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Set SEO metadata for menu page
+  useEffect(() => {
+    document.title = "قائمة المشروبات - CLUNY CAFE | أفضل قهوة وأصيلة";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'استعرض قائمة CLUNY CAFE المتنوعة من القهوة - إسبريسو، لاتيه، كابتشينو، موكا بتحضير احترافي ودقيق');
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', 'قائمة المشروبات - CLUNY CAFE');
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedStrength, setSelectedStrength] = useState<CoffeeStrengthType | "all">("all");
   const [selectedBranch, setSelectedBranch] = useState<string>(() => {
