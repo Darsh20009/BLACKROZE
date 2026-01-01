@@ -140,10 +140,13 @@ export default function TableMenuNew() {
   // Load cart from session storage on mount
   useEffect(() => {
     if (table?._id) {
+      const sId = `table-${table._id}`;
       const savedCart = sessionStorage.getItem(`cart_${table._id}`);
       if (savedCart) {
         try {
-          setCart(JSON.parse(savedCart));
+          const parsedCart = JSON.parse(savedCart);
+          setCart(parsedCart);
+          // Sync with backend on load if needed
         } catch (e) {
           console.error("Error parsing saved cart:", e);
         }
@@ -181,7 +184,10 @@ export default function TableMenuNew() {
         selectedAddons
       });
 
-      // 3. Force re-fetch from backend to ensure server-side IDs are correctly mapped
+      // 3. Force re-fetch and clear cache to ensure sync
+      await queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
+      
+      // Explicitly fetch and set cart to ensure immediate UI update
       const response = await fetch(`/api/cart/${sId}`);
       if (response.ok) {
         const serverCart = await response.json();
@@ -233,13 +239,8 @@ export default function TableMenuNew() {
         await apiRequest("DELETE", `/api/cart/${sId}/${cartItemId}`);
       }
       
-      // 3. Re-fetch to ensure sync
-      const response = await fetch(`/api/cart/${sId}`);
-      if (response.ok) {
-        const serverCart = await response.json();
-        setCart(serverCart);
-        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(serverCart));
-      }
+      // 3. Force re-fetch and clear cache
+      queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
     } catch (error) {
       console.error("Remove from cart error:", error);
     }
@@ -250,8 +251,10 @@ export default function TableMenuNew() {
       // Calculate item price based on size if needed
       let itemPrice = ci.item.price;
       const sizes = (ci.item as any).sizes;
-      if (ci.selectedSize && ci.selectedSize !== "default" && sizes) {
-        const sizeInfo = sizes.find((s: any) => s.nameAr === ci.selectedSize);
+      // We check for sizeName because ci.selectedSize might be normalized
+      const sizeToMatch = ci.selectedSize || "default";
+      if (sizeToMatch !== "default" && sizes) {
+        const sizeInfo = sizes.find((s: any) => s.nameAr === sizeToMatch);
         if (sizeInfo) itemPrice = sizeInfo.price;
       }
       return total + itemPrice * ci.quantity;

@@ -2593,7 +2593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use a consistent composite ID format: ITEMID-SIZENAME-ADDONS
       const normalizedSize = sizeName || "default";
-      const normalizedAddons = addons.sort().join(",");
+      const normalizedAddons = Array.isArray(addons) ? addons.sort().join(",") : "";
       const compositeId = `${coffeeItemId}-${normalizedSize}-${normalizedAddons}`;
       
       let cartItem = await CartItemModel.findOne({ sessionId, id: compositeId });
