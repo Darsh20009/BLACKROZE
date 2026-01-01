@@ -2549,25 +2549,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const coffeeItem = await CoffeeItemModel.findOne({ id: cartItem.coffeeItemId }).lean();
           const doc = serializeDoc(cartItem);
-          // Force use our custom ID for frontend consistency
-          if (cartItem.id) doc.id = cartItem.id;
+          
+          // CRITICAL: Ensure the ID sent to frontend is the one we use for DELETE/PUT
+          // We prefer the composite 'id' field if it exists, otherwise fallback to _id
+          const finalId = cartItem.id || cartItem._id.toString();
           
           return {
             ...doc,
+            id: finalId,
             coffeeItem: coffeeItem ? serializeDoc(coffeeItem) : null
           };
         } catch (err) {
-          console.error(`Error enriching cart item ${cartItem.id}:`, err);
+          console.error(`Error enriching cart item:`, err);
           const doc = serializeDoc(cartItem);
-          if (cartItem.id) doc.id = cartItem.id;
-          return { ...doc, coffeeItem: null };
+          return { ...doc, id: cartItem.id || cartItem._id.toString(), coffeeItem: null };
         }
       }));
 
       res.json(enrichedItems.filter(item => item && item.coffeeItem));
     } catch (error) {
       console.error("Fetch cart error:", error);
-      res.status(500).json({ error: "Failed to fetch cart items", details: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "Failed to fetch cart items" });
     }
   });
 
@@ -2575,40 +2577,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cart", async (req, res) => {
     try {
       const { sessionId, coffeeItemId, quantity, selectedSize, selectedAddons } = req.body;
-      
+      console.log(`[CART] POST: item=${coffeeItemId}, size=${selectedSize}`);
+
       if (!sessionId || !coffeeItemId) {
         return res.status(400).json({ error: "Session ID and Coffee Item ID are required" });
       }
 
-      // Create a unique ID for this cart entry based on item + options
-      // selectedSize can be an object with nameAr or just a string
-      const sizeName = typeof selectedSize === 'object' ? selectedSize?.nameAr : selectedSize;
-      const cartItemId = `${coffeeItemId}-${sizeName || 'default'}-${(selectedAddons || []).sort().join(',')}`;
+      const sizeName = typeof selectedSize === 'object' ? (selectedSize as any)?.nameAr : selectedSize;
+      const addons = Array.isArray(selectedAddons) ? selectedAddons : [];
       
-      let cartItem = await CartItemModel.findOne({ sessionId, id: cartItemId });
+      // Use a consistent composite ID format
+      const compositeId = `${coffeeItemId}-${sizeName || "default"}-${addons.sort().join(",")}`;
+      
+      let cartItem = await CartItemModel.findOne({ sessionId, id: compositeId });
       
       if (cartItem) {
         cartItem.quantity += (quantity || 1);
         await cartItem.save();
       } else {
         cartItem = await CartItemModel.create({
-          id: cartItemId,
+          id: compositeId,
           sessionId,
           coffeeItemId,
           quantity: quantity || 1,
-          selectedSize: sizeName,
-          selectedAddons: selectedAddons || [],
+          selectedSize: sizeName || "default",
+          selectedAddons: addons,
           createdAt: new Date()
         });
       }
       
-      // Ensure the returned object has the same 'id' we use for lookup
       const result = serializeDoc(cartItem);
-      result.id = cartItemId;
+      result.id = compositeId; // Force return the composite ID
       res.status(201).json(result);
     } catch (error) {
-      console.error("Cart error:", error);
-      res.status(500).json({ error: "Failed to add item to cart", details: error instanceof Error ? error.message : String(error) });
+      console.error("[CART] Post error:", error);
+      res.status(500).json({ error: "Failed to add item to cart" });
     }
   });
 
@@ -2617,33 +2620,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { sessionId, cartItemId } = req.params;
       const { quantity } = req.body;
-      console.log(`[CART] Updating quantity: ${cartItemId} for session: ${sessionId} to ${quantity}`);
+      console.log(`[CART] PUT: id=${cartItemId}, qty=${quantity}`);
 
       if (typeof quantity !== 'number' || quantity < 0) {
         return res.status(400).json({ error: "Invalid quantity" });
       }
 
-      const cartItem = await CartItemModel.findOneAndUpdate(
-        { 
-          sessionId, 
-          $or: [
-            { id: cartItemId },
-            { _id: mongoose.Types.ObjectId.isValid(cartItemId) ? new mongoose.Types.ObjectId(cartItemId) : null }
-          ].filter(cond => cond._id !== null || cond.id !== undefined)
-        },
+      // Try composite ID first, then _id, then coffeeItemId as last resort
+      let cartItem = await CartItemModel.findOneAndUpdate(
+        { sessionId, id: cartItemId },
         { $set: { quantity } },
         { new: true }
       );
 
+      if (!cartItem && mongoose.Types.ObjectId.isValid(cartItemId)) {
+        cartItem = await CartItemModel.findOneAndUpdate(
+          { sessionId, _id: cartItemId },
+          { $set: { quantity } },
+          { new: true }
+        );
+      }
+
       if (!cartItem) {
-        console.warn(`[CART] Item not found for update: ${cartItemId}`);
+        cartItem = await CartItemModel.findOneAndUpdate(
+          { sessionId, coffeeItemId: cartItemId },
+          { $set: { quantity } },
+          { new: true }
+        );
+      }
+
+      if (!cartItem) {
         return res.status(404).json({ error: "Cart item not found" });
       }
 
-      res.json(serializeDoc(cartItem));
+      const result = serializeDoc(cartItem);
+      if (cartItem.id) result.id = cartItem.id;
+      res.json(result);
     } catch (error) {
       console.error("[CART] Update error:", error);
-      res.status(500).json({ error: "Failed to update cart item quantity" });
+      res.status(500).json({ error: "Failed to update cart" });
     }
   });
 
@@ -2651,25 +2666,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/cart/:sessionId/:cartItemId", async (req, res) => {
     try {
       const { sessionId, cartItemId } = req.params;
-      console.log(`[CART] Deleting item: ${cartItemId} for session: ${sessionId}`);
+      console.log(`[CART] DELETE: id=${cartItemId}`);
       
-      const result = await CartItemModel.deleteOne({ 
-        sessionId, 
-        $or: [
-          { id: cartItemId },
-          { _id: mongoose.Types.ObjectId.isValid(cartItemId) ? new mongoose.Types.ObjectId(cartItemId) : null }
-        ].filter(cond => cond._id !== null || cond.id !== undefined)
-      });
+      // Try multiple deletion strategies for 100% reliability
+      let result = await CartItemModel.deleteOne({ sessionId, id: cartItemId });
+
+      if (result.deletedCount === 0 && mongoose.Types.ObjectId.isValid(cartItemId)) {
+        result = await CartItemModel.deleteOne({ sessionId, _id: cartItemId });
+      }
+      
+      if (result.deletedCount === 0) {
+        result = await CartItemModel.deleteOne({ sessionId, coffeeItemId: cartItemId });
+      }
 
       if (result.deletedCount === 0) {
-        console.warn(`[CART] Item not found for deletion: ${cartItemId}`);
+        console.warn(`[CART] Item NOT found for deletion: ${cartItemId}`);
         return res.status(404).json({ error: "Cart item not found" });
       }
 
-      res.json({ message: "Item removed from cart" });
+      console.log(`[CART] Item deleted successfully: ${cartItemId}`);
+      res.json({ message: "Item removed" });
     } catch (error) {
       console.error("[CART] Delete error:", error);
-      res.status(500).json({ error: "Failed to remove item from cart" });
+      res.status(500).json({ error: "Failed to remove item" });
     }
   });
 
