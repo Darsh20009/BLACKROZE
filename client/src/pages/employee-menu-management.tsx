@@ -1552,11 +1552,11 @@ export default function EmployeeMenuManagement() {
  >
  <div className="flex items-center gap-4 flex-1">
  <img
- src={item.imageUrl || getCoffeeImage(item.id)}
+ src={item.imageUrl ? (item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`) : getCoffeeImage(item.id)}
  alt={item.nameAr}
  className="w-16 h-16 rounded-lg object-cover"
  onError={(e) => {
- e.currentTarget.src = "/images/default-coffee.png";
+ e.currentTarget.src = getCoffeeImage(item.id);
  }}
  data-testid={`img-${item.id}`}
  />

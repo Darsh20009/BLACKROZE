@@ -20,6 +20,7 @@ import { X, Plus, Minus, ShoppingCart, Coffee } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getCoffeeImage } from "@/lib/coffee-data-clean";
 import type { CoffeeItem, IProductAddon } from "@shared/schema";
 
 interface AddToCartModalProps {
@@ -112,7 +113,7 @@ export function AddToCartModal({
             </div>
             <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-primary/20 bg-slate-800">
               {item.imageUrl && (
-                <img src={item.imageUrl} alt={item.nameAr} className="w-full h-full object-cover" />
+                <img src={item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`} alt={item.nameAr} className="w-full h-full object-cover" />
               )}
             </div>
           </div>
