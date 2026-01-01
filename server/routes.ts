@@ -2550,27 +2550,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const coffeeItem = await CoffeeItemModel.findOne({ id: cartItem.coffeeItemId }).lean();
           const doc = serializeDoc(cartItem);
           
-          // CRITICAL: Force the ID to be the custom 'id' (composite) if available, otherwise _id
-          // This ensures the frontend ALWAYS receives an ID it can use for DELETE/PUT
-          const finalId = cartItem.id || cartItem._id.toString();
+          // CRITICAL: Force the ID to be the custom 'id' (composite) if available, otherwise use coffeeItemId
+          // This ensures the frontend ALWAYS receives an ID it can use for DELETE/PUT consistently
+          const finalId = cartItem.id || cartItem.coffeeItemId;
           
           return {
             ...doc,
             id: finalId,
-            coffeeItem: coffeeItem ? serializeDoc(coffeeItem) : null
+            item: coffeeItem ? serializeDoc(coffeeItem) : null
           };
         } catch (err) {
           console.error(`Error enriching cart item:`, err);
           return { 
             ...serializeDoc(cartItem), 
-            id: cartItem.id || cartItem._id.toString(), 
-            coffeeItem: null 
+            id: cartItem.id || cartItem.coffeeItemId, 
+            item: null 
           };
         }
       }));
 
       // Filter out items where coffee details couldn't be found
-      res.json(enrichedItems.filter(item => item && item.coffeeItem));
+      res.json(enrichedItems.filter(item => item && item.item));
     } catch (error) {
       console.error("Fetch cart error:", error);
       res.status(500).json({ error: "Failed to fetch cart items" });
@@ -2587,11 +2587,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Session ID and Coffee Item ID are required" });
       }
 
+      // Consistent size selection
       const sizeName = typeof selectedSize === 'object' ? (selectedSize as any)?.nameAr : selectedSize;
       const addons = Array.isArray(selectedAddons) ? selectedAddons : [];
       
-      // Use a consistent composite ID format
-      const compositeId = `${coffeeItemId}-${sizeName || "default"}-${addons.sort().join(",")}`;
+      // Use a consistent composite ID format: ITEMID-SIZENAME-ADDONS
+      const normalizedSize = sizeName || "default";
+      const normalizedAddons = addons.sort().join(",");
+      const compositeId = `${coffeeItemId}-${normalizedSize}-${normalizedAddons}`;
       
       let cartItem = await CartItemModel.findOne({ sessionId, id: compositeId });
       
@@ -2599,14 +2602,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cartItem.quantity += (quantity || 1);
         await cartItem.save();
       } else {
-        // Try to find if there's an item with same coffeeItemId but different internal MongoDB _id
-        // We only care about sessionId + id (composite)
         cartItem = await CartItemModel.create({
           id: compositeId,
           sessionId,
           coffeeItemId,
           quantity: quantity || 1,
-          selectedSize: sizeName || "default",
+          selectedSize: normalizedSize,
           selectedAddons: addons,
           createdAt: new Date()
         });
@@ -2632,13 +2633,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid quantity" });
       }
 
-      // Try composite ID first, then coffeeItemId as last resort, then _id
+      // Try composite ID first, then coffeeItemId (if it's a default variant), then _id
       let cartItem = await CartItemModel.findOneAndUpdate(
         { sessionId, id: cartItemId },
         { $set: { quantity } },
         { new: true }
       );
 
+      // Fallback for older items or items added without composite ID
       if (!cartItem) {
         cartItem = await CartItemModel.findOneAndUpdate(
           { sessionId, coffeeItemId: cartItemId, selectedSize: "default" },
@@ -2660,7 +2662,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = serializeDoc(cartItem);
-      if (cartItem.id) result.id = cartItem.id;
+      // Ensure the returned ID matches what the client expects (the search key)
+      result.id = cartItem.id || cartItem.coffeeItemId;
       res.json(result);
     } catch (error) {
       console.error("[CART] Update error:", error);

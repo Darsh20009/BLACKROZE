@@ -157,7 +157,7 @@ export default function TableMenuNew() {
     const sId = table?._id ? `table-${table._id}` : "guest";
 
     try {
-      // Optimistic update
+      // 1. Optimistic update
       setCart((prev) => {
         const existing = prev.find((ci) => ci.id === cartItemId);
         let updatedCart;
@@ -169,11 +169,10 @@ export default function TableMenuNew() {
           updatedCart = [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
         }
         sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
-        // Force refresh by clearing cache for this query
-        queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
         return updatedCart;
       });
 
+      // 2. Sync with backend
       await apiRequest("POST", "/api/cart", {
         sessionId: sId,
         coffeeItemId: item.id,
@@ -181,6 +180,14 @@ export default function TableMenuNew() {
         selectedSize: sizeName,
         selectedAddons
       });
+
+      // 3. Force re-fetch from backend to ensure server-side IDs are correctly mapped
+      const response = await fetch(`/api/cart/${sId}`);
+      if (response.ok) {
+        const serverCart = await response.json();
+        setCart(serverCart);
+        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(serverCart));
+      }
 
       toast({
         title: "تمت الإضافة للسلة",
@@ -203,7 +210,7 @@ export default function TableMenuNew() {
       const existingItem = cart.find(ci => ci.id === cartItemId);
       if (!existingItem) return;
 
-      // Optimistic update
+      // 1. Optimistic update
       setCart((prev) => {
         let updatedCart;
         if (existingItem.quantity > 1) {
@@ -214,17 +221,24 @@ export default function TableMenuNew() {
           updatedCart = prev.filter((ci) => ci.id !== cartItemId);
         }
         sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
-        // Force refresh by clearing cache for this query
-        queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
         return updatedCart;
       });
 
+      // 2. Sync with backend
       if (existingItem.quantity > 1) {
         await apiRequest("PUT", `/api/cart/${sId}/${cartItemId}`, {
           quantity: existingItem.quantity - 1
         });
       } else {
         await apiRequest("DELETE", `/api/cart/${sId}/${cartItemId}`);
+      }
+      
+      // 3. Re-fetch to ensure sync
+      const response = await fetch(`/api/cart/${sId}`);
+      if (response.ok) {
+        const serverCart = await response.json();
+        setCart(serverCart);
+        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(serverCart));
       }
     } catch (error) {
       console.error("Remove from cart error:", error);
