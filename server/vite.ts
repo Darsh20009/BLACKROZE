@@ -85,16 +85,36 @@ export function serveStatic(app: Express) {
     );
   }
 
-  // Set specific cache headers for static assets (JS, CSS, images)
-  // These files are hashed by Vite, so they can be cached long-term
-  app.use(express.static(distPath, {
-    maxAge: '1y',
-    immutable: true,
-    index: false // Don't serve index.html via express.static to handle it manually with no-cache
-  }));
+  // ✅ Fix white screen after deploy:
+  // - Never cache HTML (index.html)
+  // - Cache hashed assets for long time (Vite /assets/*)
+  const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
-  // Fall through to index.html with NO-CACHE headers
-  // This ensures the browser always checks for the latest index.html which points to new hashed assets
+  app.use(
+    express.static(distPath, {
+      setHeaders: (res, filePath) => {
+        const normalized = filePath.replace(/\\/g, "/");
+
+        if (normalized.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+          res.setHeader("Pragma", "no-cache");
+          res.setHeader("Expires", "0");
+          return;
+        }
+
+        if (normalized.includes("/assets/")) {
+          res.setHeader(
+            "Cache-Control",
+            `public, max-age=${ONE_YEAR_SECONDS}, immutable`,
+          );
+          return;
+        }
+
+        res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+      },
+    }),
+  );
+
   app.use("*", (_req, res) => {
     res.set({
       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",

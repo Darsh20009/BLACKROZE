@@ -37,6 +37,13 @@
       "purpose": "maskable"
     }
   ],
+  "icons_32": [
+    {
+      "src": "/employee-logo.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ],
   "screenshots": [
     {
       "src": "/employee-logo.png",
