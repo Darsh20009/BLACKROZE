@@ -36,8 +36,11 @@ interface IPendingOrder {
 }
 
 interface CartItem {
+  id: string;
   item: CoffeeItem;
   quantity: number;
+  selectedSize?: string;
+  selectedAddons?: string[];
 }
 
 export default function TableMenuNew() {
@@ -133,17 +136,20 @@ export default function TableMenuNew() {
   
   filteredItems = filterCoffeeByStrength(filteredItems, selectedStrength);
 
-  const addToCart = (item: CoffeeItem) => {
+  const addToCart = (item: CoffeeItem, selectedSize?: string, selectedAddons: string[] = []) => {
+    const sizeName = selectedSize || "default";
+    const cartItemId = `${item.id}-${sizeName}-${selectedAddons.sort().join(",")}`;
+
     setCart((prev) => {
-      const existing = prev.find((ci) => ci.item.id === item.id);
+      const existing = prev.find((ci) => ci.id === cartItemId);
       if (existing) {
         return prev.map((ci) =>
-          ci.item.id === item.id
+          ci.id === cartItemId
             ? { ...ci, quantity: ci.quantity + 1 }
             : ci
         );
       }
-      return [...prev, { item, quantity: 1 }];
+      return [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
     });
     
     toast({
@@ -152,22 +158,30 @@ export default function TableMenuNew() {
     });
   };
 
-  const removeFromCart = (itemId: string) => {
+  const removeFromCart = (cartItemId: string) => {
     setCart((prev) => {
-      const existing = prev.find((ci) => ci.item.id === itemId);
+      const existing = prev.find((ci) => ci.id === cartItemId);
       if (existing && existing.quantity > 1) {
         return prev.map((ci) =>
-          ci.item.id === itemId
+          ci.id === cartItemId
             ? { ...ci, quantity: ci.quantity - 1 }
             : ci
         );
       }
-      return prev.filter((ci) => ci.item.id !== itemId);
+      return prev.filter((ci) => ci.id !== cartItemId);
     });
   };
 
   const getTotalPrice = () => {
-    return cart.reduce((total, ci) => total + ci.item.price * ci.quantity, 0);
+    return cart.reduce((total, ci) => {
+      // Calculate item price based on size if needed
+      let itemPrice = ci.item.price;
+      if (ci.selectedSize && ci.item.sizes) {
+        const sizeInfo = ci.item.sizes.find((s: any) => s.nameAr === ci.selectedSize);
+        if (sizeInfo) itemPrice = sizeInfo.price;
+      }
+      return total + itemPrice * ci.quantity;
+    }, 0);
   };
 
   // دالة تمديد الحجز

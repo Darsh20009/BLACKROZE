@@ -2624,30 +2624,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { sessionId, cartItemId } = req.params;
       const { quantity } = req.body;
-      console.log(`[CART] PUT: id=${cartItemId}, qty=${quantity}`);
+      console.log(`[CART] PUT: session=${sessionId}, id=${cartItemId}, qty=${quantity}`);
 
       if (typeof quantity !== 'number' || quantity < 0) {
         return res.status(400).json({ error: "Invalid quantity" });
       }
 
-      // Try composite ID first, then _id, then coffeeItemId as last resort
+      // Try composite ID first, then coffeeItemId as last resort, then _id
       let cartItem = await CartItemModel.findOneAndUpdate(
         { sessionId, id: cartItemId },
         { $set: { quantity } },
         { new: true }
       );
 
-      if (!cartItem && mongoose.Types.ObjectId.isValid(cartItemId)) {
+      if (!cartItem) {
         cartItem = await CartItemModel.findOneAndUpdate(
-          { sessionId, _id: cartItemId },
+          { sessionId, coffeeItemId: cartItemId },
           { $set: { quantity } },
           { new: true }
         );
       }
 
-      if (!cartItem) {
+      if (!cartItem && mongoose.Types.ObjectId.isValid(cartItemId)) {
         cartItem = await CartItemModel.findOneAndUpdate(
-          { sessionId, coffeeItemId: cartItemId },
+          { sessionId, _id: cartItemId },
           { $set: { quantity } },
           { new: true }
         );
@@ -2670,25 +2670,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/cart/:sessionId/:cartItemId", async (req, res) => {
     try {
       const { sessionId, cartItemId } = req.params;
-      console.log(`[CART] DELETE: id=${cartItemId}`);
+      console.log(`[CART] DELETE: session=${sessionId}, id=${cartItemId}`);
       
-      // Try multiple deletion strategies for 100% reliability
+      // Try multiple deletion strategies
       let result = await CartItemModel.deleteOne({ sessionId, id: cartItemId });
 
-      if (result.deletedCount === 0 && mongoose.Types.ObjectId.isValid(cartItemId)) {
-        result = await CartItemModel.deleteOne({ sessionId, _id: cartItemId });
-      }
-      
       if (result.deletedCount === 0) {
         result = await CartItemModel.deleteOne({ sessionId, coffeeItemId: cartItemId });
       }
 
+      if (result.deletedCount === 0 && mongoose.Types.ObjectId.isValid(cartItemId)) {
+        result = await CartItemModel.deleteOne({ sessionId, _id: cartItemId });
+      }
+
       if (result.deletedCount === 0) {
-        console.warn(`[CART] Item NOT found for deletion: ${cartItemId}`);
         return res.status(404).json({ error: "Cart item not found" });
       }
 
-      console.log(`[CART] Item deleted successfully: ${cartItemId}`);
       res.json({ message: "Item removed" });
     } catch (error) {
       console.error("[CART] Delete error:", error);
