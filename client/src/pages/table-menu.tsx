@@ -157,20 +157,21 @@ export default function TableMenuNew() {
 
     setCart((prev) => {
       const existing = prev.find((ci) => ci.id === cartItemId);
+      let updatedCart;
       if (existing) {
-        const updatedCart = prev.map((ci) =>
+        updatedCart = prev.map((ci) =>
           ci.id === cartItemId
             ? { ...ci, quantity: ci.quantity + 1 }
             : ci
         );
-        // Sync with session storage
-        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
-        return updatedCart;
+      } else {
+        updatedCart = [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
       }
-      const newCart = [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
-      // Sync with session storage
-      sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(newCart));
-      return newCart;
+      // Sync with session storage using table._id
+      if (table?._id) {
+        sessionStorage.setItem(`cart_${table._id}`, JSON.stringify(updatedCart));
+      }
+      return updatedCart;
     });
     
     toast({
@@ -192,8 +193,10 @@ export default function TableMenuNew() {
       } else {
         updatedCart = prev.filter((ci) => ci.id !== cartItemId);
       }
-      // Sync with session storage
-      sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+      // Sync with session storage using table._id
+      if (table?._id) {
+        sessionStorage.setItem(`cart_${table._id}`, JSON.stringify(updatedCart));
+      }
       return updatedCart;
     });
   };

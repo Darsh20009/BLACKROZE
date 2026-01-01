@@ -2639,7 +2639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!cartItem) {
         cartItem = await CartItemModel.findOneAndUpdate(
-          { sessionId, coffeeItemId: cartItemId },
+          { sessionId, coffeeItemId: cartItemId, selectedSize: "default" },
           { $set: { quantity } },
           { new: true }
         );
@@ -2676,7 +2676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let result = await CartItemModel.deleteOne({ sessionId, id: cartItemId });
 
       if (result.deletedCount === 0) {
-        result = await CartItemModel.deleteOne({ sessionId, coffeeItemId: cartItemId });
+        result = await CartItemModel.deleteOne({ sessionId, coffeeItemId: cartItemId, selectedSize: "default" });
       }
 
       if (result.deletedCount === 0 && mongoose.Types.ObjectId.isValid(cartItemId)) {
