@@ -2581,7 +2581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cart", async (req, res) => {
     try {
       const { sessionId, coffeeItemId, quantity, selectedSize, selectedAddons } = req.body;
-      console.log(`[CART] POST: item=${coffeeItemId}, size=${selectedSize}`);
+      console.log(`[CART] POST: item=${coffeeItemId}, size=${selectedSize}, qty=${quantity}`);
 
       if (!sessionId || !coffeeItemId) {
         return res.status(400).json({ error: "Session ID and Coffee Item ID are required" });
@@ -2611,7 +2611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const result = serializeDoc(cartItem);
-      result.id = compositeId; // Force return the composite ID
+      result.id = compositeId;
       res.status(201).json(result);
     } catch (error) {
       console.error("[CART] Post error:", error);

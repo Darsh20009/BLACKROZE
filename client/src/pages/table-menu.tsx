@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -136,6 +137,20 @@ export default function TableMenuNew() {
   
   filteredItems = filterCoffeeByStrength(filteredItems, selectedStrength);
 
+  // Load cart from session storage on mount
+  useEffect(() => {
+    if (table?._id) {
+      const savedCart = sessionStorage.getItem(`cart_${table._id}`);
+      if (savedCart) {
+        try {
+          setCart(JSON.parse(savedCart));
+        } catch (e) {
+          console.error("Error parsing saved cart:", e);
+        }
+      }
+    }
+  }, [table?._id]);
+
   const addToCart = (item: CoffeeItem, selectedSize?: string, selectedAddons: string[] = []) => {
     const sizeName = selectedSize || "default";
     const cartItemId = `${item.id}-${sizeName}-${selectedAddons.sort().join(",")}`;
@@ -143,13 +158,19 @@ export default function TableMenuNew() {
     setCart((prev) => {
       const existing = prev.find((ci) => ci.id === cartItemId);
       if (existing) {
-        return prev.map((ci) =>
+        const updatedCart = prev.map((ci) =>
           ci.id === cartItemId
             ? { ...ci, quantity: ci.quantity + 1 }
             : ci
         );
+        // Sync with session storage
+        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+        return updatedCart;
       }
-      return [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
+      const newCart = [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
+      // Sync with session storage
+      sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(newCart));
+      return newCart;
     });
     
     toast({
@@ -161,14 +182,19 @@ export default function TableMenuNew() {
   const removeFromCart = (cartItemId: string) => {
     setCart((prev) => {
       const existing = prev.find((ci) => ci.id === cartItemId);
+      let updatedCart;
       if (existing && existing.quantity > 1) {
-        return prev.map((ci) =>
+        updatedCart = prev.map((ci) =>
           ci.id === cartItemId
             ? { ...ci, quantity: ci.quantity - 1 }
             : ci
         );
+      } else {
+        updatedCart = prev.filter((ci) => ci.id !== cartItemId);
       }
-      return prev.filter((ci) => ci.id !== cartItemId);
+      // Sync with session storage
+      sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+      return updatedCart;
     });
   };
 
@@ -176,8 +202,9 @@ export default function TableMenuNew() {
     return cart.reduce((total, ci) => {
       // Calculate item price based on size if needed
       let itemPrice = ci.item.price;
-      if (ci.selectedSize && ci.item.sizes) {
-        const sizeInfo = ci.item.sizes.find((s: any) => s.nameAr === ci.selectedSize);
+      const sizes = (ci.item as any).sizes;
+      if (ci.selectedSize && sizes) {
+        const sizeInfo = sizes.find((s: any) => s.nameAr === ci.selectedSize);
         if (sizeInfo) itemPrice = sizeInfo.price;
       }
       return total + itemPrice * ci.quantity;
@@ -551,11 +578,10 @@ export default function TableMenuNew() {
             </div>
           </div>
 
-          {/* Coffee Items Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredItems.map((item) => {
-              const cartItem = cart.find((ci) => ci.item.id === item.id);
-              const quantity = cartItem?.quantity || 0;
+              const itemInCart = cart.find((ci) => ci.item.id === item.id && ci.selectedSize === "default");
+              const quantity = itemInCart?.quantity || 0;
               
               return (
                 <div
@@ -569,25 +595,52 @@ export default function TableMenuNew() {
                         alt={item.nameAr}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
-                      {item.isNewProduct === 1 && (
-                        <Badge className="absolute top-2 right-2 bg-blue-500">جديد</Badge>
-                      )}
-                      {item.oldPrice && (
-                        <Badge className="absolute top-2 left-2 bg-red-500">خصم</Badge>
-                      )}
                     </div>
                   )}
                   
                   <div className="p-4 space-y-3">
                     <h3 className="font-bold text-lg text-slate-800">{item.nameAr}</h3>
-                    <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>
+                    <p className="text-sm text-slate-600 line-clamp-2">{item.descriptionAr}</p>
                     
+                    {/* Size Selection Section */}
+                    {(item as any).sizes && (item as any).sizes.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4 border-t pt-3">
+                        <p className="w-full text-[10px] text-slate-400 mb-1 font-bold">الأحجام المتوفرة:</p>
+                        {(item as any).sizes.map((size: any) => {
+                          const sizeCartItemId = `${item.id}-${size.nameAr}-`;
+                          const sizeInCart = cart.find((ci) => ci.id.startsWith(sizeCartItemId));
+                          const sizeQty = sizeInCart?.quantity || 0;
+
+                          return (
+                            <div key={size.nameAr} className="flex items-center gap-1 bg-slate-50 rounded-lg p-1 border border-slate-100">
+                              <Button
+                                size="sm"
+                                variant={sizeQty > 0 ? "default" : "outline"}
+                                className={`h-8 text-[10px] sm:text-xs rounded-md ${sizeQty > 0 ? "bg-slate-600 border-transparent shadow-sm" : "bg-white border-slate-200"}`}
+                                onClick={() => addToCart(item, size.nameAr)}
+                              >
+                                {size.nameAr} ({size.price} ر.س)
+                                {sizeQty > 0 && <Badge className="mr-1 h-4 w-4 p-0 flex items-center justify-center bg-blue-500 text-[8px] border-none">{sizeQty}</Badge>}
+                              </Button>
+                              {sizeQty > 0 && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
+                                  onClick={() => removeFromCart(sizeInCart!.id)}
+                                >
+                                  -
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xl font-bold text-slate-800">{item.price} ر.س</span>
-                        {item.oldPrice && (
-                          <span className="text-sm text-slate-400 line-through">{item.oldPrice} ر.س</span>
-                        )}
                       </div>
                       
                       {quantity > 0 ? (
@@ -596,7 +649,7 @@ export default function TableMenuNew() {
                             size="icon"
                             variant="outline"
                             className="h-8 w-8"
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => removeFromCart(itemInCart!.id)}
                           >
                             -
                           </Button>
@@ -612,9 +665,9 @@ export default function TableMenuNew() {
                       ) : (
                         <Button
                           onClick={() => addToCart(item)}
-                          className="bg-slate-600 hover:bg-slate-700"
+                          className="bg-slate-600 hover:bg-slate-700 text-white"
                         >
-                          إضافة
+                          إضافة للسلة
                         </Button>
                       )}
                     </div>
