@@ -2599,6 +2599,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cartItem.quantity += (quantity || 1);
         await cartItem.save();
       } else {
+        // Try to find if there's an item with same coffeeItemId but different internal MongoDB _id
+        // We only care about sessionId + id (composite)
         cartItem = await CartItemModel.create({
           id: compositeId,
           sessionId,
@@ -2611,7 +2613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const result = serializeDoc(cartItem);
-      result.id = compositeId; // Force return the composite ID
+      result.id = compositeId; // Ensure we always return the composite ID
       res.status(201).json(result);
     } catch (error) {
       console.error("[CART] Post error:", error);

@@ -169,6 +169,8 @@ export default function TableMenuNew() {
           updatedCart = [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
         }
         sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+        // Force refresh by clearing cache for this query
+        queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
         return updatedCart;
       });
 
@@ -212,6 +214,8 @@ export default function TableMenuNew() {
           updatedCart = prev.filter((ci) => ci.id !== cartItemId);
         }
         sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+        // Force refresh by clearing cache for this query
+        queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
         return updatedCart;
       });
 
@@ -232,7 +236,7 @@ export default function TableMenuNew() {
       // Calculate item price based on size if needed
       let itemPrice = ci.item.price;
       const sizes = (ci.item as any).sizes;
-      if (ci.selectedSize && sizes) {
+      if (ci.selectedSize && ci.selectedSize !== "default" && sizes) {
         const sizeInfo = sizes.find((s: any) => s.nameAr === ci.selectedSize);
         if (sizeInfo) itemPrice = sizeInfo.price;
       }
@@ -629,7 +633,7 @@ export default function TableMenuNew() {
                   
                   <div className="p-4 space-y-3">
                     <h3 className="font-bold text-lg text-slate-800">{item.nameAr}</h3>
-                    <p className="text-sm text-slate-600 line-clamp-2">{item.descriptionAr}</p>
+                    <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>
                     
                     {/* Size Selection Section */}
                     {(item as any).sizes && (item as any).sizes.length > 0 && (
