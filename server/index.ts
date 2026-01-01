@@ -185,7 +185,11 @@ app.get('/health', (_req, res) => {
 });
 
 // Serve attached assets for both development and production
-app.use('/attached_assets', express.static(path.resolve(import.meta.dirname, '..', 'attached_assets')));
+app.use('/attached_assets', express.static(path.resolve(import.meta.dirname, '..', 'attached_assets'), {
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-cache');
+  }
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
