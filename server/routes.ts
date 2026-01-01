@@ -2550,8 +2550,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const coffeeItem = await CoffeeItemModel.findOne({ id: cartItem.coffeeItemId }).lean();
           const doc = serializeDoc(cartItem);
           
-          // CRITICAL: Ensure the ID sent to frontend is the one we use for DELETE/PUT
-          // We prefer the composite 'id' field if it exists, otherwise fallback to _id
+          // CRITICAL: Force the ID to be the custom 'id' (composite) if available, otherwise _id
+          // This ensures the frontend ALWAYS receives an ID it can use for DELETE/PUT
           const finalId = cartItem.id || cartItem._id.toString();
           
           return {
@@ -2561,11 +2561,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         } catch (err) {
           console.error(`Error enriching cart item:`, err);
-          const doc = serializeDoc(cartItem);
-          return { ...doc, id: cartItem.id || cartItem._id.toString(), coffeeItem: null };
+          return { 
+            ...serializeDoc(cartItem), 
+            id: cartItem.id || cartItem._id.toString(), 
+            coffeeItem: null 
+          };
         }
       }));
 
+      // Filter out items where coffee details couldn't be found
       res.json(enrichedItems.filter(item => item && item.coffeeItem));
     } catch (error) {
       console.error("Fetch cart error:", error);
