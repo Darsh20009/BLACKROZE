@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -151,54 +151,80 @@ export default function TableMenuNew() {
     }
   }, [table?._id]);
 
-  const addToCart = (item: CoffeeItem, selectedSize?: string, selectedAddons: string[] = []) => {
+  const addToCart = async (item: CoffeeItem, selectedSize?: string, selectedAddons: string[] = []) => {
     const sizeName = selectedSize || "default";
     const cartItemId = `${item.id}-${sizeName}-${selectedAddons.sort().join(",")}`;
+    const sId = table?._id ? `table-${table._id}` : "guest";
 
-    setCart((prev) => {
-      const existing = prev.find((ci) => ci.id === cartItemId);
-      let updatedCart;
-      if (existing) {
-        updatedCart = prev.map((ci) =>
-          ci.id === cartItemId
-            ? { ...ci, quantity: ci.quantity + 1 }
-            : ci
-        );
-      } else {
-        updatedCart = [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
-      }
-      // Sync with session storage using table._id
-      if (table?._id) {
-        sessionStorage.setItem(`cart_${table._id}`, JSON.stringify(updatedCart));
-      }
-      return updatedCart;
-    });
-    
-    toast({
-      title: "تمت الإضافة للسلة",
-      description: `تم إضافة ${item.nameAr} إلى سلتك`,
-    });
+    try {
+      // Optimistic update
+      setCart((prev) => {
+        const existing = prev.find((ci) => ci.id === cartItemId);
+        let updatedCart;
+        if (existing) {
+          updatedCart = prev.map((ci) =>
+            ci.id === cartItemId ? { ...ci, quantity: ci.quantity + 1 } : ci
+          );
+        } else {
+          updatedCart = [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
+        }
+        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+        return updatedCart;
+      });
+
+      await apiRequest("POST", "/api/cart", {
+        sessionId: sId,
+        coffeeItemId: item.id,
+        quantity: 1,
+        selectedSize: sizeName,
+        selectedAddons
+      });
+
+      toast({
+        title: "تمت الإضافة للسلة",
+        description: `تم إضافة ${item.nameAr} إلى سلتك`,
+      });
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      toast({
+        title: "خطأ",
+        description: "فشل في إضافة المنتج للسلة",
+        variant: "destructive"
+      });
+    }
   };
 
-  const removeFromCart = (cartItemId: string) => {
-    setCart((prev) => {
-      const existing = prev.find((ci) => ci.id === cartItemId);
-      let updatedCart;
-      if (existing && existing.quantity > 1) {
-        updatedCart = prev.map((ci) =>
-          ci.id === cartItemId
-            ? { ...ci, quantity: ci.quantity - 1 }
-            : ci
-        );
+  const removeFromCart = async (cartItemId: string) => {
+    const sId = table?._id ? `table-${table._id}` : "guest";
+    
+    try {
+      const existingItem = cart.find(ci => ci.id === cartItemId);
+      if (!existingItem) return;
+
+      // Optimistic update
+      setCart((prev) => {
+        let updatedCart;
+        if (existingItem.quantity > 1) {
+          updatedCart = prev.map((ci) =>
+            ci.id === cartItemId ? { ...ci, quantity: ci.quantity - 1 } : ci
+          );
+        } else {
+          updatedCart = prev.filter((ci) => ci.id !== cartItemId);
+        }
+        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+        return updatedCart;
+      });
+
+      if (existingItem.quantity > 1) {
+        await apiRequest("PUT", `/api/cart/${sId}/${cartItemId}`, {
+          quantity: existingItem.quantity - 1
+        });
       } else {
-        updatedCart = prev.filter((ci) => ci.id !== cartItemId);
+        await apiRequest("DELETE", `/api/cart/${sId}/${cartItemId}`);
       }
-      // Sync with session storage using table._id
-      if (table?._id) {
-        sessionStorage.setItem(`cart_${table._id}`, JSON.stringify(updatedCart));
-      }
-      return updatedCart;
-    });
+    } catch (error) {
+      console.error("Remove from cart error:", error);
+    }
   };
 
   const getTotalPrice = () => {

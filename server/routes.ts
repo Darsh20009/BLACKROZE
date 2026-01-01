@@ -2611,7 +2611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const result = serializeDoc(cartItem);
-      result.id = compositeId;
+      result.id = compositeId; // Force return the composite ID
       res.status(201).json(result);
     } catch (error) {
       console.error("[CART] Post error:", error);
