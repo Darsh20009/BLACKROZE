@@ -100,21 +100,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
  staleTime: 30000, // 30 seconds
  });
 
- // Add to cart mutation
- const addToCartMutation = useMutation({
-  mutationFn: async ({ coffeeItemId, quantity, selectedSize, selectedAddons }: { coffeeItemId: string; quantity: number; selectedSize?: string | null; selectedAddons?: string[] }) => {
-  const response = await apiRequest("POST", "/api/cart", {
-  sessionId,
-  coffeeItemId,
-  quantity,
-  selectedSize,
-  selectedAddons,
-  });
-  return response.json();
-  },
-  onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
-  },
+  // Add to cart mutation
+  const addToCartMutation = useMutation({
+    mutationFn: async ({ coffeeItemId, quantity, selectedSize, selectedAddons }: { coffeeItemId: string; quantity: number; selectedSize?: string | null; selectedAddons?: string[] }) => {
+      console.log(`[CART] Adding to cart: item=${coffeeItemId}, size=${selectedSize}, addons=${selectedAddons}`);
+      const response = await apiRequest("POST", "/api/cart", {
+        sessionId,
+        coffeeItemId,
+        quantity,
+        selectedSize: selectedSize || "default",
+        selectedAddons: selectedAddons || [],
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log("[CART] Successfully added to cart:", data);
+      queryClient.invalidateQueries({ queryKey: ["/api/cart", sessionId] });
+    },
+    onError: (error) => {
+      console.error("[CART] Add to cart error:", error);
+    }
   });
 
   // Update quantity mutation

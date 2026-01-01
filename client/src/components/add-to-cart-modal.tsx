@@ -67,23 +67,13 @@ export function AddToCartModal({
       : null;
 
     const cartItem = {
-      itemId: item.id,
-      name: item.nameAr,
-      price: sizeData?.price ?? item.price,
+      coffeeItemId: item.id,
       quantity,
       selectedSize: selectedSize || "default",
-      sizePrice: sizeData?.price,
-      sizeML: sizeData?.sizeML,
-      sizeSku: sizeData?.sku,
-      addons: selectedAddons.map((addonId) => {
+      selectedAddons: selectedAddons.map((addonId) => {
         const addon = allAddons.find((a) => a.id === addonId);
-        return {
-          id: addonId,
-          name: addon?.nameAr,
-          price: addon?.price ?? 0,
-          rawItemId: addon?.rawItemId,
-        };
-      }),
+        return addon?.nameAr;
+      }).filter(Boolean),
     };
 
     onAddToCart(cartItem);

@@ -2617,23 +2617,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { sessionId, cartItemId } = req.params;
       const { quantity } = req.body;
+      console.log(`[CART] Updating quantity: ${cartItemId} for session: ${sessionId} to ${quantity}`);
 
       if (typeof quantity !== 'number' || quantity < 0) {
         return res.status(400).json({ error: "Invalid quantity" });
       }
 
       const cartItem = await CartItemModel.findOneAndUpdate(
-        { sessionId, id: cartItemId },
+        { 
+          sessionId, 
+          $or: [
+            { id: cartItemId },
+            { _id: mongoose.Types.ObjectId.isValid(cartItemId) ? new mongoose.Types.ObjectId(cartItemId) : null }
+          ].filter(cond => cond._id !== null || cond.id !== undefined)
+        },
         { $set: { quantity } },
         { new: true }
       );
 
-      if (!cartItem && quantity > 0) {
+      if (!cartItem) {
+        console.warn(`[CART] Item not found for update: ${cartItemId}`);
         return res.status(404).json({ error: "Cart item not found" });
       }
 
-      res.json(cartItem ? serializeDoc(cartItem) : { message: "Item removed from cart" });
+      res.json(serializeDoc(cartItem));
     } catch (error) {
+      console.error("[CART] Update error:", error);
       res.status(500).json({ error: "Failed to update cart item quantity" });
     }
   });
@@ -2642,14 +2651,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/cart/:sessionId/:cartItemId", async (req, res) => {
     try {
       const { sessionId, cartItemId } = req.params;
-      const result = await CartItemModel.deleteOne({ sessionId, id: cartItemId });
+      console.log(`[CART] Deleting item: ${cartItemId} for session: ${sessionId}`);
+      
+      const result = await CartItemModel.deleteOne({ 
+        sessionId, 
+        $or: [
+          { id: cartItemId },
+          { _id: mongoose.Types.ObjectId.isValid(cartItemId) ? new mongoose.Types.ObjectId(cartItemId) : null }
+        ].filter(cond => cond._id !== null || cond.id !== undefined)
+      });
 
       if (result.deletedCount === 0) {
+        console.warn(`[CART] Item not found for deletion: ${cartItemId}`);
         return res.status(404).json({ error: "Cart item not found" });
       }
 
       res.json({ message: "Item removed from cart" });
     } catch (error) {
+      console.error("[CART] Delete error:", error);
       res.status(500).json({ error: "Failed to remove item from cart" });
     }
   });
