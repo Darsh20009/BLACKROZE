@@ -25,13 +25,21 @@ export function saveOrderLocally(orderNumber: string): void {
   }
 }
 
+// Safe JSON Parse Helper
+function safeJsonParse<T>(json: string | null, fallback: T): T {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    console.error("Failed to parse JSON:", e);
+    return fallback;
+  }
+}
+
 export function getLocalOrders(): LocalOrder[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-    
-    const orders = JSON.parse(stored) as LocalOrder[];
-    return Array.isArray(orders) ? orders : [];
+    return safeJsonParse<LocalOrder[]>(stored, []);
   } catch (error) {
     console.error('Error getting local orders:', error);
     return [];

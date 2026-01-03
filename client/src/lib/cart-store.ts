@@ -73,13 +73,24 @@ export const useCartStore = (): CartContextType => {
  return context;
 };
 
+// Safe JSON Parse Helper
+function safeJsonParse<T>(json: string | null, fallback: T): T {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    console.error("Failed to parse JSON:", e);
+    return fallback;
+  }
+}
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
- const [isCartOpen, setIsCartOpen] = useState(false);
- const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
- const [deliveryInfo, setDeliveryInfoState] = useState<DeliveryInfo | null>(() => {
- const saved = localStorage.getItem("delivery-info");
- return saved ? JSON.parse(saved) : null;
- });
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [deliveryInfo, setDeliveryInfoState] = useState<DeliveryInfo | null>(() => {
+    const saved = localStorage.getItem("delivery-info");
+    return safeJsonParse<DeliveryInfo | null>(saved, null);
+  });
  const [sessionId] = useState(() => {
  // Get or create session ID
  let id = localStorage.getItem("coffee-session-id");
