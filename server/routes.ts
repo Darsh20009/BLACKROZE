@@ -2423,15 +2423,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get specific coffee item (optimized)
   app.get("/api/coffee-items/:id", async (req: any, res) => {
     try {
-      res.set('Cache-Control', 'public, max-age=300');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       const { id } = req.params;
-      const tenantId = req.session?.employee?.tenantId || req.query.tenantId || 'default';
-      const item = await CoffeeItemModel.findOne({ tenantId, id }).lean().exec();
+      const tenantId = req.session?.employee?.tenantId || req.query.tenantId || 'demo-tenant';
+      
+      // Try finding by 'id' field first (custom string ID)
+      let item = await CoffeeItemModel.findOne({ id }).lean().exec();
+      
+      // If not found and ID looks like MongoDB ObjectId, try findById
+      if (!item && mongoose.Types.ObjectId.isValid(id)) {
+        item = await CoffeeItemModel.findById(id).lean().exec();
+      }
+
       if (!item) {
         return res.status(404).json({ error: "Coffee item not found" });
       }
-      res.json(item);
+      
+      res.json(serializeDoc(item));
     } catch (error) {
+      console.error("[GET_COFFEE_ITEM_ERROR]:", error);
       res.status(500).json({ error: "Failed to fetch coffee item" });
     }
   });

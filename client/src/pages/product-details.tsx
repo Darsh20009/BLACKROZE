@@ -23,7 +23,17 @@ export default function ProductDetails() {
 
   const { data: item, isLoading, refetch } = useQuery<CoffeeItem>({
     queryKey: ["/api/coffee-items", params?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/coffee-items/${params?.id}`);
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error("Failed to fetch product");
+      }
+      return response.json();
+    },
     enabled: !!params?.id,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: ingredientsData = [] } = useQuery<Array<{ingredient: any}>>({
