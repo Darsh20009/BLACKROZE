@@ -2428,8 +2428,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Expires', '0');
       
       const { id } = req.params;
-      const tenantId = req.session?.employee?.tenantId || req.query.tenantId || 'demo-tenant';
       
+      // Log the incoming request ID for debugging
+      console.log(`[GET /api/coffee-items/:id] Searching for ID: "${id}"`);
+
       // Try finding by 'id' field first (custom string ID)
       let item = await CoffeeItemModel.findOne({ id }).lean().exec();
       
@@ -2439,6 +2441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!item) {
+        console.warn(`[GET /api/coffee-items/:id] Item not found for ID: "${id}"`);
         return res.status(404).json({ error: "Coffee item not found" });
       }
       
