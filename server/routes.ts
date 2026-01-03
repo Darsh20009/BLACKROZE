@@ -2062,11 +2062,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Fetch all items for this tenant, with fallback to items without tenantId (legacy items)
           // Also include items from ANY tenant if none match (for backward compatibility)
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          
           let items = await CoffeeItemModel.find({ 
             $or: [
               { tenantId: tenantId },
               { tenantId: 'demo-tenant' },
               { tenantId: 'default' },
+              { tenantId: 'default-branch' },
               { tenantId: { $exists: false } },
               { tenantId: null }
             ]
@@ -2309,6 +2314,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdByBranchId: validatedData.createdByBranchId,
         availableSizes: validatedData.availableSizes || [],
         isGiftable: (validatedData as any).isGiftable || false,
+        branchAvailability: (validatedData.publishedBranches || [branchId]).map(bId => ({
+          branchId: bId,
+          isAvailable: 1
+        }))
       });
       
       const item = await newCoffeeItem.save();

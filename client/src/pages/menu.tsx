@@ -89,15 +89,27 @@ const MenuPage = memo(function MenuPage() {
     }
   }, []);
 
-  const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
+  const { data: coffeeItems = [], isLoading, refetch } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items", selectedBranch],
     queryFn: async () => {
       const url = `/api/coffee-items${selectedBranch ? `?branchId=${selectedBranch}` : ""}`;
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const data = await res.json();
       return Array.isArray(data) ? data : [];
-    }
+    },
+    staleTime: 0, // Force fresh data
+    gcTime: 0,    // Don't cache
   });
+
+  // Refetch when branch changes
+  useEffect(() => {
+    refetch();
+  }, [selectedBranch, refetch]);
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
