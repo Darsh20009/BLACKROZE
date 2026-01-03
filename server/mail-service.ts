@@ -248,7 +248,7 @@ export async function sendReferralEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
+      from: `"CLUNY CAFE" <cluny@cluny.shop>`,
       to: customerEmail,
       subject: "انضم إلى برنامج الإحالات الخاص بنا",
       html: `
@@ -286,7 +286,7 @@ export async function sendLoyaltyPointsEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
+      from: `"CLUNY CAFE" <cluny@cluny.shop>`,
       to: customerEmail,
       subject: "لقد حصلت على نقاط جديدة!",
       html: `
@@ -322,7 +322,7 @@ export async function sendPromotionEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
+      from: `"CLUNY CAFE" <cluny@cluny.shop>`,
       to: customerEmail,
       subject: promotionTitle,
       html: `
@@ -447,7 +447,7 @@ export async function sendWelcomeEmail(customerEmail: string, customerName: stri
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
+      from: `"CLUNY CAFE" <cluny@cluny.shop>`,
       to: customerEmail,
       subject: "أهلاً بك في CLUNY CAFE! ☕",
       html: `
@@ -475,7 +475,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <cluny@ma3k.online>`,
+      from: `"CLUNY CAFE" <cluny@cluny.shop>`,
       to: customerEmail,
       subject: "نسيت شيئاً في عربتك؟ 🛒",
       html: `
