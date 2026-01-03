@@ -14,8 +14,12 @@ import { wsManager } from "./websocket";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 import path from "path";
+import { fileURLToPath } from "url";
 import fs from "fs";
 import { nanoid } from "nanoid";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import nodemailer from "nodemailer";
 import {
   sendOrderNotificationEmail,
@@ -30,12 +34,12 @@ import { appendOrderToSheet } from "./google-sheets";
 
 // Ensure upload directories exist
 const uploadDirs = [
-  path.join(import.meta.dirname, '..', 'attached_assets', 'drinks'),
-  path.join(import.meta.dirname, '..', 'attached_assets', 'sizes'),
-  path.join(import.meta.dirname, '..', 'attached_assets', 'addons'),
-  path.join(import.meta.dirname, '..', 'attached_assets', 'employees'),
-  path.join(import.meta.dirname, '..', 'attached_assets', 'attendance'),
-  path.join(import.meta.dirname, '..', 'attached_assets', 'receipts'),
+  path.join(__dirname, '..', 'attached_assets', 'drinks'),
+  path.join(__dirname, '..', 'attached_assets', 'sizes'),
+  path.join(__dirname, '..', 'attached_assets', 'addons'),
+  path.join(__dirname, '..', 'attached_assets', 'employees'),
+  path.join(__dirname, '..', 'attached_assets', 'attendance'),
+  path.join(__dirname, '..', 'attached_assets', 'receipts'),
 ];
 uploadDirs.forEach(dir => {
   if (!fs.existsSync(dir)) {
@@ -333,7 +337,7 @@ async function sendInvoiceEmail(to: string, invoiceNumber: string, invoiceData: 
 }
 
 // Configure multer for file uploads
-const uploadsDir = path.join(import.meta.dirname, '..', 'attached_assets', 'receipts');
+const uploadsDir = path.join(__dirname, '..', 'attached_assets', 'receipts');
 const storage_multer = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadsDir);
@@ -370,32 +374,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Warehouse Management
   app.get("/api/warehouses", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'default';
     const warehouses = await WarehouseModel.find({ tenantId });
     res.json(warehouses.map(serializeDoc));
   });
 
   app.post("/api/warehouses", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'default';
     const warehouse = await WarehouseModel.create({ ...req.body, tenantId });
     res.json(serializeDoc(warehouse));
   });
 
   app.get("/api/warehouses/:id/stock", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'default';
     const stock = await WarehouseStockModel.find({ tenantId, warehouseId: req.params.id });
     res.json(stock.map(serializeDoc));
   });
 
   // Delivery Integrations
   app.get("/api/integrations/delivery", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'default';
     const integrations = await DeliveryIntegrationModel.find({ tenantId });
     res.json(integrations.map(serializeDoc));
   });
 
   app.post("/api/integrations/delivery", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'default';
     const integration = await DeliveryIntegrationModel.create({ ...req.body, tenantId });
     res.json(serializeDoc(integration));
   });

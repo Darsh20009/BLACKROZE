@@ -3,14 +3,23 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import compression from "compression";
 import path from "path";
+import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const SessionStore = MemoryStore(session);
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://Vercel-Admin-CLUNY-CAFE:TOTY20009a@cluny-cafe.idvtc04.mongodb.net/?appName=CLUNY-CAFE";
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error("❌ ERROR: MONGODB_URI environment variable is not set");
+  process.exit(1);
+}
 
 
 // Track database connection status
@@ -148,7 +157,7 @@ app.disable('x-powered-by');
 // Session configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "cluny.cafe-secret-key-change-in-production",
+    secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === "production" ? (() => { throw new Error("SESSION_SECRET must be set in production"); })() : "dev-secret"),
     resave: false,
     saveUninitialized: false, // Changed to false for better security
     store: new SessionStore({
@@ -185,7 +194,7 @@ app.get('/health', (_req, res) => {
 });
 
 // Serve attached assets for both development and production
-app.use('/attached_assets', express.static(path.resolve(import.meta.dirname, '..', 'attached_assets'), {
+app.use('/attached_assets', express.static(path.resolve(__dirname, '..', 'attached_assets'), {
   setHeaders: (res) => {
     res.set('Cache-Control', 'no-cache');
   }

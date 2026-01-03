@@ -41,6 +41,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Network-first for HTML files to avoid white screen after updates
+  if (event.request.mode === 'navigate' || event.request.url.endsWith('.html')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(response => {
       if (response) {
@@ -51,6 +59,7 @@ self.addEventListener('fetch', event => {
           if (!response || response.status !== 200 || response.type === 'error') {
             return response;
           }
+          // Only cache successful GET requests
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseToCache);
@@ -58,7 +67,9 @@ self.addEventListener('fetch', event => {
           return response;
         })
         .catch(() => {
-          return caches.match('/index.html');
+          if (event.request.headers.get('accept').includes('text/html')) {
+            return caches.match('/index.html');
+          }
         });
     })
   );

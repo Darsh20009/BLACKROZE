@@ -103,137 +103,143 @@ function assignCardNumber(): string {
  return cardNumber;
 }
 
+// Safe JSON Parse Helper
+function safeJsonParse<T>(json: string | null, fallback: T): T {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    console.error("Failed to parse JSON:", e);
+    return fallback;
+  }
+}
+
 // Customer Profile Management
 export const customerStorage = {
- // Check if guest mode
- isGuestMode(): boolean {
- return localStorage.getItem(STORAGE_KEYS.GUEST_MODE) === 'true';
- },
+  // Check if guest mode
+  isGuestMode(): boolean {
+    return localStorage.getItem(STORAGE_KEYS.GUEST_MODE) === 'true';
+  },
 
- setGuestMode(isGuest: boolean) {
- localStorage.setItem(STORAGE_KEYS.GUEST_MODE, isGuest ? 'true' : 'false');
- },
+  setGuestMode(isGuest: boolean) {
+    localStorage.setItem(STORAGE_KEYS.GUEST_MODE, isGuest ? 'true' : 'false');
+  },
 
- // Get current customer profile
- getProfile(): CustomerProfile | null {
- const stored = localStorage.getItem(STORAGE_KEYS.CUSTOMER_PROFILE);
- if (!stored) return null;
- return JSON.parse(stored);
- },
+  // Get current customer profile
+  getProfile(): CustomerProfile | null {
+    const stored = localStorage.getItem(STORAGE_KEYS.CUSTOMER_PROFILE);
+    return safeJsonParse<CustomerProfile | null>(stored, null);
+  },
 
- // Register or login customer
- registerCustomer(name: string, phone: string): CustomerProfile {
- const profile: CustomerProfile = {
- id: nanoid(),
- name,
- phone,
- cardNumber: assignCardNumber(),
- stamps: 0,
- freeDrinks: 0,
- createdAt: new Date().toISOString()
- };
- localStorage.setItem(STORAGE_KEYS.CUSTOMER_PROFILE, JSON.stringify(profile));
- this.setGuestMode(false);
- return profile;
- },
+  // Register or login customer
+  registerCustomer(name: string, phone: string): CustomerProfile {
+    const profile: CustomerProfile = {
+      id: nanoid(),
+      name,
+      phone,
+      cardNumber: assignCardNumber(),
+      stamps: 0,
+      freeDrinks: 0,
+      createdAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.CUSTOMER_PROFILE, JSON.stringify(profile));
+    this.setGuestMode(false);
+    return profile;
+  },
 
- // Update profile
- updateProfile(updates: Partial<CustomerProfile>) {
- const profile = this.getProfile();
- if (!profile) return null;
- 
- const updated = { ...profile, ...updates };
- localStorage.setItem(STORAGE_KEYS.CUSTOMER_PROFILE, JSON.stringify(updated));
- return updated;
- },
+  // Update profile
+  updateProfile(updates: Partial<CustomerProfile>) {
+    const profile = this.getProfile();
+    if (!profile) return null;
+    
+    const updated = { ...profile, ...updates };
+    localStorage.setItem(STORAGE_KEYS.CUSTOMER_PROFILE, JSON.stringify(updated));
+    return updated;
+  },
 
- // Logout
- logout() {
- localStorage.removeItem(STORAGE_KEYS.CUSTOMER_PROFILE);
- this.setGuestMode(false);
- },
+  // Logout
+  logout() {
+    localStorage.removeItem(STORAGE_KEYS.CUSTOMER_PROFILE);
+    localStorage.removeItem(STORAGE_KEYS.CARD_PASSWORD);
+    this.setGuestMode(false);
+  },
 
- // Add stamp (6 stamps = free drink)
- addStamp(): CustomerProfile | null {
- const profile = this.getProfile();
- if (!profile) return null;
+  // Add stamp (6 stamps = free drink)
+  addStamp(): CustomerProfile | null {
+    const profile = this.getProfile();
+    if (!profile) return null;
 
- let newStamps = profile.stamps + 1;
- let newFreeDrinks = profile.freeDrinks;
+    let newStamps = profile.stamps + 1;
+    let newFreeDrinks = profile.freeDrinks;
 
- // Every 6 stamps = 1 free drink
- if (newStamps >= 6) {
- newFreeDrinks += 1;
- newStamps = 0; // Reset stamps after getting free drink
- }
+    // Every 6 stamps = 1 free drink
+    if (newStamps >= 6) {
+      newFreeDrinks += 1;
+      newStamps = 0; // Reset stamps after getting free drink
+    }
 
- return this.updateProfile({ stamps: newStamps, freeDrinks: newFreeDrinks });
- },
+    return this.updateProfile({ stamps: newStamps, freeDrinks: newFreeDrinks });
+  },
 
- // Use free drink
- useFreeDrink(): CustomerProfile | null {
- const profile = this.getProfile();
- if (!profile || profile.freeDrinks <= 0) return null;
+  // Use free drink
+  useFreeDrink(): CustomerProfile | null {
+    const profile = this.getProfile();
+    if (!profile || profile.freeDrinks <= 0) return null;
 
- return this.updateProfile({ freeDrinks: profile.freeDrinks - 1 });
- },
+    return this.updateProfile({ freeDrinks: profile.freeDrinks - 1 });
+  },
 
- // Orders Management
- getOrders(): LocalOrder[] {
- const stored = localStorage.getItem(STORAGE_KEYS.CUSTOMER_ORDERS);
- if (!stored) return [];
- return JSON.parse(stored);
- },
+  // Orders Management
+  getOrders(): LocalOrder[] {
+    const stored = localStorage.getItem(STORAGE_KEYS.CUSTOMER_ORDERS);
+    return safeJsonParse<LocalOrder[]>(stored, []);
+  },
 
- addOrder(order: Omit<LocalOrder, 'id' | 'createdAt'>): LocalOrder {
- const orders = this.getOrders();
- const newOrder: LocalOrder = {
- ...order,
- id: nanoid(),
- createdAt: new Date().toISOString()
- };
- orders.unshift(newOrder); // Add to beginning
- localStorage.setItem(STORAGE_KEYS.CUSTOMER_ORDERS, JSON.stringify(orders));
+  addOrder(order: Omit<LocalOrder, 'id' | 'createdAt'>): LocalOrder {
+    const orders = this.getOrders();
+    const newOrder: LocalOrder = {
+      ...order,
+      id: nanoid(),
+      createdAt: new Date().toISOString()
+    };
+    orders.unshift(newOrder); // Add to beginning
+    localStorage.setItem(STORAGE_KEYS.CUSTOMER_ORDERS, JSON.stringify(orders));
 
- // Add stamp if customer is registered and not used free drink
- if (!this.isGuestMode() && !order.usedFreeDrink) {
- this.addStamp();
- }
+    // Add stamp if customer is registered and not used free drink
+    if (!this.isGuestMode() && !order.usedFreeDrink) {
+      this.addStamp();
+    }
 
- return newOrder;
- },
+    return newOrder;
+  },
 
- clearOrders() {
- localStorage.removeItem(STORAGE_KEYS.CUSTOMER_ORDERS);
- },
+  clearOrders() {
+    localStorage.removeItem(STORAGE_KEYS.CUSTOMER_ORDERS);
+  },
 
- // Card Design Management
- setCardDesign(design: CardDesignPreference): void {
- localStorage.setItem(STORAGE_KEYS.CARD_DESIGN, JSON.stringify(design));
- const profile = this.getProfile();
- if (profile) {
- this.updateProfile({ cardDesign: design });
- }
- },
+  // Card Design Management
+  setCardDesign(design: CardDesignPreference): void {
+    localStorage.setItem(STORAGE_KEYS.CARD_DESIGN, JSON.stringify(design));
+    const profile = this.getProfile();
+    if (profile) {
+      this.updateProfile({ cardDesign: design });
+    }
+  },
 
- getCardDesign(): CardDesignPreference | null {
- const stored = localStorage.getItem(STORAGE_KEYS.CARD_DESIGN);
- if (!stored) return null;
- return JSON.parse(stored);
- },
+  getCardDesign(): CardDesignPreference | null {
+    const stored = localStorage.getItem(STORAGE_KEYS.CARD_DESIGN);
+    return safeJsonParse<CardDesignPreference | null>(stored, null);
+  },
 
- // Card Password Management
- setCardPassword(password: string): void {
- localStorage.setItem(STORAGE_KEYS.CARD_PASSWORD, password);
- const profile = this.getProfile();
- if (profile) {
- this.updateProfile({ cardPassword: password });
- }
- },
+  // Card Password Management (Security: removed plain storage in profile)
+  setCardPassword(password: string): void {
+    // Note: Plain text storage is insecure. In production, use hashing.
+    localStorage.setItem(STORAGE_KEYS.CARD_PASSWORD, password);
+  },
 
- getCardPassword(): string | null {
- return localStorage.getItem(STORAGE_KEYS.CARD_PASSWORD);
- },
+  getCardPassword(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.CARD_PASSWORD);
+  },
 
  // Card Balance Management
  getCardBalance(): number {
