@@ -32,20 +32,20 @@ import {
 } from "./mail-service";
 import { appendOrderToSheet } from "./google-sheets";
 
-// Ensure upload directories exist
-const uploadDirs = [
-  path.join(__dirname, '..', 'attached_assets', 'drinks'),
-  path.join(__dirname, '..', 'attached_assets', 'sizes'),
-  path.join(__dirname, '..', 'attached_assets', 'addons'),
-  path.join(__dirname, '..', 'attached_assets', 'employees'),
-  path.join(__dirname, '..', 'attached_assets', 'attendance'),
-  path.join(__dirname, '..', 'attached_assets', 'receipts'),
-];
-uploadDirs.forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-});
+  // Ensure upload directories exist
+  const uploadDirs = [
+    path.resolve(__dirname, '..', 'attached_assets', 'drinks'),
+    path.resolve(__dirname, '..', 'attached_assets', 'sizes'),
+    path.resolve(__dirname, '..', 'attached_assets', 'addons'),
+    path.resolve(__dirname, '..', 'attached_assets', 'employees'),
+    path.resolve(__dirname, '..', 'attached_assets', 'attendance'),
+    path.resolve(__dirname, '..', 'attached_assets', 'receipts'),
+  ];
+  uploadDirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  });
 
 // Helper function to serialize MongoDB documents
 function serializeDoc(doc: any): any {
@@ -2092,10 +2092,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ]
           }).lean().exec();
 
-          // Standardize response by serializing MongoDB documents
-          items = items.map(serializeDoc);
-          
-          // If no items found, try getting ANY items (emergency fallback)
+      // Standardize response by serializing MongoDB documents
+      items = items.map(serializeDoc);
+      
+      // Filter by tenantId more strictly if it was intended
+      if (items.length > 0 && tenantId !== 'demo-tenant') {
+        const tenantItems = items.filter((i: any) => i.tenantId === tenantId);
+        if (tenantItems.length > 0) {
+          items = tenantItems;
+        }
+      }
+      
+      // If no items found, try getting ANY items (emergency fallback)
           if (items.length === 0) {
             console.log(`[GET /api/coffee-items] No items found for tenant ${tenantId}, trying ALL items...`);
             items = await CoffeeItemModel.find({}).lean().exec();
@@ -2336,8 +2344,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           branchId: bId,
           isAvailable: 1
         })),
-        requiresRecipe: validatedData.requiresRecipe ?? 1,
-        hasRecipe: validatedData.hasRecipe ?? 0,
+        requiresRecipe: (validatedData as any).requiresRecipe !== undefined ? (validatedData as any).requiresRecipe : 1,
+        hasRecipe: (validatedData as any).hasRecipe !== undefined ? (validatedData as any).hasRecipe : 0,
         costOfGoods: 0,
         profitMargin: 0,
         updatedAt: new Date(),
@@ -2416,7 +2424,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { category } = req.params;
       const tenantId = req.session?.employee?.tenantId || req.query.tenantId || 'default';
       const items = await CoffeeItemModel.find({ tenantId, category }).lean().exec();
-      res.json(items);
+      if (!items || items.length === 0) {
+        return res.json([]);
+      }
+      res.json(items.map(serializeDoc));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch coffee items by category" });
     }
