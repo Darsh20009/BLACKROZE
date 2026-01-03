@@ -518,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = getTenantIdFromRequest(req);
       
       // 1. Check if item exists and belongs to tenant
-      const item = await CoffeeItemModel.findById(id);
+      const item = await CoffeeItemModel.findOne({ id });
       if (!item) {
         return res.status(404).json({ error: "المشروب غير موجود" });
       }
@@ -534,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await RecipeItemModel.deleteMany({ coffeeItemId: id });
       
       // 4. Delete the item
-      const deletedItem = await CoffeeItemModel.findByIdAndDelete(id);
+      const deletedItem = await CoffeeItemModel.findOneAndDelete({ id });
       
       if (!deletedItem) {
         return res.status(500).json({ error: "فشل في حذف المشروب من قاعدة البيانات" });
@@ -556,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Toggle New Product status
   app.put("/api/coffee-items/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
-      const updated = await CoffeeItemModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+      const updated = await CoffeeItemModel.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true });
       res.json(serializeDoc(updated));
     } catch (error) {
       res.status(500).json({ error: "فشل في تحديث حالة المنتج" });
