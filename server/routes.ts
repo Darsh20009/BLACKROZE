@@ -2531,8 +2531,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         item = await CoffeeItemModel.findById(id);
       }
 
+      // If still not found, try a broader search for debugging
       if (!item) {
-        console.log(`[MENU] Product not found: id=${id}`);
+        console.log(`[MENU] Product not found by ID: ${id}. Searching by name or partial ID...`);
+        // This is a safety check to ensure we don't miss items that might have different ID storage
+        item = await CoffeeItemModel.findOne({ $or: [{ id: id }, { _id: mongoose.Types.ObjectId.isValid(id) ? id : new mongoose.Types.ObjectId() }] });
+      }
+
+      if (!item) {
+        console.log(`[MENU] Product not found in database: id=${id}`);
+        // Log all current items to see what's available
+        const allItems = await CoffeeItemModel.find({}, { id: 1, nameAr: 1 });
+        console.log(`[MENU] Available items:`, allItems.map(i => ({ id: i.id, _id: i._id, name: i.nameAr })));
         return res.status(404).json({ error: "Coffee item not found" });
       }
 
@@ -2541,7 +2551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[MENU] Delete result for ${itemId}:`, result);
       
       if (result.deletedCount === 0) {
-        return res.status(404).json({ error: "Coffee item not found" });
+        return res.status(404).json({ error: "Coffee item not found during deletion" });
       }
 
       res.json({ success: true, message: "Coffee item deleted successfully" });
