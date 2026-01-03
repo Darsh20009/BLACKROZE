@@ -96,6 +96,17 @@ function convertUnitsForCost(recipeQuantity: number, recipeUnit: string, rawItem
   return recipeQuantity;
 }
 
+// Safe JSON Parse Helper
+function safeJsonParse<T>(json: string | null, fallback: T): T {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    console.error("Failed to parse JSON:", e);
+    return fallback;
+  }
+}
+
 // Helper function to deduct inventory when order status changes to in_progress
 // This version uses storage.deductInventoryForOrder for consistency with order creation
 async function deductInventoryForOrder(orderId: string, branchId: string, employeeId: string): Promise<{
@@ -142,11 +153,7 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
 
     let items = order.items || [];
     if (typeof items === 'string') {
-      try {
-        items = JSON.parse(items);
-      } catch (e) {
-        items = [];
-      }
+      items = safeJsonParse(items, []);
     }
 
     if (items.length === 0) {

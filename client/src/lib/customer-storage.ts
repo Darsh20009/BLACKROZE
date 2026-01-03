@@ -72,35 +72,38 @@ const CARD_NUMBERS_POOL = [
 
 // Initialize card numbers pool in localStorage if not exists
 function initializeCardNumbersPool() {
- const stored = localStorage.getItem(STORAGE_KEYS.CARD_NUMBERS_POOL);
- if (!stored) {
- const pool = {
- available: [...CARD_NUMBERS_POOL],
- assigned: [] as string[]
- };
- localStorage.setItem(STORAGE_KEYS.CARD_NUMBERS_POOL, JSON.stringify(pool));
- }
+  const stored = localStorage.getItem(STORAGE_KEYS.CARD_NUMBERS_POOL);
+  if (!stored) {
+    const pool = {
+      available: [...CARD_NUMBERS_POOL],
+      assigned: [] as string[]
+    };
+    localStorage.setItem(STORAGE_KEYS.CARD_NUMBERS_POOL, JSON.stringify(pool));
+  }
 }
 
 // Get a card number from the pool
 function assignCardNumber(): string {
- initializeCardNumbersPool();
- const stored = localStorage.getItem(STORAGE_KEYS.CARD_NUMBERS_POOL);
- if (!stored) return "CUP-0000";
- 
- const pool = JSON.parse(stored);
- if (pool.available.length === 0) {
- // If pool is empty, generate a new number
- const newNumber = `CUP-${2000 + pool.assigned.length}`;
- pool.assigned.push(newNumber);
- localStorage.setItem(STORAGE_KEYS.CARD_NUMBERS_POOL, JSON.stringify(pool));
- return newNumber;
- }
- 
- const cardNumber = pool.available.pop();
- pool.assigned.push(cardNumber);
- localStorage.setItem(STORAGE_KEYS.CARD_NUMBERS_POOL, JSON.stringify(pool));
- return cardNumber;
+  initializeCardNumbersPool();
+  const stored = localStorage.getItem(STORAGE_KEYS.CARD_NUMBERS_POOL);
+  if (!stored) return "CUP-0000";
+  
+  const pool = safeJsonParse(stored, { available: [], assigned: [] as string[] });
+  if (pool.available.length === 0) {
+    // If pool is empty, generate a new number
+    const newNumber = `CUP-${2000 + pool.assigned.length}`;
+    pool.assigned.push(newNumber);
+    localStorage.setItem(STORAGE_KEYS.CARD_NUMBERS_POOL, JSON.stringify(pool));
+    return newNumber;
+  }
+  
+  const cardNumber = pool.available.pop();
+  if (cardNumber) {
+    pool.assigned.push(cardNumber);
+    localStorage.setItem(STORAGE_KEYS.CARD_NUMBERS_POOL, JSON.stringify(pool));
+    return cardNumber;
+  }
+  return "CUP-0000";
 }
 
 // Safe JSON Parse Helper
