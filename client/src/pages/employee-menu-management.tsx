@@ -384,8 +384,11 @@ export default function EmployeeMenuManagement() {
    }
    return await res.json();
  },
- onSuccess: () => {
-   queryClient.invalidateQueries({ queryKey: ["/api/coffee-items"] });
+ onSuccess: async () => {
+   await queryClient.invalidateQueries({ queryKey: ["/api/coffee-items"] });
+   if (typeof refetch === 'function') {
+     await refetch();
+   }
    setDeletingItemId(null);
    toast({
      title: "تم الحذف",
