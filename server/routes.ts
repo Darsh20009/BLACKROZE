@@ -2058,6 +2058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Fallback to demo-tenant if still no tenant found
           tenantId = tenantId || 'demo-tenant';
+          if (tenantId === 'default') tenantId = 'demo-tenant';
           
           // Fetch all items for this tenant, with fallback to items without tenantId (legacy items)
           // Also include items from ANY tenant if none match (for backward compatibility)
@@ -2212,6 +2213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get tenantId from employee or fallback to default - DO THIS BEFORE VALIDATION
       let tenantId = req.employee?.tenantId || 'demo-tenant';
+      if (tenantId === 'default') tenantId = 'demo-tenant';
       let branchId = req.employee?.branchId || 'default-branch';
       
       // If employee has branchId, try to get tenantId from branch
@@ -2219,6 +2221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const branch = await BranchModel.findById(req.employee.branchId).lean();
         if (branch && (branch as any).tenantId) {
           tenantId = (branch as any).tenantId;
+          if (tenantId === 'default') tenantId = 'demo-tenant';
         } else if (!req.employee?.tenantId) {
           // If branch doesn't have tenantId and employee doesn't have one, create a tenant based on branch
           tenantId = `tenant-${req.employee.branchId}`;
