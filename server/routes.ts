@@ -2522,14 +2522,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/coffee-items/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const success = await storage.deleteCoffeeItem(id);
+      console.log(`[MENU] DELETE product request: id=${id}`);
       
-      if (!success) {
+      const item = await CoffeeItemModel.findOne({ id });
+      if (!item) {
+        console.log(`[MENU] Product not found: id=${id}`);
+        return res.status(404).json({ error: "Coffee item not found" });
+      }
+
+      const result = await CoffeeItemModel.deleteOne({ id });
+      console.log(`[MENU] Delete result:`, result);
+      
+      if (result.deletedCount === 0) {
         return res.status(404).json({ error: "Coffee item not found" });
       }
 
       res.json({ success: true, message: "Coffee item deleted successfully" });
     } catch (error) {
+      console.error("[MENU] Delete error:", error);
       res.status(500).json({ error: "Failed to delete coffee item" });
     }
   });
@@ -2631,6 +2641,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (typeof quantity !== 'number' || quantity < 0) {
         return res.status(400).json({ error: "Invalid quantity" });
+      }
+
+      if (quantity === 0) {
+        console.log(`[CART] Quantity is 0, deleting item: ${cartItemId}`);
+        let deleteResult = await CartItemModel.deleteOne({ sessionId, id: cartItemId });
+        if (deleteResult.deletedCount === 0) {
+          deleteResult = await CartItemModel.deleteOne({ sessionId, coffeeItemId: cartItemId, selectedSize: "default" });
+        }
+        if (deleteResult.deletedCount === 0 && mongoose.Types.ObjectId.isValid(cartItemId)) {
+          deleteResult = await CartItemModel.deleteOne({ sessionId, _id: cartItemId });
+        }
+        return res.json({ message: "Item removed" });
       }
 
       // Try composite ID first, then coffeeItemId (if it's a default variant), then _id
