@@ -2031,7 +2031,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For managers: shows all items with full branch availability data
       app.get("/api/coffee-items", async (req: any, res) => {
         try {
-          res.set('Cache-Control', 'no-cache'); // Disable caching to ensure fresh data
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
           
           const requestedBranchId = (req.query.branchId as string);
           const isEmployee = !!req.session?.employee;

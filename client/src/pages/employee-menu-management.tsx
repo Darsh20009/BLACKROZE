@@ -88,11 +88,13 @@ export default function EmployeeMenuManagement() {
  }
  }, [setLocation]);
 
- const { data: coffeeItems = [], isLoading, refetch } = useQuery<CoffeeItem[]>({
- queryKey: ["/api/coffee-items"],
- staleTime: 0,
- gcTime: 0,
- });
+  const { data: coffeeItems = [], isLoading, refetch } = useQuery<CoffeeItem[]>({
+    queryKey: ["/api/coffee-items"],
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
 
  const { data: ingredients = [] } = useQuery<Ingredient[]>({
  queryKey: ["/api/ingredients"],

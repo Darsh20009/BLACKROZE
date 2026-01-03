@@ -41,6 +41,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Network-first for API requests to avoid stale data
+  if (event.request.url.includes('/api/')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   // Network-first for HTML files to avoid white screen after updates
   if (event.request.mode === 'navigate' || event.request.url.endsWith('.html')) {
     event.respondWith(
