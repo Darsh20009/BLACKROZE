@@ -373,23 +373,28 @@ export default function EmployeeMenuManagement() {
 
  const deleteItemMutation = useMutation({
  mutationFn: async (id: string) => {
- const res = await apiRequest("DELETE", `/api/coffee-items/${id}`);
- return await res.json();
+   const res = await apiRequest("DELETE", `/api/coffee-items/${id}`);
+   if (!res.ok) {
+     const errorData = await res.json();
+     throw new Error(errorData.error || "فشل في حذف المشروب");
+   }
+   return await res.json();
  },
  onSuccess: () => {
- queryClient.invalidateQueries({ queryKey: ["/api/coffee-items"] });
- setDeletingItemId(null);
- toast({
- title: "تم الحذف",
- description: "تم حذف المشروب بنجاح",
- });
+   queryClient.invalidateQueries({ queryKey: ["/api/coffee-items"] });
+   setDeletingItemId(null);
+   toast({
+     title: "تم الحذف",
+     description: "تم حذف المشروب بنجاح",
+   });
  },
  onError: (error: any) => {
- toast({
- variant: "destructive",
- title: "فشل الحذف",
- description: error.message || "حدث خطأ أثناء حذف المشروب",
- });
+   setDeletingItemId(null);
+   toast({
+     variant: "destructive",
+     title: "فشل الحذف",
+     description: error.message || "حدث خطأ أثناء حذف المشروب. قد يكون المشروب مرتبطاً بطلبات حالية.",
+   });
  },
  });
 

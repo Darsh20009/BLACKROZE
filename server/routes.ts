@@ -501,32 +501,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(movements);
   });
 
-  app.get("/api/inventory/alerts", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req);
-    if (!tenantId) return res.status(400).json({ error: "Tenant ID is required" });
-    const ingredients = await storage.getIngredientItems(tenantId);
-    const alerts = ingredients.filter(i => i.currentStock <= i.minStockThreshold);
-    res.json(alerts);
-  });
-
-
-  app.get("/api/pos/status", (req, res) => {
+  app.delete("/api/coffee-items/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
+      const { id } = req.params;
+      const tenantId = getTenantIdFromRequest(req);
+      
+      // 1. Check if item exists and belongs to tenant
+      const item = await CoffeeItemModel.findById(id);
+      if (!item) {
+        return res.status(404).json({ error: "المشروب غير موجود" });
+      }
+      
+      if (tenantId && item.tenantId !== tenantId) {
+        return res.status(403).json({ error: "غير مصرح لك بحذف هذا المشروب" });
+      }
+
+      // 2. Check for dependencies (e.g., active orders or cart items)
+      // For now, we allow deletion but could add checks here if needed
+      
+      // 3. Delete associated recipes first to maintain integrity
+      await RecipeItemModel.deleteMany({ coffeeItemId: id });
+      
+      // 4. Delete the item
+      const deletedItem = await CoffeeItemModel.findByIdAndDelete(id);
+      
+      if (!deletedItem) {
+        return res.status(500).json({ error: "فشل في حذف المشروب من قاعدة البيانات" });
+      }
+
       res.json({ 
-        connected: posDeviceStatus.connected,
-        lastCheck: posDeviceStatus.lastCheck
+        success: true, 
+        message: "تم حذف المشروب وجميع البيانات المرتبطة به بنجاح" 
       });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to get POS status" });
+    } catch (error: any) {
+      console.error("[DELETE_COFFEE_ITEM_ERROR]:", error);
+      res.status(500).json({ 
+        error: "حدث خطأ أثناء محاولة الحذف", 
+        details: error.message 
+      });
     }
   });
 
-  // Toggle POS connection (for cashiers and managers only) - requires authentication
-  app.post("/api/pos/toggle", requireAuth, (req: AuthRequest, res) => {
-    // Existing logic...
+  // Toggle New Product status
+  app.put("/api/coffee-items/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const updated = await CoffeeItemModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+      res.json(serializeDoc(updated));
+    } catch (error) {
+      res.status(500).json({ error: "فشل في تحديث حالة المنتج" });
+    }
   });
-
-  // --- WAREHOUSE MANAGEMENT API ---
   app.get("/api/warehouses", requireAuth, async (req: AuthRequest, res) => {
     const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
     const warehouses = await WarehouseModel.find({ tenantId }).lean();
