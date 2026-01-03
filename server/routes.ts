@@ -2076,6 +2076,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               { tenantId: null }
             ]
           }).lean().exec();
+
+          // Standardize response by serializing MongoDB documents
+          items = items.map(serializeDoc);
           
           // If no items found, try getting ANY items (emergency fallback)
           if (items.length === 0) {
@@ -2317,11 +2320,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         branchAvailability: (validatedData.publishedBranches || [branchId]).map(bId => ({
           branchId: bId,
           isAvailable: 1
-        }))
+        })),
+        requiresRecipe: validatedData.requiresRecipe ?? 1,
+        hasRecipe: validatedData.hasRecipe ?? 0,
+        costOfGoods: 0,
+        profitMargin: 0,
+        updatedAt: new Date(),
+        createdAt: new Date()
       });
       
       const item = await newCoffeeItem.save();
-      const itemData = item.toObject ? item.toObject() : item;
+      const itemData = serializeDoc(item);
       
       // Save addons if provided - they're already in availableSizes, but also link them for backward compatibility
       if ((validatedData as any).addons && Array.isArray((validatedData as any).addons) && (validatedData as any).addons.length > 0) {
