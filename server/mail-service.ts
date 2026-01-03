@@ -97,7 +97,7 @@ export async function sendOrderNotificationEmail(
       return false;
     }
 
-    const senderEmail = process.env.SMTP_FROM || "cluny@ma3k.online";
+    const senderEmail = process.env.SMTP_FROM || "cluny@cluny.shop";
     
     const statusAr =
       orderStatus === "completed"
@@ -362,7 +362,7 @@ export async function sendReservationConfirmationEmail(
   }
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <cluny@ma3k.online>";
+    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <cluny@cluny.shop>";
     const formattedDate = new Date(reservationDate).toLocaleDateString('ar');
     await transporter.sendMail({
       from: senderEmail,
@@ -409,7 +409,7 @@ export async function sendReservationExpiryWarningEmail(
   if (!transporter) return false;
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <cluny@ma3k.online>";
+    const senderEmail = process.env.SMTP_FROM || "CLUNY CAFE <cluny@cluny.shop>";
     const expiryTimeFormatted = new Date(expiryTime).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
     await transporter.sendMail({
       from: senderEmail,
