@@ -223,12 +223,13 @@ function getOrderStatusMessage(status: string, orderNumber: string): string {
 
 // Maileroo Email Configuration
 const mailerooApiKey = process.env.MAILEROO_API_KEY;
+const mailerooUser = process.env.MAILEROO_USER || 'info@qahwakup.com';
 const transporter = mailerooApiKey ? nodemailer.createTransport({
   host: 'smtp.maileroo.com',
   port: 465,
   secure: true,
   auth: {
-    user: 'info@qahwakup.com',
+    user: mailerooUser,
     pass: mailerooApiKey
   }
 }) : null;
@@ -330,7 +331,7 @@ async function sendInvoiceEmail(to: string, invoiceNumber: string, invoiceData: 
     
     
     const result = await transporter.sendMail({
-      from: 'info@qahwakup.com',
+      from: mailerooUser,
       to: to,
       subject: `فاتورة ضريبية - CLUNY CAFE - الرقم: ${invoiceNumber}`,
       html: htmlContent,
@@ -531,6 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For now, we allow deletion but could add checks here if needed
       
       // 3. Delete associated recipes first to maintain integrity
+      // Note: RecipeItemModel properties check
       await RecipeItemModel.deleteMany({ coffeeItemId: id });
       
       // 4. Delete the item

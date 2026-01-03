@@ -159,15 +159,16 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === "production" ? (() => { throw new Error("SESSION_SECRET must be set in production"); })() : "dev-secret"),
     resave: false,
-    saveUninitialized: false, // Changed to false for better security
+    saveUninitialized: false, 
+    name: 'cluny.sid', // custom cookie name
     store: new SessionStore({
       checkPeriod: 86400000, // prune expired entries every 24h
     }),
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // true in production (HTTPS), false in development
+      secure: process.env.NODE_ENV === 'production', 
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: 'lax', // Use lax for both environments
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: "/",
     },
   })
