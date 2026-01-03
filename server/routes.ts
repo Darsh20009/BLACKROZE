@@ -2524,14 +2524,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       console.log(`[MENU] DELETE product request: id=${id}`);
       
-      const item = await CoffeeItemModel.findOne({ id });
+      // Try to find by custom 'id' first, then fallback to mongoose _id
+      let item = await CoffeeItemModel.findOne({ id });
+      
+      if (!item && mongoose.Types.ObjectId.isValid(id)) {
+        item = await CoffeeItemModel.findById(id);
+      }
+
       if (!item) {
         console.log(`[MENU] Product not found: id=${id}`);
         return res.status(404).json({ error: "Coffee item not found" });
       }
 
-      const result = await CoffeeItemModel.deleteOne({ id });
-      console.log(`[MENU] Delete result:`, result);
+      const itemId = item.id || item._id.toString();
+      const result = await CoffeeItemModel.deleteOne({ _id: item._id });
+      console.log(`[MENU] Delete result for ${itemId}:`, result);
       
       if (result.deletedCount === 0) {
         return res.status(404).json({ error: "Coffee item not found" });
