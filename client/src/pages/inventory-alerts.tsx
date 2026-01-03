@@ -89,7 +89,9 @@ export default function InventoryAlertsPage() {
   // WebSocket for real-time alerts
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/orders`);
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws/orders`;
+    const ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'subscribe', clientType: 'inventory' }));
