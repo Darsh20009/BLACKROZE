@@ -2429,26 +2429,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { id } = req.params;
       
-      // Log the incoming request ID for debugging
       console.log(`[GET /api/coffee-items/:id] Searching for ID: "${id}"`);
 
       // Try finding by 'id' field first (custom string ID)
+      // We search globally (without tenantId) to ensure visibility from anywhere
       let item = await CoffeeItemModel.findOne({ id }).lean().exec();
       
-      // If not found and ID looks like MongoDB ObjectId, try findById
-      if (!item && mongoose.Types.ObjectId.isValid(id)) {
-        item = await CoffeeItemModel.findById(id).lean().exec();
+      // If not found by 'id' field, try as MongoDB _id
+      if (!item) {
+        try {
+          // Try findById which automatically handles ObjectId conversion if needed
+          item = await CoffeeItemModel.findById(id).lean().exec();
+        } catch (e) {
+          // If id is not a valid ObjectId, findById might throw or return null
+          // If it throws, we just ignore and continue
+        }
       }
 
       if (!item) {
         console.warn(`[GET /api/coffee-items/:id] Item not found for ID: "${id}"`);
-        return res.status(404).json({ error: "Coffee item not found" });
+        return res.status(404).json({ error: "المنتج غير موجود" });
       }
       
       res.json(serializeDoc(item));
     } catch (error) {
       console.error("[GET_COFFEE_ITEM_ERROR]:", error);
-      res.status(500).json({ error: "Failed to fetch coffee item" });
+      res.status(500).json({ error: "حدث خطأ أثناء جلب تفاصيل المنتج" });
     }
   });
 
