@@ -2546,9 +2546,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Coffee item not found" });
       }
 
-      const itemId = item.id || item._id.toString();
+      // Use the actual internal _id for deletion to be certain
       const result = await CoffeeItemModel.deleteOne({ _id: item._id });
-      console.log(`[MENU] Delete result for ${itemId}:`, result);
+      console.log(`[MENU] Delete result for ${item.id || item._id}:`, result);
       
       if (result.deletedCount === 0) {
         return res.status(404).json({ error: "Coffee item not found during deletion" });
