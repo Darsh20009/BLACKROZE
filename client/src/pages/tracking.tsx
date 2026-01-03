@@ -146,71 +146,104 @@ export default function OrderTrackingPage() {
  </CardContent>
  </Card>
 
- {order && (
- <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-10 duration-500">
- {/* Order Status */}
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- {getStatusIcon(order.status)}
- <span>{getStatusText(order.status)}</span>
- </CardTitle>
- </CardHeader>
- <CardContent>
- <div className="space-y-4">
- <div className="flex justify-between items-center">
- <span className="text-muted-foreground">رقم الطلب:</span>
- <span className="font-bold text-primary">{order.orderNumber}</span>
- </div>
- <div className="flex justify-between items-center">
- <span className="text-muted-foreground">المبلغ الإجمالي:</span>
- <span className="font-bold">{order.totalAmount} ريال</span>
- </div>
- {order.deliveryType && (
- <div className="flex justify-between items-center">
- <span className="text-muted-foreground">نوع التسليم:</span>
- <span className="font-bold">
- {order.deliveryType === 'delivery' ? 'توصيل' : 'استلام من الفرع'}
- </span>
- </div>
- )}
- {branch && (
- <div className="space-y-3 pt-4 border-t">
- <div className="flex items-center gap-2 text-primary font-semibold">
- <Store className="w-5 h-5" />
- <span>معلومات الفرع</span>
- </div>
- <div className="flex justify-between items-center">
- <span className="text-muted-foreground">اسم الفرع:</span>
- <span className="font-bold">{branch.nameAr}</span>
- </div>
- <div className="flex justify-between items-center">
- <span className="text-muted-foreground">العنوان:</span>
- <span className="font-bold">{branch.address}</span>
- </div>
- {branch.phone && (
- <div className="flex justify-between items-center">
- <span className="text-muted-foreground">الهاتف:</span>
- <span className="font-bold" dir="ltr">{branch.phone}</span>
- </div>
- )}
- {branch.mapsUrl && (
- <Button
- variant="outline"
- className="w-full"
- onClick={() => window.open(branch.mapsUrl, '_blank')}
- data-testid="button-view-branch-location"
- >
- <MapPin className="w-4 h-4 ml-2" />
- عرض الموقع على الخريطة
- <ExternalLink className="w-4 h-4 mr-2" />
- </Button>
- )}
- </div>
- )}
- </div>
- </CardContent>
- </Card>
+    {order && (
+      <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-10 duration-500">
+        {/* Order Status */}
+        <Card className="overflow-hidden border-2 border-primary/20">
+          <CardHeader className="bg-primary/5 pb-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="p-4 bg-background rounded-full shadow-lg border-2 border-primary/10">
+                {getStatusIcon(order.status)}
+              </div>
+              <div className="space-y-1">
+                <CardTitle className="text-2xl font-bold text-primary">
+                  {getStatusText(order.status)}
+                </CardTitle>
+                <p className="text-muted-foreground text-sm">تم تحديث الحالة مؤخراً</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="text-muted-foreground">رقم الطلب:</span>
+                  <span className="font-bold text-primary" dir="ltr">{order.orderNumber}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="text-muted-foreground">المبلغ الإجمالي:</span>
+                  <span className="font-bold">{order.totalAmount} ريال</span>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="text-muted-foreground">حالة المشروب:</span>
+                  <Badge variant={order.status === 'ready' ? 'default' : 'secondary'} className="text-sm px-3 py-1">
+                    {order.status === 'ready' ? 'جاهز للاستلام ✨' : order.status === 'in_progress' ? 'جاري التحضير ☕' : 'في الانتظار ⏳'}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="text-muted-foreground">تأكيد الطلب:</span>
+                  <Badge variant="outline" className="text-sm px-3 py-1 border-green-500 text-green-600">
+                    تم التأكيد ✅
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {order.deliveryType && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">نوع التسليم:</span>
+                <span className="font-bold">
+                  {order.deliveryType === 'delivery' ? 'توصيل' : 'استلام من الفرع'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {branch && (
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center gap-2 text-primary font-semibold">
+                <Store className="w-5 h-5" />
+                <span>معلومات الفرع</span>
+              </div>
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">اسم الفرع:</span>
+                  <span className="font-bold">{branch.nameAr}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">العنوان:</span>
+                  <span className="font-bold">{branch.address}</span>
+                </div>
+                {branch.phone && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">الهاتف:</span>
+                    <span className="font-bold" dir="ltr">{branch.phone}</span>
+                  </div>
+                )}
+                {branch.mapsUrl && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(branch.mapsUrl, '_blank')}
+                    data-testid="button-view-branch-location"
+                  >
+                    <MapPin className="w-4 h-4 ml-2" />
+                    عرض الموقع على الخريطة
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
  {/* Location Preparation Check - Show when order is ready for pickup */}
  {branch && order.deliveryType === 'pickup' && ['in_progress', 'ready'].includes(order.status) && (
