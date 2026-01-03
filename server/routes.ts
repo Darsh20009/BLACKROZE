@@ -2065,6 +2065,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let items = await CoffeeItemModel.find({ 
             $or: [
               { tenantId: tenantId },
+              { tenantId: 'demo-tenant' },
+              { tenantId: 'default' },
               { tenantId: { $exists: false } },
               { tenantId: null }
             ]
