@@ -2344,13 +2344,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         publishedBranches: itemData.publishedBranches
       });
 
+      // Clear server-side cache if any (some routers use memory cache)
+      // This ensures immediate visibility
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.status(201).json(itemData);
     } catch (error) {
       console.error("[CREATE COFFEE ITEM] Error:", error);
       if (error instanceof Error && 'issues' in error) {
         return res.status(400).json({ error: "Validation error", details: (error as any).issues });
       }
-      res.status(500).json({ error: "Failed to create coffee item", details: String(error) });
+      res.status(500).json({ error: "فشل إضافة المشروب", details: String(error) });
     }
   });
 

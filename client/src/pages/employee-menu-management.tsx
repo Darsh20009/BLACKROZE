@@ -254,9 +254,13 @@ export default function EmployeeMenuManagement() {
    return createdItem;
  },
  onSuccess: async () => {
-   await refetch();
-   queryClient.invalidateQueries({ queryKey: ["/api/coffee-items"] });
-   queryClient.invalidateQueries({ queryKey: ["/api/inventory/all-recipes"] });
+   // Force a fresh refetch of all relevant data
+   await Promise.all([
+     queryClient.invalidateQueries({ queryKey: ["/api/coffee-items"] }),
+     queryClient.invalidateQueries({ queryKey: ["/api/inventory/all-recipes"] }),
+     refetch()
+   ]);
+   
    setIsAddDialogOpen(false);
    setSelectedIngredients([]);
    setRecipeItems([]);
