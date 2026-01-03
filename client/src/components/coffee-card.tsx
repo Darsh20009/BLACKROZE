@@ -40,7 +40,7 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
     setLocation(`/product/${item.id}`);
   };
 
-  const hasSizes = item.availableSizes && item.availableSizes.length > 0;
+  const hasSizes = Array.isArray(item.availableSizes) && item.availableSizes.length > 0;
   const displayPrice = hasSizes 
     ? Math.min(...item.availableSizes!.map(s => Number(s.price)))
     : item.price;

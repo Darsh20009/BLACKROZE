@@ -163,7 +163,9 @@ const MenuPage = memo(function MenuPage() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-muted/50">
-      <CurrentOrderBanner />
+      <div className="max-w-7xl mx-auto px-4">
+        <CurrentOrderBanner />
+      </div>
       
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-20 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>

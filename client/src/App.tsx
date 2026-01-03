@@ -268,17 +268,17 @@ function Router() {
 }
 
 function AppContent() {
- const { isCartOpen, isCheckoutOpen } = useCartStore();
+  const { isCartOpen, isCheckoutOpen } = useCartStore();
 
- return (
- <>
- <Router />
- {/* Only render modals when they are open */}
- {isCartOpen && <CartModal />}
- {isCheckoutOpen && <CheckoutModal />}
- <Toaster />
- </>
- );
+  return (
+    <>
+      <Router />
+      {/* Only render modals when they are open */}
+      {isCartOpen && <CartModal />}
+      {isCheckoutOpen && <CheckoutModal />}
+      <Toaster />
+    </>
+  );
 }
 
 function App() {
