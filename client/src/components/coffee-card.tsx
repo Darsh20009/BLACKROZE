@@ -25,18 +25,13 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    // If it's a basic product with no sizes, add to cart directly
-    // Otherwise, go to details page for customization
-    if (!hasSizes) {
-      addToCart(item.id, 1);
-      setIsAnimating(true);
-      setTimeout(() => setIsAnimating(false), 2000);
-    } else {
-      handleViewDetails();
-    }
+    // In the new system, we always show the customization modal if there are variants or addons
+    handleViewDetails();
   };
 
   const handleViewDetails = () => {
+    // We'll use a modal instead of a separate page for better UX
+    // But for now, let's keep the existing link logic but make it feel like "Customize"
     setLocation(`/product/${item.id}`);
   };
 
@@ -174,13 +169,13 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
                 {item.availabilityStatus === 'out_of_stock' ? ' نفذ' :
                 item.availabilityStatus === 'coming_soon' ? ' قريباً' :
                 item.availabilityStatus === 'temporarily_unavailable' ? '⏸ غير متوفر' :
-                isAnimating ? ' تم الإضافة ' : (hasSizes ? 'اختر' : 'أضف')}
+                isAnimating ? ' تم الإضافة ' : 'تخصيص'}
               </span>
               <span className="sm:hidden">
                 {item.availabilityStatus === 'out_of_stock' ? '' :
                 item.availabilityStatus === 'coming_soon' ? '' :
                 item.availabilityStatus === 'temporarily_unavailable' ? '⏸' :
-                isAnimating ? '' : (hasSizes ? 'اختر' : 'أضف')}
+                isAnimating ? '' : 'تخصيص'}
               </span>
             </Button>
           </div>

@@ -462,9 +462,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Modifier Groups & Addons
   app.get("/api/addons", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req);
+    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
     const addons = await ProductAddonModel.find({ tenantId }).lean();
-    res.json(addons);
+    res.json(addons.map(serializeDoc));
+  });
+
+  app.get("/api/coffee-items/:id/addons", async (req, res) => {
+    const { id } = req.params;
+    const itemAddons = await CoffeeItemAddonModel.find({ coffeeItemId: id }).lean();
+    const addonIds = itemAddons.map(ia => ia.addonId);
+    const addons = await ProductAddonModel.find({ id: { $in: addonIds }, isAvailable: 1 }).lean();
+    res.json(addons.map(serializeDoc));
   });
 
   app.post("/api/addons", requireAuth, requireManager, async (req: AuthRequest, res) => {
