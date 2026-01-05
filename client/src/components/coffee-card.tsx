@@ -150,7 +150,6 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
                 </div>
               )}
               <div className="text-primary font-bold text-lg sm:text-xl md:text-2xl font-amiri" data-testid={`text-price-${item.id}`}>
-                {hasSizes && <span className="text-[10px] sm:text-xs ml-1 block sm:inline text-secondary-foreground/70">تبدأ من </span>}
                 {displayPrice} ريال
               </div>
             </div>
