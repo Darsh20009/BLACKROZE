@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PWAInstallButton } from "@/components/pwa-install";
 import CoffeeCard from "@/components/coffee-card";
-import { useCartStore } from "@/lib/cart-store";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
 import { Coffee, ShoppingCart, Flame, Snowflake, Star, Filter, CreditCard, Cake, Sprout, Zap, LogOut, User, MapPin, MoreVertical, Download, Info } from "lucide-react";
