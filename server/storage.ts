@@ -56,6 +56,7 @@ import {
   type InsertDeliveryZone,
   type Table,
   type InsertTable,
+  type IProductAddon,
   CafeModel,
   BranchModel,
   BusinessConfigModel,
@@ -97,6 +98,8 @@ import {
   WarehouseTransferModel,
   DeliveryIntegrationModel,
   ProductAddonModel,
+  CoffeeItemAddonModel,
+  StatusHistoryModel,
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
@@ -464,52 +467,41 @@ export class DBStorage implements IStorage {
   async getEmployee(id: string): Promise<Employee | undefined> {
     const employee = await EmployeeModel.findById(id).lean();
     if (!employee) return undefined;
-    
-    // Convert _id to id
     const result: any = {
       ...employee,
       id: employee._id.toString(),
     };
     delete result._id;
     delete result.__v;
-    
     return result;
   }
 
   async getEmployeeByUsername(username: string): Promise<Employee | undefined> {
     const employee = await EmployeeModel.findOne({ username }).lean();
     if (!employee) return undefined;
-    
-    // Convert _id to id
     const result: any = {
       ...employee,
       id: employee._id.toString(),
     };
     delete result._id;
     delete result.__v;
-    
     return result;
   }
 
   async getEmployeeByPhone(phone: string): Promise<Employee | undefined> {
     const employee = await EmployeeModel.findOne({ phone }).lean();
     if (!employee) return undefined;
-    
-    // Convert _id to id
     const result: any = {
       ...employee,
       id: employee._id.toString(),
     };
     delete result._id;
     delete result.__v;
-    
     return result;
   }
 
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
-    // Generate employmentNumber if not provided
     const employmentNumber = insertEmployee.employmentNumber || nanoid(10);
-    
     if (insertEmployee.password) {
       const hashedPassword = await bcrypt.hash(insertEmployee.password, 10);
       const newEmployee = await EmployeeModel.create({
@@ -517,7 +509,6 @@ export class DBStorage implements IStorage {
         employmentNumber,
         password: hashedPassword,
       });
-      // Convert _id to id
       const result: any = {
         ...newEmployee.toObject(),
         id: (newEmployee._id as any).toString(),
@@ -530,7 +521,6 @@ export class DBStorage implements IStorage {
         ...insertEmployee,
         employmentNumber,
       });
-      // Convert _id to id
       const result: any = {
         ...newEmployee.toObject(),
         id: (newEmployee._id as any).toString(),
@@ -542,26 +532,15 @@ export class DBStorage implements IStorage {
   }
 
   async updateEmployee(id: string, updates: any): Promise<any> {
-    const { EmployeeModel } = await import("@shared/schema");
-    const mongoose = await import("mongoose");
-    const bcrypt = await import("bcryptjs");
-    
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
     }
     updates.updatedAt = new Date();
-    
-    // First try by the custom "id" field
     let employee = await EmployeeModel.findOneAndUpdate({ id }, updates, { new: true }).lean();
-    
-    // Fallback to _id if not found (though id should be unique)
-    if (!employee && mongoose.default.Types.ObjectId.isValid(id)) {
+    if (!employee && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
       employee = await EmployeeModel.findByIdAndUpdate(id, updates, { new: true }).lean();
     }
-    
     if (!employee) return undefined;
-    
-    // Convert _id to id for consistency
     const result: any = {
       ...employee,
       id: (employee as any)._id.toString(),
@@ -574,14 +553,11 @@ export class DBStorage implements IStorage {
   async activateEmployee(phone: string, fullName: string, password: string): Promise<Employee | undefined> {
     const employee = await EmployeeModel.findOne({ phone, fullName, isActivated: 0 });
     if (!employee) return undefined;
-
     const hashedPassword = await bcrypt.hash(password, 10);
     employee.password = hashedPassword;
     employee.isActivated = 1;
     employee.updatedAt = new Date();
     await employee.save();
-    
-    // Convert _id to id
     const obj = employee.toObject();
     const result: any = {
       ...obj,
@@ -595,10 +571,8 @@ export class DBStorage implements IStorage {
   async resetEmployeePasswordByUsername(username: string, newPassword: string): Promise<boolean> {
     const employee = await this.getEmployeeByUsername(username);
     if (!employee) return false;
-    
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await EmployeeModel.updateOne({ username }, { password: hashedPassword });
-    
     return true;
   }
 
@@ -614,12 +588,8 @@ export class DBStorage implements IStorage {
   }
 
   async getActiveCashiers(tenantId?: string): Promise<Employee[]> {
-    const query: any = { 
-      role: 'cashier',
-      isActivated: 1
-    };
+    const query: any = { role: 'cashier', isActivated: 1 };
     if (tenantId) query.tenantId = tenantId;
-    
     const cashiers = await EmployeeModel.find(query).lean();
     return cashiers.map((emp: any) => ({
       ...emp,
@@ -630,10 +600,7 @@ export class DBStorage implements IStorage {
   }
 
   async createDiscountCode(insertDiscountCode: InsertDiscountCode): Promise<DiscountCode> {
-    const normalizedCode = {
-      ...insertDiscountCode,
-      code: insertDiscountCode.code.trim().toLowerCase()
-    };
+    const normalizedCode = { ...insertDiscountCode, code: insertDiscountCode.code.trim().toLowerCase() };
     const newCode = await DiscountCodeModel.create(normalizedCode);
     return newCode;
   }
@@ -643,382 +610,99 @@ export class DBStorage implements IStorage {
     return code || undefined;
   }
 
-  async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
-    const discountCode = await DiscountCodeModel.findOne({ 
-      code: { $regex: new RegExp(`^${code.trim()}$`, 'i') }
-    });
-    return discountCode || undefined;
-  }
-
-  async getDiscountCodes(): Promise<DiscountCode[]> {
-    return await DiscountCodeModel.find();
-  }
-
-  async getAddons(tenantId: string): Promise<any[]> {
-    return await ProductAddonModel.find({ tenantId }).lean();
-  }
-
-  async createAddon(addon: any): Promise<any> {
-    const newAddon = await ProductAddonModel.create(addon);
-    return serializeDoc(newAddon);
-  }
-
-  async updateAddon(id: string, updates: any): Promise<any | undefined> {
-    const addon = await ProductAddonModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
-    return addon ? serializeDoc(addon) : undefined;
-  }
-
-  async updateDiscountCode(id: string, updates: Partial<DiscountCode>): Promise<DiscountCode | undefined> {
-    const updated = await DiscountCodeModel.findByIdAndUpdate(id, updates, { new: true });
-    return updated || undefined;
-  }
-
-  async incrementDiscountCodeUsage(id: string): Promise<DiscountCode | undefined> {
-    const code = await this.getDiscountCode(id);
-    if (!code) return undefined;
-    return this.updateDiscountCode(id, { usageCount: (code.usageCount || 0) + 1 });
-  }
-
-  async getCustomer(id: string): Promise<Customer | undefined> {
-    const customer = await CustomerModel.findById(id);
-    return customer || undefined;
-  }
-
-  async getCustomerByPhone(phone: string): Promise<Customer | undefined> {
-    const customer = await CustomerModel.findOne({ phone });
-    return customer || undefined;
-  }
-
-  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
-    if (!email) return undefined;
-    const customer = await CustomerModel.findOne({ email });
-    return customer || undefined;
-  }
-
-  async createCustomer(customer: InsertCustomer): Promise<Customer> {
-    const hashedPassword = customer.password ? await bcrypt.hash(customer.password, 10) : undefined;
-    const newCustomer = await CustomerModel.create({
-      ...customer,
-      password: hashedPassword,
-    });
-    return newCustomer;
-  }
-
-  async verifyCustomerPassword(phone: string, password: string): Promise<Customer | undefined> {
-    const customer = await this.getCustomerByPhone(phone);
-    if (!customer || !customer.password) return undefined;
-    
-    const isPasswordValid = await bcrypt.compare(password, customer.password);
-    if (!isPasswordValid) return undefined;
-    
-    return customer;
-  }
-
-  async resetCustomerPassword(email: string, newPassword: string): Promise<boolean> {
-    const customer = await this.getCustomerByEmail(email);
-    if (!customer) return false;
-    
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await CustomerModel.updateOne({ email }, { password: hashedPassword });
-    
-    // Auto-sync card PIN with new password
-    if (customer.phone) {
-      const loyaltyCard = await LoyaltyCardModel.findOne({ phoneNumber: customer.phone });
-      if (loyaltyCard) {
-        await LoyaltyCardModel.updateOne({ phoneNumber: customer.phone }, { cardPin: newPassword });
-      }
-    }
-    
-    return true;
-  }
-
-  async createPasswordResetToken(email: string): Promise<{token: string, expiresAt: Date}> {
-    const token = nanoid(32);
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-    
-    await PasswordResetTokenModel.create({
-      email,
-      token,
-      expiresAt,
-    });
-    
-    return { token, expiresAt };
-  }
-
-  async verifyPasswordResetToken(token: string): Promise<{valid: boolean, email?: string}> {
-    const resetToken = await PasswordResetTokenModel.findOne({ token });
-    
-    if (!resetToken) return { valid: false };
-    
-    if (resetToken.used === 1) return { valid: false };
-    if (resetToken.expiresAt < new Date()) return { valid: false };
-    
-    return { valid: true, email: resetToken.email };
-  }
-
-  async usePasswordResetToken(token: string): Promise<boolean> {
-    const result = await PasswordResetTokenModel.updateOne({ token }, { used: 1 });
-    return result.modifiedCount > 0;
-  }
-
-  async createPasswordSetupOTP(phone: string): Promise<{otp: string, expiresAt: Date}> {
-    const MAX_OTP_REQUESTS_PER_HOUR = 5;
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
-    // Rate limiting: check how many OTPs were created for this phone in the last hour
-    const recentOTPs = await PasswordSetupOTPModel.countDocuments({
-      phone,
-      createdAt: { $gte: oneHourAgo }
-    });
-    
-    if (recentOTPs >= MAX_OTP_REQUESTS_PER_HOUR) {
-      throw new Error('تم تجاوز الحد الأقصى للمحاولات. يرجى المحاولة مرة أخرى بعد ساعة');
-    }
-    
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    
-    // Invalidate any previous unused OTPs for this phone
-    await PasswordSetupOTPModel.updateMany(
-      { phone, used: 0 },
-      { used: 1 }
-    );
-    
-    // Create new OTP
-    await PasswordSetupOTPModel.create({
-      phone,
-      otp,
-      expiresAt,
-      used: 0,
-      attempts: 0
-    });
-    
-    return { otp, expiresAt };
-  }
-
-  async verifyPasswordSetupOTP(phone: string, otp: string): Promise<{valid: boolean, message?: string}> {
-    const MAX_ATTEMPTS = 3;
-    
-    // Find the most recent unused OTP for this phone
-    const otpRecord = await PasswordSetupOTPModel.findOne({ 
-      phone, 
-      used: 0,
-      otp: otp 
-    }).sort({ createdAt: -1 });
-    
-    if (!otpRecord) {
-      return { valid: false, message: 'رمز التحقق غير صحيح أو منتهي الصلاحية' };
-    }
-    
-    // Check if expired
-    if (otpRecord.expiresAt < new Date()) {
-      return { valid: false, message: 'رمز التحقق منتهي الصلاحية' };
-    }
-    
-    // Check max attempts
-    if (otpRecord.attempts >= MAX_ATTEMPTS) {
-      return { valid: false, message: 'تم تجاوز الحد الأقصى للمحاولات' };
-    }
-    
-    // Increment attempts
-    await PasswordSetupOTPModel.updateOne(
-      { _id: otpRecord._id },
-      { $inc: { attempts: 1 } }
-    );
-    
-    return { valid: true };
-  }
-
-  async invalidatePasswordSetupOTP(phone: string, otp: string): Promise<boolean> {
-    const result = await PasswordSetupOTPModel.updateOne(
-      { phone, otp, used: 0 },
-      { used: 1 }
-    );
-    return result.modifiedCount > 0;
-  }
-
-  async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer | undefined> {
-    const updated = await CustomerModel.findByIdAndUpdate(id, updates, { new: true });
-    return updated || undefined;
-  }
-
-  async getCustomerOrders(customerId: string): Promise<Order[]> {
-    return await OrderModel.find({ customerId }).sort({ createdAt: -1 });
-  }
-
   async getCoffeeItems(): Promise<CoffeeItem[]> {
-    const items = await CoffeeItemModel.find().lean();
-    return (items as any[]).map(i => {
-      // Use the custom id field if it exists, otherwise fall back to MongoDB _id
-      const id = (i as any).id || (i as any)._id?.toString();
-      const doc = { ...i, id };
-      delete (doc as any)._id;
-      delete (doc as any).__v;
-      return doc as any as CoffeeItem;
-    });
+    const items = await CoffeeItemModel.find({}).lean();
+    return (items as any[]).map(serializeDoc);
   }
 
   async getCoffeeItem(id: string): Promise<CoffeeItem | undefined> {
-    // Try finding by custom id first, then by MongoDB _id
-    let item = await CoffeeItemModel.findOne({ id }).lean();
-    if (!item) {
-      // Fallback to MongoDB _id if it looks like an ObjectId
-      try {
-        const { default: mongoose } = await import('mongoose');
-        if (mongoose.Types.ObjectId.isValid(id)) {
-          item = await CoffeeItemModel.findById(id).lean();
-        }
-      } catch (e) {
-        // Ignore and return undefined
-      }
-    }
-    if (!item) return undefined;
-    const finalId = (item as any).id || (item as any)._id?.toString();
-    const doc = { ...item, id: finalId };
-    delete (doc as any)._id;
-    delete (doc as any).__v;
-    return doc as any as CoffeeItem;
+    const item = await CoffeeItemModel.findOne({ id }).lean();
+    return item ? serializeDoc(item) : undefined;
   }
 
   async getCoffeeItemsByCategory(category: string): Promise<CoffeeItem[]> {
     const items = await CoffeeItemModel.find({ category }).lean();
-    return (items as any[]).map(i => {
-      const finalId = (i as any).id || (i as any)._id?.toString();
-      const doc = { ...i, id: finalId };
-      delete (doc as any)._id;
-      delete (doc as any).__v;
-      return doc as any as CoffeeItem;
-    });
+    return (items as any[]).map(serializeDoc);
   }
 
   async createCoffeeItem(item: InsertCoffeeItem): Promise<CoffeeItem> {
     const newItem = await CoffeeItemModel.create(item);
-    const doc = newItem.toObject();
-    // Preserve the custom id field from the input item
-    if (!doc.id && (newItem as any)._id) {
-      doc.id = (newItem._id as any).toString();
-    }
-    delete (doc as any)._id;
-    delete (doc as any).__v;
-    return doc as CoffeeItem;
+    return serializeDoc(newItem);
   }
 
   async updateCoffeeItem(id: string, updates: Partial<CoffeeItem>): Promise<CoffeeItem | undefined> {
-    let updated = await CoffeeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean() as any;
-    if (!updated) {
-      // Fallback to MongoDB _id
-      try {
-        const { default: mongoose } = await import('mongoose');
-        if (mongoose.Types.ObjectId.isValid(id)) {
-          updated = await CoffeeItemModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean() as any;
-        }
-      } catch (e) {
-        // Ignore
-      }
-    }
-    if (!updated) return undefined;
-    const finalId = (updated as any).id || (updated as any)._id?.toString();
-    const doc = { ...updated, id: finalId };
-    delete (doc as any)._id;
-    delete (doc as any).__v;
-    return doc as any as CoffeeItem;
+    const item = await CoffeeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return item ? serializeDoc(item) : undefined;
   }
 
-  async deleteCoffeeItem(id: string): Promise<boolean> {
-    let result = await CoffeeItemModel.deleteOne({ id });
-    if (result.deletedCount === 0) {
-      // Fallback to MongoDB _id
-      try {
-        const { default: mongoose } = await import('mongoose');
-        if (mongoose.Types.ObjectId.isValid(id)) {
-          result = await CoffeeItemModel.deleteOne({ _id: id });
-        }
-      } catch (e) {
-        // Ignore
-      }
-    }
-    return result.deletedCount > 0;
+  async getAddons(tenantId: string): Promise<IProductAddon[]> {
+    const addons = await ProductAddonModel.find({ tenantId, isAvailable: 1 }).lean();
+    return (addons as any[]).map(serializeDoc);
+  }
+
+  async getCoffeeItemAddons(coffeeItemId: string): Promise<IProductAddon[]> {
+    const itemAddons = await CoffeeItemAddonModel.find({ coffeeItemId }).lean();
+    const addonIds = itemAddons.map(ia => ia.addonId);
+    const addons = await ProductAddonModel.find({ id: { $in: addonIds }, isAvailable: 1 }).lean();
+    return (addons as any[]).map(serializeDoc);
   }
 
   async createOrder(order: InsertOrder): Promise<Order> {
     const orderNumber = `ORD-${Date.now()}-${this.orderCounter++}`;
-    const newOrder = await OrderModel.create({
-      ...order,
-      orderNumber,
-    });
-    return newOrder;
+    const newOrder = await OrderModel.create({ ...order, orderNumber });
+    return serializeDoc(newOrder);
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
-    const order = await OrderModel.findById(id);
-    return order || undefined;
+    const order = await OrderModel.findOne({ id }).lean();
+    return order ? serializeDoc(order) : undefined;
   }
 
   async getOrderByNumber(orderNumber: string): Promise<Order | undefined> {
-    const order = await OrderModel.findOne({ orderNumber });
-    return order || undefined;
+    const order = await OrderModel.findOne({ orderNumber }).lean();
+    return order ? serializeDoc(order) : undefined;
   }
 
   async updateOrderStatus(id: string, status: string, cancellationReason?: string): Promise<Order | undefined> {
-    const updates: any = { status, updatedAt: new Date() };
-    if (cancellationReason) {
-      updates.cancellationReason = cancellationReason;
-    }
-    const updated = await OrderModel.findByIdAndUpdate(id, updates, { new: true });
-    return updated || undefined;
+    const updates: any = { status };
+    if (cancellationReason) updates.cancellationReason = cancellationReason;
+    const order = await OrderModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return order ? serializeDoc(order) : undefined;
   }
 
   async updateOrderCarPickup(id: string, carPickup: any): Promise<Order | undefined> {
-    const updated = await OrderModel.findByIdAndUpdate(
-      id,
-      { carPickup, updatedAt: new Date() },
-      { new: true }
-    );
-    return updated || undefined;
+    const order = await OrderModel.findOneAndUpdate({ id }, { $set: { carPickup } }, { new: true }).lean();
+    return order ? serializeDoc(order) : undefined;
   }
 
-  async getOrders(limit?: number, offset?: number): Promise<Order[]> {
-    const orders = await OrderModel.find({}).sort({ createdAt: -1 }).skip(offset || 0).limit(limit || 50);
-    return orders.map((order: any) => serializeDoc(order));
+  async getOrders(limit: number = 50, offset: number = 0): Promise<Order[]> {
+    const orders = await OrderModel.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit).lean();
+    return (orders as any[]).map(serializeDoc);
   }
 
   async createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem> {
-    const newOrderItem = await OrderItemModel.create(orderItem);
-    return newOrderItem;
+    const newItem = await OrderItemModel.create(orderItem);
+    return serializeDoc(newItem);
   }
 
   async getOrderItems(orderId: string): Promise<OrderItem[]> {
-    return await OrderItemModel.find({ orderId });
+    const items = await OrderItemModel.find({ orderId }).lean();
+    return (items as any[]).map(serializeDoc);
   }
 
   async getCartItems(sessionId: string): Promise<CartItem[]> {
-    return await CartItemModel.find({ sessionId });
+    const items = await CartItemModel.find({ sessionId }).lean();
+    return (items as any[]).map(serializeDoc);
   }
 
   async addToCart(cartItem: InsertCartItem): Promise<CartItem> {
-    const existing = await CartItemModel.findOne({
-      sessionId: cartItem.sessionId,
-      coffeeItemId: cartItem.coffeeItemId,
-    });
-
-    if (existing) {
-      existing.quantity += cartItem.quantity;
-      await existing.save();
-      return existing;
-    }
-
-    const newCartItem = await CartItemModel.create(cartItem);
-    return newCartItem;
+    const newItem = await CartItemModel.create(cartItem);
+    return serializeDoc(newItem);
   }
 
   async updateCartItemQuantity(sessionId: string, coffeeItemId: string, quantity: number): Promise<CartItem | undefined> {
-    const updated = await CartItemModel.findOneAndUpdate(
-      { sessionId, coffeeItemId },
-      { quantity },
-      { new: true }
-    );
-    return updated || undefined;
+    const item = await CartItemModel.findOneAndUpdate({ sessionId, coffeeItemId }, { $set: { quantity } }, { new: true }).lean();
+    return item ? serializeDoc(item) : undefined;
   }
 
   async removeFromCart(sessionId: string, coffeeItemId: string): Promise<boolean> {
@@ -1032,1784 +716,568 @@ export class DBStorage implements IStorage {
   }
 
   async createLoyaltyCard(card: InsertLoyaltyCard): Promise<LoyaltyCard> {
-    const qrToken = nanoid(32);
-    const cardNumber = `QC-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-    
-    const newCard = await LoyaltyCardModel.create({
-      ...card,
-      qrToken,
-      cardNumber,
-    });
-    return newCard;
+    const newCard = await LoyaltyCardModel.create(card);
+    return serializeDoc(newCard);
   }
 
   async getLoyaltyCard(id: string): Promise<LoyaltyCard | undefined> {
-    const card = await LoyaltyCardModel.findById(id);
-    return card || undefined;
+    const card = await LoyaltyCardModel.findOne({ id }).lean();
+    return card ? serializeDoc(card) : undefined;
   }
 
   async getLoyaltyCardByQRToken(qrToken: string): Promise<LoyaltyCard | undefined> {
-    const card = await LoyaltyCardModel.findOne({ qrToken });
-    return card || undefined;
+    const card = await LoyaltyCardModel.findOne({ qrToken }).lean();
+    return card ? serializeDoc(card) : undefined;
   }
 
   async getLoyaltyCardByCardNumber(cardNumber: string): Promise<LoyaltyCard | undefined> {
-    const card = await LoyaltyCardModel.findOne({ cardNumber });
-    return card || undefined;
+    const card = await LoyaltyCardModel.findOne({ cardNumber }).lean();
+    return card ? serializeDoc(card) : undefined;
   }
 
   async getLoyaltyCardByPhone(phoneNumber: string): Promise<LoyaltyCard | undefined> {
-    const card = await LoyaltyCardModel.findOne({ phoneNumber });
-    return card || undefined;
-  }
-
-  async getLoyaltyCardsByCustomerId(customerId: string): Promise<LoyaltyCard[]> {
-    return await LoyaltyCardModel.find({ customerId }).sort({ isActive: -1, createdAt: -1 });
-  }
-
-  async getActiveCardByCustomerId(customerId: string): Promise<LoyaltyCard | undefined> {
-    const card = await LoyaltyCardModel.findOne({ customerId, isActive: true });
-    return card || undefined;
-  }
-
-  async setActiveCard(cardId: string, customerId: string): Promise<LoyaltyCard | undefined> {
-    await LoyaltyCardModel.updateMany({ customerId }, { isActive: false });
-    const updated = await LoyaltyCardModel.findByIdAndUpdate(
-      cardId,
-      { isActive: true, updatedAt: new Date() },
-      { new: true }
-    );
-    return updated || undefined;
+    const card = await LoyaltyCardModel.findOne({ phoneNumber }).lean();
+    return card ? serializeDoc(card) : undefined;
   }
 
   async getLoyaltyCards(): Promise<LoyaltyCard[]> {
-    return await LoyaltyCardModel.find();
+    const cards = await LoyaltyCardModel.find({}).lean();
+    return (cards as any[]).map(serializeDoc);
   }
 
   async updateLoyaltyCard(id: string, updates: Partial<LoyaltyCard>): Promise<LoyaltyCard | undefined> {
-    const updated = await LoyaltyCardModel.findByIdAndUpdate(
-      id,
-      { ...updates, updatedAt: new Date() },
-      { new: true }
-    );
-    return updated || undefined;
+    const card = await LoyaltyCardModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return card ? serializeDoc(card) : undefined;
   }
 
-  async generateCodesForOrder(orderId: string, drinks: Array<{name: string, quantity: number}>): Promise<CardCode[]> {
+  async generateCodesForOrder(orderId: string, drinks: Array<{ name: string; quantity: number }>): Promise<CardCode[]> {
     const codes: CardCode[] = [];
-    
     for (const drink of drinks) {
       for (let i = 0; i < drink.quantity; i++) {
-        const code = nanoid(12).toUpperCase();
-        const newCode = await CardCodeModel.create({
-          code,
-          issuedForOrderId: orderId,
-          drinkName: drink.name,
-        });
-        codes.push(newCode);
+        const code = nanoid(8).toUpperCase();
+        const newCode = await CardCodeModel.create({ code, orderId, isRedeemed: 0 });
+        codes.push(serializeDoc(newCode));
       }
     }
-    
     return codes;
   }
 
-  async redeemCode(code: string, cardId: string): Promise<{success: boolean, message: string, card?: LoyaltyCard}> {
-    const cardCode = await CardCodeModel.findOne({ code });
-    
-    if (!cardCode) {
-      return { success: false, message: 'الكود غير صحيح' };
-    }
-    
-    if (cardCode.isRedeemed === 1) {
-      return { success: false, message: 'هذا الكود مستخدم مسبقاً' };
-    }
-    
-    const loyaltyCard = await this.getLoyaltyCard(cardId);
-    if (!loyaltyCard) {
-      return { success: false, message: 'البطاقة غير موجودة' };
-    }
-    
-    cardCode.isRedeemed = 1;
-    cardCode.redeemedAt = new Date();
-    cardCode.redeemedByCardId = cardId;
-    await cardCode.save();
-    
-    const newStamps = (loyaltyCard.stamps || 0) + 1;
-    let freeCupsEarned = loyaltyCard.freeCupsEarned || 0;
-    let stamps = newStamps;
-    
-    if (newStamps >= 6) {
-      freeCupsEarned += 1;
-      stamps = newStamps - 6;
-    }
-    
-    const updatedCard = await this.updateLoyaltyCard(cardId, {
-      stamps,
-      freeCupsEarned,
-      lastUsedAt: new Date(),
-    });
-    
-    return {
-      success: true,
-      message: 'تم تفعيل الكود بنجاح',
-      card: updatedCard,
-    };
+  async redeemCode(code: string, cardId: string): Promise<{ success: boolean; message: string; card?: LoyaltyCard }> {
+    const codeDoc = await CardCodeModel.findOne({ code, isRedeemed: 0 });
+    if (!codeDoc) return { success: false, message: "كود غير صالح أو تم استخدامه" };
+    const card = await LoyaltyCardModel.findOne({ id: cardId });
+    if (!card) return { success: false, message: "البطاقة غير موجودة" };
+    card.stamps = (card.stamps || 0) + 1;
+    await card.save();
+    codeDoc.isRedeemed = 1;
+    codeDoc.redeemedAt = new Date();
+    codeDoc.cardId = cardId;
+    await codeDoc.save();
+    return { success: true, message: "تم إضافة الختم بنجاح", card: serializeDoc(card) };
   }
 
   async getCodesByOrder(orderId: string): Promise<CardCode[]> {
-    return await CardCodeModel.find({ issuedForOrderId: orderId });
+    const codes = await CardCodeModel.find({ orderId }).lean();
+    return (codes as any[]).map(serializeDoc);
   }
 
   async getCodeDetails(code: string): Promise<CardCode | undefined> {
-    const cardCode = await CardCodeModel.findOne({ code });
-    return cardCode || undefined;
+    const doc = await CardCodeModel.findOne({ code }).lean();
+    return doc ? serializeDoc(doc) : undefined;
   }
 
   async createLoyaltyTransaction(transaction: InsertLoyaltyTransaction): Promise<LoyaltyTransaction> {
-    const newTransaction = await LoyaltyTransactionModel.create(transaction);
-    return newTransaction;
+    const newTx = await LoyaltyTransactionModel.create(transaction);
+    return serializeDoc(newTx);
   }
 
   async getLoyaltyTransactions(cardId: string): Promise<LoyaltyTransaction[]> {
-    return await LoyaltyTransactionModel.find({ cardId }).sort({ createdAt: -1 });
+    const txs = await LoyaltyTransactionModel.find({ cardId }).sort({ createdAt: -1 }).lean();
+    return (txs as any[]).map(serializeDoc);
   }
 
-  async getAllLoyaltyTransactions(limit?: number): Promise<LoyaltyTransaction[]> {
-    const query = LoyaltyTransactionModel.find().sort({ createdAt: -1 });
-    if (limit) query.limit(limit);
-    return await query;
+  async getAllLoyaltyTransactions(limit: number = 50): Promise<LoyaltyTransaction[]> {
+    const txs = await LoyaltyTransactionModel.find({}).sort({ createdAt: -1 }).limit(limit).lean();
+    return (txs as any[]).map(serializeDoc);
   }
 
   async createLoyaltyReward(reward: InsertLoyaltyReward): Promise<LoyaltyReward> {
     const newReward = await LoyaltyRewardModel.create(reward);
-    return newReward;
+    return serializeDoc(newReward);
   }
 
   async getLoyaltyRewards(): Promise<LoyaltyReward[]> {
-    return await LoyaltyRewardModel.find();
+    const rewards = await LoyaltyRewardModel.find({ isAvailable: 1 }).lean();
+    return (rewards as any[]).map(serializeDoc);
   }
 
   async getLoyaltyReward(id: string): Promise<LoyaltyReward | undefined> {
-    const reward = await LoyaltyRewardModel.findById(id);
-    return reward || undefined;
+    const reward = await LoyaltyRewardModel.findOne({ id }).lean();
+    return reward ? serializeDoc(reward) : undefined;
   }
 
   async getIngredients(): Promise<any[]> {
-    const items = await IngredientModel.find();
-    return items.map(serializeDoc);
+    const ingredients = await IngredientModel.find({}).lean();
+    return (ingredients as any[]).map(serializeDoc);
   }
 
   async createIngredient(ingredient: any): Promise<any> {
     const newIngredient = await IngredientModel.create(ingredient);
-    return newIngredient;
+    return serializeDoc(newIngredient);
   }
 
   async updateIngredientAvailability(id: string, isAvailable: number): Promise<any> {
-    const updated = await IngredientModel.findByIdAndUpdate(
-      id,
-      { isAvailable, updatedAt: new Date() },
-      { new: true }
-    );
-    return updated;
+    const ingredient = await IngredientModel.findOneAndUpdate({ id }, { $set: { isAvailable } }, { new: true }).lean();
+    return ingredient ? serializeDoc(ingredient) : undefined;
   }
 
   async getCoffeeItemIngredients(coffeeItemId: string): Promise<any[]> {
-    const items = await CoffeeItemIngredientModel.find({ coffeeItemId });
-    return items.map(serializeDoc);
+    const items = await CoffeeItemIngredientModel.find({ coffeeItemId }).lean();
+    return (items as any[]).map(serializeDoc);
   }
 
-  async addCoffeeItemIngredient(coffeeItemId: string, ingredientId: string, quantity: number = 0, unit: string = 'ml'): Promise<any> {
-    const result = await CoffeeItemIngredientModel.findOneAndUpdate(
-      { coffeeItemId, ingredientId },
-      { coffeeItemId, ingredientId, quantity, unit },
-      { upsert: true, new: true }
-    );
-    
-    // Also try to sync with RecipeItem if there's a matching RawItem
-    // This creates an automatic link between ingredient display and inventory tracking
-    try {
-      const ingredient = await IngredientModel.findById(ingredientId);
-      if (ingredient) {
-        // Try to find a RawItem with matching name
-        const rawItem = await RawItemModel.findOne({
-          $or: [
-            { nameAr: ingredient.nameAr },
-            { nameEn: ingredient.nameEn }
-          ],
-          category: 'ingredient'
-        });
-        
-        if (rawItem && quantity > 0) {
-          // Create or update the RecipeItem for inventory deduction
-          await RecipeItemModel.findOneAndUpdate(
-            { coffeeItemId, rawItemId: (rawItem._id as any).toString() },
-            { 
-              coffeeItemId, 
-              rawItemId: (rawItem._id as any).toString(), 
-              quantity, 
-              unit,
-              updatedAt: new Date() 
-            },
-            { upsert: true }
-          );
-          console.log(`[SYNC] Created RecipeItem for ${coffeeItemId} -> ${rawItem.nameAr}`);
-        }
-      }
-    } catch (syncError) {
-      console.log('[SYNC] Could not sync ingredient to recipe item:', syncError);
-      // Non-blocking - continue even if sync fails
-    }
-    
-    return result;
+  async addCoffeeItemIngredient(coffeeItemId: string, ingredientId: string, quantity: number = 0, unit: string = ""): Promise<any> {
+    const newItem = await CoffeeItemIngredientModel.create({ coffeeItemId, ingredientId, quantity, unit });
+    return serializeDoc(newItem);
   }
 
   async removeCoffeeItemIngredient(coffeeItemId: string, ingredientId: string): Promise<void> {
     await CoffeeItemIngredientModel.deleteOne({ coffeeItemId, ingredientId });
-    
-    // Also try to remove corresponding RecipeItem
-    try {
-      const ingredient = await IngredientModel.findById(ingredientId);
-      if (ingredient) {
-        const rawItem = await RawItemModel.findOne({
-          $or: [
-            { nameAr: ingredient.nameAr },
-            { nameEn: ingredient.nameEn }
-          ],
-          category: 'ingredient'
-        });
-        
-        if (rawItem) {
-          await RecipeItemModel.deleteOne({ 
-            coffeeItemId, 
-            rawItemId: (rawItem._id as any).toString() 
-          });
-          console.log(`[SYNC] Removed RecipeItem for ${coffeeItemId} -> ${rawItem.nameAr}`);
-        }
-      }
-    } catch (syncError) {
-      console.log('[SYNC] Could not remove synced recipe item:', syncError);
-    }
   }
 
   async getCoffeeItemsByIngredient(ingredientId: string): Promise<CoffeeItem[]> {
-    const links = await CoffeeItemIngredientModel.find({ ingredientId });
-    const coffeeItemIds = links.map(link => link.coffeeItemId);
-    return await CoffeeItemModel.find({ id: { $in: coffeeItemIds } });
-  }
-
-  async getBranches(cafeId?: string): Promise<IBranch[]> {
-    const query: any = { 
-      $or: [
-        { isActive: true },
-        { isActive: 1 },
-        { isActive: "true" },
-        { isActive: "1" }
-      ]
-    };
-    if (cafeId) query.cafeId = cafeId;
-    const branches = await BranchModel.find(query).sort({ createdAt: -1 }).lean();
-    return (branches as any[]).map(b => serializeDoc(b));
-  }
-
-  async getAllBranches(): Promise<IBranch[]> {
-    const branches = await BranchModel.find().sort({ createdAt: -1 }).lean();
-    return (branches as any[]).map(b => serializeDoc(b));
-  }
-
-  async getBranch(id: string): Promise<IBranch | null> {
-    const branch = await BranchModel.findOne({ id }).lean();
-    // Only return branch if it's active
-    if (branch && (branch as any).isActive !== false && (branch as any).isActive !== 0) {
-      return serializeDoc(branch);
-    }
-    return null;
-  }
-
-  async createBranch(branch: any): Promise<IBranch> {
-    const id = branch.id || nanoid();
-    const newBranch = await BranchModel.create({ ...branch, id, isActive: 1 });
-    return serializeDoc(newBranch.toObject());
-  }
-
-  async updateBranch(id: string, updates: Partial<IBranch>): Promise<IBranch | null> {
-    const updated = await BranchModel.findOneAndUpdate(
-      { id },
-      { $set: { ...updates, updatedAt: new Date() } },
-      { new: true }
-    ).lean();
-    return updated ? serializeDoc(updated) : null;
+    const links = await CoffeeItemIngredientModel.find({ ingredientId }).lean();
+    const ids = links.map(l => l.coffeeItemId);
+    const items = await CoffeeItemModel.find({ id: { $in: ids } }).lean();
+    return (items as any[]).map(serializeDoc);
   }
 
   async deleteBranch(id: string): Promise<boolean> {
-    const result = await BranchModel.findByIdAndUpdate(
-      id,
-      { isActive: 0, updatedAt: new Date() },
-      { new: true }
-    );
-    return !!result;
+    const result = await BranchModel.deleteOne({ id });
+    return result.deletedCount > 0;
   }
 
-  async getCategories(): Promise<Category[]> {
-    const categories = await CategoryModel.find().sort({ sortOrder: 1, nameAr: 1 });
-    return categories.map(serializeDoc);
-  }
-
-  async getCategory(id: string): Promise<Category | null> {
-    const category = await CategoryModel.findById(id);
-    return category ? category.toObject() : null;
-  }
-
-  async createCategory(category: any): Promise<Category> {
-    const newCategory = await CategoryModel.create(category);
-    return newCategory.toObject();
-  }
-
-  async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
-    const updated = await CategoryModel.findByIdAndUpdate(
-      id,
-      { $set: { ...updates, updatedAt: new Date() } },
-      { new: true }
-    );
-    return updated ? updated.toObject() : null;
-  }
-
-  async deleteCategory(id: string): Promise<boolean> {
-    const result = await CategoryModel.findByIdAndDelete(id);
-    return !!result;
-  }
-
-  async getCustomers(): Promise<Customer[]> {
-    return await CustomerModel.find().sort({ createdAt: -1 });
-  }
-
-  async getOrdersByEmployee(employeeId: string): Promise<Order[]> {
-    return await OrderModel.find({ employeeId }).sort({ createdAt: -1 });
-  }
-
-  async getDeliveryZones(): Promise<DeliveryZone[]> {
-    return await DeliveryZoneModel.find({ isActive: 1 }).sort({ nameAr: 1 });
-  }
-
-  async getDeliveryZone(id: string): Promise<DeliveryZone | null> {
-    const zone = await DeliveryZoneModel.findById(id);
-    return zone ? zone.toObject() : null;
-  }
-
-  async createDeliveryZone(zone: any): Promise<DeliveryZone> {
-    const newZone = await DeliveryZoneModel.create(zone);
-    return newZone.toObject();
-  }
-
-  async updateDeliveryZone(id: string, updates: Partial<DeliveryZone>): Promise<DeliveryZone | null> {
-    const updated = await DeliveryZoneModel.findByIdAndUpdate(
-      id,
-      { $set: { ...updates, updatedAt: new Date() } },
-      { new: true }
-    );
-    return updated ? updated.toObject() : null;
-  }
-
-  async deleteDeliveryZone(id: string): Promise<boolean> {
-    const result = await DeliveryZoneModel.findByIdAndUpdate(
-      id,
-      { isActive: 0, updatedAt: new Date() },
-      { new: true }
-    );
-    return !!result;
-  }
-
-  async getAvailableDrivers(): Promise<Employee[]> {
-    return await EmployeeModel.find({ 
-      role: 'driver', 
-      isActivated: 1,
-      isAvailableForDelivery: 1 
-    });
-  }
-
-  async updateDriverAvailability(id: string, isAvailable: number): Promise<Employee | undefined> {
-    const updated = await EmployeeModel.findByIdAndUpdate(
-      id,
-      { isAvailableForDelivery: isAvailable, updatedAt: new Date() },
-      { new: true }
-    );
-    return updated || undefined;
-  }
-
-  async updateDriverLocation(id: string, location: {lat: number, lng: number}): Promise<Employee | undefined> {
-    const updated = await EmployeeModel.findByIdAndUpdate(
-      id,
-      { 
-        currentLocation: { 
-          lat: location.lat, 
-          lng: location.lng, 
-          updatedAt: new Date() 
-        },
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
-    return updated || undefined;
-  }
-
-  async assignDriverToOrder(orderId: string, driverId: string): Promise<Order | undefined> {
-    const updated = await OrderModel.findByIdAndUpdate(
-      orderId,
-      { driverId, deliveryStatus: 'assigned', updatedAt: new Date() },
-      { new: true }
-    );
-    return updated || undefined;
-  }
-
-  async updateOrderDeliveryStatus(orderId: string, status: string): Promise<Order | undefined> {
-    const updated = await OrderModel.findByIdAndUpdate(
-      orderId,
-      { deliveryStatus: status, updatedAt: new Date() },
-      { new: true }
-    );
-    return updated || undefined;
-  }
-
-  async startDelivery(orderId: string): Promise<Order | undefined> {
-    const updated = await OrderModel.findByIdAndUpdate(
-      orderId,
-      { 
-        deliveryStatus: 'out_for_delivery',
-        deliveryStartedAt: new Date(),
-        status: 'out_for_delivery',
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
-    return updated || undefined;
-  }
-
-  async completeDelivery(orderId: string): Promise<Order | undefined> {
-    const updated = await OrderModel.findByIdAndUpdate(
-      orderId,
-      { 
-        deliveryStatus: 'delivered',
-        deliveredAt: new Date(),
-        status: 'completed',
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
-    return updated || undefined;
-  }
-
-  async getActiveDeliveryOrders(): Promise<Order[]> {
-    return await OrderModel.find({
-      deliveryType: 'delivery',
-      status: { $in: ['pending', 'payment_confirmed', 'in_progress', 'ready', 'out_for_delivery'] }
-    }).sort({ createdAt: -1 });
-  }
-
-  async getDriverActiveOrders(driverId: string): Promise<Order[]> {
-    return await OrderModel.find({
-      driverId,
-      deliveryStatus: { $in: ['assigned', 'out_for_delivery'] }
-    }).sort({ createdAt: -1 });
-  }
-
-  async getTables(branchId?: string): Promise<Table[]> {
-    const filter = branchId ? { branchId } : {};
-    return await TableModel.find(filter).sort({ tableNumber: 1 });
-  }
-
-  async getTable(id: string): Promise<Table | null> {
-    const table = await TableModel.findById(id);
-    return table ? table.toObject() : null;
-  }
-
-  async getTableByNumber(tableNumber: string): Promise<Table | null> {
-    const table = await TableModel.findOne({ tableNumber });
-    return table ? table.toObject() : null;
-  }
-
-  async getTableByQRToken(qrToken: string): Promise<Table | null> {
-    const table = await TableModel.findOne({ qrToken });
-    return table ? table.toObject() : null;
-  }
-
-  async createTable(table: InsertTable): Promise<Table> {
-    // Check for duplicate table number in the same branch
-    const existingTable = await TableModel.findOne({
-      tableNumber: table.tableNumber,
-      branchId: table.branchId,
-    });
-
-    if (existingTable) {
-      throw new Error(`Table number ${table.tableNumber} already exists in this branch`);
-    }
-
-    // Generate unique QR token (32 chars like loyalty cards for maximum security)
-    const qrToken = nanoid(32);
-    const newTable = await TableModel.create({
-      ...table,
-      qrToken,
-      isOccupied: 0, // Set default
-    });
-    return newTable;
-  }
-
-  async bulkCreateTables(count: number, branchId?: string): Promise<Table[]> {
-    const tables: Table[] = [];
-    
-    // Get all tables (including inactive) to find highest number
-    const allTables = await TableModel.find(branchId ? { branchId } : {});
-    
-    // Find the highest table number (accounting for gaps from deletions)
-    let highestNumber = 0;
-    for (const table of allTables) {
-      const num = parseInt(table.tableNumber);
-      if (!isNaN(num) && num > highestNumber) {
-        highestNumber = num;
-      }
-    }
-    
-    const startNumber = highestNumber + 1;
-
-    for (let i = 0; i < count; i++) {
-      const tableNumber = String(startNumber + i);
-      const qrToken = nanoid(32);
-      
-      const newTable = await TableModel.create({
-        tableNumber,
-        qrToken,
-        branchId,
-        isActive: 1,
-        isOccupied: 0,
-      });
-      
-      tables.push(newTable);
-    }
-    
-    return tables;
-  }
-
-  async updateTable(id: string, updates: Partial<Table>): Promise<Table | undefined> {
-    // Build update object, handling null values to remove fields
-    const updateObj: any = { ...updates, updatedAt: new Date() };
-    const unsetObj: any = {};
-    
-    // Move null values to $unset for proper field removal
-    Object.keys(updateObj).forEach(key => {
-      if (updateObj[key] === null) {
-        unsetObj[key] = 1;
-        delete updateObj[key];
-      }
-    });
-    
-    // Build the final update query
-    const query: any = {};
-    if (Object.keys(updateObj).length > 0) {
-      query.$set = updateObj;
-    }
-    if (Object.keys(unsetObj).length > 0) {
-      query.$unset = unsetObj;
-    }
-    
-    // If query is empty, just return the table
-    const finalQuery = Object.keys(query).length === 0 ? updateObj : query;
-    
-    const updated = await TableModel.findByIdAndUpdate(
-      id,
-      finalQuery,
-      { new: true }
-    );
-    return updated || undefined;
-  }
-
-  async deleteTable(id: string): Promise<boolean> {
-    const result = await TableModel.findByIdAndUpdate(
-      id,
-      { isActive: 0, updatedAt: new Date() },
-      { new: true }
-    );
-    return !!result;
-  }
-
-  async updateTableOccupancy(id: string, isOccupied: number, currentOrderId?: string): Promise<Table | undefined> {
-    try {
-      const updated = await TableModel.findByIdAndUpdate(
-        id,
-        { 
-          $set: { 
-            isOccupied, 
-            currentOrderId: isOccupied ? currentOrderId : undefined,
-            status: isOccupied ? 'occupied' : 'available',
-            updatedAt: new Date() 
-          } 
-        },
-        { new: true }
-      );
-      return updated ? serializeDoc(updated) : undefined;
-    } catch (error) {
-      console.error("Error updating table occupancy:", error);
-      return undefined;
-    }
-  }
-
-  async regenerateTableQRToken(id: string): Promise<Table | undefined> {
-    const newQrToken = nanoid(32); // Use 32 chars for maximum security (same as loyalty cards)
-    const updated = await TableModel.findByIdAndUpdate(
-      id,
-      { 
-        qrToken: newQrToken,
-        updatedAt: new Date() 
-      },
-      { new: true }
-    );
-    return updated || undefined;
-  }
-
-  async getTableOrders(status?: string): Promise<Order[]> {
-    const filter: any = { orderType: 'dine-in' };
-    if (status) {
-      filter.status = status;
-    }
-    return await OrderModel.find(filter).sort({ createdAt: -1 });
-  }
-
-  async getPendingTableOrders(): Promise<Order[]> {
-    return await OrderModel.find({
-      orderType: 'dine-in',
-      status: { $in: ['pending', 'payment_confirmed'] }
-    }).sort({ createdAt: -1 });
-  }
-
-  async createTaxInvoice(invoiceData: any, invoiceNumber: string): Promise<any> {
-    const { TaxInvoiceModel } = require("@shared/schema");
-    const invoice = await TaxInvoiceModel.create({
-      invoiceNumber,
-      ...invoiceData,
-      invoiceDate: new Date()
-    });
-    return invoice;
-  }
-
-  // ================== INVENTORY MANAGEMENT IMPLEMENTATIONS ==================
-
-  // Raw Items
   async getRawItems(): Promise<RawItem[]> {
-    const items = await RawItemModel.find({ $or: [{ isActive: 1 }, { isActive: { $exists: false } }] }).sort({ nameAr: 1 }).lean();
-    return items.map((item: any) => ({
-      ...item,
-      id: item._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    }));
+    const items = await RawItemModel.find({}).lean();
+    return (items as any[]).map(serializeDoc);
   }
 
   async getRawItem(id: string): Promise<RawItem | undefined> {
-    const item = await RawItemModel.findById(id).lean();
-    if (!item) return undefined;
-    return {
-      ...item,
-      id: (item as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const item = await RawItemModel.findOne({ id }).lean();
+    return item ? serializeDoc(item) : undefined;
   }
 
-  async getRawItemByCode(code: string): Promise<RawItem | undefined> {
-    const item = await RawItemModel.findOne({ code }).lean();
-    if (!item) return undefined;
-    return {
-      ...item,
-      id: (item as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+  async getRawItemByCode(sku: string): Promise<RawItem | undefined> {
+    const item = await RawItemModel.findOne({ sku }).lean();
+    return item ? serializeDoc(item) : undefined;
   }
 
   async createRawItem(item: InsertRawItem): Promise<RawItem> {
-    const itemWithDefaults = {
-      ...item,
-      isActive: item.isActive ?? 1,
-    };
-    const newItem = await RawItemModel.create(itemWithDefaults);
-    return {
-      ...newItem.toObject(),
-      id: (newItem._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const newItem = await RawItemModel.create(item);
+    return serializeDoc(newItem);
   }
 
   async updateRawItem(id: string, updates: Partial<RawItem>): Promise<RawItem | undefined> {
-    const updated = await RawItemModel.findByIdAndUpdate(
-      id,
-      { ...updates, updatedAt: new Date() },
-      { new: true }
-    ).lean();
-    if (!updated) return undefined;
-    return {
-      ...updated,
-      id: (updated as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const item = await RawItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return item ? serializeDoc(item) : undefined;
   }
 
   async deleteRawItem(id: string): Promise<boolean> {
-    const result = await RawItemModel.findByIdAndUpdate(id, { isActive: 0, updatedAt: new Date() });
-    return !!result;
+    const result = await RawItemModel.deleteOne({ id });
+    return result.deletedCount > 0;
   }
 
-  // Suppliers
   async getSuppliers(): Promise<Supplier[]> {
-    const suppliers = await SupplierModel.find({ isActive: 1 }).sort({ nameAr: 1 }).lean();
-    return suppliers.map((supplier: any) => ({
-      ...supplier,
-      id: supplier._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    }));
+    const suppliers = await SupplierModel.find({}).lean();
+    return (suppliers as any[]).map(serializeDoc);
   }
 
   async getSupplier(id: string): Promise<Supplier | undefined> {
-    const supplier = await SupplierModel.findById(id).lean();
-    if (!supplier) return undefined;
-    return {
-      ...supplier,
-      id: (supplier as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const supplier = await SupplierModel.findOne({ id }).lean();
+    return supplier ? serializeDoc(supplier) : undefined;
   }
 
   async getSupplierByCode(code: string): Promise<Supplier | undefined> {
     const supplier = await SupplierModel.findOne({ code }).lean();
-    if (!supplier) return undefined;
-    return {
-      ...supplier,
-      id: (supplier as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return supplier ? serializeDoc(supplier) : undefined;
   }
 
   async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
     const newSupplier = await SupplierModel.create(supplier);
-    return {
-      ...newSupplier.toObject(),
-      id: (newSupplier._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return serializeDoc(newSupplier);
   }
 
   async updateSupplier(id: string, updates: Partial<Supplier>): Promise<Supplier | undefined> {
-    const updated = await SupplierModel.findByIdAndUpdate(
-      id,
-      { ...updates, updatedAt: new Date() },
-      { new: true }
-    ).lean();
-    if (!updated) return undefined;
-    return {
-      ...updated,
-      id: (updated as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const supplier = await SupplierModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return supplier ? serializeDoc(supplier) : undefined;
   }
 
   async deleteSupplier(id: string): Promise<boolean> {
-    const result = await SupplierModel.findByIdAndUpdate(id, { isActive: 0, updatedAt: new Date() });
-    return !!result;
+    const result = await SupplierModel.deleteOne({ id });
+    return result.deletedCount > 0;
   }
 
-  // Branch Stock
   async getBranchStock(branchId: string): Promise<BranchStock[]> {
-    const stocks = await BranchStockModel.find({ branchId }).lean();
-    const stocksWithItems = await Promise.all(
-      stocks.map(async (stock: any) => {
-        const rawItem = await RawItemModel.findById(stock.rawItemId).lean();
-        return {
-          ...stock,
-          id: stock._id.toString(),
-          rawItem: rawItem ? { ...rawItem, id: (rawItem as any)._id.toString() } : null,
-          _id: undefined,
-          __v: undefined,
-        };
-      })
-    );
-    return stocksWithItems;
+    const stock = await BranchStockModel.find({ branchId }).lean();
+    return (stock as any[]).map(serializeDoc);
   }
 
   async getBranchStockItem(branchId: string, rawItemId: string): Promise<BranchStock | undefined> {
     const stock = await BranchStockModel.findOne({ branchId, rawItemId }).lean();
-    if (!stock) return undefined;
-    return {
-      ...stock,
-      id: (stock as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return stock ? serializeDoc(stock) : undefined;
   }
 
-  async updateBranchStock(
-    branchId: string,
-    rawItemId: string,
-    quantity: number,
-    createdBy: string,
-    movementType: string = 'adjustment',
-    notes?: string
-  ): Promise<BranchStock> {
+  async updateBranchStock(branchId: string, rawItemId: string, quantity: number, createdBy: string, movementType: string = "adjustment", notes: string = ""): Promise<BranchStock> {
     let stock = await BranchStockModel.findOne({ branchId, rawItemId });
-    const previousQuantity = stock?.currentQuantity || 0;
-    const newQuantity = previousQuantity + quantity;
-
+    const previousQuantity = stock ? stock.quantity : 0;
     if (stock) {
-      stock.currentQuantity = newQuantity;
-      stock.lastUpdated = new Date();
-      if (notes) stock.notes = notes;
+      stock.quantity = quantity;
+      stock.updatedAt = new Date();
       await stock.save();
     } else {
-      stock = await BranchStockModel.create({
-        branchId,
-        rawItemId,
-        currentQuantity: newQuantity,
-        reservedQuantity: 0,
-        lastUpdated: new Date(),
-        notes,
-      });
+      stock = await BranchStockModel.create({ branchId, rawItemId, quantity, id: nanoid() });
     }
-
-    // Create stock movement record
     await StockMovementModel.create({
       branchId,
       rawItemId,
-      movementType,
-      quantity,
+      quantity: quantity - previousQuantity,
+      type: movementType,
       previousQuantity,
-      newQuantity,
-      referenceType: 'manual',
-      notes,
+      newQuantity: quantity,
       createdBy,
+      notes,
+      id: nanoid()
     });
-
-    // Check for low stock alert
-    const rawItem = await RawItemModel.findById(rawItemId);
-    if (rawItem && newQuantity <= rawItem.minStockLevel) {
-      const alertType = newQuantity === 0 ? 'out_of_stock' : 'low_stock';
-      const existingAlert = await StockAlertModel.findOne({
-        branchId,
-        rawItemId,
-        alertType,
-        isResolved: 0,
-      });
-      if (!existingAlert) {
-        await StockAlertModel.create({
-          branchId,
-          rawItemId,
-          alertType,
-          currentQuantity: newQuantity,
-          thresholdQuantity: rawItem.minStockLevel,
-        });
-      }
-    }
-
-    return {
-      ...stock.toObject(),
-      id: (stock._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return serializeDoc(stock);
   }
 
   async getLowStockItems(branchId?: string): Promise<any[]> {
-    const rawItems = await RawItemModel.find({ isActive: 1 }).lean();
-    const lowStockItems: any[] = [];
-
-    for (const item of rawItems) {
-      const filter: any = { rawItemId: (item as any)._id.toString() };
-      if (branchId) filter.branchId = branchId;
-
-      const stocks = await BranchStockModel.find(filter).lean();
-      for (const stock of stocks) {
-        if (stock.currentQuantity <= item.minStockLevel) {
-          const branch = await BranchModel.findById(stock.branchId).lean();
-          lowStockItems.push({
-            rawItem: { ...item, id: (item as any)._id.toString() },
-            stock: { ...stock, id: (stock as any)._id.toString() },
-            branch: branch ? { ...branch, id: (branch as any)._id.toString() } : null,
-            alertLevel: stock.currentQuantity === 0 ? 'critical' : 'warning',
-          });
-        }
+    const query: any = {};
+    if (branchId) query.branchId = branchId;
+    const stock = await BranchStockModel.find(query).lean();
+    const rawItems = await RawItemModel.find({}).lean();
+    const lowStock = [];
+    for (const s of stock) {
+      const item = rawItems.find(r => r.id === s.rawItemId);
+      if (item && s.quantity <= (item.minThreshold || 0)) {
+        lowStock.push({ ...s, rawItemName: item.nameAr, minThreshold: item.minThreshold });
       }
     }
-
-    return lowStockItems;
+    return lowStock;
   }
 
   async getAllBranchesStock(): Promise<any[]> {
-    const branches = await BranchModel.find({ isActive: 1 }).lean();
-    const result: any[] = [];
-
-    for (const branch of branches) {
-      const branchId = (branch as any)._id.toString();
-      const stocks = await BranchStockModel.find({ branchId }).lean();
-      const stocksWithItems = await Promise.all(
-        stocks.map(async (stock: any) => {
-          const rawItem = await RawItemModel.findById(stock.rawItemId).lean();
-          return {
-            ...stock,
-            id: stock._id.toString(),
-            rawItem: rawItem ? { ...rawItem, id: (rawItem as any)._id.toString() } : null,
-          };
-        })
-      );
-
-      result.push({
-        branch: { ...branch, id: branchId },
-        stocks: stocksWithItems,
-      });
-    }
-
-    return result;
+    const stock = await BranchStockModel.find({}).lean();
+    return (stock as any[]).map(serializeDoc);
   }
 
-  // Stock Transfers
   async getStockTransfers(branchId?: string): Promise<StockTransfer[]> {
-    const filter: any = {};
-    if (branchId) {
-      filter.$or = [{ fromBranchId: branchId }, { toBranchId: branchId }];
-    }
-    const transfers = await StockTransferModel.find(filter).sort({ createdAt: -1 }).lean();
-    return transfers.map((transfer: any) => ({
-      ...transfer,
-      id: transfer._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    }));
+    const query = branchId ? { $or: [{ fromBranchId: branchId }, { toBranchId: branchId }] } : {};
+    const transfers = await StockTransferModel.find(query).sort({ createdAt: -1 }).lean();
+    return (transfers as any[]).map(serializeDoc);
   }
 
   async getStockTransfer(id: string): Promise<StockTransfer | undefined> {
-    const transfer = await StockTransferModel.findById(id).lean();
-    if (!transfer) return undefined;
-    return {
-      ...transfer,
-      id: (transfer as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const transfer = await StockTransferModel.findOne({ id }).lean();
+    return transfer ? serializeDoc(transfer) : undefined;
   }
 
   async createStockTransfer(transfer: InsertStockTransfer): Promise<StockTransfer> {
-    const transferNumber = `TRF-${Date.now()}-${nanoid(4).toUpperCase()}`;
-    const newTransfer = await StockTransferModel.create({
-      ...transfer,
-      transferNumber,
-      status: 'pending',
-      requestDate: new Date(),
-    });
-    return {
-      ...newTransfer.toObject(),
-      id: (newTransfer._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const newTransfer = await StockTransferModel.create(transfer);
+    return serializeDoc(newTransfer);
   }
 
   async updateStockTransferStatus(id: string, status: string, approvedBy?: string): Promise<StockTransfer | undefined> {
-    const updates: any = { status, updatedAt: new Date() };
-    if (status === 'approved' && approvedBy) {
-      updates.approvedBy = approvedBy;
-      updates.approvalDate = new Date();
-    }
-    const updated = await StockTransferModel.findByIdAndUpdate(id, updates, { new: true }).lean();
-    if (!updated) return undefined;
-    return {
-      ...updated,
-      id: (updated as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const updates: any = { status };
+    if (approvedBy) updates.approvedBy = approvedBy;
+    const transfer = await StockTransferModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return transfer ? serializeDoc(transfer) : undefined;
   }
 
   async completeStockTransfer(id: string, completedBy: string): Promise<StockTransfer | undefined> {
-    const transfer = await StockTransferModel.findById(id);
-    if (!transfer || transfer.status !== 'approved') return undefined;
-
-    // Process each item in the transfer
+    const transfer = await StockTransferModel.findOne({ id });
+    if (!transfer || transfer.status !== "approved") return undefined;
     for (const item of transfer.items) {
-      // Decrease stock from source branch
-      await this.updateBranchStock(
-        transfer.fromBranchId,
-        item.rawItemId,
-        -item.quantity,
-        completedBy,
-        'transfer_out',
-        `Transfer to branch: ${transfer.toBranchId}`
-      );
-
-      // Increase stock in destination branch
-      await this.updateBranchStock(
-        transfer.toBranchId,
-        item.rawItemId,
-        item.quantity,
-        completedBy,
-        'transfer_in',
-        `Transfer from branch: ${transfer.fromBranchId}`
-      );
+      const fromStock = await BranchStockModel.findOne({ branchId: transfer.fromBranchId, rawItemId: item.rawItemId });
+      if (fromStock) {
+        fromStock.quantity -= item.quantity;
+        await fromStock.save();
+      }
+      let toStock = await BranchStockModel.findOne({ branchId: transfer.toBranchId, rawItemId: item.rawItemId });
+      if (toStock) {
+        toStock.quantity += item.quantity;
+        await toStock.save();
+      } else {
+        await BranchStockModel.create({ branchId: transfer.toBranchId, rawItemId: item.rawItemId, quantity: item.quantity, id: nanoid() });
+      }
     }
-
-    transfer.status = 'completed';
-    transfer.completionDate = new Date();
-    transfer.updatedAt = new Date();
+    transfer.status = "completed";
+    transfer.completedBy = completedBy;
+    transfer.completedAt = new Date();
     await transfer.save();
-
-    return {
-      ...transfer.toObject(),
-      id: (transfer._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return serializeDoc(transfer);
   }
 
-  // Purchase Invoices
   async getPurchaseInvoices(branchId?: string): Promise<PurchaseInvoice[]> {
-    const filter = branchId ? { branchId } : {};
-    const invoices = await PurchaseInvoiceModel.find(filter).sort({ createdAt: -1 }).lean();
-    return invoices.map((invoice: any) => ({
-      ...invoice,
-      id: invoice._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    }));
+    const query = branchId ? { branchId } : {};
+    const invoices = await PurchaseInvoiceModel.find(query).sort({ createdAt: -1 }).lean();
+    return (invoices as any[]).map(serializeDoc);
   }
 
   async getPurchaseInvoice(id: string): Promise<PurchaseInvoice | undefined> {
-    const invoice = await PurchaseInvoiceModel.findById(id).lean();
-    if (!invoice) return undefined;
-    return {
-      ...invoice,
-      id: (invoice as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const invoice = await PurchaseInvoiceModel.findOne({ id }).lean();
+    return invoice ? serializeDoc(invoice) : undefined;
   }
 
   async createPurchaseInvoice(invoice: InsertPurchaseInvoice): Promise<PurchaseInvoice> {
-    const invoiceNumber = `PUR-${Date.now()}-${nanoid(4).toUpperCase()}`;
-    const newInvoice = await PurchaseInvoiceModel.create({
-      ...invoice,
-      invoiceNumber,
-      status: 'pending',
-      paymentStatus: 'unpaid',
-      paidAmount: 0,
-    });
-    return {
-      ...newInvoice.toObject(),
-      id: (newInvoice._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const newInvoice = await PurchaseInvoiceModel.create(invoice);
+    return serializeDoc(newInvoice);
   }
 
   async updatePurchaseInvoice(id: string, updates: Partial<PurchaseInvoice>): Promise<PurchaseInvoice | undefined> {
-    const updated = await PurchaseInvoiceModel.findByIdAndUpdate(
-      id,
-      { ...updates, updatedAt: new Date() },
-      { new: true }
-    ).lean();
-    if (!updated) return undefined;
-    return {
-      ...updated,
-      id: (updated as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const invoice = await PurchaseInvoiceModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return invoice ? serializeDoc(invoice) : undefined;
   }
 
   async receivePurchaseInvoice(id: string, receivedBy: string): Promise<PurchaseInvoice | undefined> {
-    const invoice = await PurchaseInvoiceModel.findById(id);
-    if (!invoice || invoice.status === 'received') return undefined;
-
-    // Add items to branch stock
+    const invoice = await PurchaseInvoiceModel.findOne({ id });
+    if (!invoice || invoice.status === "received") return undefined;
     for (const item of invoice.items) {
-      await this.updateBranchStock(
-        invoice.branchId,
-        item.rawItemId,
-        item.quantity,
-        receivedBy,
-        'purchase',
-        `Purchase invoice: ${invoice.invoiceNumber}`
-      );
-
-      // Update raw item cost if different
-      const rawItem = await RawItemModel.findById(item.rawItemId);
-      if (rawItem && rawItem.unitCost !== item.unitCost) {
-        await RawItemModel.findByIdAndUpdate(item.rawItemId, { unitCost: item.unitCost, updatedAt: new Date() });
+      let stock = await BranchStockModel.findOne({ branchId: invoice.branchId, rawItemId: item.rawItemId });
+      if (stock) {
+        stock.quantity += item.quantity;
+        await stock.save();
+      } else {
+        await BranchStockModel.create({ branchId: invoice.branchId, rawItemId: item.rawItemId, quantity: item.quantity, id: nanoid() });
       }
     }
-
-    invoice.status = 'received';
-    invoice.receivedDate = new Date();
+    invoice.status = "received";
     invoice.receivedBy = receivedBy;
-    invoice.updatedAt = new Date();
+    invoice.receivedAt = new Date();
     await invoice.save();
-
-    return {
-      ...invoice.toObject(),
-      id: (invoice._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return serializeDoc(invoice);
   }
 
   async updatePurchaseInvoicePayment(id: string, paidAmount: number): Promise<PurchaseInvoice | undefined> {
-    const invoice = await PurchaseInvoiceModel.findById(id);
+    const invoice = await PurchaseInvoiceModel.findOne({ id });
     if (!invoice) return undefined;
-
-    invoice.paidAmount = paidAmount;
-    if (paidAmount >= invoice.totalAmount) {
-      invoice.paymentStatus = 'paid';
-    } else if (paidAmount > 0) {
-      invoice.paymentStatus = 'partial';
-    }
-    invoice.updatedAt = new Date();
+    invoice.paidAmount = (invoice.paidAmount || 0) + paidAmount;
+    invoice.paymentStatus = invoice.paidAmount >= (invoice.totalAmount || 0) ? "paid" : "partial";
     await invoice.save();
-
-    return {
-      ...invoice.toObject(),
-      id: (invoice._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return serializeDoc(invoice);
   }
 
-  // Recipe Items
   async getAllRecipeItems(): Promise<RecipeItem[]> {
     const items = await RecipeItemModel.find({}).lean();
-    return items.map((item: any) => ({
-      ...item,
-      id: item._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    }));
+    return (items as any[]).map(serializeDoc);
   }
 
   async getRecipeItems(coffeeItemId: string): Promise<RecipeItem[]> {
     const items = await RecipeItemModel.find({ coffeeItemId }).lean();
-    return items.map((item: any) => ({
-      ...item,
-      id: item._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    }));
+    return (items as any[]).map(serializeDoc);
   }
 
   async createRecipeItem(item: InsertRecipeItem): Promise<RecipeItem> {
     const newItem = await RecipeItemModel.create(item);
-    return {
-      ...newItem.toObject(),
-      id: (newItem._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return serializeDoc(newItem);
   }
 
   async updateRecipeItem(id: string, updates: Partial<RecipeItem>): Promise<RecipeItem | undefined> {
-    const updated = await RecipeItemModel.findByIdAndUpdate(
-      id,
-      { ...updates, updatedAt: new Date() },
-      { new: true }
-    ).lean();
-    if (!updated) return undefined;
-    return {
-      ...updated,
-      id: (updated as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const item = await RecipeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return item ? serializeDoc(item) : undefined;
   }
 
   async deleteRecipeItem(id: string): Promise<boolean> {
-    const result = await RecipeItemModel.findByIdAndDelete(id);
-    return !!result;
+    const result = await RecipeItemModel.deleteOne({ id });
+    return result.deletedCount > 0;
   }
 
   async calculateProductCost(coffeeItemId: string): Promise<number> {
-    const recipeItems = await RecipeItemModel.find({ coffeeItemId }).lean();
-    let totalCost = 0;
-
-    for (const item of recipeItems) {
-      const rawItem = await RawItemModel.findById(item.rawItemId).lean();
-      if (rawItem) {
-        // Convert quantity to base unit and calculate cost
-        totalCost += item.quantity * rawItem.unitCost;
+    const items = await RecipeItemModel.find({ coffeeItemId }).lean();
+    let total = 0;
+    for (const item of items) {
+      const raw = await RawItemModel.findOne({ id: item.rawItemId }).lean();
+      if (raw && raw.lastCost) {
+        total += Number(raw.lastCost) * item.quantity;
       }
     }
-
-    return totalCost;
+    return total;
   }
 
-  // Stock Alerts
-  async getStockAlerts(branchId?: string, resolved?: boolean): Promise<StockAlert[]> {
-    const filter: any = {};
-    if (branchId) filter.branchId = branchId;
-    if (resolved !== undefined) filter.isResolved = resolved ? 1 : 0;
-
-    const alerts = await StockAlertModel.find(filter).sort({ createdAt: -1 }).lean();
-    return alerts.map((alert: any) => ({
-      ...alert,
-      id: alert._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    }));
+  async getStockAlerts(branchId?: string, resolved: boolean = false): Promise<StockAlert[]> {
+    const query: any = { resolved };
+    if (branchId) query.branchId = branchId;
+    const alerts = await StockAlertModel.find(query).sort({ createdAt: -1 }).lean();
+    return (alerts as any[]).map(serializeDoc);
   }
 
-  async createStockAlert(
-    branchId: string,
-    rawItemId: string,
-    alertType: string,
-    currentQuantity: number,
-    thresholdQuantity: number
-  ): Promise<StockAlert> {
-    const alert = await StockAlertModel.create({
-      branchId,
-      rawItemId,
-      alertType,
-      currentQuantity,
-      thresholdQuantity,
-    });
-    return {
-      ...alert.toObject(),
-      id: (alert._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+  async createStockAlert(branchId: string, rawItemId: string, alertType: string, currentQuantity: number, thresholdQuantity: number): Promise<StockAlert> {
+    const alert = await StockAlertModel.create({ branchId, rawItemId, alertType, currentQuantity, thresholdQuantity, id: nanoid() });
+    return serializeDoc(alert);
   }
 
   async resolveStockAlert(id: string, resolvedBy: string): Promise<StockAlert | undefined> {
-    const updated = await StockAlertModel.findByIdAndUpdate(
-      id,
-      { isResolved: 1, resolvedBy, resolvedAt: new Date() },
-      { new: true }
-    ).lean();
-    if (!updated) return undefined;
-    return {
-      ...updated,
-      id: (updated as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const alert = await StockAlertModel.findOneAndUpdate({ id }, { $set: { resolved: true, resolvedBy, resolvedAt: new Date() } }, { new: true }).lean();
+    return alert ? serializeDoc(alert) : undefined;
   }
 
   async markAlertAsRead(id: string): Promise<StockAlert | undefined> {
-    const updated = await StockAlertModel.findByIdAndUpdate(
-      id,
-      { isRead: 1 },
-      { new: true }
-    ).lean();
-    if (!updated) return undefined;
-    return {
-      ...updated,
-      id: (updated as any)._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    const alert = await StockAlertModel.findOneAndUpdate({ id }, { $set: { isRead: 1 } }, { new: true }).lean();
+    return alert ? serializeDoc(alert) : undefined;
   }
 
-  // Stock Movements
   async getStockMovements(branchId: string, rawItemId?: string, limit: number = 100): Promise<StockMovement[]> {
-    const filter: any = { branchId };
-    if (rawItemId) filter.rawItemId = rawItemId;
-
-    const movements = await StockMovementModel.find(filter).sort({ createdAt: -1 }).limit(limit).lean();
-    return movements.map((movement: any) => ({
-      ...movement,
-      id: movement._id.toString(),
-      _id: undefined,
-      __v: undefined,
-    }));
+    const query: any = { branchId };
+    if (rawItemId) query.rawItemId = rawItemId;
+    const movements = await StockMovementModel.find(query).sort({ createdAt: -1 }).limit(limit).lean();
+    return (movements as any[]).map(serializeDoc);
   }
 
   async createStockMovement(movement: InsertStockMovement): Promise<StockMovement> {
     const newMovement = await StockMovementModel.create(movement);
-    return {
-      ...newMovement.toObject(),
-      id: (newMovement._id as any).toString(),
-      _id: undefined,
-      __v: undefined,
-    } as any;
+    return serializeDoc(newMovement);
   }
 
-  private convertToBaseUnit(quantity: number, unit: string): { value: number; baseUnit: string } {
-    const conversions: Record<string, { factor: number; baseUnit: string }> = {
-      'kg': { factor: 1000, baseUnit: 'g' },
-      'g': { factor: 1, baseUnit: 'g' },
-      'liter': { factor: 1000, baseUnit: 'ml' },
-      'ml': { factor: 1, baseUnit: 'ml' },
-      'piece': { factor: 1, baseUnit: 'piece' },
-      'box': { factor: 1, baseUnit: 'box' },
-      'bag': { factor: 1, baseUnit: 'bag' },
-    };
-
-    const conversion = conversions[unit.toLowerCase()] || { factor: 1, baseUnit: unit };
-    return {
-      value: quantity * conversion.factor,
-      baseUnit: conversion.baseUnit,
-    };
-  }
-
-  async deductInventoryForOrder(
-    orderId: string,
-    branchId: string,
-    items: Array<{ coffeeItemId: string; quantity: number; addons?: Array<{ rawItemId: string; quantity: number; unit: string }> }>,
-    createdBy: string
-  ): Promise<{
-    success: boolean;
-    costOfGoods: number;
-    grossProfit: number;
-    deductionDetails: Array<{
-      rawItemId: string;
-      rawItemName: string;
-      quantity: number;
-      unit: string;
-      unitCost: number;
-      totalCost: number;
-      previousQuantity: number;
-      newQuantity: number;
-      status: 'deducted' | 'skipped_no_stock' | 'skipped_insufficient' | 'skipped_no_recipe';
-      message: string;
-    }>;
-    shortages: Array<{
-      rawItemId: string;
-      rawItemName: string;
-      required: number;
-      available: number;
-      unit: string;
-    }>;
-    warnings: string[];
-    errors: string[];
-  }> {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-    const shortages: Array<{
-      rawItemId: string;
-      rawItemName: string;
-      required: number;
-      available: number;
-      unit: string;
-    }> = [];
-    const deductionDetails: Array<{
-      rawItemId: string;
-      rawItemName: string;
-      quantity: number;
-      unit: string;
-      unitCost: number;
-      totalCost: number;
-      previousQuantity: number;
-      newQuantity: number;
-      status: 'deducted' | 'skipped_no_stock' | 'skipped_insufficient' | 'skipped_no_recipe';
-      message: string;
-    }> = [];
-    let totalCostOfGoods = 0;
-
-    try {
-      // Phase 1: Aggregate all requirements from recipes
-      const aggregatedRequirements: Map<string, {
-        rawItemId: string;
-        rawItemName: string;
-        quantity: number;
-        unit: string;
-        unitCost: number;
-      }> = new Map();
-
-      let hasAnyRecipe = false;
-
-      for (const item of items) {
-        const recipeItems = await RecipeItemModel.find({ coffeeItemId: item.coffeeItemId }).lean();
-
-        if (recipeItems.length === 0) {
-          warnings.push(`لا توجد وصفة للمنتج: ${item.coffeeItemId} - لم يتم خصم مخزون`);
-          continue;
-        }
-
-        hasAnyRecipe = true;
-
-        for (const recipeItem of recipeItems) {
-          const rawItem = await RawItemModel.findById(recipeItem.rawItemId).lean();
-          if (!rawItem) {
-            errors.push(`المادة الخام غير موجودة: ${recipeItem.rawItemId}`);
-            continue;
-          }
-
-          const recipeUnit = recipeItem.unit || rawItem.unit;
-          const totalQuantityToDeduct = recipeItem.quantity * item.quantity;
-
-          const existing = aggregatedRequirements.get(recipeItem.rawItemId);
-          if (existing) {
-            existing.quantity += totalQuantityToDeduct;
-          } else {
-            aggregatedRequirements.set(recipeItem.rawItemId, {
-              rawItemId: recipeItem.rawItemId,
-              rawItemName: rawItem.nameAr || rawItem.nameEn || 'Unknown',
-              quantity: totalQuantityToDeduct,
-              unit: recipeUnit,
-              unitCost: rawItem.unitCost,
-            });
-          }
-        }
-
-        // Phase 1b: Process addon customizations for this item (if any)
-        // Note: addon.quantity is already pre-calculated in routes.ts to include:
-        // (addon selection qty * quantityPerUnit * order item qty)
-        // So we do NOT multiply by item.quantity here
-        if (item.addons && item.addons.length > 0) {
-          for (const addon of item.addons) {
-            const rawItem = await RawItemModel.findById(addon.rawItemId).lean();
-            if (!rawItem) {
-              errors.push(`مادة الإضافة غير موجودة: ${addon.rawItemId}`);
-              continue;
-            }
-
-            // addon.quantity is already the total raw material needed (pre-calculated)
-            const totalAddonQuantity = addon.quantity;
-            const existing = aggregatedRequirements.get(addon.rawItemId);
-            if (existing) {
-              existing.quantity += totalAddonQuantity;
-            } else {
-              aggregatedRequirements.set(addon.rawItemId, {
-                rawItemId: addon.rawItemId,
-                rawItemName: rawItem.nameAr || rawItem.nameEn || 'Unknown (Addon)',
-                quantity: totalAddonQuantity,
-                unit: addon.unit || rawItem.unit,
-                unitCost: rawItem.unitCost,
-              });
-            }
-          }
-        }
-      }
-
-      // Phase 2: Preflight check - validate stock availability BEFORE any deduction
-      for (const [rawItemId, requirement] of aggregatedRequirements) {
-        const branchStock = await BranchStockModel.findOne({ branchId, rawItemId }).lean();
-        const availableQuantity = branchStock?.currentQuantity || 0;
-
-        // Check if branch stock exists
-        if (!branchStock) {
-          shortages.push({
-            rawItemId: requirement.rawItemId,
-            rawItemName: requirement.rawItemName,
-            required: requirement.quantity,
-            available: 0,
-            unit: requirement.unit,
-          });
-          warnings.push(`⚠️ لا يوجد سجل مخزون لـ ${requirement.rawItemName} في هذا الفرع - لم يتم الخصم`);
-          
-          // Calculate expected cost for reporting (but NOT added to actual COGS since no deduction)
-          const expectedCost = requirement.quantity * requirement.unitCost;
-          
-          deductionDetails.push({
-            rawItemId: requirement.rawItemId,
-            rawItemName: requirement.rawItemName,
-            quantity: requirement.quantity,
-            unit: requirement.unit,
-            unitCost: requirement.unitCost,
-            totalCost: 0, // No cost incurred since no deduction
-            previousQuantity: 0,
-            newQuantity: 0,
-            status: 'skipped_no_stock',
-            message: `لا يوجد سجل مخزون في هذا الفرع - التكلفة المتوقعة: ${expectedCost.toFixed(2)} ريال`,
-          });
-          continue;
-        }
-
-        // Check if sufficient stock available - PREVENT negative deduction
-        if (availableQuantity < requirement.quantity) {
-          shortages.push({
-            rawItemId: requirement.rawItemId,
-            rawItemName: requirement.rawItemName,
-            required: requirement.quantity,
-            available: availableQuantity,
-            unit: requirement.unit,
-          });
-          warnings.push(`⚠️ مخزون ${requirement.rawItemName} غير كافي: المطلوب ${requirement.quantity} ${requirement.unit}، المتوفر ${availableQuantity} ${requirement.unit} - لم يتم الخصم`);
-          
-          // Calculate expected cost for reporting (but NOT added to actual COGS since no deduction)
-          const expectedCost = requirement.quantity * requirement.unitCost;
-          
-          deductionDetails.push({
-            rawItemId: requirement.rawItemId,
-            rawItemName: requirement.rawItemName,
-            quantity: requirement.quantity,
-            unit: requirement.unit,
-            unitCost: requirement.unitCost,
-            totalCost: 0, // No cost incurred since no deduction
-            previousQuantity: availableQuantity,
-            newQuantity: availableQuantity, // Stock unchanged - no deduction
-            status: 'skipped_insufficient',
-            message: `المخزون غير كافي: المطلوب ${requirement.quantity}، المتوفر ${availableQuantity} - التكلفة المتوقعة: ${expectedCost.toFixed(2)} ريال`,
-          });
-          continue;
-        }
-
-        // Stock is sufficient - proceed with deduction
-        const itemCost = requirement.quantity * requirement.unitCost;
-        totalCostOfGoods += itemCost;
-
-        try {
-          const newQuantity = availableQuantity - requirement.quantity;
-          
-          // Perform the deduction
-          await this.updateBranchStock(
-            branchId,
-            rawItemId,
-            -requirement.quantity,
-            createdBy,
-            'order_deduction',
-            `خصم للطلب: ${orderId}`
-          );
-
-          // Record stock movement
-          await StockMovementModel.create({
-            branchId,
-            rawItemId,
-            movementType: 'sale',
-            quantity: -requirement.quantity,
-            previousQuantity: availableQuantity,
-            newQuantity: newQuantity,
-            referenceType: 'order',
-            referenceId: orderId,
-            notes: `خصم تلقائي للطلب ${orderId}`,
-            createdBy,
-            createdAt: new Date(),
-          });
-
-          deductionDetails.push({
-            rawItemId: requirement.rawItemId,
-            rawItemName: requirement.rawItemName,
-            quantity: requirement.quantity,
-            unit: requirement.unit,
-            unitCost: requirement.unitCost,
-            totalCost: itemCost,
-            previousQuantity: availableQuantity,
-            newQuantity: newQuantity,
-            status: 'deducted',
-            message: `تم الخصم بنجاح: ${availableQuantity} -> ${newQuantity} ${requirement.unit}`,
-          });
-
-          console.log(`[INVENTORY] ✅ Deducted ${requirement.quantity} ${requirement.unit} of ${requirement.rawItemName} | Stock: ${availableQuantity} -> ${newQuantity}`);
-
-        } catch (error: any) {
-          errors.push(`فشل في خصم ${requirement.rawItemName}: ${error.message}`);
-          deductionDetails.push({
-            rawItemId: requirement.rawItemId,
-            rawItemName: requirement.rawItemName,
-            quantity: requirement.quantity,
-            unit: requirement.unit,
-            unitCost: requirement.unitCost,
-            totalCost: itemCost,
-            previousQuantity: availableQuantity,
-            newQuantity: availableQuantity,
-            status: 'skipped_insufficient',
-            message: `خطأ في الخصم: ${error.message}`,
-          });
-        }
-      }
-
-      // Calculate success metrics
-      const successfulDeductions = deductionDetails.filter(d => d.status === 'deducted');
-      const hasShortages = shortages.length > 0;
-      const allDeductionsSuccessful = successfulDeductions.length === deductionDetails.length && errors.length === 0;
-
-      // Get order for gross profit calculation
-      const order = await OrderModel.findById(orderId);
-      const totalRevenue = order?.totalAmount || 0;
-      const grossProfit = totalRevenue - totalCostOfGoods;
-
-      // Determine inventory status
-      let inventoryStatus = 0; // 0 = not deducted
-      if (allDeductionsSuccessful && !hasShortages && successfulDeductions.length > 0) {
-        inventoryStatus = 1; // 1 = fully deducted
-      } else if (successfulDeductions.length > 0) {
-        inventoryStatus = 2; // 2 = partially deducted (with shortages/errors)
-      }
-
-      // Update order with deduction results
-      await OrderModel.findByIdAndUpdate(orderId, {
-        costOfGoods: totalCostOfGoods,
-        grossProfit: grossProfit,
-        inventoryDeducted: inventoryStatus,
-        inventoryDeductionDetails: deductionDetails,
-        updatedAt: new Date(),
-      });
-
-      // Log summary
-      if (hasShortages || errors.length > 0) {
-        console.warn(`[INVENTORY] Order ${orderId} deduction issues:`, { 
-          shortagesCount: shortages.length, 
-          errorsCount: errors.length,
-          successfulCount: successfulDeductions.length,
-          totalCOGS: totalCostOfGoods.toFixed(2)
-        });
-      } else if (successfulDeductions.length > 0) {
-        console.log(`[INVENTORY] ✅ Order ${orderId}: All ${successfulDeductions.length} items deducted successfully | COGS: ${totalCostOfGoods.toFixed(2)} SAR | Gross Profit: ${grossProfit.toFixed(2)} SAR`);
-      }
-
-      return {
-        success: allDeductionsSuccessful,
-        costOfGoods: totalCostOfGoods,
-        grossProfit,
-        deductionDetails,
-        shortages,
-        warnings,
-        errors,
-      };
-    } catch (error: any) {
-      errors.push(`خطأ حرج: ${error.message}`);
-      return {
-        success: false,
-        costOfGoods: 0,
-        grossProfit: 0,
-        deductionDetails: [],
-        shortages: [],
-        warnings,
-        errors,
-      };
-    }
-  }
-
-  async calculateOrderCOGS(items: Array<{ coffeeItemId: string; quantity: number }>, branchId?: string): Promise<{
-    totalCost: number;
-    itemBreakdown: Array<{
-      coffeeItemId: string;
-      coffeeItemName: string;
-      quantity: number;
-      unitCost: number;
-      totalCost: number;
-      ingredients: Array<{
-        rawItemId: string;
-        rawItemName: string;
-        quantity: number;
-        unit: string;
-        unitCost: number;
-        totalCost: number;
-      }>;
-    }>;
-    shortages: Array<{
-      rawItemId: string;
-      rawItemName: string;
-      required: number;
-      available: number;
-      unit: string;
-    }>;
-  }> {
-    const itemBreakdown: Array<{
-      coffeeItemId: string;
-      coffeeItemName: string;
-      quantity: number;
-      unitCost: number;
-      totalCost: number;
-      ingredients: Array<{
-        rawItemId: string;
-        rawItemName: string;
-        quantity: number;
-        unit: string;
-        unitCost: number;
-        totalCost: number;
-      }>;
-    }> = [];
-    const shortages: Array<{
-      rawItemId: string;
-      rawItemName: string;
-      required: number;
-      available: number;
-      unit: string;
-    }> = [];
-    const aggregatedRequirements: Map<string, {
-      rawItemId: string;
-      rawItemName: string;
-      quantity: number;
-      unit: string;
-    }> = new Map();
-    let totalCost = 0;
-
+  async deductInventoryForOrder(orderId: string, branchId: string, items: any[], createdBy: string): Promise<any> {
+    const deductionDetails = [];
+    const shortages = [];
+    let costOfGoods = 0;
     for (const item of items) {
-      const coffeeItem = await CoffeeItemModel.findOne({ id: item.coffeeItemId }).lean();
-      const recipeItems = await RecipeItemModel.find({ coffeeItemId: item.coffeeItemId }).lean();
-
-      let itemUnitCost = 0;
-      const ingredients: Array<{
-        rawItemId: string;
-        rawItemName: string;
-        quantity: number;
-        unit: string;
-        unitCost: number;
-        totalCost: number;
-      }> = [];
-
-      for (const recipeItem of recipeItems) {
-        const rawItem = await RawItemModel.findById(recipeItem.rawItemId).lean();
-        if (rawItem) {
-          const recipeUnit = recipeItem.unit || rawItem.unit;
-          const ingredientCost = recipeItem.quantity * rawItem.unitCost;
-          itemUnitCost += ingredientCost;
-
-          ingredients.push({
-            rawItemId: recipeItem.rawItemId,
-            rawItemName: rawItem.nameAr || rawItem.nameEn || 'Unknown',
-            quantity: recipeItem.quantity,
-            unit: recipeUnit,
-            unitCost: rawItem.unitCost,
-            totalCost: ingredientCost,
-          });
-
-          const totalQuantityRequired = recipeItem.quantity * item.quantity;
-          const existing = aggregatedRequirements.get(recipeItem.rawItemId);
-          if (existing) {
-            existing.quantity += totalQuantityRequired;
-          } else {
-            aggregatedRequirements.set(recipeItem.rawItemId, {
-              rawItemId: recipeItem.rawItemId,
-              rawItemName: rawItem.nameAr || rawItem.nameEn || 'Unknown',
-              quantity: totalQuantityRequired,
-              unit: recipeUnit,
-            });
-          }
-        }
-      }
-
-      const itemTotalCost = itemUnitCost * item.quantity;
-      totalCost += itemTotalCost;
-
-      itemBreakdown.push({
-        coffeeItemId: item.coffeeItemId,
-        coffeeItemName: coffeeItem?.nameAr || coffeeItem?.nameEn || 'Unknown',
-        quantity: item.quantity,
-        unitCost: itemUnitCost,
-        totalCost: itemTotalCost,
-        ingredients,
-      });
-    }
-
-    if (branchId) {
-      for (const [rawItemId, requirement] of aggregatedRequirements) {
-        const branchStock = await BranchStockModel.findOne({ branchId, rawItemId }).lean();
-        const availableQuantity = branchStock?.currentQuantity || 0;
-
-        if (availableQuantity < requirement.quantity) {
-          shortages.push({
-            rawItemId: requirement.rawItemId,
-            rawItemName: requirement.rawItemName,
-            required: requirement.quantity,
-            available: availableQuantity,
-            unit: requirement.unit,
-          });
+      const recipe = await RecipeItemModel.find({ coffeeItemId: item.coffeeItemId }).lean();
+      for (const r of recipe) {
+        const stock = await BranchStockModel.findOne({ branchId, rawItemId: r.rawItemId });
+        const raw = await RawItemModel.findOne({ id: r.rawItemId }).lean();
+        const required = r.quantity * item.quantity;
+        if (stock && stock.quantity >= required) {
+          const previousQuantity = stock.quantity;
+          stock.quantity -= required;
+          await stock.save();
+          const unitCost = Number(raw?.lastCost || 0);
+          const totalCost = unitCost * required;
+          costOfGoods += totalCost;
+          deductionDetails.push({ rawItemId: r.rawItemId, rawItemName: raw?.nameAr || "Unknown", quantity: required, unit: r.unit, unitCost, totalCost, previousQuantity, newQuantity: stock.quantity, status: "deducted", message: "Successfully deducted" });
+        } else {
+          shortages.push({ rawItemId: r.rawItemId, rawItemName: raw?.nameAr || "Unknown", required, available: stock ? stock.quantity : 0, unit: r.unit });
         }
       }
     }
+    return { success: shortages.length === 0, costOfGoods, grossProfit: 0, deductionDetails, shortages, warnings: [], errors: [] };
+  }
 
-    return {
-      totalCost,
-      itemBreakdown,
-      shortages,
-    };
+  async calculateOrderCOGS(items: any[], branchId?: string): Promise<any> {
+    let totalCost = 0;
+    const itemBreakdown = [];
+    for (const item of items) {
+      const recipe = await RecipeItemModel.find({ coffeeItemId: item.coffeeItemId }).lean();
+      const ingredients = [];
+      let itemCost = 0;
+      for (const r of recipe) {
+        const raw = await RawItemModel.findOne({ id: r.rawItemId }).lean();
+        const unitCost = Number(raw?.lastCost || 0);
+        const quantity = r.quantity * item.quantity;
+        const total = unitCost * quantity;
+        itemCost += total;
+        ingredients.push({ rawItemId: r.rawItemId, rawItemName: raw?.nameAr || "Unknown", quantity, unit: r.unit, unitCost, totalCost: total });
+      }
+      totalCost += itemCost;
+      itemBreakdown.push({ coffeeItemId: item.coffeeItemId, coffeeItemName: "Unknown", quantity: item.quantity, unitCost: itemCost / item.quantity, totalCost: itemCost, ingredients });
+    }
+    return { totalCost, itemBreakdown, shortages: [] };
+  }
+
+  async getBranches(cafeId: string): Promise<IBranch[]> {
+    const branches = await BranchModel.find({ cafeId }).lean();
+    return (branches as any[]).map(serializeDoc);
+  }
+
+  async getBranch(id: string): Promise<IBranch | null> {
+    const branch = await BranchModel.findOne({ id }).lean();
+    return branch ? serializeDoc(branch) : null;
+  }
+
+  async createBranch(branch: Partial<IBranch>): Promise<IBranch> {
+    const newBranch = await BranchModel.create(branch);
+    return serializeDoc(newBranch);
+  }
+
+  async updateBranch(id: string, branch: Partial<IBranch>): Promise<IBranch | null> {
+    const updated = await BranchModel.findOneAndUpdate({ id }, { $set: branch }, { new: true }).lean();
+    return updated ? serializeDoc(updated) : null;
+  }
+
+  async getCustomer(id: string): Promise<Customer | undefined> {
+    const customer = await CustomerModel.findById(id);
+    return customer || undefined;
+  }
+
+  async getCustomerByPhone(phone: string): Promise<Customer | undefined> {
+    const customer = await CustomerModel.findOne({ phone });
+    return customer || undefined;
+  }
+
+  async getCustomerByEmail(email: string): Promise<Customer | undefined> {
+    const customer = await CustomerModel.findOne({ email });
+    return customer || undefined;
+  }
+
+  async createCustomer(customer: InsertCustomer): Promise<Customer> {
+    const newCustomer = await CustomerModel.create(customer);
+    return newCustomer;
+  }
+
+  async updateCustomer(id: string, customer: Partial<Customer>): Promise<Customer | undefined> {
+    const updated = await CustomerModel.findByIdAndUpdate(id, { $set: customer }, { new: true });
+    return updated || undefined;
+  }
+
+  async getCustomerOrders(customerId: string): Promise<Order[]> {
+    const orders = await OrderModel.find({ customerId }).sort({ createdAt: -1 }).lean();
+    return (orders as any[]).map(serializeDoc);
+  }
+
+  async verifyCustomerPassword(phone: string, password: string): Promise<Customer | undefined> {
+    const customer = await CustomerModel.findOne({ phone });
+    if (customer && customer.password === password) return customer;
+    return undefined;
+  }
+
+  async resetCustomerPassword(email: string, newPassword: string): Promise<boolean> {
+    const result = await CustomerModel.updateOne({ email }, { password: newPassword });
+    return result.modifiedCount > 0;
+  }
+
+  async createPasswordResetToken(email: string): Promise<{ token: string; expiresAt: Date }> {
+    const token = nanoid(32);
+    const expiresAt = new Date(Date.now() + 3600000);
+    await PasswordResetTokenModel.create({ email, token, expiresAt });
+    return { token, expiresAt };
+  }
+
+  async verifyPasswordResetToken(token: string): Promise<{ valid: boolean; email?: string }> {
+    const doc = await PasswordResetTokenModel.findOne({ token, used: 0, expiresAt: { $gt: new Date() } });
+    return doc ? { valid: true, email: doc.email } : { valid: false };
+  }
+
+  async usePasswordResetToken(token: string): Promise<boolean> {
+    const result = await PasswordResetTokenModel.updateOne({ token }, { used: 1 });
+    return result.modifiedCount > 0;
+  }
+
+  async createPasswordSetupOTP(phone: string): Promise<{ otp: string; expiresAt: Date }> {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 600000);
+    await PasswordSetupOTPModel.create({ phone, otp, expiresAt });
+    return { otp, expiresAt };
+  }
+
+  async verifyPasswordSetupOTP(phone: string, otp: string): Promise<{ valid: boolean; message?: string }> {
+    const doc = await PasswordSetupOTPModel.findOne({ phone, otp, used: 0, expiresAt: { $gt: new Date() } });
+    return doc ? { valid: true } : { valid: false, message: "كود غير صالح أو منتهي الصلاحية" };
+  }
+
+  async invalidatePasswordSetupOTP(phone: string, otp: string): Promise<boolean> {
+    const result = await PasswordSetupOTPModel.updateOne({ phone, otp }, { used: 1 });
+    return result.modifiedCount > 0;
   }
 }
 

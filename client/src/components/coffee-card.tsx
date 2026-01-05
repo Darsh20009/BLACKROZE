@@ -8,6 +8,7 @@ import { getCoffeeImage } from "@/lib/coffee-data-clean";
 import { Plus, Eye } from "lucide-react";
 import type { CoffeeItem } from "@shared/schema";
 import CoffeeStrengthBadge from "@/components/coffee-strength-badge";
+import DrinkCustomizationDialog, { type DrinkCustomization } from "./drink-customization-dialog";
 
 interface CoffeeCardProps {
   item: CoffeeItem;
@@ -17,6 +18,7 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
   const [, setLocation] = useLocation();
   const { addToCart } = useCartStore();
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isCustomizing, setIsCustomizing] = useState(false);
 
   const discount = item.oldPrice ? 
     Math.round(((Number(item.oldPrice) - Number(item.price)) / Number(item.oldPrice)) * 100) : 0;
@@ -26,13 +28,23 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
     e.stopPropagation();
 
     // In the new system, we always show the customization modal if there are variants or addons
-    handleViewDetails();
+    setIsCustomizing(true);
+  };
+
+  const handleConfirmCustomization = (customization: DrinkCustomization, quantity: number) => {
+    const selectedSize = customization.notes?.match(/الحجم: (.*)/)?.[1] || null;
+    const selectedAddonIds = customization.selectedAddons.map(a => a.addonId);
+    
+    addToCart(item.id, quantity, selectedSize, selectedAddonIds);
+    setIsAnimating(true);
+    setIsCustomizing(false);
+    setTimeout(() => setIsAnimating(false), 2000);
   };
 
   const handleViewDetails = () => {
     // We'll use a modal instead of a separate page for better UX
     // But for now, let's keep the existing link logic but make it feel like "Customize"
-    setLocation(`/product/${item.id}`);
+    setIsCustomizing(true);
   };
 
   const hasSizes = Array.isArray(item.availableSizes) && item.availableSizes.length > 0;
@@ -180,6 +192,12 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
           </div>
         </div>
       </CardContent>
+      <DrinkCustomizationDialog
+        coffeeItem={item}
+        open={isCustomizing}
+        onClose={() => setIsCustomizing(false)}
+        onConfirm={handleConfirmCustomization}
+      />
     </Card>
   );
 });

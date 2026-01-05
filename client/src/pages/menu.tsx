@@ -1,5 +1,7 @@
 import { useState, memo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import DrinkCustomizationDialog, { type DrinkCustomization } from "@/components/drink-customization-dialog";
+import { useCartStore } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
