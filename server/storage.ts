@@ -152,6 +152,10 @@ export interface IStorage {
   createCoffeeItem(item: InsertCoffeeItem): Promise<CoffeeItem>;
   updateCoffeeItem(id: string, item: Partial<CoffeeItem>): Promise<CoffeeItem | undefined>;
 
+  // Addons
+  getAddons(): Promise<ProductAddon[]>;
+  getCoffeeItemAddons(coffeeItemId: string): Promise<ProductAddon[]>;
+  
   createOrder(order: InsertOrder): Promise<Order>;
   getOrder(id: string): Promise<Order | undefined>;
   getOrderByNumber(orderNumber: string): Promise<Order | undefined>;
