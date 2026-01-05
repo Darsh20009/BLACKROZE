@@ -12,7 +12,7 @@ export default function WelcomePage() {
     // Set metadata for welcome page
     document.title = "CLUNY CAFE | كلوني كافيه - قهوة مختصة وحلويات";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'كلوني كافيه - وجهتكم الأولى للقهوة المختصة والحلويات الفاخرة. استمتع بتجربة فريدة في فروعنا أو اطلب الآن عبر تطبيقنا على cluny.ma3k.online');
+    if (metaDesc) metaDesc.setAttribute('content', 'كلوني كافيه - وجهتكم الأولى للقهوة المختصة والحلويات الفاخرة. استمتع بتجربة فريدة في فروعنا أو اطلب الآن عبر تطبيقنا على cluny.qirox.online');
 
     const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");
     if (hasSeenWelcome) {
