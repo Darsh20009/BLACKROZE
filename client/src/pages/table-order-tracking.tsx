@@ -83,7 +83,7 @@ export default function TableOrderTracking() {
     const currentStatus = order?.tableStatus || order?.status;
     
     if (order && currentStatus && previousStatusRef.current && previousStatusRef.current !== currentStatus) {
-      // Status has changed! Play notification sound
+      // Audio notifications removed for customer
       const statusMessages: Record<string, string> = {
         'payment_confirmed': 'تم تأكيد الدفع',
         'preparing': 'جاري تحضير طلبك',
@@ -93,15 +93,6 @@ export default function TableOrderTracking() {
       };
       
       const message = statusMessages[currentStatus] || 'تم تحديث حالة طلبك';
-      
-      // Play different sounds for different status transitions
-      if (currentStatus === 'delivered') {
-        playNotificationSound('success', 0.6);
-      } else if (currentStatus === 'ready' || currentStatus === 'delivering_to_table') {
-        playNotificationSound('statusChange', 0.5);
-      } else {
-        playNotificationSound('statusChange', 0.4);
-      }
       
       toast({
         title: 'تحديث حالة الطلب',

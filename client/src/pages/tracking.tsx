@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Coffee, MapPin, Truck, Check, Clock, Package, ExternalLink, Store } from "lucide-react";
-import { playNotificationSound } from "@/lib/notification-sound";
+import { Badge } from "@/components/ui/badge";
 import LocationPreparationCheck from "@/components/location-preparation-check";
 import type { Order } from "@shared/schema";
 
@@ -51,26 +51,20 @@ export default function OrderTrackingPage() {
  enabled: !!order?.branchId,
  });
 
- useEffect(() => {
- if (order && order.status === 'ready' && previousStatusRef.current && previousStatusRef.current !== 'ready') {
- try {
- playNotificationSound('order-ready');
- } catch (err) {
- console.log('Notification sound failed:', err);
- }
- 
- toast({
- title: "طلبك جاهز!",
- description: "يمكنك الآن استلام طلبك من الفرع",
- className: "bg-green-600 text-white border-green-700",
- duration: 10000,
- });
- }
- 
- if (order) {
- previousStatusRef.current = order.status;
- }
- }, [order, toast]);
+  useEffect(() => {
+    if (order && order.status === 'ready' && previousStatusRef.current && previousStatusRef.current !== 'ready') {
+      toast({
+        title: "طلبك جاهز!",
+        description: "يمكنك الآن استلام طلبك من الفرع",
+        className: "bg-green-600 text-white border-green-700",
+        duration: 10000,
+      });
+    }
+    
+    if (order) {
+      previousStatusRef.current = order.status;
+    }
+  }, [order, toast]);
 
  const handleTrack = () => {
  setTrackingOrderNumber(orderNumber);

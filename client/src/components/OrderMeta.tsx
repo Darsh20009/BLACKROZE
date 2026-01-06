@@ -109,7 +109,8 @@ export function OrderMeta({
         </div>
       )}
 
-      {/* Payment Receipt Button */}
+      {/* Payment Receipt Button - Removed from customer view per request */}
+      {/* 
       {paymentReceiptUrl && (
         <div>
           <p className="text-gray-400 text-xs mb-1">إيصال الدفع</p>
@@ -125,6 +126,7 @@ export function OrderMeta({
           </Button>
         </div>
       )}
+      */}
 
       {/* Payment Receipt Dialog */}
       <PaymentReceiptDialog
