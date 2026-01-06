@@ -225,7 +225,9 @@ export default function DrinkCustomizationDialog({
       }
     }
     onConfirm(customization, quantity);
-    onClose();
+    setTimeout(() => {
+      onClose();
+    }, 100);
   };
 
   const handleResetToDefault = () => {
