@@ -2693,7 +2693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             ...doc,
             id: finalId,
-            item: coffeeItem ? serializeDoc(coffeeItem) : null
+            coffeeItem: coffeeItem ? serializeDoc(coffeeItem) : null
           };
         } catch (err) {
           console.error(`Error enriching cart item:`, err);

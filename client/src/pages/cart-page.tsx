@@ -102,27 +102,27 @@ export default function CartPage() {
  style={{animationDelay: `${index * 0.1}s`}}
  >
  <CardContent className="p-6">
- <div className="flex items-center justify-between">
- <div className="flex items-center space-x-4 space-x-reverse">
- <div className="relative">
- <img 
- src={item.coffeeItem?.imageUrl || getCoffeeImage(item.coffeeItem?.id || '')}
- alt={item.coffeeItem?.nameAr}
- className="w-20 h-20 object-cover rounded-xl shadow-lg"
- loading="lazy"
- onError={(e) => {
- e.currentTarget.src = "/images/default-coffee.png";
- }}
- />
- <div className="absolute -top-2 -right-2 w-6 h-6 bg-background0 rounded-full flex items-center justify-center">
- <span className="text-white text-xs font-bold">{item.quantity}</span>
- </div>
- </div>
- <div>
- <h3 className="font-amiri font-bold text-accent text-xl mb-1">{item.coffeeItem?.nameAr}</h3>
- <p className="text-accent font-bold text-lg">{item.coffeeItem?.price} ريال</p>
- </div>
- </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 space-x-reverse">
+                      <div className="relative">
+                        <img 
+                          src={item.coffeeItem?.imageUrl || getCoffeeImage(item.coffeeItem?.id || '')}
+                          alt={item.coffeeItem?.nameAr}
+                          className="w-20 h-20 object-cover rounded-xl shadow-lg"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = "/images/default-coffee.png";
+                          }}
+                        />
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">{item.quantity}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-amiri font-bold text-accent text-xl mb-1">{item.coffeeItem?.nameAr}</h3>
+                        <p className="text-accent font-bold text-lg">{item.coffeeItem?.price} ريال</p>
+                      </div>
+                    </div>
 
  <div className="flex items-center space-x-4 space-x-reverse">
  {/* Modern Quantity Controls */}
