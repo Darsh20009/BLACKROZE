@@ -48,19 +48,8 @@
     
     <!-- Favicon & Apple Touch Icons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" id="main-favicon">
-    <link rel="icon" type="image/png" sizes="16x16" href="/logo.png">
     <link rel="shortcut icon" href="/logo.png" id="main-shortcut-icon">
     <link rel="apple-touch-icon" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="57x57" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="60x60" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="76x76" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="/logo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png">
     
     <!-- Safari Pinned Tab -->
     <link rel="mask-icon" href="/logo.png" color="#9FB2B3">
@@ -152,30 +141,38 @@
     <!-- Dynamic Manifest Switcher for Employee Portal -->
     <script>
       (function() {
-        const employeePaths = ['/employee', '/manager', '/kitchen', '/pos', '/cashier'];
+        const employeePaths = ['/employee', '/manager', '/kitchen', '/pos', '/cashier', '/admin', '/owner', '/executive'];
         const currentPath = window.location.pathname;
-        const isEmployeePath = employeePaths.some(path => currentPath.includes(path));
+        const isEmployeePath = employeePaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
         
+        const manifestLink = document.getElementById('main-manifest');
+        const favicon = document.getElementById('main-favicon');
+        const shortcutIcon = document.getElementById('main-shortcut-icon');
+        const appleTouchIcons = document.querySelectorAll('link[rel="apple-touch-icon"]');
+
         if (isEmployeePath) {
-          const manifestLink = document.getElementById('main-manifest');
-          if (manifestLink) {
-            manifestLink.href = '/employee-manifest.json';
-          }
-          
-          const appleTouchIcons = document.querySelectorAll('link[rel="apple-touch-icon"]');
+          if (manifestLink) manifestLink.href = '/employee-manifest.json';
+          if (favicon) favicon.href = '/employee-logo.png';
+          if (shortcutIcon) shortcutIcon.href = '/employee-logo.png';
           appleTouchIcons.forEach(icon => {
             icon.href = '/employee-logo.png';
           });
           
-          const favicon = document.getElementById('main-favicon');
-          if (favicon) favicon.href = '/employee-logo.png';
-          
-          const shortcutIcon = document.getElementById('main-shortcut-icon');
-          if (shortcutIcon) shortcutIcon.href = '/employee-logo.png';
-          
           // Force update for some browsers
           const existingIcon = document.querySelector('link[rel="icon"]');
           if (existingIcon) existingIcon.href = '/employee-logo.png';
+          
+          document.title = "CLUNY SYSTEMS | نظام إدارة الموظفين";
+        } else {
+          // Ensure customer branding is set explicitly if not on employee path
+          if (manifestLink) manifestLink.href = '/manifest.json';
+          if (favicon) favicon.href = '/logo.png';
+          if (shortcutIcon) shortcutIcon.href = '/logo.png';
+          appleTouchIcons.forEach(icon => {
+            icon.href = '/logo.png';
+          });
+          const existingIcon = document.querySelector('link[rel="icon"]');
+          if (existingIcon) existingIcon.href = '/logo.png';
         }
       })();
     </script>

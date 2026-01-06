@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -282,8 +282,17 @@ function AppContent() {
 }
 
 function App() {
+  const [isEmployee, setIsEmployee] = useState(false);
+
+  useEffect(() => {
+    const employeePaths = ['/employee', '/manager', '/kitchen', '/pos', '/cashier', '/admin', '/owner', '/executive'];
+    const currentPath = window.location.pathname;
+    const isEmployeePath = employeePaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
+    setIsEmployee(isEmployeePath);
+  }, []);
+
   return (
-    <div className="dark min-h-screen bg-background text-foreground font-ibm-arabic antialiased" dir="rtl">
+    <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} dark min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir="rtl">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <CustomerProvider>
