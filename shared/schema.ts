@@ -828,18 +828,27 @@ const OrderItemSchema = new Schema<IOrderItem>({
 export const OrderItemModel = mongoose.model<IOrderItem>("OrderItem", OrderItemSchema);
 
 export interface ICartItem extends Document {
+  id: string;
   sessionId: string;
   coffeeItemId: string;
   quantity: number;
+  selectedSize?: string;
+  selectedAddons?: string[];
   createdAt: Date;
 }
 
 const CartItemSchema = new Schema<ICartItem>({
+  id: { type: String, required: true },
   sessionId: { type: String, required: true },
   coffeeItemId: { type: String, required: true },
   quantity: { type: Number, required: true },
+  selectedSize: { type: String },
+  selectedAddons: [{ type: String }],
   createdAt: { type: Date, default: Date.now },
 });
+
+// Important: Index by sessionId and id for quick lookup
+CartItemSchema.index({ sessionId: 1, id: 1 });
 
 export const CartItemModel = mongoose.model<ICartItem>("CartItem", CartItemSchema);
 

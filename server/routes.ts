@@ -2707,9 +2707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }));
 
-      // Filter out items where coffee details couldn't be found
-      // For debugging, we'll keep them but the UI might break if coffeeItem is null
-      // res.json(enrichedItems.filter(item => item && item.coffeeItem));
+      // Return items even if coffee details are missing to prevent them from disappearing
       res.json(enrichedItems);
     } catch (error) {
       console.error("Fetch cart error:", error);
