@@ -223,21 +223,28 @@ export default function EmployeeCashier() {
  queryKey: ["/api/coffee-items"],
  });
 
- const createOrderMutation = useMutation({
- mutationFn: async (orderData: any) => {
- const response = await fetch("/api/orders", {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- credentials: "include",
- body: JSON.stringify(orderData),
- });
- 
- if (!response.ok) {
- throw new Error("Failed to create order");
- }
- 
- return response.json();
- },
+  // Create order mutation
+  const createOrderMutation = useMutation({
+    mutationFn: async (orderData: any) => {
+      // Show customer details for confirmation
+      const confirmMessage = `تأكيد الدفع نقداً للعميل: ${orderData.customerInfo.customerName}\nرقم الجوال: ${orderData.customerInfo.phoneNumber}\nالإجمالي: ${orderData.totalAmount} ريال`;
+      if (!window.confirm(confirmMessage)) {
+        throw new Error("تم إلغاء تأكيد الدفع");
+      }
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(orderData),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to create order");
+      }
+      
+      return response.json();
+    },
  onSuccess: async (order) => {
  const paymentMethodAr = paymentMethod === "cash" ? "نقدي" : 
  paymentMethod === "alinma" ? "Alinma Pay" :
@@ -1277,19 +1284,9 @@ export default function EmployeeCashier() {
  <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-payment-method">
  <SelectValue />
  </SelectTrigger>
- <SelectContent>
- <SelectItem value="cash">نقدي</SelectItem>
- <SelectItem value="pos">جهاز نقاط البيع (POS)</SelectItem>
- <SelectItem value="alinma">Alinma Pay</SelectItem>
- <SelectItem value="ur">Ur Pay</SelectItem>
- <SelectItem value="barq">Barq</SelectItem>
- <SelectItem value="rajhi">تحويل بنك الراجحي</SelectItem>
- {loyaltyCard && ((loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)) > 0 && (
- <SelectItem value="qahwa-card">
- استخدام الأختام ({(loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)})
- </SelectItem>
- )}
- </SelectContent>
+        <SelectContent>
+          <SelectItem value="cash">نقدي</SelectItem>
+        </SelectContent>
  </Select>
  {paymentMethod === 'qahwa-card' && loyaltyCard && (
  <div className="bg-primary/30 border border-primary/50 rounded-lg p-4 space-y-3 mt-2">

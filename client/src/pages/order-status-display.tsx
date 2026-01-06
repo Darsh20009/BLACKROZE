@@ -104,7 +104,7 @@ function OrderCard({ order, isReady, isFullscreen }: { order: Order; isReady: bo
 
 export default function OrderStatusDisplayPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const previousReadyIdsRef = useRef<Set<string>>(new Set());
   const isFirstLoadRef = useRef<boolean>(true);

@@ -78,12 +78,11 @@ export default function TableOrderTracking() {
     refetchInterval: 5000, // Poll every 5 seconds
   });
   
-  // Detect status changes and play notification sounds
+  // Detect status changes - Audio notifications removed
   useEffect(() => {
     const currentStatus = order?.tableStatus || order?.status;
     
     if (order && currentStatus && previousStatusRef.current && previousStatusRef.current !== currentStatus) {
-      // Audio notifications removed for customer
       const statusMessages: Record<string, string> = {
         'payment_confirmed': 'تم تأكيد الدفع',
         'preparing': 'جاري تحضير طلبك',

@@ -166,14 +166,16 @@ export default function CheckoutPage() {
  const localFreeDrinks = profile && profile.freeDrinks > 0;
  const hasFreeDrinks = localFreeDrinks || availableFreeDrinks > 0;
 
- const { data: paymentMethods = [], isLoading: loadingPaymentMethods } = useQuery<PaymentMethodInfo[]>({
- queryKey: ["/api/payment-methods", hasFreeDrinks ? 'true' : 'false'],
- queryFn: async () => {
- const res = await fetch(`/api/payment-methods?hasFreeDrinks=${hasFreeDrinks}`);
- if (!res.ok) throw new Error('Failed to fetch payment methods');
- return res.json();
- }
- });
+  const { data: paymentMethods = [], isLoading: loadingPaymentMethods } = useQuery<PaymentMethodInfo[]>({
+    queryKey: ["/api/payment-methods", hasFreeDrinks ? 'true' : 'false'],
+    queryFn: async () => {
+      const res = await fetch(`/api/payment-methods?hasFreeDrinks=${hasFreeDrinks}`);
+      if (!res.ok) throw new Error('Failed to fetch payment methods');
+      const data = await res.json();
+      // Only allow cash for now as requested by user
+      return data.filter((m: any) => m.id === 'cash');
+    }
+  });
 
  // Don't auto-apply discount for qahwa-card - it uses free items selection instead
  useEffect(() => {
