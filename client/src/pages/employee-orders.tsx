@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Coffee, BellRing, RefreshCw, ArrowRight, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +43,21 @@ export default function EmployeeOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
     }
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await fetch(`/api/orders/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error("Failed to update status");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    },
   });
 
   if (!employee) return null;
@@ -120,6 +136,8 @@ export default function EmployeeOrders() {
                     <SelectItem value="pending">جديد</SelectItem>
                     <SelectItem value="in_progress">قيد التحضير</SelectItem>
                     <SelectItem value="ready">جاهز</SelectItem>
+                    <SelectItem value="completed">مكتمل</SelectItem>
+                    <SelectItem value="cancelled">ملغي</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -131,6 +149,71 @@ export default function EmployeeOrders() {
               </div>
             </CardContent>
           </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredOrders.length === 0 ? (
+              <div className="col-span-full text-center py-10 bg-card rounded-lg border border-dashed border-border">
+                <p className="text-muted-foreground">لا توجد طلبات لعرضها حالياً</p>
+              </div>
+            ) : (
+              filteredOrders.map((order) => (
+                <Card key={order._id || order.id} className="hover-elevate overflow-hidden border-border bg-card">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-lg text-primary">طلب #{order.orderNumber}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {order.createdAt ? new Date(order.createdAt).toLocaleString('ar-SA') : 'تاريخ غير معروف'}
+                        </p>
+                      </div>
+                      <Badge variant={
+                        order.status === 'pending' ? 'destructive' :
+                        order.status === 'in_progress' ? 'default' :
+                        order.status === 'ready' ? 'success' : 'outline'
+                      }>
+                        {order.status === 'pending' ? 'جديد' :
+                         order.status === 'in_progress' ? 'تحضير' :
+                         order.status === 'ready' ? 'جاهز' : 
+                         order.status === 'completed' ? 'مكتمل' : 'ملغي'}
+                      </Badge>
+                    </div>
+
+                    <div className="border-t border-border pt-3">
+                      <div className="space-y-1">
+                        {order.items?.map((item: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-sm">
+                            <span>{item.nameAr || item.coffeeItem?.nameAr || 'منتج'} x{item.quantity}</span>
+                            <span className="font-semibold">{item.totalPrice || (item.unitPrice * item.quantity)} ر.س</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2 border-t border-border">
+                      <span className="font-bold text-primary">الإجمالي: {order.totalAmount} ر.س</span>
+                      <div className="flex gap-2">
+                        {order.status === 'pending' && (
+                          <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: order._id || order.id, status: 'in_progress' })}>
+                            بدء التحضير
+                          </Button>
+                        )}
+                        {order.status === 'in_progress' && (
+                          <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: order._id || order.id, status: 'ready' })}>
+                            جاهز للتسليم
+                          </Button>
+                        )}
+                        {order.status === 'ready' && (
+                          <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: order._id || order.id, status: 'completed' })}>
+                            إكمال
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
