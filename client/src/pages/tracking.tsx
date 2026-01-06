@@ -53,6 +53,7 @@ export default function OrderTrackingPage() {
 
   useEffect(() => {
     if (order && order.status === 'ready' && previousStatusRef.current && previousStatusRef.current !== 'ready') {
+      // Sound alerts disabled by user request
       toast({
         title: "طلبك جاهز!",
         description: "يمكنك الآن استلام طلبك من الفرع",

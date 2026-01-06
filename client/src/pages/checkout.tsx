@@ -173,7 +173,7 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error('Failed to fetch payment methods');
       const data = await res.json();
       // Only allow cash for now as requested by user
-      return data.filter((m: any) => m.id === 'cash');
+      return data.filter((m: any) => m.id === 'cash' || m.id === 'cash_on_delivery');
     }
   });
 

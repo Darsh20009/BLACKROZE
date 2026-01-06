@@ -190,7 +190,15 @@ export default function EmployeeOrders() {
                     </div>
 
                     <div className="flex justify-between items-center pt-2 border-t border-border">
-                      <span className="font-bold text-primary">الإجمالي: {order.totalAmount} ر.س</span>
+                      <div className="flex flex-col text-right" dir="rtl">
+                        <span className="font-bold text-primary">الإجمالي: {order.totalAmount} ر.س</span>
+                        {order.customerInfo && (
+                          <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
+                            <p>العميل: {order.customerInfo.customerName}</p>
+                            <p>الجوال: {order.customerInfo.phoneNumber}</p>
+                          </div>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         {order.status === 'pending' && (
                           <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: order._id || order.id, status: 'in_progress' })}>
