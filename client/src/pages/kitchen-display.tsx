@@ -91,7 +91,7 @@ export default function KitchenDisplay() {
 
   const { data: orders = [], isLoading, refetch } = useQuery<Order[]>({
     queryKey: ["/api/orders/kitchen"],
-    refetchInterval: autoRefresh ? 15000 : false,
+    refetchInterval: autoRefresh ? 5000 : false, // Updated from 15000 to 5000 for faster updates
   });
 
   const handleNewOrder = useCallback((order: Order) => {

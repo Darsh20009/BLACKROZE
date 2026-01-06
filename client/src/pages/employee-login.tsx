@@ -20,20 +20,19 @@ export default function EmployeeLogin() {
 
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Set SEO metadata
   useEffect(() => {
     document.title = "تسجيل دخول الموظفين - CLUNY SYSTEMS";
-    // Check if we should auto-redirect if already logged in (persistence)
+    // Auto-login if session exists
     const stored = localStorage.getItem("currentEmployee");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         if (parsed && (parsed.id || parsed._id)) {
-           setLocation("/employee/dashboard");
+           setLocation("/employee/home");
         }
       } catch (e) {}
     }
-  }, []);
+  }, [setLocation]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username?: string; employeeId?: string; password?: string }) => {

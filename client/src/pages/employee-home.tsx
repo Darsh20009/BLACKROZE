@@ -21,6 +21,10 @@ export default function EmployeeHome() {
   }, [setLocation]);
 
   const handleLogout = () => {
+    // Keep employee session but redirect to gateway for "soft" logout if desired,
+    // or just clear if they really want to exit. 
+    // The user asked for "data updates automatically not necessarily logout".
+    // We will keep the current logout but ensure login is seamless.
     localStorage.removeItem("currentEmployee");
     setLocation("/employee/gateway");
   };

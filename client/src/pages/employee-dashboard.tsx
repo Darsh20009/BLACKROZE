@@ -74,6 +74,12 @@ export default function EmployeeDashboard() {
       const emp = JSON.parse(storedEmployee);
       setEmployee(emp);
       fetchAllNotifications();
+      
+      // Auto-refresh interval (5 seconds)
+      const interval = setInterval(() => {
+        fetchAllNotifications();
+      }, 5000);
+      return () => clearInterval(interval);
     } else {
       setLocation("/employee/gateway");
     }
