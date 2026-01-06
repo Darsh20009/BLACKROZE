@@ -131,12 +131,10 @@ export default function OrderStatusDisplayPage() {
     queryClient.invalidateQueries({ queryKey: ["/api/orders/active-display"] });
   }, []);
 
-  const handleOrderReady = useCallback((order: Order) => {
+  const handleOrderReady = (order: Order) => {
     queryClient.invalidateQueries({ queryKey: ["/api/orders/active-display"] });
-    if (soundEnabled) {
-      playNotificationSound('success', 0.8);
-    }
-  }, [soundEnabled]);
+    // Sound alert removed as requested by user
+  };
 
   const { isConnected } = useOrderWebSocket({
     clientType: "display",

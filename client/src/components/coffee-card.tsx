@@ -14,7 +14,7 @@ interface CoffeeCardProps {
   item: CoffeeItem;
 }
 
-const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
+function CoffeeCard({ item }: CoffeeCardProps) {
   const [, setLocation] = useLocation();
   const { addToCart } = useCartStore();
   const [isAnimating, setIsAnimating] = useState(false);
@@ -200,6 +200,7 @@ const CoffeeCard = memo(function CoffeeCard({ item }: CoffeeCardProps) {
       />
     </Card>
   );
-});
+}
 
-export default CoffeeCard;
+const CoffeeCardMemo = memo(CoffeeCard);
+export default CoffeeCardMemo;

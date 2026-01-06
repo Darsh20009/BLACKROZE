@@ -17,7 +17,8 @@ export default function WelcomePage() {
     const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");
     if (hasSeenWelcome) {
       setShowWelcome(false);
-      setLocation("/menu");
+      // Use setTimeout to avoid setting location during render if this effect runs immediately
+      setTimeout(() => setLocation("/menu"), 0);
       return;
     }
     localStorage.setItem("hasSeenWelcome", "true");
