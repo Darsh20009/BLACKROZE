@@ -2690,6 +2690,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // This ensures the frontend ALWAYS receives an ID it can use for DELETE/PUT consistently
           const finalId = cartItem.id || cartItem.coffeeItemId;
           
+          console.log(`[CART] Enriching item ${cartItem.coffeeItemId}: Found coffee=${!!coffeeItem}`);
+          
           return {
             ...doc,
             id: finalId,
@@ -2700,13 +2702,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return { 
             ...serializeDoc(cartItem), 
             id: cartItem.id || cartItem.coffeeItemId, 
-            item: null 
+            coffeeItem: null 
           };
         }
       }));
 
       // Filter out items where coffee details couldn't be found
-      res.json(enrichedItems.filter(item => item && item.item));
+      // For debugging, we'll keep them but the UI might break if coffeeItem is null
+      // res.json(enrichedItems.filter(item => item && item.coffeeItem));
+      res.json(enrichedItems);
     } catch (error) {
       console.error("Fetch cart error:", error);
       res.status(500).json({ error: "Failed to fetch cart items" });
