@@ -163,6 +163,13 @@
           if (existingIcon) existingIcon.href = '/employee-logo.png';
           
           document.title = "CLUNY SYSTEMS | نظام إدارة الموظفين";
+          
+          // Force immediate re-rendering of manifest by replacing the link
+          if (manifestLink) {
+             const newManifest = manifestLink.cloneNode(true);
+             newManifest.href = '/employee-manifest.json?v=' + Date.now();
+             manifestLink.parentNode.replaceChild(newManifest, manifestLink);
+          }
         } else {
           // Ensure customer branding is set explicitly if not on employee path
           if (manifestLink) manifestLink.href = '/manifest.json';

@@ -28,6 +28,7 @@ export default function EmployeeOrders() {
 
   const { data: orders = [], refetch } = useQuery<any[]>({
     queryKey: ["/api/orders"],
+    refetchInterval: 5000, // Real-time auto-refresh every 5 seconds
   });
 
   const { data: branches = [] } = useQuery<any[]>({

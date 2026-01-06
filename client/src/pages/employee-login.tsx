@@ -18,11 +18,21 @@ export default function EmployeeLogin() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const qrScannerRef = useRef<Html5QrcodeScanner | null>(null);
 
+  const [rememberMe, setRememberMe] = useState(true);
+
   // Set SEO metadata
   useEffect(() => {
-    document.title = "تسجيل دخول الموظفين - CLUNY CAFE | نظام الإدارة";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'تسجيل دخول الموظفين في نظام CLUNY CAFE - نظام متطور لإدارة العمليات والمبيعات');
+    document.title = "تسجيل دخول الموظفين - CLUNY SYSTEMS";
+    // Check if we should auto-redirect if already logged in (persistence)
+    const stored = localStorage.getItem("currentEmployee");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed && (parsed.id || parsed._id)) {
+           setLocation("/employee/dashboard");
+        }
+      } catch (e) {}
+    }
   }, []);
 
   const loginMutation = useMutation({
@@ -44,7 +54,9 @@ export default function EmployeeLogin() {
       return response.json() as Promise<Employee>;
     },
     onSuccess: (employee) => {
+      // Persistence: currentEmployee is used by AuthGuard
       localStorage.setItem("currentEmployee", JSON.stringify(employee));
+      // Also set a persistent cookie if backend supports it, but here we rely on localStorage
       setLocation("/employee/dashboard");
     },
     onError: () => {
@@ -214,6 +226,17 @@ export default function EmployeeLogin() {
                       {error}
                     </p>
                   )}
+                </div>
+                
+                <div className="flex items-center space-x-2 space-x-reverse mb-4">
+                  <input
+                    type="checkbox"
+                    id="remember-me"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="remember-me" className="text-sm text-muted-foreground mr-2">تذكرني</label>
                 </div>
                 
                 <Button
