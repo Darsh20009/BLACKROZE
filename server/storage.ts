@@ -1237,12 +1237,16 @@ export class DBStorage implements IStorage {
 
   async verifyCustomerPassword(phone: string, password: string): Promise<Customer | undefined> {
     const customer = await CustomerModel.findOne({ phone });
-    if (customer && customer.password === password) return customer;
+    if (customer && customer.password) {
+      const isMatch = await bcrypt.compare(password, customer.password);
+      if (isMatch) return customer;
+    }
     return undefined;
   }
 
   async resetCustomerPassword(email: string, newPassword: string): Promise<boolean> {
-    const result = await CustomerModel.updateOne({ email }, { password: newPassword });
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const result = await CustomerModel.updateOne({ email }, { password: hashedPassword });
     return result.modifiedCount > 0;
   }
 

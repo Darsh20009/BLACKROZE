@@ -1343,12 +1343,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "البريد الإلكتروني مسجل مسبقاً" });
       }
 
+      // Hash password before saving
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       // Create new customer
       const customer = await storage.createCustomer({ 
         phone: cleanPhone, 
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         name: name.trim(),
-        password 
+        password: hashedPassword
       });
 
       // Send Welcome Email asynchronously
