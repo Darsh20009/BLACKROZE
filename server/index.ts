@@ -186,6 +186,10 @@ app.use((req, res, next) => {
 
 // Health check endpoint for Render and other hosting services
 // This must respond quickly without waiting for database
+app.get('/healthz', (_req, res) => {
+  res.status(200).send('OK');
+});
+
 app.get('/health', (_req, res) => {
   res.status(200).json({ 
     status: 'ok', 
