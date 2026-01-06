@@ -1284,9 +1284,9 @@ export default function EmployeeCashier() {
  <SelectTrigger className="bg-[#1a1410] border-primary/30 text-white" data-testid="select-payment-method">
  <SelectValue />
  </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="cash">نقدي</SelectItem>
-        </SelectContent>
+    <SelectContent className="bg-[#1a1410] border-primary/30 text-white">
+      <SelectItem value="cash">نقدي</SelectItem>
+    </SelectContent>
  </Select>
  {paymentMethod === 'qahwa-card' && loyaltyCard && (
  <div className="bg-primary/30 border border-primary/50 rounded-lg p-4 space-y-3 mt-2">

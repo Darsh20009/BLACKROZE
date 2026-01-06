@@ -156,24 +156,9 @@ export default function OrderStatusDisplayPage() {
       return;
     }
     
-    if (!soundEnabled) {
-      previousReadyIdsRef.current = currentReadyIds;
-      return;
-    }
-    
-    let newReadyCount = 0;
-    currentReadyIds.forEach(id => {
-      if (!previousReadyIdsRef.current.has(id)) {
-        newReadyCount++;
-      }
-    });
-    
-    if (newReadyCount > 0) {
-      playNotificationSound('success', 0.8);
-    }
-    
+    // Notifications disabled
     previousReadyIdsRef.current = currentReadyIds;
-  }, [readyOrders, soundEnabled]);
+  }, [readyOrders]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
