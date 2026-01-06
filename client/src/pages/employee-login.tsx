@@ -28,11 +28,13 @@ export default function EmployeeLogin() {
       try {
         const parsed = JSON.parse(stored);
         if (parsed && (parsed.id || parsed._id)) {
-           setLocation("/employee/home");
+           // Direct redirect to home
+           window.location.href = "/employee/home";
+           return;
         }
       } catch (e) {}
     }
-  }, [setLocation]);
+  }, []);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username?: string; employeeId?: string; password?: string }) => {

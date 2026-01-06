@@ -16,9 +16,9 @@ export default function EmployeeHome() {
       const emp = JSON.parse(storedEmployee);
       setEmployee(emp);
     } else {
-      setLocation("/employee/gateway");
+      window.location.href = "/employee/gateway";
     }
-  }, [setLocation]);
+  }, []);
 
   const handleLogout = () => {
     // Keep employee session but redirect to gateway for "soft" logout if desired,

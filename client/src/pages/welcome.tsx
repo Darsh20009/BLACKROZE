@@ -71,7 +71,7 @@ export default function WelcomePage() {
             transition={{ duration: 0.8 }}
           >
             <div className="relative w-48 h-48 mx-auto mb-8 rounded-full bg-gradient-to-br from-[#9FB2B3] to-[#9FB2B3]/80 p-3 shadow-2xl">
-              <img src="/logo.png" alt="CLUNY CAFE Logo" className="w-full h-full object-contain rounded-full bg-background" />
+              <img src="/logo.png?v=2" alt="CLUNY CAFE Logo" className="w-full h-full object-contain rounded-full bg-background" />
             </div>
           </motion.div>
 

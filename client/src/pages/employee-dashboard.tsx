@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import { EmployeeSidebar } from "@/components/employee-sidebar";
 import html2canvas from "html2canvas";
-import logoImage from "@assets/cluny_cafe_logo_1767095370460.png";
+import logoImage from "@assets/logo.png";
 import type { Employee } from "@shared/schema";
 
 interface LeaveRequest {
@@ -71,17 +71,21 @@ export default function EmployeeDashboard() {
     const storedEmployee = localStorage.getItem("currentEmployee");
     const storedAddress = localStorage.getItem("caféAddress");
     if (storedEmployee) {
-      const emp = JSON.parse(storedEmployee);
-      setEmployee(emp);
-      fetchAllNotifications();
-      
-      // Auto-refresh interval (5 seconds)
-      const interval = setInterval(() => {
+      try {
+        const emp = JSON.parse(storedEmployee);
+        setEmployee(emp);
         fetchAllNotifications();
-      }, 5000);
-      return () => clearInterval(interval);
+        
+        // Auto-refresh interval (5 seconds)
+        const interval = setInterval(() => {
+          fetchAllNotifications();
+        }, 5000);
+        return () => clearInterval(interval);
+      } catch (e) {
+        window.location.href = "/employee/gateway";
+      }
     } else {
-      setLocation("/employee/gateway");
+      window.location.href = "/employee/gateway";
     }
     if (storedAddress) {
       setCaféAddress(storedAddress);
@@ -122,6 +126,9 @@ export default function EmployeeDashboard() {
         const data = await response.json();
         setPendingOrders(data || []);
         return data;
+      } else if (response.status === 401) {
+        // If unauthorized, redirect to gateway
+        window.location.href = "/employee/gateway";
       }
     } catch (error) {
       console.error("Error fetching pending orders:", error);
