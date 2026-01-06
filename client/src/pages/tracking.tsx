@@ -66,9 +66,10 @@ export default function OrderTrackingPage() {
     }
   }, [order, toast]);
 
- const handleTrack = () => {
- setTrackingOrderNumber(orderNumber);
- };
+  const handleTrack = () => {
+    if (!orderNumber) return;
+    setTrackingOrderNumber(orderNumber);
+  };
 
  const getStatusIcon = (status: string) => {
  switch (status) {
