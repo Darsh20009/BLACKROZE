@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Coffee, Star, MapPin, ChevronLeft, LogOut } from "lucide-react";
 import clunyLogo from "@/assets/cluny-logo.png";
 import { useCustomer } from "@/contexts/CustomerContext";
@@ -16,17 +16,18 @@ export default function WelcomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#1a1410] text-white overflow-hidden font-ibm-arabic">
+    <div className="min-h-screen bg-[#F7F8F8] text-[#1F2D2E] overflow-hidden font-ibm-arabic">
       {/* Hero Section */}
       <div className="relative h-[100dvh] flex flex-col justify-center px-6">
-        {/* Background Wash */}
+        {/* Background Decorative Elements - Matching Brand */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-[#1a1410] z-10" />
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#9FB2B3]/20 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#B58B5A]/15 rounded-full blur-[120px]" />
           <motion.div 
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 10, repeat: Infinity, repeatType: "reverse" }}
-            className="w-full h-full bg-[url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80')] bg-cover bg-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            transition={{ duration: 2 }}
+            className="w-full h-full bg-[url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80')] bg-cover bg-center grayscale opacity-20"
           />
         </div>
 
@@ -36,11 +37,11 @@ export default function WelcomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="w-24 h-24 mx-auto mb-8 p-1 rounded-full border border-white/20 backdrop-blur-sm">
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-full bg-white/5" />
+            <div className="w-24 h-24 mx-auto mb-8 p-1 rounded-full border border-[#9FB2B3]/20 bg-white shadow-xl">
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-full" />
             </div>
 
-            <h1 className="text-5xl md:text-6xl font-playfair mb-4 tracking-tight leading-tight">
+            <h1 className="text-5xl md:text-6xl font-playfair mb-4 tracking-tight leading-tight text-[#1F2D2E]">
               CLUNY CAFE
             </h1>
             
@@ -53,10 +54,10 @@ export default function WelcomePage() {
                   exit={{ opacity: 0, y: -10 }}
                   className="mb-12"
                 >
-                  <p className="text-[#9FB2B3] text-2xl md:text-3xl mb-2 font-playfair font-light">
+                  <p className="text-[#9FB2B3] text-2xl md:text-3xl mb-2 font-playfair font-semibold">
                     مرحباً، {customer?.name}
                   </p>
-                  <p className="text-white/60 text-lg font-light">
+                  <p className="text-[#6B7C7D] text-lg font-light">
                     اشتقنا لرائحة قهوتك المفضلة
                   </p>
                 </motion.div>
@@ -66,7 +67,7 @@ export default function WelcomePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="text-[#9FB2B3] text-lg md:text-xl mb-12 font-light tracking-wide"
+                  className="text-[#6B7C7D] text-lg md:text-xl mb-12 font-light tracking-wide"
                 >
                   حيث تبدأ حكايات القهوة الفاخرة
                 </motion.p>
@@ -76,7 +77,7 @@ export default function WelcomePage() {
             <div className="space-y-4">
               <Button
                 onClick={() => setLocation("/menu")}
-                className="w-full h-14 bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white rounded-full text-xl font-medium shadow-2xl shadow-[#B58B5A]/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group"
+                className="w-full h-14 bg-[#9FB2B3] hover:bg-[#6E8A8B] text-white rounded-xl text-xl font-medium shadow-xl shadow-[#9FB2B3]/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group border-0"
               >
                 {isAuthenticated ? "اطلب الآن" : "استكشف القائمة"}
                 <ChevronLeft className="mr-2 w-6 h-6 transition-transform group-hover:-translate-x-1" />
@@ -86,7 +87,7 @@ export default function WelcomePage() {
                 <Button
                   variant="outline"
                   onClick={() => setLocation("/auth")}
-                  className="w-full h-14 border-white/20 bg-white/5 backdrop-blur-md text-white rounded-full text-lg hover:bg-white/10"
+                  className="w-full h-14 border-[#9FB2B3]/30 bg-white text-[#1F2D2E] rounded-xl text-lg hover:bg-[#9FB2B3]/5 hover:border-[#9FB2B3]"
                 >
                   تسجيل الدخول
                 </Button>
@@ -95,7 +96,7 @@ export default function WelcomePage() {
                   <Button
                     variant="outline"
                     onClick={() => setLocation("/my-orders")}
-                    className="flex-1 h-14 border-white/10 bg-white/5 backdrop-blur-md text-white rounded-full text-lg hover:bg-white/10"
+                    className="flex-1 h-14 border-[#9FB2B3]/20 bg-white text-[#1F2D2E] rounded-xl text-lg hover:bg-[#9FB2B3]/5"
                   >
                     طلباتي
                   </Button>
@@ -103,7 +104,7 @@ export default function WelcomePage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => logout()}
-                    className="h-14 w-14 rounded-full border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-red-500/20"
+                    className="h-14 w-14 rounded-xl border border-red-100 bg-red-50/30 text-red-400 hover:text-red-500 hover:bg-red-50"
                   >
                     <LogOut className="w-6 h-6" />
                   </Button>
@@ -119,12 +120,12 @@ export default function WelcomePage() {
           transition={{ duration: 2, repeat: Infinity }}
           className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20"
         >
-          <div className="w-[1px] h-12 bg-gradient-to-b from-white/40 to-transparent" />
+          <div className="w-[1px] h-12 bg-gradient-to-b from-[#9FB2B3]/40 to-transparent" />
         </motion.div>
       </div>
 
       {/* Features Grid */}
-      <section className="py-24 px-6 relative z-10 bg-[#1a1410]">
+      <section className="py-24 px-6 relative z-10 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           {features.map((f, i) => (
             <motion.div
@@ -135,11 +136,11 @@ export default function WelcomePage() {
               viewport={{ once: true }}
               className="text-center group"
             >
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 transition-colors group-hover:border-[#B58B5A]/50 group-hover:bg-[#B58B5A]/5">
-                <f.icon className="w-8 h-8 text-[#B58B5A]" />
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-[#9FB2B3]/10 border border-[#9FB2B3]/20 transition-all group-hover:border-[#9FB2B3]/50 group-hover:bg-[#9FB2B3]/20">
+                <f.icon className="w-8 h-8 text-[#9FB2B3]" />
               </div>
-              <h3 className="text-2xl mb-3 font-medium">{f.title}</h3>
-              <p className="text-white/60 leading-relaxed">
+              <h3 className="text-2xl mb-3 font-semibold text-[#1F2D2E]">{f.title}</h3>
+              <p className="text-[#6B7C7D] leading-relaxed">
                 {f.desc}
               </p>
             </motion.div>
@@ -148,10 +149,10 @@ export default function WelcomePage() {
       </section>
 
       {/* Elegant Footer */}
-      <footer className="py-12 border-t border-white/5 px-6">
+      <footer className="py-12 border-t border-[#9FB2B3]/10 px-6 bg-[#F7F8F8]">
         <div className="max-w-7xl mx-auto flex flex-col items-center">
-          <img src={clunyLogo} alt="Logo" className="w-12 h-12 opacity-50 mb-6 grayscale" />
-          <p className="text-white/40 text-sm font-light">
+          <img src={clunyLogo} alt="Logo" className="w-12 h-12 opacity-30 mb-6 grayscale" />
+          <p className="text-[#6B7C7D] text-sm font-light uppercase tracking-widest">
             © 2026 CLUNY CAFE. ALL RIGHTS RESERVED.
           </p>
         </div>
@@ -159,5 +160,3 @@ export default function WelcomePage() {
     </div>
   );
 }
-
-import { AnimatePresence } from "framer-motion";
