@@ -1,4 +1,4 @@
-import { useState, memo, useEffect } from "react";
+import { useState, memo, useEffect, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import DrinkCustomizationDialog, { type DrinkCustomization } from "@/components/drink-customization-dialog";
 import { useCartStore } from "@/lib/cart-store";
@@ -37,7 +37,8 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
-function MenuPage() {
+// Extracted Content Component to resolve hook issues
+const MenuContent = memo(() => {
   const { cartItems } = useCartStore();
   const { isAuthenticated } = useCustomer();
   const { toast } = useToast();
@@ -51,6 +52,7 @@ function MenuPage() {
     const ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) ogTitle.setAttribute('content', 'قائمة المشروبات - CLUNY CAFE');
   }, []);
+
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedStrength, setSelectedStrength] = useState<CoffeeStrengthType | "all">("all");
   const [selectedBranch, setSelectedBranch] = useState<string>(() => {
@@ -461,47 +463,69 @@ function MenuPage() {
                       }
                     `}
                     data-testid={`button-strength-${strength.id}`}
-                    style={{animationDelay: `${index * 0.1 + 1.1}s`}}
+                    style={{animationDelay: `${index * 0.1 + 1.0}s`}}
                   >
-                    <StrengthIcon className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
-                    <span className="text-xs sm:text-sm md:text-base">{strength.labelAr}</span>
+                    <StrengthIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                    <span>{strength.labelAr}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {selectedCategory === "all" ? (
-            <div className="space-y-16">
-              {categories.filter(cat => cat.id !== "all").map((category, categoryIndex) => {
+          {Object.entries(groupedItems).length === 0 ? (
+            <div className="text-center py-20 px-4 animate-in fade-in zoom-in duration-500">
+              <div className="bg-card/50 backdrop-blur-sm border-2 border-dashed border-primary/20 rounded-3xl p-8 sm:p-12 md:p-16 max-w-xl mx-auto shadow-xl">
+                <div className="bg-primary/10 w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 group">
+                  <Coffee className="w-12 h-12 sm:w-16 sm:h-16 text-primary group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                <h3 className="font-amiri text-2xl sm:text-3xl font-bold text-foreground mb-4 sm:mb-6">
+                  لا توجد مشروبات متاحة حالياً
+                </h3>
+                <p className="text-muted-foreground text-base sm:text-lg mb-8 sm:mb-10 leading-relaxed">
+                  نأسف، لم نجد أي مشروبات تطابق اختياراتك الحالية. جرب تغيير الفلتر أو العودة لاحقاً
+                </p>
+                <Button 
+                  onClick={() => {
+                    setSelectedCategory("all");
+                    setSelectedStrength("all");
+                  }}
+                  variant="default"
+                  className="px-8 sm:px-12 py-4 sm:py-6 h-auto text-base sm:text-lg font-bold rounded-2xl shadow-lg hover:shadow-primary/25 transition-all"
+                >
+                  عرض جميع المشروبات
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-12 sm:space-y-20">
+              {categories.filter(c => c.id !== "all").map((category) => {
                 const categoryItems = getCategoryItems(category.id);
                 if (categoryItems.length === 0) return null;
 
-                const Icon = category.icon;
+                const CategoryIcon = category.icon;
+
                 return (
-                  <div 
-                    key={category.id} 
-                    className="bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-xl sm:shadow-2xl border border-border hover:shadow-2xl sm:hover:shadow-3xl transition-all duration-500 animate-in fade-in-0 slide-in-from-bottom-10 duration-1000"
-                    style={{animationDelay: `${categoryIndex * 0.2 + 1}s`}}
-                  >
-                    <div className="text-center mb-6 sm:mb-8 md:mb-12">
-                      <div className="inline-flex items-center justify-center bg-gradient-to-r from-primary/10 to-secondary/10 rounded-full px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 mb-2 sm:mb-3 md:mb-4">
-                        <Icon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 ml-2 sm:ml-3 md:ml-4 text-primary" />
-                        <h3 className="font-amiri text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary golden-gradient">
+                  <div key={category.id} className="animate-in fade-in-0 slide-in-from-bottom-10 duration-1000" data-testid={`category-group-${category.id}`}>
+                    <div className="flex items-center gap-4 mb-6 sm:mb-10 px-2 sm:px-4">
+                      <div className="bg-primary/10 p-3 sm:p-4 rounded-2xl">
+                        <CategoryIcon className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-amiri text-2xl sm:text-3xl md:text-4xl font-bold text-foreground" data-testid={`text-category-title-${category.id}`}>
                           {category.nameAr}
                         </h3>
+                        <div className="h-1 w-12 sm:w-16 bg-primary/30 rounded-full mt-2"></div>
                       </div>
-                      <div className="w-16 sm:w-20 md:w-24 h-0.5 sm:h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto rounded-full"></div>
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                      {categoryItems.map((group: any, itemIndex) => (
-                        <div 
-                          key={group[0].id}
-                          className="animate-in fade-in-0 slide-in-from-bottom-10 duration-700"
-                          style={{animationDelay: `${(categoryIndex * 0.2 + itemIndex * 0.1 + 1.5)}s`}}
-                        >
-                          <CoffeeCard item={group[0]} allItems={group} />
+                      {categoryItems.map((items, idx) => (
+                        <div key={items[0].id} className="animate-in fade-in zoom-in duration-500" style={{animationDelay: `${idx * 0.1}s`}}>
+                          <CoffeeCard 
+                            item={items[0]} 
+                            variants={items.length > 1 ? items : undefined}
+                          />
                         </div>
                       ))}
                     </div>
@@ -509,32 +533,47 @@ function MenuPage() {
                 );
               })}
             </div>
-          ) : (
-            <div className="bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-xl sm:shadow-2xl border border-border animate-in fade-in-0 slide-in-from-bottom-10 duration-1000">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                {Object.values(groupedItems).map((group: any, index) => (
-                  <div 
-                    key={group[0].id} 
-                    className="animate-in fade-in-0 slide-in-from-bottom-10 duration-700"
-                    style={{animationDelay: `${index * 0.1 + 0.5}s`}}
-                  >
-                    <CoffeeCard item={group[0]} allItems={group} />
-                  </div>
-                ))}
-              </div>
-              {filteredItems.length === 0 && (
-                <EmptyState
-                  title="لا توجد منتجات"
-                  description="لم نجد أي منتجات في هذه الفئة حالياً"
-                  icon={<Coffee className="h-10 w-10 text-muted-foreground" />}
-                />
-              )}
-            </div>
           )}
         </section>
       </main>
+
+      <footer className="bg-card border-t border-border mt-12 sm:mt-24 py-8 sm:py-16 relative z-10" data-testid="footer-menu">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <img 
+              src={clunyLogo} 
+              alt="CLUNY CAFE" 
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain grayscale opacity-50" 
+              onError={(e) => {
+                e.currentTarget.src = "/logo.png";
+              }}
+            />
+          </div>
+          <p className="font-amiri text-xl sm:text-2xl font-bold text-muted-foreground mb-4">
+            CLUNY CAFE
+          </p>
+          <p className="text-muted-foreground/60 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
+            جميع الحقوق محفوظة © {new Date().getFullYear()} - نقدم لك أفضل تجربة قهوة يومية بأعلى المعايير
+          </p>
+          
+          <div className="flex justify-center gap-4 sm:gap-6 mt-6 sm:mt-8">
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary">
+              <Info className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary">
+              <Download className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-}
+});
 
-export default MenuPage;
+export default function MenuPage() {
+  return (
+    <Suspense fallback={null}>
+      <MenuContent />
+    </Suspense>
+  );
+}
