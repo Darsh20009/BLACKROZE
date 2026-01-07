@@ -125,71 +125,71 @@ export default function PaymentMethods({
      <h3 className="text-lg font-semibold text-foreground mb-4">اختر طريقة الدفع</h3>
      <div className="space-y-4">
      {paymentMethods.map((method) => {
-     const isQahwaCard = method.id === 'qahwa-card';
-     const isSelected = selectedMethod === method.id;
-     
-     return (
-       <div key={method.id} className="relative group">
-         {isQahwaCard && (
-          <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-yellow-500/30 to-orange-500/30 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
-         )}
-         <Card
-          className={`cursor-pointer transition-all duration-500 relative overflow-hidden rounded-2xl ${
-           isQahwaCard
-           ? isSelected
-            ? 'border-2 border-amber-400 shadow-2xl scale-[1.02] bg-white'
-            : 'border-2 border-amber-200/50 hover:border-amber-400/80 shadow-lg hover:scale-[1.01] bg-white/80'
-           : isSelected
-            ? 'border-primary bg-primary/5 shadow-md'
-            : 'border-border/50 hover:border-primary/30 hover:bg-primary/5 bg-white/50'
-          }`}
-          onClick={() => onSelectMethod(method.id)}
-          data-testid={`payment-method-${method.id}`}
-         >
-          <CardContent className="p-0">
-            {isQahwaCard && isSelected ? (
-              <div className="space-y-4">
-                <div className="min-h-80 relative overflow-visible rounded-3xl shadow-2xl border border-white/10" 
-                  style={{
-                    background: `linear-gradient(135deg, #B8860B 0%, #D4A017 25%, #C4880F 50%, #8B6914 75%, #5C3D2E 100%)`,
-                  }}>
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-white" />
-                    <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-white" />
-                  </div>
+    const isQahwaCard = method.id === 'qahwa-card' || method.id === 'loyalty-card';
+    const isSelected = selectedMethod === method.id;
+    
+    return (
+      <div key={method.id} className="relative group">
+        {isQahwaCard && (
+         <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-yellow-500/30 to-orange-500/30 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+        )}
+        <Card
+         className={`cursor-pointer transition-all duration-500 relative overflow-hidden rounded-2xl ${
+          isQahwaCard
+          ? isSelected
+           ? 'border-2 border-amber-400 shadow-2xl scale-[1.02] bg-white'
+           : 'border-2 border-amber-200/50 hover:border-amber-400/80 shadow-lg hover:scale-[1.01] bg-white/80'
+          : isSelected
+           ? 'border-primary bg-primary/5 shadow-md'
+           : 'border-border/50 hover:border-primary/30 hover:bg-primary/5 bg-white/50'
+         }`}
+         onClick={() => onSelectMethod(method.id)}
+         data-testid={`payment-method-${method.id}`}
+        >
+         <CardContent className="p-0">
+           {isQahwaCard && isSelected ? (
+             <div className="space-y-4">
+               <div className="min-h-80 relative overflow-visible rounded-3xl shadow-2xl border border-white/10" 
+                 style={{
+                   background: `linear-gradient(135deg, #B8860B 0%, #D4A017 25%, #C4880F 50%, #8B6914 75%, #5C3D2E 100%)`,
+                 }}>
+                 <div className="absolute inset-0 opacity-10">
+                   <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-white" />
+                   <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-white" />
+                 </div>
 
-                  <div className="relative flex flex-col justify-between text-white h-full py-8 px-8">
-                    <div className="flex justify-between items-start flex-shrink-0">
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-widest opacity-75">CLUNY CAFE</p>
-                        <h4 className="text-2xl font-black">بطاقة الولاء</h4>
-                      </div>
-                      <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Coffee className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
+                 <div className="relative flex flex-col justify-between text-white h-full py-8 px-8">
+                   <div className="flex justify-between items-start flex-shrink-0">
+                     <div className="space-y-1">
+                       <p className="text-xs uppercase tracking-widest opacity-75">CLUNY CAFE</p>
+                       <h4 className="text-2xl font-black">بطاقة الولاء</h4>
+                     </div>
+                     <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
+                       <Coffee className="w-6 h-6 text-white" />
+                     </div>
+                   </div>
 
-                    {cardMode === null ? (
-                      <div className="flex flex-col items-center justify-center my-auto">
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-4 space-y-3 text-center w-full">
-                          <p className="text-sm opacity-90">كيف تريد استخدام بطاقتك؟</p>
-                          <div className="space-y-2">
-                            <Button 
-                              size="sm"
-                              className="w-full bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white transition-all duration-300 shadow-lg border-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Logic for "Pay with Copy Card"
-                                onSelectMethod('qahwa-card');
-                                toast({
-                                  title: "تم اختيار الدفع بالبطاقة",
-                                  description: "سيتم خصم قيمة الطلب من رصيد بطاقتك",
-                                });
-                              }}
-                            >
-                              <Zap className="w-4 h-4 ml-2" />
-                              الدفع ببطاقة كوبي
-                            </Button>
+                   {cardMode === null ? (
+                     <div className="flex flex-col items-center justify-center my-auto">
+                       <div className="bg-white/10 backdrop-blur rounded-lg p-4 space-y-3 text-center w-full">
+                         <p className="text-sm opacity-90">كيف تريد استخدام بطاقتك؟</p>
+                         <div className="space-y-2">
+                           <Button 
+                             size="sm"
+                             className="w-full bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white transition-all duration-300 shadow-lg border-0"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               // Logic for "Pay with Copy Card"
+                               onSelectMethod(method.id);
+                               toast({
+                                 title: "تم اختيار الدفع بالبطاقة",
+                                 description: "سيتم خصم قيمة الطلب من رصيد بطاقة كلوني كافيه الخاصة بك",
+                               });
+                             }}
+                           >
+                             <Zap className="w-4 h-4 ml-2" />
+                             ادفع ببطاقة كلوني كافيه
+                           </Button>
                             {foundCard && (
                               <Button 
                                 size="sm"
