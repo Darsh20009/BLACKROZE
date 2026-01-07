@@ -74,7 +74,11 @@ export default function EmployeeDashboard() {
       try {
         const emp = JSON.parse(storedEmployee);
         setEmployee(emp);
-        fetchAllNotifications();
+        
+        // Parallel fetching for faster initial load
+        fetchAllNotifications().finally(() => {
+          setIsLoading(false);
+        });
         
         // Auto-refresh interval (5 seconds)
         const interval = setInterval(() => {
@@ -90,7 +94,6 @@ export default function EmployeeDashboard() {
     if (storedAddress) {
       setCaféAddress(storedAddress);
     }
-    setIsLoading(false);
   }, [setLocation]);
 
   const fetchAllNotifications = async () => {
@@ -303,7 +306,7 @@ export default function EmployeeDashboard() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !employee) {
     return (
       <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center">
         <LoadingState message="جاري تحميل البيانات..." />
