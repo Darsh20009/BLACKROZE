@@ -140,10 +140,14 @@ const MenuPage = memo(function MenuPage() {
   
   filteredItems = filterCoffeeByStrength(filteredItems, selectedStrength);
 
-  // Group items by unique ID to avoid name-based collision for customization
+  // Group items by unique ID to avoid name-based collision for categorization
+  // but for display we will use the first word to group similar products
   const groupedItems = filteredItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    // Use ID as the primary key for grouping to ensure items with same name are distinct
-    const key = item.groupId || item.id;
+    // Logic for customer grouping: use the first word of the Arabic name
+    // e.g., "إسبريسو" and "إسبريسو دبل" both group under "إسبريسو"
+    const firstWord = item.nameAr.trim().split(/\s+/)[0];
+    const key = item.groupId || firstWord;
+    
     if (!acc[key]) acc[key] = [];
     acc[key].push(item);
     return acc;
@@ -155,12 +159,14 @@ const MenuPage = memo(function MenuPage() {
     
     const categoryGrouped: Record<string, CoffeeItem[]> = {};
     items.forEach(item => {
-      const key = item.groupId || item.id;
+      const firstWord = item.nameAr.trim().split(/\s+/)[0];
+      const key = item.groupId || firstWord;
       if (!categoryGrouped[key]) categoryGrouped[key] = [];
       categoryGrouped[key].push(item);
     });
     
-    return Object.values(categoryGrouped).map(group => group[0]); // Return first item as representative
+    // Return unique groups
+    return Object.values(categoryGrouped);
   };
 
   if (isLoading) {
@@ -489,13 +495,13 @@ const MenuPage = memo(function MenuPage() {
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                      {categoryItems.map((item, itemIndex) => (
+                      {categoryItems.map((group: any, itemIndex) => (
                         <div 
-                          key={item.id}
+                          key={group[0].id}
                           className="animate-in fade-in-0 slide-in-from-bottom-10 duration-700"
                           style={{animationDelay: `${(categoryIndex * 0.2 + itemIndex * 0.1 + 1.5)}s`}}
                         >
-                          <CoffeeCard item={item} />
+                          <CoffeeCard item={group[0]} allItems={group} />
                         </div>
                       ))}
                     </div>
@@ -506,13 +512,13 @@ const MenuPage = memo(function MenuPage() {
           ) : (
             <div className="bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-xl sm:shadow-2xl border border-border animate-in fade-in-0 slide-in-from-bottom-10 duration-1000">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                {filteredItems.map((item, index) => (
+                {Object.values(groupedItems).map((group: any, index) => (
                   <div 
-                    key={item.id} 
+                    key={group[0].id} 
                     className="animate-in fade-in-0 slide-in-from-bottom-10 duration-700"
                     style={{animationDelay: `${index * 0.1 + 0.5}s`}}
                   >
-                    <CoffeeCard item={item} />
+                    <CoffeeCard item={group[0]} allItems={group} />
                   </div>
                 ))}
               </div>
