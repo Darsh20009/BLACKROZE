@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/cart-store";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
+import { memo } from "react";
 
-export default function CartModal() {
+const CartModal = memo(() => {
   const { 
     cartItems, 
     isCartOpen, 
     hideCart, 
-    showCheckout,
     updateQuantity, 
     removeFromCart, 
     getTotalPrice 
@@ -18,15 +18,6 @@ export default function CartModal() {
   const handleCheckout = () => {
     hideCart();
     window.location.href = "/delivery";
-  };
-
-  const renderPrice = (price: any) => {
-    if (typeof price === 'number') return price.toFixed(2);
-    if (typeof price === 'string') return parseFloat(price).toFixed(2);
-    if (price && typeof price === 'object' && '$numberDecimal' in price) {
-      return parseFloat(price.$numberDecimal).toFixed(2);
-    }
-    return "0.00";
   };
 
   return (
@@ -49,7 +40,6 @@ export default function CartModal() {
             </div>
           ) : (
             <>
-              {/* Cart Items */}
               <div className="space-y-4" data-testid="section-cart-items">
                 {cartItems.map((item) => (
                   <div 
@@ -128,7 +118,6 @@ export default function CartModal() {
                 ))}
               </div>
               
-              {/* Total and Checkout */}
               <div className="border-t border-border pt-4" data-testid="section-cart-total">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-xl font-semibold text-foreground">المجموع:</span>
@@ -151,4 +140,6 @@ export default function CartModal() {
       </DialogContent>
     </Dialog>
   );
-}
+});
+
+export default CartModal;
