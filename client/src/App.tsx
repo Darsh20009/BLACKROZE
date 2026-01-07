@@ -282,7 +282,7 @@ function AppContent() {
   return (
     <>
       <Router />
-      {/* Only render modals when they are open */}
+      {/* Modals outside Router to ensure they don't break routing context if they use hooks incorrectly, though they should be fine */}
       {isCartOpen && <CartModal />}
       {isCheckoutOpen && <CheckoutModal />}
       <Toaster />
