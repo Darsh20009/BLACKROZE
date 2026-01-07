@@ -174,6 +174,22 @@ export default function PaymentMethods({
                         <div className="bg-white/10 backdrop-blur rounded-lg p-4 space-y-3 text-center w-full">
                           <p className="text-sm opacity-90">كيف تريد استخدام بطاقتك؟</p>
                           <div className="space-y-2">
+                            <Button 
+                              size="sm"
+                              className="w-full bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white transition-all duration-300 shadow-lg border-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Logic for "Pay with Copy Card"
+                                onSelectMethod('qahwa-card');
+                                toast({
+                                  title: "تم اختيار الدفع بالبطاقة",
+                                  description: "سيتم خصم قيمة الطلب من رصيد بطاقتك",
+                                });
+                              }}
+                            >
+                              <Zap className="w-4 h-4 ml-2" />
+                              الدفع ببطاقة كوبي
+                            </Button>
                             {foundCard && (
                               <Button 
                                 size="sm"
