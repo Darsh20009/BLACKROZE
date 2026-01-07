@@ -172,8 +172,8 @@ export default function CheckoutPage() {
       const res = await fetch(`/api/payment-methods?hasFreeDrinks=${hasFreeDrinks}`);
       if (!res.ok) throw new Error('Failed to fetch payment methods');
       const data = await res.json();
-      // Only allow cash for now as requested by user
-      return data.filter((m: any) => m.id === 'cash' || m.id === 'cash_on_delivery');
+      // Show all enabled payment methods
+      return data;
     }
   });
 
