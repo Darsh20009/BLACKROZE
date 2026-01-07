@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Coffee, Star, MapPin, ChevronLeft, LogOut } from "lucide-react";
 import clunyLogo from "@/assets/cluny-logo.png";
-import { useCustomer } from "@/contexts/CustomerContext";
+import CoffeeAnimation from "@/components/coffee-animation";
 
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
@@ -16,7 +16,7 @@ export default function WelcomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#6E8A8B] text-white overflow-hidden font-ibm-arabic">
+    <div className="min-h-screen bg-[#233230] text-white overflow-hidden font-ibm-arabic">
       {/* Hero Section */}
       <div className="relative h-[100dvh] flex flex-col justify-center px-6">
         {/* Background Decorative Elements - Matching Brand */}
@@ -69,13 +69,22 @@ export default function WelcomePage() {
             </AnimatePresence>
 
             <div className="space-y-4">
-              <Button
-                onClick={() => setLocation("/menu")}
-                className="w-full h-14 bg-white text-[#6E8A8B] hover:bg-white/90 rounded-xl text-xl font-medium shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group border-0"
-              >
-                {isAuthenticated ? "اطلب الآن" : "استكشف القائمة"}
-                <ChevronLeft className="mr-2 w-6 h-6 transition-transform group-hover:-translate-x-1" />
-              </Button>
+              <div className="relative group">
+                <Button
+                  onClick={() => setLocation("/menu")}
+                  className="w-full h-14 bg-white text-[#233230] hover:bg-white/90 rounded-xl text-xl font-medium shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group border-0 relative z-10 overflow-hidden"
+                >
+                  <span className="relative z-20 flex items-center justify-center">
+                    {isAuthenticated ? "اطلب الآن" : "استكشف القائمة"}
+                    <ChevronLeft className="mr-2 w-6 h-6 transition-transform group-hover:-translate-x-1" />
+                  </span>
+                  
+                  {/* Embedded Coffee Animation in Button */}
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity">
+                    <CoffeeAnimation size="sm" className="w-12 h-12" />
+                  </div>
+                </Button>
+              </div>
               
               {!isAuthenticated ? (
                 <Button
@@ -143,7 +152,7 @@ export default function WelcomePage() {
       </section>
 
       {/* Elegant Footer */}
-      <footer className="py-12 border-t border-white/10 px-6 bg-[#6E8A8B]">
+      <footer className="py-12 border-t border-white/10 px-6 bg-[#233230]">
         <div className="max-w-7xl mx-auto flex flex-col items-center">
           <img src={clunyLogo} alt="Logo" className="w-12 h-12 opacity-50 mb-6 brightness-0 invert" />
           <p className="text-white/50 text-sm font-light uppercase tracking-widest">

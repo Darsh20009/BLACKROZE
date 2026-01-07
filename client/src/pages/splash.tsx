@@ -31,7 +31,7 @@ export default function SplashScreen() {
   if (shouldShow === false) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#6E8A8B] flex items-center justify-center z-50 overflow-hidden font-ibm-arabic">
+    <div className="fixed inset-0 bg-[#233230] flex items-center justify-center z-50 overflow-hidden font-ibm-arabic">
       {/* Background Decorative Elements - Subtle Glow */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white rounded-full blur-[120px]" />
