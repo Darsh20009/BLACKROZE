@@ -1,4 +1,4 @@
-import { useState, memo, useEffect, Suspense } from "react";
+import { useState, memo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import DrinkCustomizationDialog, { type DrinkCustomization } from "@/components/drink-customization-dialog";
 import { useCartStore } from "@/lib/cart-store";
@@ -37,8 +37,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
-// Extracted Content Component to resolve hook issues
-const MenuContent = memo(() => {
+export default function MenuPage() {
   const { cartItems } = useCartStore();
   const { isAuthenticated } = useCustomer();
   const { toast } = useToast();
@@ -142,13 +141,11 @@ const MenuContent = memo(() => {
   
   filteredItems = filterCoffeeByStrength(filteredItems, selectedStrength);
 
-  // Group items by unique ID to avoid name-based collision for categorization
-  // but for display we will use the first word to group similar products
+  // Use a simpler grouping logic to ensure all items show up
+  // Grouping by first word was causing items with the same first word to collapse
   const groupedItems = filteredItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    // Logic for customer grouping: use the first word of the Arabic name
-    // e.g., "إسبريسو" and "إسبريسو دبل" both group under "إسبريسو"
-    const firstWord = item.nameAr.trim().split(/\s+/)[0];
-    const key = item.groupId || firstWord;
+    // If groupId exists, use it. Otherwise use the full name to avoid unwanted collapsing.
+    const key = item.groupId || item.nameAr;
     
     if (!acc[key]) acc[key] = [];
     acc[key].push(item);
@@ -161,13 +158,11 @@ const MenuContent = memo(() => {
     
     const categoryGrouped: Record<string, CoffeeItem[]> = {};
     items.forEach(item => {
-      const firstWord = item.nameAr.trim().split(/\s+/)[0];
-      const key = item.groupId || firstWord;
+      const key = item.groupId || item.nameAr;
       if (!categoryGrouped[key]) categoryGrouped[key] = [];
       categoryGrouped[key].push(item);
     });
     
-    // Return unique groups
     return Object.values(categoryGrouped);
   };
 
@@ -567,13 +562,5 @@ const MenuContent = memo(() => {
         </div>
       </footer>
     </div>
-  );
-});
-
-export default function MenuPage() {
-  return (
-    <Suspense fallback={null}>
-      <MenuContent />
-    </Suspense>
   );
 }
