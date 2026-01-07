@@ -19,16 +19,10 @@ export default function WelcomePage() {
     <div className="min-h-screen bg-[#F7F8F8] text-[#1F2D2E] overflow-hidden font-ibm-arabic">
       {/* Hero Section */}
       <div className="relative h-[100dvh] flex flex-col justify-center px-6">
-        {/* Background Decorative Elements - Matching Brand */}
+        {/* Background Decorative Elements - Pure Color Theme, No Images */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#9FB2B3]/20 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#B58B5A]/15 rounded-full blur-[120px]" />
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
-            transition={{ duration: 2 }}
-            className="w-full h-full bg-[url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80')] bg-cover bg-center grayscale opacity-20"
-          />
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#9FB2B3]/15 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#B58B5A]/10 rounded-full blur-[120px]" />
         </div>
 
         <div className="relative z-20 max-w-lg mx-auto w-full text-center">
