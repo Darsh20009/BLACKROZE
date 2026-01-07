@@ -22,7 +22,7 @@ export default function EmployeeOrders() {
     if (stored) {
       setEmployee(JSON.parse(stored));
     } else {
-      setLocation("/employee/gateway");
+      setLocation("/employee/login");
     }
   }, [setLocation]);
 

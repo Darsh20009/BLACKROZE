@@ -82,10 +82,10 @@ export default function EmployeeDashboard() {
         }, 5000);
         return () => clearInterval(interval);
       } catch (e) {
-        window.location.href = "/employee/gateway";
+        window.location.href = "/employee/login";
       }
     } else {
-      window.location.href = "/employee/gateway";
+      window.location.href = "/employee/login";
     }
     if (storedAddress) {
       setCaféAddress(storedAddress);

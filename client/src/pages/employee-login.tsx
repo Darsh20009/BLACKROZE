@@ -28,8 +28,8 @@ export default function EmployeeLogin() {
       try {
         const parsed = JSON.parse(stored);
         if (parsed && (parsed.id || parsed._id)) {
-           // Direct redirect to home
-           window.location.href = "/employee/home";
+           // Direct redirect to dashboard
+           window.location.href = "/employee/dashboard";
            return;
         }
       } catch (e) {}
@@ -57,8 +57,8 @@ export default function EmployeeLogin() {
     onSuccess: (employee) => {
       // Persistence: currentEmployee is used by AuthGuard
       localStorage.setItem("currentEmployee", JSON.stringify(employee));
-      // Also set a persistent cookie if backend supports it, but here we rely on localStorage
-      setLocation("/employee/dashboard");
+      // Force reload to ensure session is active
+      window.location.href = "/employee/dashboard";
     },
     onError: () => {
       setError("بيانات تسجيل الدخول غير صحيحة");

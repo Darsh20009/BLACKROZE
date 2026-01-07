@@ -289,6 +289,12 @@ function App() {
     const currentPath = window.location.pathname;
     const isEmployeePath = employeePaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
     setIsEmployee(isEmployeePath);
+
+    // Dynamic Manifest switching for PWA
+    const manifestTag = document.getElementById('manifest-tag') as HTMLLinkElement;
+    if (manifestTag) {
+      manifestTag.href = isEmployeePath ? '/employee-manifest.json' : '/manifest.json';
+    }
   }, []);
 
   return (
