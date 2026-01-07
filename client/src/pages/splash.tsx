@@ -20,7 +20,7 @@ export default function SplashScreen() {
     setShouldShow(true);
     localStorage.setItem("hasSeenSplash", "true");
 
-    // Coffee pouring takes ~3 seconds, then redirect directly to menu
+    // Coffee pouring takes ~3.5 seconds, then redirect directly to menu
     const timer = setTimeout(() => {
       setLoading(false);
       setTimeout(() => setLocation("/menu"), 500);
@@ -58,7 +58,7 @@ export default function SplashScreen() {
             </motion.div>
 
             {/* Coffee Pouring Animation */}
-            <CoffeeAnimation />
+            <CoffeeAnimation size="lg" />
 
             {/* Brand Text */}
             <motion.div
