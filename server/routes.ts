@@ -165,10 +165,11 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
       coffeeItemId: item.coffeeItemId || item.id,
       quantity: item.quantity || 1,
       addons: item.customization?.selectedAddons?.map((a: any) => ({
+        id: a.addonId || a.id,
         rawItemId: a.rawItemId,
-        quantity: a.quantity,
+        quantity: a.quantity || 1,
         unit: a.unit
-      }))
+      })) || []
     }));
 
     // Use storage method for consistent deduction logic (prevents negative deduction)

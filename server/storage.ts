@@ -1142,25 +1142,120 @@ export class DBStorage implements IStorage {
     const deductionDetails = [];
     const shortages = [];
     let costOfGoods = 0;
+    
     for (const item of items) {
+      // 1. Deduct based on Recipe
       const recipe = await RecipeItemModel.find({ coffeeItemId: item.coffeeItemId }).lean();
       for (const r of recipe) {
         const stock = await BranchStockModel.findOne({ branchId, rawItemId: r.rawItemId });
         const raw = await RawItemModel.findOne({ id: r.rawItemId }).lean();
         const required = r.quantity * item.quantity;
+        
         if (stock && stock.quantity >= required) {
           const previousQuantity = stock.quantity;
           stock.quantity -= required;
           await stock.save();
+          
           const unitCost = Number(raw?.lastCost || 0);
           const totalCost = unitCost * required;
           costOfGoods += totalCost;
-          deductionDetails.push({ rawItemId: r.rawItemId, rawItemName: raw?.nameAr || "Unknown", quantity: required, unit: r.unit, unitCost, totalCost, previousQuantity, newQuantity: stock.quantity, status: "deducted", message: "Successfully deducted" });
+          
+          const detail = { 
+            rawItemId: r.rawItemId, 
+            rawItemName: raw?.nameAr || "Unknown", 
+            quantity: required, 
+            unit: r.unit, 
+            unitCost, 
+            totalCost, 
+            previousQuantity, 
+            newQuantity: stock.quantity, 
+            status: "deducted", 
+            message: "Successfully deducted (Recipe)" 
+          };
+          deductionDetails.push(detail);
+          
+          // Log movement
+          await StockMovementModel.create({
+            id: nanoid(),
+            branchId,
+            rawItemId: r.rawItemId,
+            movementType: 'sale',
+            quantity: required,
+            previousQuantity,
+            newQuantity: stock.quantity,
+            referenceType: 'order',
+            referenceId: orderId,
+            createdBy,
+            notes: `Order #${orderId} - Recipe Item`
+          });
         } else {
           shortages.push({ rawItemId: r.rawItemId, rawItemName: raw?.nameAr || "Unknown", required, available: stock ? stock.quantity : 0, unit: r.unit });
         }
       }
+
+      // 2. Deduct based on Addons
+      if (item.addons && Array.isArray(item.addons)) {
+        for (const addon of item.addons) {
+          if (!addon.rawItemId) continue;
+          
+          const stock = await BranchStockModel.findOne({ branchId, rawItemId: addon.rawItemId });
+          const raw = await RawItemModel.findOne({ id: addon.rawItemId }).lean();
+          const required = (addon.quantity || 1) * item.quantity;
+
+          if (stock && stock.quantity >= required) {
+            const previousQuantity = stock.quantity;
+            stock.quantity -= required;
+            await stock.save();
+
+            const unitCost = Number(raw?.lastCost || 0);
+            const totalCost = unitCost * required;
+            costOfGoods += totalCost;
+
+            const detail = { 
+              rawItemId: addon.rawItemId, 
+              rawItemName: raw?.nameAr || "Unknown", 
+              quantity: required, 
+              unit: addon.unit || raw?.unit || 'unit', 
+              unitCost, 
+              totalCost, 
+              previousQuantity, 
+              newQuantity: stock.quantity, 
+              status: "deducted", 
+              message: "Successfully deducted (Addon)" 
+            };
+            deductionDetails.push(detail);
+
+            // Log movement
+            await StockMovementModel.create({
+              id: nanoid(),
+              branchId,
+              rawItemId: addon.rawItemId,
+              movementType: 'sale',
+              quantity: required,
+              previousQuantity,
+              newQuantity: stock.quantity,
+              referenceType: 'order',
+              referenceId: orderId,
+              createdBy,
+              notes: `Order #${orderId} - Addon Item`
+            });
+          } else {
+            shortages.push({ rawItemId: addon.rawItemId, rawItemName: raw?.nameAr || "Unknown", required, available: stock ? stock.quantity : 0, unit: addon.unit || 'unit' });
+          }
+        }
+      }
     }
+
+    // Update Order with COGS and deduction status
+    await OrderModel.findByIdAndUpdate(orderId, {
+      $set: {
+        costOfGoods,
+        inventoryDeducted: shortages.length === 0 ? 1 : 2,
+        inventoryDeductionDetails: deductionDetails,
+        updatedAt: new Date()
+      }
+    });
+
     return { success: shortages.length === 0, costOfGoods, grossProfit: 0, deductionDetails, shortages, warnings: [], errors: [] };
   }
 
