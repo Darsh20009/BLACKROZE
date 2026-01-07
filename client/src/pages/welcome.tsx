@@ -20,10 +20,10 @@ export default function WelcomePage() {
     <div className="min-h-screen bg-[#233230] text-white overflow-hidden font-ibm-arabic">
       {/* Hero Section */}
       <div className="relative h-[100dvh] flex flex-col justify-center px-6">
-        {/* Background Decorative Elements - Matching Brand */}
+        {/* Background Decorative Elements - Subtle Glow Only */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#B58B5A]/15 rounded-full blur-[120px]" />
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/5 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#B58B5A]/10 rounded-full blur-[120px]" />
         </div>
 
         <div className="relative z-20 max-w-lg mx-auto w-full text-center">
@@ -32,8 +32,9 @@ export default function WelcomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="w-24 h-24 mx-auto mb-8 p-1 rounded-full border border-[#9FB2B3]/20 bg-white shadow-xl">
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-full" />
+            {/* Logo - Matching dark theme */}
+            <div className="w-24 h-24 mx-auto mb-8 p-1 rounded-full border border-white/10 bg-white/5 shadow-2xl">
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-full brightness-0 invert" />
             </div>
 
             <h1 className="text-5xl md:text-6xl font-playfair mb-4 tracking-tight leading-tight text-white">
@@ -52,7 +53,7 @@ export default function WelcomePage() {
                   <p className="text-white text-2xl md:text-3xl mb-2 font-playfair font-semibold">
                     مرحباً، {customer?.name}
                   </p>
-                  <p className="text-white/80 text-lg font-light">
+                  <p className="text-white/70 text-lg font-light">
                     اشتقنا لرائحة قهوتك المفضلة
                   </p>
                 </motion.div>
@@ -62,7 +63,7 @@ export default function WelcomePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="text-white/80 text-lg md:text-xl mb-12 font-light tracking-wide"
+                  className="text-white/70 text-lg md:text-xl mb-12 font-light tracking-wide"
                 >
                   حيث تبدأ حكايات القهوة الفاخرة
                 </motion.p>
@@ -91,7 +92,7 @@ export default function WelcomePage() {
                 <Button
                   variant="outline"
                   onClick={() => setLocation("/auth")}
-                  className="w-full h-14 border-white/30 bg-white/10 text-white rounded-xl text-lg hover:bg-white/20"
+                  className="w-full h-14 border-white/10 bg-white/5 text-white rounded-xl text-lg hover:bg-white/10 transition-colors"
                 >
                   تسجيل الدخول
                 </Button>
@@ -100,7 +101,7 @@ export default function WelcomePage() {
                   <Button
                     variant="outline"
                     onClick={() => setLocation("/my-orders")}
-                    className="flex-1 h-14 border-white/20 bg-white/10 text-white rounded-xl text-lg hover:bg-white/20"
+                    className="flex-1 h-14 border-white/10 bg-white/5 text-white rounded-xl text-lg hover:bg-white/10"
                   >
                     طلباتي
                   </Button>
@@ -108,7 +109,7 @@ export default function WelcomePage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => logout()}
-                    className="h-14 w-14 rounded-xl border border-red-400/20 bg-red-400/10 text-red-200 hover:text-white hover:bg-red-500"
+                    className="h-14 w-14 rounded-xl border border-red-400/20 bg-red-400/10 text-red-300 hover:text-white hover:bg-red-500/50"
                   >
                     <LogOut className="w-6 h-6" />
                   </Button>
@@ -124,7 +125,7 @@ export default function WelcomePage() {
           transition={{ duration: 2, repeat: Infinity }}
           className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20"
         >
-          <div className="w-[1px] h-12 bg-gradient-to-b from-[#9FB2B3]/40 to-transparent" />
+          <div className="w-[1px] h-12 bg-gradient-to-b from-white/20 to-transparent" />
         </motion.div>
       </div>
 
@@ -140,11 +141,11 @@ export default function WelcomePage() {
               viewport={{ once: true }}
               className="text-center group"
             >
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-white/10 border border-white/20 transition-all group-hover:border-white/50 group-hover:bg-white/20">
-                <f.icon className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 transition-all group-hover:border-white/20 group-hover:bg-white/10">
+                <f.icon className="w-8 h-8 text-white/80" />
               </div>
               <h3 className="text-2xl mb-3 font-semibold text-white">{f.title}</h3>
-              <p className="text-white/70 leading-relaxed">
+              <p className="text-white/60 leading-relaxed">
                 {f.desc}
               </p>
             </motion.div>
@@ -156,7 +157,7 @@ export default function WelcomePage() {
       <footer className="py-12 border-t border-white/10 px-6 bg-[#233230]">
         <div className="max-w-7xl mx-auto flex flex-col items-center">
           <img src={clunyLogo} alt="Logo" className="w-12 h-12 opacity-50 mb-6 brightness-0 invert" />
-          <p className="text-white/50 text-sm font-light uppercase tracking-widest">
+          <p className="text-white/30 text-sm font-light uppercase tracking-widest">
             © 2026 CLUNY CAFE. ALL RIGHTS RESERVED.
           </p>
         </div>
