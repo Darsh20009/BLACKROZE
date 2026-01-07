@@ -140,12 +140,10 @@ const MenuPage = memo(function MenuPage() {
   
   filteredItems = filterCoffeeByStrength(filteredItems, selectedStrength);
 
-  // Group items by nameAr to handle variants (e.g., Espresso vs Espresso Double)
+  // Group items by unique ID to avoid name-based collision for customization
   const groupedItems = filteredItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    // If groupId exists, use it, otherwise group by nameAr base (e.g. "Espresso")
-    // For automatic grouping, we can use the first word or a prefix if they look similar
-    // But for now, let's respect groupId if provided, otherwise use the whole nameAr
-    const key = item.groupId || item.nameAr.split(' ')[0] || item.nameAr;
+    // Use ID as the primary key for grouping to ensure items with same name are distinct
+    const key = item.groupId || item.id;
     if (!acc[key]) acc[key] = [];
     acc[key].push(item);
     return acc;
@@ -157,7 +155,7 @@ const MenuPage = memo(function MenuPage() {
     
     const categoryGrouped: Record<string, CoffeeItem[]> = {};
     items.forEach(item => {
-      const key = item.groupId || item.nameAr.split(' ')[0] || item.nameAr;
+      const key = item.groupId || item.id;
       if (!categoryGrouped[key]) categoryGrouped[key] = [];
       categoryGrouped[key].push(item);
     });

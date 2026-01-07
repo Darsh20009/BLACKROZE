@@ -212,6 +212,40 @@ export default function DrinkCustomizationDialog({
     return total;
   };
 
+  const handleCancel = () => {
+    // Reset state before closing
+    setQuantity(initialQuantity);
+    setNotes(initialCustomization?.notes || "");
+    
+    // Reset selected addons to initial or defaults
+    const map = new Map<string, SelectedAddon>();
+    if (initialCustomization?.selectedAddons) {
+      initialCustomization.selectedAddons.forEach(addon => {
+        map.set(addon.addonId, addon);
+      });
+    } else if (coffeeAddons.length > 0 && allAddons.length > 0) {
+      coffeeAddons.forEach(link => {
+        if (link.isDefault === 1) {
+          const addon = allAddons.find(a => a.id === link.addonId);
+          if (addon) {
+            map.set(addon.id, {
+              addonId: addon.id,
+              nameAr: addon.nameAr,
+              quantity: 1,
+              price: addon.price,
+              category: addon.category,
+              rawItemId: addon.rawItemId,
+              quantityPerUnit: addon.quantityPerUnit,
+              unit: addon.unit,
+            });
+          }
+        }
+      });
+    }
+    setSelectedAddons(map);
+    onClose();
+  };
+
   const handleConfirm = () => {
     const customization: DrinkCustomization = {
       selectedAddons: Array.from(selectedAddons.values()),
@@ -482,7 +516,7 @@ export default function DrinkCustomizationDialog({
             إعادة للافتراضي
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} data-testid="button-cancel">
+            <Button variant="outline" onClick={handleCancel} data-testid="button-cancel">
               إلغاء
             </Button>
             <Button onClick={handleConfirm} data-testid="button-confirm">
