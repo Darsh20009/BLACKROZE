@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Coffee, Star, MapPin, ChevronLeft, LogOut } from "lucide-react";
 import clunyLogo from "@/assets/cluny-logo.png";
 import CoffeeAnimation from "@/components/coffee-animation";
+import { useCustomer } from "@/contexts/CustomerContext";
 
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
