@@ -158,7 +158,9 @@ export default function MenuPage() {
     
     const categoryGrouped: Record<string, CoffeeItem[]> = {};
     items.forEach(item => {
-      const key = item.groupId || item.nameAr;
+      // Group by the first word of nameAr to group similar items
+      const firstNameWord = item.nameAr.split(' ')[0];
+      const key = item.groupId || firstNameWord;
       if (!categoryGrouped[key]) categoryGrouped[key] = [];
       categoryGrouped[key].push(item);
     });
