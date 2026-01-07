@@ -73,7 +73,7 @@ export default function WelcomePage() {
               <div className="relative group">
                 <Button
                   onClick={() => setLocation("/menu")}
-                  className="w-full h-14 bg-white text-[#233230] hover:bg-white/90 rounded-xl text-xl font-medium shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group border-0 relative z-10 overflow-hidden"
+                  className="w-full h-14 bg-transparent text-white border-white/20 hover:bg-white/10 rounded-xl text-xl font-medium shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group border relative z-10 overflow-hidden"
                 >
                   <span className="relative z-20 flex items-center justify-center">
                     {isAuthenticated ? "اطلب الآن" : "استكشف القائمة"}
