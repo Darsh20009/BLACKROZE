@@ -224,36 +224,6 @@ export default function DrinkCustomizationDialog({
   };
 
   const handleCancel = () => {
-    // Reset state before closing
-    setQuantity(initialQuantity);
-    setNotes(initialCustomization?.notes || "");
-    
-    // Reset selected addons to initial or defaults
-    const map = new Map<string, SelectedAddon>();
-    if (initialCustomization?.selectedAddons) {
-      initialCustomization.selectedAddons.forEach(addon => {
-        map.set(addon.addonId, addon);
-      });
-    } else if (coffeeAddons.length > 0 && allAddons.length > 0) {
-      coffeeAddons.forEach(link => {
-        if (link.isDefault === 1) {
-          const addon = allAddons.find(a => a.id === link.addonId);
-          if (addon) {
-            map.set(addon.id, {
-              addonId: addon.id,
-              nameAr: addon.nameAr,
-              quantity: 1,
-              price: addon.price,
-              category: addon.category,
-              rawItemId: addon.rawItemId,
-              quantityPerUnit: addon.quantityPerUnit,
-              unit: addon.unit,
-            });
-          }
-        }
-      });
-    }
-    setSelectedAddons(map);
     onClose();
   };
 
