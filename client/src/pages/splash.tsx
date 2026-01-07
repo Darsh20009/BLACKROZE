@@ -6,9 +6,19 @@ import clunyLogo from "@/assets/cluny-logo.png";
 export default function SplashScreen() {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
+  const [shouldShow, setShouldShow] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // تقليل وقت التحميل الكلي إلى ثانية واحدة (800ms للعرض + 200ms للانتقال)
+    const hasSeenSplash = localStorage.getItem("hasSeenSplash");
+    if (hasSeenSplash) {
+      setShouldShow(false);
+      setLocation("/welcome");
+      return;
+    }
+
+    setShouldShow(true);
+    localStorage.setItem("hasSeenSplash", "true");
+
     const timer = setTimeout(() => {
       setLoading(false);
       setTimeout(() => setLocation("/welcome"), 200);
@@ -16,9 +26,11 @@ export default function SplashScreen() {
     return () => clearTimeout(timer);
   }, [setLocation]);
 
+  if (shouldShow === false) return null;
+
   return (
     <div className="fixed inset-0 bg-[#F7F8F8] flex items-center justify-center z-50 overflow-hidden font-ibm-arabic">
-      {/* Background Decorative Elements - Updated to Brand Colors */}
+      {/* Background Decorative Elements */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#9FB2B3] rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#B58B5A] rounded-full blur-[120px]" />
@@ -67,7 +79,7 @@ export default function SplashScreen() {
         )}
       </AnimatePresence>
 
-      {/* Luxury Particle Effect - Subtler for Light Mode */}
+      {/* Luxury Particle Effect */}
       <div className="absolute inset-0 pointer-events-none">
         {[...Array(10)].map((_, i) => (
           <motion.div
