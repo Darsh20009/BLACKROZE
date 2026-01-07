@@ -18,21 +18,20 @@ import {
 
 interface CoffeeCardProps {
   item: CoffeeItem;
-  allItems?: CoffeeItem[];
+  variants?: CoffeeItem[];
 }
 
-function CoffeeCard({ item, allItems = [] }: CoffeeCardProps) {
+function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
   const [, setLocation] = useLocation();
   const { addToCart } = useCartStore();
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<CoffeeItem>(item);
 
-  // Group items that have the same first word in their name
-  const variants = useMemo(() => {
-    if (allItems.length <= 1) return [];
-    return allItems;
-  }, [allItems]);
+  // Use variants passed from props
+  const allVariants = useMemo(() => {
+    return variants.length > 0 ? variants : [item];
+  }, [variants, item]);
 
   const discount = selectedVariant.oldPrice ? 
     Math.round(((Number(selectedVariant.oldPrice) - Number(selectedVariant.price)) / Number(selectedVariant.oldPrice)) * 100) : 0;
@@ -85,9 +84,9 @@ function CoffeeCard({ item, allItems = [] }: CoffeeCardProps) {
           />
 
           <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex flex-col gap-1.5 sm:gap-2">
-            {variants.length > 1 && (
+            {allVariants.length > 1 && (
               <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
-                {variants.length} خيارات
+                {allVariants.length} خيارات
               </Badge>
             )}
             {discount > 0 && (
@@ -117,7 +116,7 @@ function CoffeeCard({ item, allItems = [] }: CoffeeCardProps) {
 
         <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4">
           <div className="text-center border-b border-border/30 pb-2 sm:pb-3 space-y-1.5 sm:space-y-2">
-            {variants.length > 1 ? (
+            {allVariants.length > 1 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                   <Button variant="ghost" className="h-auto p-0 hover:bg-transparent group/title">
@@ -128,7 +127,7 @@ function CoffeeCard({ item, allItems = [] }: CoffeeCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" className="w-56">
-                  {variants.map((v) => (
+                  {allVariants.map((v) => (
                     <DropdownMenuItem 
                       key={v.id} 
                       onClick={(e) => {
@@ -202,7 +201,7 @@ function CoffeeCard({ item, allItems = [] }: CoffeeCardProps) {
       </CardContent>
       <DrinkCustomizationDialog
         coffeeItem={selectedVariant}
-        variants={variants}
+        variants={allVariants}
         open={isCustomizing}
         onClose={() => setIsCustomizing(false)}
         onConfirm={handleConfirmCustomization}

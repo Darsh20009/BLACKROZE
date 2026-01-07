@@ -143,9 +143,10 @@ export default function MenuPage() {
 
   // Use a simpler grouping logic to ensure all items show up
   // Grouping by first word was causing items with the same first word to collapse
-  const groupedItems = filteredItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    // If groupId exists, use it. Otherwise use the full name to avoid unwanted collapsing.
-    const key = item.groupId || item.nameAr;
+    const groupedItems = filteredItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
+    // Group by the first word of nameAr to group similar items
+    const firstNameWord = item.nameAr.split(' ')[0];
+    const key = item.groupId || firstNameWord;
     
     if (!acc[key]) acc[key] = [];
     acc[key].push(item);
