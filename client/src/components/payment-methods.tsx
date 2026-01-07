@@ -51,12 +51,19 @@ export default function PaymentMethods({
    refetchInterval: 5000,
  });
  
- // Update foundCard when auto-fetched card arrives
- useEffect(() => {
-   if (autoFetchedCard && !foundCard) {
-     setFoundCard(autoFetchedCard);
-   }
- }, [autoFetchedCard, foundCard]);
+  // Update foundCard when auto-fetched card arrives
+  useEffect(() => {
+    if (autoFetchedCard && !foundCard) {
+      setFoundCard(autoFetchedCard);
+    }
+  }, [autoFetchedCard, foundCard]);
+
+  // Auto-expand "use" mode if card is found and loyalty card method is selected
+  useEffect(() => {
+    if (foundCard && (selectedMethod === 'qahwa-card' || selectedMethod === 'loyalty-card') && cardMode === null) {
+      setCardMode('use');
+    }
+  }, [foundCard, selectedMethod, cardMode]);
 
  const getIcon = (iconName: string) => {
   switch (iconName) {
@@ -127,7 +134,7 @@ export default function PaymentMethods({
      {paymentMethods.map((method) => {
     const isQahwaCard = method.id === 'qahwa-card' || method.id === 'loyalty-card';
     const isSelected = selectedMethod === method.id;
-    
+
     return (
       <div key={method.id} className="relative group">
         {isQahwaCard && (
