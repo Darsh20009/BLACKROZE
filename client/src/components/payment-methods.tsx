@@ -26,11 +26,12 @@ export default function PaymentMethods({
 }: PaymentMethodsProps) {
  const { toast } = useToast();
  const { customer } = useCustomer();
- const [cardMode, setCardMode] = useState<'use' | 'add' | null>(null);
- const [searchPhone, setSearchPhone] = useState("");
- const [searchCardNumber, setSearchCardNumber] = useState("");
- const [isSearching, setIsSearching] = useState(false);
- const [foundCard, setFoundCard] = useState<any>(initialLoyaltyCard || null);
+  const [cardMode, setCardMode] = useState<'use' | 'add' | null>(null);
+  const [searchPhone, setSearchPhone] = useState("");
+  const [searchCardNumber, setSearchCardNumber] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAddingCard, setIsAddingCard] = useState(false);
+  const [foundCard, setFoundCard] = useState<any>(initialLoyaltyCard || null);
  
  // Use provided phone or customer phone
  const activePhone = propCustomerPhone || customer?.phone;
