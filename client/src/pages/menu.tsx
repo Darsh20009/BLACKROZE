@@ -37,7 +37,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
-const MenuPage = memo(function MenuPage() {
+function MenuPage() {
   const { cartItems } = useCartStore();
   const { isAuthenticated } = useCustomer();
   const { toast } = useToast();
@@ -535,6 +535,6 @@ const MenuPage = memo(function MenuPage() {
       </main>
     </div>
   );
-});
+}
 
 export default MenuPage;

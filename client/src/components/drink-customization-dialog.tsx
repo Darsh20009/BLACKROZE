@@ -81,12 +81,20 @@ export default function DrinkCustomizationDialog({
   const [selectedAddons, setSelectedAddons] = useState<Map<string, SelectedAddon>>(new Map());
   const [notes, setNotes] = useState("");
   const [selectedVariant, setSelectedVariant] = useState<CoffeeItem | null>(coffeeItem);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   useEffect(() => {
-    if (coffeeItem) {
+    if (activeItem?.availableSizes && activeItem.availableSizes.length > 0) {
+      const defaultSize = activeItem.availableSizes[0];
+      setSelectedSize(defaultSize.nameAr);
+    }
+  }, [activeItem]);
+
+  useEffect(() => {
+    if (coffeeItem && !selectedVariant) {
       setSelectedVariant(coffeeItem);
     }
-  }, [coffeeItem]);
+  }, [coffeeItem, selectedVariant]);
 
   const activeItem = selectedVariant || coffeeItem;
 
@@ -267,15 +275,6 @@ export default function DrinkCustomizationDialog({
     setSelectedAddons(map);
     setNotes("");
   };
-
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (activeItem?.availableSizes && activeItem.availableSizes.length > 0) {
-      const defaultSize = activeItem.availableSizes[0];
-      setSelectedSize(defaultSize.nameAr);
-    }
-  }, [activeItem]);
 
   const basePrice = selectedSize 
     ? Number(activeItem?.availableSizes?.find(s => s.nameAr === selectedSize)?.price || activeItem?.price || 0)

@@ -275,7 +275,9 @@ function Router() {
 }
 
 function AppContent() {
-  const { isCartOpen, isCheckoutOpen } = useCartStore();
+  const cartStore = useCartStore();
+  const isCartOpen = cartStore?.isCartOpen;
+  const isCheckoutOpen = cartStore?.isCheckoutOpen;
 
   return (
     <>
