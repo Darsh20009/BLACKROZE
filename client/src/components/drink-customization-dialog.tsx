@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { 
   Coffee, Milk, Droplets, Plus, Minus, Check, Loader2,
-  CandyOff, Candy, RotateCcw
+  CandyOff, Candy, RotateCcw, Star
 } from "lucide-react";
 import type { CoffeeItem } from "@shared/schema";
 
@@ -50,9 +50,10 @@ export interface DrinkCustomization {
 
 interface DrinkCustomizationDialogProps {
   coffeeItem: CoffeeItem | null;
+  variants?: CoffeeItem[];
   open: boolean;
   onClose: () => void;
-  onConfirm: (customization: DrinkCustomization, quantity: number) => void;
+  onConfirm: (customization: DrinkCustomization, quantity: number, selectedVariant?: CoffeeItem) => void;
   initialCustomization?: DrinkCustomization;
   initialQuantity?: number;
 }
@@ -69,6 +70,7 @@ const CATEGORY_INFO: Record<string, { name: string; icon: typeof Coffee; descrip
 
 export default function DrinkCustomizationDialog({
   coffeeItem,
+  variants = [],
   open,
   onClose,
   onConfirm,
@@ -78,6 +80,15 @@ export default function DrinkCustomizationDialog({
   const [quantity, setQuantity] = useState(initialQuantity);
   const [selectedAddons, setSelectedAddons] = useState<Map<string, SelectedAddon>>(new Map());
   const [notes, setNotes] = useState("");
+  const [selectedVariant, setSelectedVariant] = useState<CoffeeItem | null>(coffeeItem);
+
+  useEffect(() => {
+    if (coffeeItem) {
+      setSelectedVariant(coffeeItem);
+    }
+  }, [coffeeItem]);
+
+  const activeItem = selectedVariant || coffeeItem;
 
   const { data: allAddons = [], isLoading: loadingAddons } = useQuery<ProductAddon[]>({
     queryKey: ["/api/product-addons"],
@@ -93,12 +104,12 @@ export default function DrinkCustomizationDialog({
   });
 
   const { data: coffeeAddons = [], isLoading: loadingCoffeeAddons } = useQuery<CoffeeItemAddon[]>({
-    queryKey: ["/api/coffee-items", coffeeItem?.id, "addons"],
-    enabled: !!coffeeItem?.id,
+    queryKey: ["/api/coffee-items", activeItem?.id, "addons"],
+    enabled: !!activeItem?.id,
     queryFn: async () => {
-      if (!coffeeItem?.id) return [];
+      if (!activeItem?.id) return [];
       try {
-        const res = await fetch(`/api/coffee-items/${coffeeItem.id}/addons`);
+        const res = await fetch(`/api/coffee-items/${activeItem.id}/addons`);
         if (!res.ok) return [];
         return res.json();
       } catch {
@@ -253,12 +264,12 @@ export default function DrinkCustomizationDialog({
       notes: notes.trim() || undefined,
     };
     if (selectedSize) {
-      const sizeInfo = coffeeItem?.availableSizes?.find(s => s.nameAr === selectedSize);
+      const sizeInfo = activeItem?.availableSizes?.find(s => s.nameAr === selectedSize);
       if (sizeInfo) {
         customization.notes = `${customization.notes ? customization.notes + ' - ' : ''}الحجم: ${sizeInfo.nameAr}`;
       }
     }
-    onConfirm(customization, quantity);
+    onConfirm(customization, quantity, activeItem || undefined);
     setTimeout(() => {
       onClose();
     }, 100);
@@ -297,14 +308,14 @@ export default function DrinkCustomizationDialog({
   }, [coffeeItem]);
 
   const basePrice = selectedSize 
-    ? Number(coffeeItem?.availableSizes?.find(s => s.nameAr === selectedSize)?.price || coffeeItem?.price || 0)
-    : Number(coffeeItem?.price || 0);
+    ? Number(activeItem?.availableSizes?.find(s => s.nameAr === selectedSize)?.price || activeItem?.price || 0)
+    : Number(activeItem?.price || 0);
   const addonsPrice = calculateAddonsPrice();
   const totalItemPrice = (basePrice + addonsPrice) * quantity;
 
   const isLoading = loadingAddons || loadingCoffeeAddons;
 
-  if (!coffeeItem) return null;
+  if (!activeItem) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -312,7 +323,7 @@ export default function DrinkCustomizationDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-right">
             <Coffee className="w-5 h-5" />
-            تخصيص {coffeeItem.nameAr}
+            تخصيص {activeItem.nameAr}
           </DialogTitle>
         </DialogHeader>
 
@@ -323,7 +334,42 @@ export default function DrinkCustomizationDialog({
         ) : (
           <ScrollArea className="flex-1 max-h-[50vh]">
             <div className="space-y-4 p-1">
-              {coffeeItem.availableSizes && coffeeItem.availableSizes.length > 0 && (
+              {variants.length > 1 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Star className="w-4 h-4" />
+                    <span>النوع</span>
+                    <Badge variant="outline" className="text-xs">اختر واحد</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {variants.map(v => (
+                      <div
+                        key={v.id}
+                        className={`relative rounded-md border p-3 cursor-pointer transition-all ${
+                          activeItem.id === v.id
+                            ? 'border-primary bg-primary/10' 
+                            : 'border-border hover-elevate'
+                        }`}
+                        onClick={() => setSelectedVariant(v)}
+                        data-testid={`variant-${v.id}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{v.nameAr}</p>
+                            <p className="text-xs text-primary">{v.price} ر.س</p>
+                          </div>
+                          {activeItem.id === v.id && (
+                            <Check className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Separator className="mt-3" />
+                </div>
+              )}
+
+              {activeItem.availableSizes && activeItem.availableSizes.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Coffee className="w-4 h-4" />

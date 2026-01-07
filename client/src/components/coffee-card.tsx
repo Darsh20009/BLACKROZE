@@ -43,11 +43,12 @@ function CoffeeCard({ item, allItems = [] }: CoffeeCardProps) {
     setIsCustomizing(true);
   };
 
-  const handleConfirmCustomization = (customization: DrinkCustomization, quantity: number) => {
+  const handleConfirmCustomization = (customization: DrinkCustomization, quantity: number, variantFromDialog?: CoffeeItem) => {
+    const activeItem = variantFromDialog || selectedVariant;
     const selectedSize = customization.notes?.match(/الحجم: (.*)/)?.[1] || null;
     const selectedAddonIds = customization.selectedAddons.map(a => a.addonId);
     
-    addToCart(selectedVariant.id, quantity, selectedSize, selectedAddonIds);
+    addToCart(activeItem.id, quantity, selectedSize, selectedAddonIds);
     setIsAnimating(true);
     setIsCustomizing(false);
     setTimeout(() => setIsAnimating(false), 2000);
@@ -201,6 +202,7 @@ function CoffeeCard({ item, allItems = [] }: CoffeeCardProps) {
       </CardContent>
       <DrinkCustomizationDialog
         coffeeItem={selectedVariant}
+        variants={variants}
         open={isCustomizing}
         onClose={() => setIsCustomizing(false)}
         onConfirm={handleConfirmCustomization}
