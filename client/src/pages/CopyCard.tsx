@@ -353,7 +353,7 @@ export default function CopyCard() {
     <div 
       className="min-h-screen p-3 pb-24 md:p-6"
       style={{
-        background: "linear-gradient(135deg, #1a1410 0%, #2d1810 50%, #1a1410 100%)",
+        background: "linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%)",
       }}
     >
       {/* Header */}
@@ -398,94 +398,110 @@ export default function CopyCard() {
       <div className="max-w-md mx-auto space-y-5 md:space-y-6">
         {/* Creative Luxury Card - Credit Card Style */}
         <div className="flex justify-center mb-6">
-          <div className="relative w-full aspect-[1.586/1] max-w-[340px] perspective group">
-            <div className="relative w-full h-full rounded-xl shadow-2xl overflow-hidden transform transition-all duration-500" 
-              style={{
-                background: cardDesign?.preview?.bg || `linear-gradient(135deg, #120e0b 0%, #2a1d15 50%, #120e0b 100%)`,
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 0 60px rgba(0,0,0,0.3)'
-              }}>
-              <div className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none" 
-                style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
-              <div className="absolute inset-0 bg-gradient-to-tr from-card/5 via-transparent to-white/10 pointer-events-none z-10" />
-              <div className="relative h-full p-4 md:p-5 flex flex-col justify-between text-white z-20">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg shadow-lg border border-white/20">
-                        <Coffee className="w-4 h-4 md:w-5 md:h-5 text-white" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-base md:text-lg font-black tracking-tighter text-accent leading-none">CLUNY CAFE</span>
-                        <span className="text-[6px] md:text-[7px] uppercase tracking-[0.3em] text-accent/90 font-bold">LOYALTY PREMIUM</span>
+            <div 
+              className="relative w-full aspect-[1.586/1] max-w-[340px] perspective group"
+              data-testid="loyalty-card-container"
+            >
+              <div className="absolute -inset-1.5 bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-500 rounded-[22px] blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
+              <div className="relative w-full h-full rounded-xl shadow-2xl overflow-hidden transform transition-all duration-500 hover:rotate-y-12 hover:scale-[1.02] border border-white/10"
+                style={{ 
+                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.6), inset 0 0 80px rgba(59,130,246,0.15)'
+                }}>
+                <div className="absolute inset-0 opacity-30 mix-blend-overlay pointer-events-none" 
+                  style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-white/10 pointer-events-none z-10" />
+                
+                {/* Abstract pattern background */}
+                <svg className="absolute inset-0 w-full h-full opacity-10 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5"/>
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#grid)" />
+                </svg>
+
+                <div className="relative h-full p-4 md:p-5 flex flex-col justify-between text-white z-20">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg shadow-lg border border-white/20">
+                          <Coffee className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-base md:text-lg font-black tracking-tighter text-blue-100 leading-none">CLUNY CAFE</span>
+                          <span className="text-[6px] md:text-[7px] uppercase tracking-[0.3em] text-blue-300/90 font-bold">LOYALTY PREMIUM</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 md:gap-1.5">
-                    <div className="w-8 h-6 md:w-10 md:h-7 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 rounded shadow-[inset_0_1px_1px_rgba(255,255,255,0.5),0_2px_4px_rgba(0,0,0,0.3)] relative overflow-hidden border border-black/10">
-                      <div className="absolute inset-0 opacity-40">
-                        <div className="absolute top-0 left-0 w-full h-[1px] bg-black/40 mt-1.5" />
-                        <div className="absolute top-0 left-0 w-full h-[1px] bg-black/40 mt-3.5" />
-                        <div className="absolute top-0 left-0 w-full h-[1px] bg-black/40 mt-5.5" />
-                        <div className="absolute top-0 left-0 w-[1px] h-full bg-black/40 ml-3" />
-                        <div className="absolute top-0 left-0 w-[1px] h-full bg-black/40 ml-6.5" />
+                    <div className="flex flex-col items-end gap-1 md:gap-1.5">
+                      <div className="w-8 h-6 md:w-10 md:h-7 bg-gradient-to-br from-blue-300 via-blue-500 to-blue-700 rounded shadow-[inset_0_1px_1px_rgba(255,255,255,0.5),0_2px_4px_rgba(0,0,0,0.3)] relative overflow-hidden border border-black/10">
+                        <div className="absolute inset-0 opacity-40">
+                          <div className="absolute top-0 left-0 w-full h-[1px] bg-black/40 mt-1.5" />
+                          <div className="absolute top-0 left-0 w-full h-[1px] bg-black/40 mt-3.5" />
+                          <div className="absolute top-0 left-0 w-full h-[1px] bg-black/40 mt-5.5" />
+                          <div className="absolute top-0 left-0 w-[1px] h-full bg-black/40 ml-3" />
+                          <div className="absolute top-0 left-0 w-[1px] h-full bg-black/40 ml-6.5" />
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]" />
                       </div>
+                      <Badge className={`text-[7px] md:text-[8px] px-1.5 py-0 border border-white/10 font-black tracking-widest uppercase shadow-sm h-4 ${
+                        tier === 'platinum' ? 'bg-indigo-600 text-white' :
+                        tier === 'gold' ? 'bg-blue-400 text-white' :
+                        tier === 'silver' ? 'bg-slate-400 text-white' :
+                        'bg-blue-600 text-white'
+                      }`}>
+                        {tierNames[tier]}
+                      </Badge>
                     </div>
-                    <Badge className={`text-[7px] md:text-[8px] px-1.5 py-0 border-none font-black tracking-widest uppercase shadow-sm h-4 ${
-                      tier === 'platinum' ? 'bg-purple-600 text-white' :
-                      tier === 'gold' ? 'bg-yellow-500 text-black' :
-                      tier === 'silver' ? 'bg-gray-400 text-black' :
-                      'bg-primary text-white'
-                    }`}>
-                      {tierNames[tier]}
-                    </Badge>
                   </div>
-                </div>
-                <div className="mt-1">
-                  <div className="flex items-center gap-2 mb-0.5 opacity-30">
-                    <span className="text-[5px] md:text-[6px] uppercase tracking-[0.4em] font-bold">MEMBER ID</span>
-                    <div className="h-[0.5px] flex-1 bg-white/20" />
-                  </div>
-                  <p className="text-lg md:text-xl font-mono tracking-[0.2em] font-bold text-accent drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
-                    {loyaltyCard?.cardNumber ? (
-                      <>
-                        <span>{loyaltyCard.cardNumber.substring(0, 4)}</span>
-                        <span className="mx-1 opacity-20">••••</span>
-                        <span className="mx-1 opacity-20">••••</span>
-                        <span>{loyaltyCard.cardNumber.slice(-4)}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="opacity-20">••••</span>
-                        <span className="mx-1 opacity-20">••••</span>
-                        <span className="mx-1 opacity-20">••••</span>
-                        <span>{customer.phone?.slice(-4) || '0000'}</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-                <div className="flex justify-between items-end">
-                  <div className="flex-1">
-                    <p className="text-[6px] md:text-[7px] text-white/40 uppercase tracking-[0.2em] font-bold mb-0.5">CARD MEMBER</p>
-                    <p className="text-sm md:text-base font-bold tracking-widest uppercase text-white drop-shadow-sm leading-tight">
-                      {customer.name || "VALUED CUSTOMER"}
+                  <div className="mt-1">
+                    <div className="flex items-center gap-2 mb-0.5 opacity-30">
+                      <span className="text-[5px] md:text-[6px] uppercase tracking-[0.4em] font-bold text-blue-100">MEMBER ID</span>
+                      <div className="h-[0.5px] flex-1 bg-blue-100/20" />
+                    </div>
+                    <p className="text-lg md:text-xl font-mono tracking-[0.2em] font-bold text-blue-50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                      {loyaltyCard?.cardNumber ? (
+                        <>
+                          <span>{loyaltyCard.cardNumber.substring(0, 4)}</span>
+                          <span className="mx-1 opacity-20">••••</span>
+                          <span className="mx-1 opacity-20">••••</span>
+                          <span>{loyaltyCard.cardNumber.slice(-4)}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="opacity-20">••••</span>
+                          <span className="mx-1 opacity-20">••••</span>
+                          <span className="mx-1 opacity-20">••••</span>
+                          <span>{customer.phone?.slice(-4) || '0000'}</span>
+                        </>
+                      )}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 md:gap-3 text-right">
-                    <div className="hidden sm:block">
-                      <p className="text-[5px] md:text-[6px] text-white/40 uppercase tracking-[0.1em]">EXPIRY</p>
-                      <p className="text-[8px] md:text-[10px] font-black text-accent">PERPETUAL</p>
+                  <div className="flex justify-between items-end">
+                    <div className="flex-1">
+                      <p className="text-[6px] md:text-[7px] text-blue-300/40 uppercase tracking-[0.2em] font-bold mb-0.5">CARD MEMBER</p>
+                      <p className="text-sm md:text-base font-bold tracking-widest uppercase text-white drop-shadow-sm leading-tight">
+                        {customer.name || "VALUED CUSTOMER"}
+                      </p>
                     </div>
-                    <div className="relative w-8 h-8 md:w-10 md:h-10">
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-400/30 via-purple-400/30 to-blue-400/30 rounded-full animate-[pulse_3s_infinite] mix-blend-screen" />
-                      <div className="absolute inset-0 border border-white/10 rounded-full flex items-center justify-center backdrop-blur-md shadow-inner">
-                        <Coffee className="w-4 h-4 md:w-5 md:h-5 text-white drop-shadow-lg" />
+                    <div className="flex items-center gap-2 md:gap-3 text-right">
+                      <div className="hidden sm:block">
+                        <p className="text-[5px] md:text-[6px] text-blue-300/40 uppercase tracking-[0.1em]">EXPIRY</p>
+                        <p className="text-[8px] md:text-[10px] font-black text-blue-200">PERPETUAL</p>
+                      </div>
+                      <div className="relative w-8 h-8 md:w-10 md:h-10">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/30 via-cyan-400/30 to-indigo-400/30 rounded-full animate-[pulse_3s_infinite] mix-blend-screen" />
+                        <div className="absolute inset-0 border border-white/20 rounded-full flex items-center justify-center backdrop-blur-md shadow-inner">
+                          <Coffee className="w-4 h-4 md:w-5 md:h-5 text-blue-100 drop-shadow-lg" />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
         </div>
 
         {/* Card Carousel */}

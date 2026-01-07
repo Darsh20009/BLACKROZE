@@ -172,8 +172,8 @@ export default function CheckoutPage() {
       const res = await fetch(`/api/payment-methods?hasFreeDrinks=${hasFreeDrinks}`);
       if (!res.ok) throw new Error('Failed to fetch payment methods');
       const data = await res.json();
-      // Show all enabled payment methods
-      return data;
+      // Only show cash and qahwa-card (loyalty card)
+      return data.filter((m: any) => m.id === 'cash' || m.id === 'qahwa-card');
     }
   });
 
