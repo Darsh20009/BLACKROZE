@@ -1,11 +1,13 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Coffee, Star, MapPin, ChevronLeft } from "lucide-react";
+import { Coffee, Star, MapPin, ChevronLeft, LogOut } from "lucide-react";
 import clunyLogo from "@/assets/cluny-logo.png";
+import { useCustomer } from "@/contexts/CustomerContext";
 
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
+  const { customer, isAuthenticated, logout } = useCustomer();
 
   const features = [
     { icon: Coffee, title: "قهوة مختصة", desc: "أجود أنواع الحبوب المحمصة بعناية" },
@@ -41,26 +43,72 @@ export default function WelcomePage() {
             <h1 className="text-5xl md:text-6xl font-playfair mb-4 tracking-tight leading-tight">
               CLUNY CAFE
             </h1>
-            <p className="text-[#9FB2B3] text-lg md:text-xl mb-12 font-light tracking-wide">
-              حيث تبدأ حكايات القهوة الفاخرة
-            </p>
+            
+            <AnimatePresence mode="wait">
+              {isAuthenticated ? (
+                <motion.div
+                  key="welcome-user"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-12"
+                >
+                  <p className="text-[#9FB2B3] text-2xl md:text-3xl mb-2 font-playfair font-light">
+                    مرحباً، {customer?.name}
+                  </p>
+                  <p className="text-white/60 text-lg font-light">
+                    اشتقنا لرائحة قهوتك المفضلة
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.p
+                  key="tagline"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="text-[#9FB2B3] text-lg md:text-xl mb-12 font-light tracking-wide"
+                >
+                  حيث تبدأ حكايات القهوة الفاخرة
+                </motion.p>
+              )}
+            </AnimatePresence>
 
             <div className="space-y-4">
               <Button
                 onClick={() => setLocation("/menu")}
                 className="w-full h-14 bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white rounded-full text-xl font-medium shadow-2xl shadow-[#B58B5A]/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group"
               >
-                استكشف القائمة
+                {isAuthenticated ? "اطلب الآن" : "استكشف القائمة"}
                 <ChevronLeft className="mr-2 w-6 h-6 transition-transform group-hover:-translate-x-1" />
               </Button>
               
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/auth")}
-                className="w-full h-14 border-white/20 bg-white/5 backdrop-blur-md text-white rounded-full text-lg hover:bg-white/10"
-              >
-                تسجيل الدخول
-              </Button>
+              {!isAuthenticated ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/auth")}
+                  className="w-full h-14 border-white/20 bg-white/5 backdrop-blur-md text-white rounded-full text-lg hover:bg-white/10"
+                >
+                  تسجيل الدخول
+                </Button>
+              ) : (
+                <div className="flex gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocation("/my-orders")}
+                    className="flex-1 h-14 border-white/10 bg-white/5 backdrop-blur-md text-white rounded-full text-lg hover:bg-white/10"
+                  >
+                    طلباتي
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => logout()}
+                    className="h-14 w-14 rounded-full border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-red-500/20"
+                  >
+                    <LogOut className="w-6 h-6" />
+                  </Button>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
@@ -111,3 +159,5 @@ export default function WelcomePage() {
     </div>
   );
 }
+
+import { AnimatePresence } from "framer-motion";
