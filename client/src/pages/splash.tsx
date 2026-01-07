@@ -59,9 +59,9 @@ export default function SplashScreen() {
             </motion.div>
 
             {/* The Animated Button that fills with coffee */}
-            <div className="relative w-full h-16 bg-white/10 rounded-xl border border-white/20 flex items-center justify-center overflow-hidden group shadow-2xl">
+            <div className="relative w-full h-16 bg-transparent rounded-xl border border-white/20 flex items-center justify-center overflow-hidden group shadow-2xl">
               <ButtonPourAnimation />
-              <span className="relative z-20 text-white text-xl font-medium flex items-center">
+              <span className="relative z-20 text-white text-xl font-medium flex items-center drop-shadow-md">
                 استكشف القائمة
                 <ChevronLeft className="mr-2 w-6 h-6" />
               </span>
