@@ -301,11 +301,11 @@ export default function DrinkCustomizationDialog({
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   useEffect(() => {
-    if (coffeeItem?.availableSizes && coffeeItem.availableSizes.length > 0) {
-      const defaultSize = coffeeItem.availableSizes[0];
+    if (activeItem?.availableSizes && activeItem.availableSizes.length > 0) {
+      const defaultSize = activeItem.availableSizes[0];
       setSelectedSize(defaultSize.nameAr);
     }
-  }, [coffeeItem]);
+  }, [activeItem]);
 
   const basePrice = selectedSize 
     ? Number(activeItem?.availableSizes?.find(s => s.nameAr === selectedSize)?.price || activeItem?.price || 0)
@@ -377,7 +377,7 @@ export default function DrinkCustomizationDialog({
                     <Badge variant="outline" className="text-xs">اختر واحد</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {coffeeItem.availableSizes.map(size => (
+                    {activeItem.availableSizes.map(size => (
                       <div
                         key={size.nameAr}
                         className={`relative rounded-md border p-3 cursor-pointer transition-all ${
