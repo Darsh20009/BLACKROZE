@@ -81,6 +81,8 @@ export default function DrinkCustomizationDialog({
   const [selectedAddons, setSelectedAddons] = useState<Map<string, SelectedAddon>>(new Map());
   const [notes, setNotes] = useState("");
   const [selectedVariant, setSelectedVariant] = useState<CoffeeItem | null>(coffeeItem);
+  const activeItem = selectedVariant || coffeeItem;
+
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   useEffect(() => {
@@ -89,14 +91,6 @@ export default function DrinkCustomizationDialog({
       setSelectedSize(defaultSize.nameAr);
     }
   }, [activeItem]);
-
-  useEffect(() => {
-    if (coffeeItem && !selectedVariant) {
-      setSelectedVariant(coffeeItem);
-    }
-  }, [coffeeItem, selectedVariant]);
-
-  const activeItem = selectedVariant || coffeeItem;
 
   const { data: allAddons = [], isLoading: loadingAddons } = useQuery<ProductAddon[]>({
     queryKey: ["/api/product-addons"],
