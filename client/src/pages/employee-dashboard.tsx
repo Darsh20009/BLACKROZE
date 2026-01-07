@@ -130,8 +130,8 @@ export default function EmployeeDashboard() {
         setPendingOrders(data || []);
         return data;
       } else if (response.status === 401) {
-        // If unauthorized, redirect to gateway
-        window.location.href = "/employee/gateway";
+        // No auto-redirect here to prevent loops, AuthGuard handles it
+        console.warn("Unauthorized API call in dashboard");
       }
     } catch (error) {
       console.error("Error fetching pending orders:", error);

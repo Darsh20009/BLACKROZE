@@ -44,6 +44,17 @@ export function AuthGuard({
               isAuthenticated = true;
               userRole = parsed.role || "";
               allowedPages = parsed.allowedPages || [];
+            } else {
+              // Final fallback check session
+              const response = await fetch("/api/user", { credentials: 'include' });
+              if (response.ok) {
+                const user = await response.json();
+                if (user.type === 'employee') {
+                  localStorage.setItem("currentEmployee", JSON.stringify(user));
+                  isAuthenticated = true;
+                  userRole = user.role || "";
+                }
+              }
             }
             break;
           }
@@ -75,7 +86,7 @@ export function AuthGuard({
         if (!isAuthenticated) {
           const defaultRedirects: Record<UserType, string> = {
             customer: "/auth",
-            employee: "/employee/gateway",
+            employee: "/employee/login",
             manager: "/manager/login",
             admin: "/admin/login",
           };
