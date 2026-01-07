@@ -1,272 +1,111 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Coffee, MapPin, Users, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { Coffee, Star, MapPin, ChevronLeft } from "lucide-react";
+import clunyLogo from "@/assets/cluny-logo.png";
 
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
-  const [showWelcome, setShowWelcome] = useState(true);
 
-  useEffect(() => {
-    // Set metadata for welcome page
-    document.title = "CLUNY CAFE | كلوني كافيه - قهوة مختصة وحلويات";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'كلوني كافيه - وجهتكم الأولى للقهوة المختصة والحلويات الفاخرة. استمتع بتجربة فريدة في فروعنا أو اطلب الآن عبر تطبيقنا على cluny.qirox.online');
-
-    const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");
-    if (hasSeenWelcome) {
-      setShowWelcome(false);
-      // Use setTimeout to avoid setting location during render if this effect runs immediately
-      setTimeout(() => setLocation("/menu"), 0);
-      return;
-    }
-    localStorage.setItem("hasSeenWelcome", "true");
-  }, [setLocation]);
-
-  if (!showWelcome) {
-    return null;
-  }
+  const features = [
+    { icon: Coffee, title: "قهوة مختصة", desc: "أجود أنواع الحبوب المحمصة بعناية" },
+    { icon: Star, title: "تجربة فخمة", desc: "أجواء تجمع بين الرقي والراحة" },
+    { icon: MapPin, title: "مواقعنا", desc: "متواجدون في أرقى أحياء الرياض" },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-40 bg-card/80 backdrop-blur-md shadow-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="CLUNY CAFE" className="w-10 h-10 rounded-full" />
-            <span className="text-xl font-playfair font-semibold text-foreground">CLUNY CAFE</span>
-          </div>
-          <Button onClick={() => setLocation("/menu")} className="bg-[#9FB2B3] hover:bg-[#9FB2B3]/90 text-[#B58B5A]-foreground">
-            اطلب الآن
-          </Button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#1a1410] text-white overflow-hidden font-ibm-arabic">
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden pt-20">
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            className="absolute top-20 left-10 w-72 h-72 bg-[#9FB2B3]/10 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.1, 1],
-              x: [0, 20, 0],
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute bottom-20 right-10 w-96 h-96 bg-accent/8 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.05, 1],
-              x: [0, -20, 0],
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      <div className="relative h-[100dvh] flex flex-col justify-center px-6">
+        {/* Background Wash */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-[#1a1410] z-10" />
+          <motion.div 
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 10, repeat: Infinity, repeatType: "reverse" }}
+            className="w-full h-full bg-[url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80')] bg-cover bg-center"
           />
         </div>
 
-        <div className="relative z-10 text-center max-w-3xl mx-auto px-4">
+        <div className="relative z-20 max-w-lg mx-auto w-full text-center">
           <motion.div
-            className="mb-8"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="relative w-48 h-48 mx-auto mb-8 rounded-full bg-gradient-to-br from-[#9FB2B3] to-[#9FB2B3]/80 p-3 shadow-2xl">
-              <img src="/logo.png?v=2" alt="CLUNY CAFE Logo" className="w-full h-full object-contain rounded-full bg-background" />
+            <div className="w-24 h-24 mx-auto mb-8 p-1 rounded-full border border-white/20 backdrop-blur-sm">
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-full bg-white/5" />
+            </div>
+
+            <h1 className="text-5xl md:text-6xl font-playfair mb-4 tracking-tight leading-tight">
+              CLUNY CAFE
+            </h1>
+            <p className="text-[#9FB2B3] text-lg md:text-xl mb-12 font-light tracking-wide">
+              حيث تبدأ حكايات القهوة الفاخرة
+            </p>
+
+            <div className="space-y-4">
+              <Button
+                onClick={() => setLocation("/menu")}
+                className="w-full h-14 bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white rounded-full text-xl font-medium shadow-2xl shadow-[#B58B5A]/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group"
+              >
+                استكشف القائمة
+                <ChevronLeft className="mr-2 w-6 h-6 transition-transform group-hover:-translate-x-1" />
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/auth")}
+                className="w-full h-14 border-white/20 bg-white/5 backdrop-blur-md text-white rounded-full text-lg hover:bg-white/10"
+              >
+                تسجيل الدخول
+              </Button>
             </div>
           </motion.div>
+        </div>
 
-          <motion.h1
-            className="text-6xl md:text-7xl font-playfair font-light text-foreground mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            CLUNY CAFE
-          </motion.h1>
+        {/* Scroll Indicator */}
+        <motion.div 
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20"
+        >
+          <div className="w-[1px] h-12 bg-gradient-to-b from-white/40 to-transparent" />
+        </motion.div>
+      </div>
 
-          <motion.p
-            className="text-2xl md:text-3xl text-muted mb-4 font-cairo font-light"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-          >
-            تجربة قهوة فاخرة وأصيلة
-          </motion.p>
-
-          <motion.p
-            className="text-lg text-muted/80 mb-12 font-cairo"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            استمتع بأفضل قهوة محضرة بعناية فائقة من أفضل أنواع الحبوب
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-          >
-            <Button
-              onClick={() => setLocation("/menu")}
-              size="lg"
-              className="bg-[#9FB2B3] hover:bg-[#9FB2B3]/90 text-[#B58B5A]-foreground px-12 py-6 rounded-lg text-lg font-semibold shadow-lg"
+      {/* Features Grid */}
+      <section className="py-24 px-6 relative z-10 bg-[#1a1410]">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+          {features.map((f, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.2 }}
+              viewport={{ once: true }}
+              className="text-center group"
             >
-              استكشف قائمتنا
-            </Button>
-          </motion.div>
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 transition-colors group-hover:border-[#B58B5A]/50 group-hover:bg-[#B58B5A]/5">
+                <f.icon className="w-8 h-8 text-[#B58B5A]" />
+              </div>
+              <h3 className="text-2xl mb-3 font-medium">{f.title}</h3>
+              <p className="text-white/60 leading-relaxed">
+                {f.desc}
+              </p>
+            </motion.div>
+          ))}
         </div>
       </section>
-      {/* Features Section */}
-      <section className="py-24 px-4 bg-card/40">
-        <div className="max-w-6xl mx-auto">
-          <motion.h2
-            className="text-5xl md:text-6xl font-playfair text-center text-foreground mb-20 font-light"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            لماذا تختار CLUNY؟
-          </motion.h2>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Coffee,
-                title: "قهوة احترافية",
-                description: "محضرة بعناية فائقة من أفضل أنواع حبوب القهوة المختارة",
-              },
-              {
-                icon: MapPin,
-                title: "فروع متعددة",
-                description: "اختر الفرع الأقرب إليك والاستمتع بنفس الجودة المميزة",
-              },
-              {
-                icon: Users,
-                title: "خدمة ممتازة",
-                description: "فريق محترف مكرس لإرضاء جميع عملائنا الكرام",
-              },
-            ].map((feature, i) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={i}
-                  className="p-8 rounded-lg bg-background border border-border hover:border-[#9FB2B3]/50 transition-all duration-300 hover-elevate"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <Icon className="w-12 h-12 mx-auto mb-4 text-accent" />
-                  <h3 className="text-xl font-playfair text-foreground mb-2 font-medium">{feature.title}</h3>
-                  <p className="text-muted-foreground font-cairo text-center">{feature.description}</p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      {/* About Section */}
-      <section className="py-24 px-4 bg-background">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.h2
-            className="text-5xl font-playfair text-foreground mb-8 font-light"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            القصة وراء CLUNY
-          </motion.h2>
-
-          <motion.p
-            className="text-lg text-muted-foreground font-cairo leading-relaxed mb-6"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            viewport={{ once: true }}
-          >
-            في CLUNY، نؤمن بأن القهوة الممتازة هي أكثر من مجرد مشروب.
-            إنها تجربة حسية تبدأ برائحة الحبوب الطازجة وتنتهي بذوق لا ينسى.
-          </motion.p>
-
-          <motion.p
-            className="text-lg text-muted-foreground font-cairo leading-relaxed"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            viewport={{ once: true }}
-          >
-            اختيارنا المتميز للحبوب العالية الجودة وفريقنا المتخصص في إعداد القهوة
-            يضمنان أن تحصل على أفضل كوب قهوة في كل مرة.
-          </motion.p>
-        </div>
-      </section>
-      {/* CTA Section */}
-      <section className="py-24 px-4 bg-gradient-to-r from-[#9FB2B3] to-[#9FB2B3]/90">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.h2
-            className="text-5xl font-playfair mb-6 text-[#B58B5A]-foreground font-light"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            جاهز لتجربة CLUNY؟
-          </motion.h2>
-
-          <motion.p
-            className="text-xl mb-10 text-[#B58B5A]-foreground/90 font-cairo"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            viewport={{ once: true }}
-          >
-            انضم إلينا واستمتع بأفضل تجربة قهوة في المدينة
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            viewport={{ once: true }}
-          >
-            <Button
-              onClick={() => setLocation("/menu")}
-              size="lg"
-              className="bg-background hover:bg-background/90 text-foreground px-12 py-6 rounded-lg text-lg font-semibold shadow-lg"
-            >
-              ابدأ الآن
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-      {/* Footer */}
-      <footer className="bg-foreground/5 py-12 px-4 border-t border-border">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">عن CLUNY</h4>
-              <p className="text-sm text-muted-foreground font-cairo">قهوة فاخرة وأصيلة بأفضل جودة</p>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">القائمة</h4>
-              <a href="/menu" className="text-sm text-muted-foreground hover:text-[#B58B5A] font-cairo">استكشف القائمة</a>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">الموقع</h4>
-              <p className="text-sm text-muted-foreground font-cairo">Olaya St, العام، Riyadh 12211</p>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-foreground mb-4 font-playfair">التواصل</h4>
-              <p className="text-sm text-muted-foreground font-cairo">cluny.cafe2026@gmail.com</p>
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-8 text-center text-muted-foreground">
-            <p className="font-cairo text-sm">© 2025 CLUNY CAFE. جميع الحقوق محفوظة.</p>
-          </div>
+      {/* Elegant Footer */}
+      <footer className="py-12 border-t border-white/5 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col items-center">
+          <img src={clunyLogo} alt="Logo" className="w-12 h-12 opacity-50 mb-6 grayscale" />
+          <p className="text-white/40 text-sm font-light">
+            © 2026 CLUNY CAFE. ALL RIGHTS RESERVED.
+          </p>
         </div>
       </footer>
     </div>
