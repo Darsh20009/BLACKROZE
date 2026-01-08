@@ -61,6 +61,21 @@ export default function EmployeeOrders() {
     },
   });
 
+  const updatePaymentMutation = useMutation({
+    mutationFn: async ({ id, paymentStatus }: { id: string; paymentStatus: string }) => {
+      const response = await fetch(`/api/orders/${id}/payment-status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentStatus }),
+      });
+      if (!response.ok) throw new Error("Failed to update payment status");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    },
+  });
+
   if (!employee) return null;
 
   const filteredOrders = orders.filter((order) => {
@@ -181,18 +196,28 @@ export default function EmployeeOrders() {
 
                     <div className="border-t border-border pt-3">
                       <div className="space-y-1">
-                        {order.items?.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span>{item.nameAr || item.coffeeItem?.nameAr || 'منتج'} x{item.quantity}</span>
-                            <span className="font-semibold">{item.totalPrice || (item.unitPrice * item.quantity)} ر.س</span>
-                          </div>
-                        ))}
+                        {order.items?.map((item: any, idx: number) => {
+                          const unitPrice = item.unitPrice || item.price || item.coffeeItem?.price || 0;
+                          const name = item.nameAr || item.coffeeItem?.nameAr || 'منتج';
+                          return (
+                            <div key={idx} className="flex justify-between text-sm">
+                              <span>{name} x{item.quantity}</span>
+                              <span className="font-semibold">{(item.totalPrice || (unitPrice * item.quantity)).toFixed(2)} ر.س</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
                     <div className="flex justify-between items-center pt-2 border-t border-border">
                       <div className="flex flex-col text-right" dir="rtl">
                         <span className="font-bold text-primary">الإجمالي: {order.totalAmount} ر.س</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={order.paymentStatus === 'paid' ? 'success' : 'outline'} className="text-[10px]">
+                            {order.paymentStatus === 'paid' ? 'تم الدفع' : 'لم يتم الدفع'}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">{order.paymentMethod === 'cash' ? 'نقدي' : 'شبكة/بطاقة'}</span>
+                        </div>
                         {order.customerInfo && (
                           <div className="mt-1 text-[10px] text-muted-foreground leading-tight">
                             <p>العميل: {order.customerInfo.customerName}</p>
@@ -200,7 +225,25 @@ export default function EmployeeOrders() {
                           </div>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 flex-wrap justify-end">
+                        {order.paymentStatus !== 'paid' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-8 text-[10px] border-green-600 text-green-600 hover-elevate"
+                            onClick={() => {
+                              if (order.paymentMethod === 'cash') {
+                                if (confirm('هل قام العميل بالدفع نقداً فعلاً؟')) {
+                                  updatePaymentMutation.mutate({ id: order._id || order.id, paymentStatus: 'paid' });
+                                }
+                              } else {
+                                updatePaymentMutation.mutate({ id: order._id || order.id, paymentStatus: 'paid' });
+                              }
+                            }}
+                          >
+                            تأكيد الدفع
+                          </Button>
+                        )}
                         {order.status === 'pending' && (
                           <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: order._id || order.id, status: 'in_progress' })}>
                             بدء التحضير

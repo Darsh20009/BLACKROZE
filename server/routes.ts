@@ -6094,7 +6094,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/orders/table/unassigned", async (req, res) => {
+  app.patch("/api/orders/:id/payment-status", requireAuth, async (req: AuthRequest, res) => {
+    const { id } = req.params;
+    const { paymentStatus } = req.body;
+    try {
+      const order = await OrderModel.findOneAndUpdate({ id }, { paymentStatus }, { new: true });
+      if (!order) return res.status(404).json({ message: "Order not found" });
+      res.json(serializeDoc(order));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update payment status" });
+    }
+  });
+
+  app.post("/api/orders/complete-all", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
       const { OrderModel } = await import("@shared/schema");
       const coffeeItems = await storage.getCoffeeItems();
