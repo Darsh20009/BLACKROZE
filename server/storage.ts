@@ -646,8 +646,8 @@ export class DBStorage implements IStorage {
   }
 
   async getDiscountCode(id: string): Promise<DiscountCode | undefined> {
-    const code = await DiscountCodeModel.findById(id);
-    return code || undefined;
+    const code = await DiscountCodeModel.findById(id).lean();
+    return code ? (code as any) : undefined;
   }
 
   async getCoffeeItems(): Promise<CoffeeItem[]> {
