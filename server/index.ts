@@ -200,8 +200,11 @@ app.get('/health', (_req, res) => {
 
 // Serve attached assets for both development and production
 app.use('/attached_assets', express.static(path.resolve(__dirname, '..', 'attached_assets'), {
-  setHeaders: (res) => {
-    res.set('Cache-Control', 'no-cache');
+  setHeaders: (res, filePath) => {
+    res.set('Cache-Control', 'public, max-age=3600');
+    // Ensure correct content type for images
+    if (filePath.endsWith('.png')) res.set('Content-Type', 'image/png');
+    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) res.set('Content-Type', 'image/jpeg');
   }
 }));
 
