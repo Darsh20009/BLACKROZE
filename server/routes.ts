@@ -6058,10 +6058,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { status, cancellationReason } = req.body;
       
-      const order = await storage.getOrder(id);
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
+      const order = await OrderModel.findById(id);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
 
       if (status === 'in_progress' || status === 'preparing' || status === 'completed') {
         const deductionResult = await deductInventoryForOrder(id, order.branchId || '', req.employee!.id);
@@ -6070,51 +6068,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const updatedOrder = await storage.updateOrderStatus(id, status, cancellationReason);
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        { $set: { status, cancellationReason } },
+        { new: true }
+      );
       
-      // Send email notification on status change
       if (updatedOrder) {
         const updateCustomerInfo = typeof updatedOrder.customerInfo === 'string' ? JSON.parse(updatedOrder.customerInfo) : updatedOrder.customerInfo;
         const customerEmail = updateCustomerInfo?.email;
-        const customerName = updateCustomerInfo?.name;
-
         if (customerEmail) {
-          // Use setImmediate to send email asynchronously
           setImmediate(async () => {
             try {
-              console.log(`📧 Triggering status change email for order ${updatedOrder.orderNumber} status: ${status} to ${customerEmail}`);
               const { sendOrderNotificationEmail } = await import("./mail-service");
-              const emailSent = await sendOrderNotificationEmail(
+              await sendOrderNotificationEmail(
                 customerEmail,
-                customerName || 'عميل CLUNY CAFE',
+                updateCustomerInfo?.name || 'عميل CLUNY CAFE',
                 updatedOrder.orderNumber,
                 status,
                 parseFloat(updatedOrder.totalAmount.toString()),
                 updatedOrder
               );
-              console.log(`📧 Status change email sent result for ${updatedOrder.orderNumber}: ${emailSent}`);
-            } catch (emailError) {
-              console.error("❌ Failed to send order status email:", emailError);
-            }
+            } catch (e) {}
           });
         }
       }
 
       res.json(serializeDoc(updatedOrder));
     } catch (error) {
-      res.status(500).json({ error: "Failed to update order status" });
+      res.status(500).json({ error: "فشل تحديث حالة الطلب" });
     }
   });
 
   app.patch("/api/orders/:id/payment-status", requireAuth, async (req: AuthRequest, res) => {
-    const { id } = req.params;
-    const { paymentStatus } = req.body;
     try {
-      const order = await OrderModel.findOneAndUpdate({ id }, { paymentStatus }, { new: true });
-      if (!order) return res.status(404).json({ message: "Order not found" });
-      res.json(serializeDoc(order));
+      const { id } = req.params;
+      const { paymentStatus, paymentDetails } = req.body;
+      
+      const updates: any = { paymentStatus };
+      if (paymentDetails) updates.paymentDetails = paymentDetails;
+
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        { $set: updates },
+        { new: true }
+      );
+
+      if (!updatedOrder) return res.status(404).json({ error: "الطلب غير موجود" });
+      res.json(serializeDoc(updatedOrder));
     } catch (error) {
-      res.status(500).json({ error: "Failed to update payment status" });
+      res.status(500).json({ error: "فشل تحديث حالة الدفع" });
     }
   });
 
