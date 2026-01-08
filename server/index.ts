@@ -61,7 +61,7 @@ connectDatabase();
 // Scheduled task: Clean up expired table reservations and send notifications
 let isMaintenanceRunning = false;
 setInterval(async () => {
-  if (isMaintenanceRunning || !isDbConnected || process.env.NODE_ENV !== 'production') return;
+  if (isMaintenanceRunning || !isDbConnected) return;
   
   isMaintenanceRunning = true;
   try {
@@ -150,6 +150,14 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 // Trust proxy - required for Render, Replit, and other reverse proxy services
 app.set('trust proxy', 1);
+
+// Configure allowed hosts for Replit
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  next();
+});
 
 // Disable X-Powered-By header for security
 app.disable('x-powered-by');
