@@ -2926,39 +2926,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedFreeItemsDiscount = freeItemsDiscount || "0.00";
 
       // If using qahwa-card payment method (free drinks), update loyalty card
-      if (paymentMethod === 'qahwa-card' && finalCustomerId && validatedUsedFreeDrinks > 0) {
+      if (paymentMethod === 'qahwa-card' && customerInfo?.phoneNumber && validatedUsedFreeDrinks > 0) {
         try {
-          // Get customer's loyalty card
-          const customer = await storage.getCustomer(finalCustomerId);
-          if (customer?.phone) {
-            const loyaltyCard = await storage.getLoyaltyCardByPhone(customer.phone);
-            if (loyaltyCard) {
-              // Check if customer has enough free drinks
-              const availableFreeDrinks = loyaltyCard.freeCupsEarned - loyaltyCard.freeCupsRedeemed;
-              if (availableFreeDrinks < validatedUsedFreeDrinks) {
-                return res.status(400).json({ 
-                  error: `ليس لديك مشروبات مجانية كافية. المتاح: ${availableFreeDrinks}` 
-                });
-              }
-
-              // Update freeCupsRedeemed
-              await storage.updateLoyaltyCard(loyaltyCard.id, {
-                freeCupsRedeemed: loyaltyCard.freeCupsRedeemed + validatedUsedFreeDrinks,
-                lastUsedAt: new Date()
-              });
-
-              // Create loyalty transaction
-              await storage.createLoyaltyTransaction({
-                cardId: loyaltyCard.id,
-                type: 'free_cup_redeemed',
-                pointsChange: 0,
-                discountAmount: validatedFreeItemsDiscount,
-                orderAmount: totalAmount,
-                description: `استخدام ${validatedUsedFreeDrinks} مشروب مجاني`,
+          // Get customer's loyalty card by phone
+          const loyaltyCard = await storage.getLoyaltyCardByPhone(customerInfo.phoneNumber);
+          if (loyaltyCard) {
+            // Check if customer has enough free drinks
+            const availableFreeDrinks = (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0);
+            if (availableFreeDrinks < validatedUsedFreeDrinks) {
+              return res.status(400).json({ 
+                error: `ليس لديك مشروبات مجانية كافية. المتاح: ${availableFreeDrinks}` 
               });
             }
+
+            // Update freeCupsRedeemed
+            await storage.updateLoyaltyCard(loyaltyCard.id, {
+              freeCupsRedeemed: (loyaltyCard.freeCupsRedeemed || 0) + validatedUsedFreeDrinks,
+              lastUsedAt: new Date()
+            });
+
+            // Create loyalty transaction
+            await storage.createLoyaltyTransaction({
+              cardId: loyaltyCard.id,
+              type: 'free_cup_redeemed',
+              pointsChange: 0,
+              discountAmount: validatedFreeItemsDiscount,
+              orderAmount: totalAmount,
+              description: `استخدام ${validatedUsedFreeDrinks} مشروب مجاني`,
+            });
           }
         } catch (error) {
+          console.error("Loyalty card update error:", error);
           return res.status(500).json({ error: "فشل في تحديث بطاقة الولاء" });
         }
       }

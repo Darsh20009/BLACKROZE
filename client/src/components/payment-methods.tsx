@@ -45,7 +45,7 @@ export default function PaymentMethods({
      if (!res.ok) return null;
      return res.json();
    },
-   enabled: !!activePhone && !foundCard,
+   enabled: !!activePhone,
    staleTime: 0,
    refetchOnWindowFocus: true,
    refetchInterval: 5000,
@@ -53,17 +53,17 @@ export default function PaymentMethods({
  
   // Update foundCard when auto-fetched card arrives
   useEffect(() => {
-    if (autoFetchedCard && !foundCard) {
+    if (autoFetchedCard) {
       setFoundCard(autoFetchedCard);
     }
-  }, [autoFetchedCard, foundCard]);
+  }, [autoFetchedCard]);
 
   // Auto-expand "use" mode if card is found and loyalty card method is selected
   useEffect(() => {
-    if (foundCard && (selectedMethod === 'qahwa-card' || selectedMethod === 'loyalty-card') && cardMode === null) {
+    if (foundCard && cardMode === null) {
       setCardMode('use');
     }
-  }, [foundCard, selectedMethod, cardMode]);
+  }, [foundCard, cardMode]);
 
  const getIcon = (iconName: string) => {
   switch (iconName) {
