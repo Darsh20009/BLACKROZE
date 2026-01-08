@@ -21,7 +21,6 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-
 // Track database connection status
 let isDbConnected = false;
 let isInitializing = false;
@@ -31,25 +30,12 @@ async function connectDatabase() {
   if (isInitializing) return;
   isInitializing = true;
   
-  if (!MONGODB_URI) {
-    console.error("❌ WARNING: MONGODB_URI environment variable is not set");
-    console.log("Database functionality will be unavailable");
-    isInitializing = false;
-    return;
-  }
-
   try {
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI!);
     isDbConnected = true;
     console.log("✅ MongoDB connected successfully");
-    
-    // Run seeds in background after connection
-    // Removed runSeeds call to prevent repeated re-initialization on Render
-    // const { runSeeds } = await import("./seed");
-    // await runSeeds();
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
-    // Don't exit - let the server continue running for health checks
   } finally {
     isInitializing = false;
   }
@@ -151,7 +137,7 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 // Trust proxy - required for Render, Replit, and other reverse proxy services
 app.set('trust proxy', 1);
 
-// Configure allowed hosts for Replit
+// Configure allowed hosts for Replit and Render
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
@@ -165,7 +151,7 @@ app.disable('x-powered-by');
 // Session configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === "production" ? (() => { throw new Error("SESSION_SECRET must be set in production"); })() : "dev-secret"),
+    secret: process.env.SESSION_SECRET || "dev-secret",
     resave: false,
     saveUninitialized: false, 
     name: 'cluny.sid', // custom cookie name
