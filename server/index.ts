@@ -185,7 +185,6 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint for Render and other hosting services
-// This must respond quickly without waiting for database
 app.get('/healthz', (_req, res) => {
   res.status(200).send('OK');
 });
@@ -196,6 +195,17 @@ app.get('/health', (_req, res) => {
     timestamp: new Date().toISOString(),
     database: isDbConnected ? 'connected' : 'connecting'
   });
+});
+
+// IMPORTANT: Ensure /api, /attached_assets, and health routes are handled BEFORE SPA routing
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api') || 
+      req.path.startsWith('/attached_assets') || 
+      req.path === '/healthz' || 
+      req.path === '/health') {
+    return next();
+  }
+  next();
 });
 
 // Serve attached assets for both development and production

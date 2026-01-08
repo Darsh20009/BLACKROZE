@@ -222,7 +222,8 @@ function getOrderStatusMessage(status: string, orderNumber: string): string {
   return statusMessages[status] || `تم تحديث حالة طلبك رقم ${orderNumber} إلى: ${status}`;
 }
 
-// Maileroo Email Configuration
+// Maileroo Email Configuration - DISABLED IN FAVOR OF TURBOSMTP
+/*
 const mailerooApiKey = process.env.MAILEROO_API_KEY;
 const mailerooUser = process.env.MAILEROO_USER || 'info@qahwakup.com';
 const transporter = mailerooApiKey ? nodemailer.createTransport({
@@ -238,6 +239,10 @@ const transporter = mailerooApiKey ? nodemailer.createTransport({
 if (!transporter) {
   console.warn("⚠️ MAILEROO_API_KEY not set - Email functionality will be disabled");
 }
+*/
+
+// Set transporter to null to satisfy the rest of the code that might reference it
+const transporter = null;
 
 // Generate Tax Invoice HTML
 function generateInvoiceHTML(invoiceNumber: string, data: any): string {
@@ -323,24 +328,19 @@ function generateInvoiceHTML(invoiceNumber: string, data: any): string {
 
 // Send invoice via email
 async function sendInvoiceEmail(to: string, invoiceNumber: string, invoiceData: any): Promise<boolean> {
-  if (!transporter) {
-    return false;
-  }
-  
   try {
-    const htmlContent = generateInvoiceHTML(invoiceNumber, invoiceData);
-    
-    
-    const result = await transporter.sendMail({
-      from: mailerooUser,
-      to: to,
-      subject: `فاتورة ضريبية - CLUNY CAFE - الرقم: ${invoiceNumber}`,
-      html: htmlContent,
-      replyTo: 'support@qahwakup.com'
-    });
-    
-    return true;
+    const { sendOrderNotificationEmail } = await import("./mail-service");
+    // Reuse the existing robust mail service instead of Maileroo
+    return await sendOrderNotificationEmail(
+      to,
+      invoiceData.customerName || "عميل",
+      invoiceNumber,
+      "completed",
+      invoiceData.totalAmount || 0,
+      invoiceData
+    );
   } catch (error) {
+    console.error("❌ Failed to send invoice email:", error);
     return false;
   }
 }
