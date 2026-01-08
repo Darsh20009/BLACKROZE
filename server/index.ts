@@ -61,7 +61,7 @@ connectDatabase();
 // Scheduled task: Clean up expired table reservations and send notifications
 let isMaintenanceRunning = false;
 setInterval(async () => {
-  if (isMaintenanceRunning || !isDbConnected) return;
+  if (isMaintenanceRunning || !isDbConnected || process.env.NODE_ENV !== 'production') return;
   
   isMaintenanceRunning = true;
   try {
