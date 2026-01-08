@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { Coffee, BellRing, RefreshCw, ArrowRight, Search, Filter } from "lucide-react";
+import { Coffee, BellRing, RefreshCw, ArrowRight, Search, Filter, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function EmployeeOrders() {
   const [, setLocation] = useLocation();
@@ -16,6 +17,12 @@ export default function EmployeeOrders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+
+  // Cash payment dialog state
+  const [showCashDialog, setShowCashDialog] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState<any>(null);
+  const [receivedAmount, setReceivedAmount] = useState<string>("");
+  const [changeAmount, setChangeAmount] = useState<number>(0);
 
   useEffect(() => {
     const stored = localStorage.getItem("currentEmployee");
@@ -28,7 +35,7 @@ export default function EmployeeOrders() {
 
   const { data: orders = [], refetch } = useQuery<any[]>({
     queryKey: ["/api/orders"],
-    refetchInterval: 5000, // Real-time auto-refresh every 5 seconds
+    refetchInterval: 3000, // Faster real-time refresh
   });
 
   const { data: branches = [] } = useQuery<any[]>({
@@ -62,19 +69,53 @@ export default function EmployeeOrders() {
   });
 
   const updatePaymentMutation = useMutation({
-    mutationFn: async ({ id, paymentStatus }: { id: string; paymentStatus: string }) => {
+    mutationFn: async ({ id, paymentStatus, paymentDetails }: { id: string; paymentStatus: string; paymentDetails?: string }) => {
       const response = await fetch(`/api/orders/${id}/payment-status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentStatus }),
+        body: JSON.stringify({ paymentStatus, paymentDetails }),
       });
       if (!response.ok) throw new Error("Failed to update payment status");
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      setShowCashDialog(false);
+      setReceivedAmount("");
+      setCurrentOrder(null);
     },
   });
+
+  useEffect(() => {
+    if (currentOrder && receivedAmount) {
+      const received = parseFloat(receivedAmount);
+      const total = parseFloat(currentOrder.totalAmount);
+      if (!isNaN(received)) {
+        setChangeAmount(Math.max(0, received - total));
+      }
+    } else {
+      setChangeAmount(0);
+    }
+  }, [receivedAmount, currentOrder]);
+
+  const handleCashPayment = (order: any) => {
+    setCurrentOrder(order);
+    setShowCashDialog(true);
+  };
+
+  const confirmCashPayment = () => {
+    if (!currentOrder) return;
+    const received = parseFloat(receivedAmount);
+    if (isNaN(received) || received < parseFloat(currentOrder.totalAmount)) {
+      alert("المبلغ المدفوع أقل من إجمالي الطلب");
+      return;
+    }
+    updatePaymentMutation.mutate({ 
+      id: currentOrder._id || currentOrder.id, 
+      paymentStatus: 'paid',
+      paymentDetails: `نقدي - المستلم: ${received} ر.س - المرتجع: ${changeAmount.toFixed(2)} ر.س`
+    });
+  };
 
   if (!employee) return null;
 
@@ -233,9 +274,7 @@ export default function EmployeeOrders() {
                             className="h-8 text-[10px] border-green-600 text-green-600 hover-elevate"
                             onClick={() => {
                               if (order.paymentMethod === 'cash') {
-                                if (confirm('هل قام العميل بالدفع نقداً فعلاً؟')) {
-                                  updatePaymentMutation.mutate({ id: order._id || order.id, paymentStatus: 'paid' });
-                                }
+                                handleCashPayment(order);
                               } else {
                                 updatePaymentMutation.mutate({ id: order._id || order.id, paymentStatus: 'paid' });
                               }
@@ -268,6 +307,66 @@ export default function EmployeeOrders() {
           </div>
         </div>
       </div>
+
+      <Dialog open={showCashDialog} onOpenChange={setShowCashDialog}>
+        <DialogContent className="max-w-md bg-white border-2 border-primary/20 shadow-2xl" dir="rtl">
+          <DialogHeader className="space-y-3 pb-4 border-b">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+              <DollarSign className="w-6 h-6 text-primary" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-center text-primary">تحصيل مبلغ نقدي</DialogTitle>
+            <p className="text-center text-muted-foreground">طلب رقم #{currentOrder?.orderNumber}</p>
+          </DialogHeader>
+          
+          <div className="py-6 space-y-6">
+            <div className="flex justify-between items-center p-4 bg-primary/5 rounded-xl border border-primary/10">
+              <span className="text-lg font-semibold text-primary">المبلغ المطلوب:</span>
+              <span className="text-2xl font-black text-primary">{currentOrder?.totalAmount} ر.س</span>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-lg font-bold text-primary">المبلغ المستلم من العميل:</Label>
+              <div className="relative">
+                <Input 
+                  type="number"
+                  placeholder="0.00"
+                  value={receivedAmount}
+                  onChange={(e) => setReceivedAmount(e.target.value)}
+                  className="text-2xl h-14 text-center font-bold border-2 border-primary/30 focus:border-primary transition-all rounded-xl"
+                  autoFocus
+                />
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 font-bold">ر.س</span>
+              </div>
+            </div>
+
+            {changeAmount > 0 && (
+              <div className="p-4 bg-green-50 rounded-xl border-2 border-green-200 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-green-800">المبلغ المتبقي للعميل:</span>
+                  <span className="text-2xl font-black text-green-700">{changeAmount.toFixed(2)} ر.س</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-3 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCashDialog(false)} 
+              className="flex-1 h-12 text-lg border-2"
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={confirmCashPayment} 
+              disabled={updatePaymentMutation.isPending || !receivedAmount || parseFloat(receivedAmount) < (currentOrder?.totalAmount || 0)}
+              className="flex-1 h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-lg"
+            >
+              {updatePaymentMutation.isPending ? "جاري الحفظ..." : "تأكيد واستلام"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

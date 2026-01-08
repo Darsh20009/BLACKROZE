@@ -305,320 +305,324 @@ export default function CheckoutPage() {
  }
  };
 
- const handleProceedPayment = async () => {
- if (!selectedPaymentMethod) {
- toast({
- variant: "destructive",
- title: "يرجى اختيار طريقة الدفع",
- });
- return;
- }
+  const handleProceedPayment = async () => {
+    if (!selectedPaymentMethod) {
+      toast({
+        variant: "destructive",
+        title: "يرجى اختيار طريقة الدفع",
+      });
+      return;
+    }
 
- if (!customerName.trim()) {
- toast({
- variant: "destructive",
- title: "يرجى إدخال اسم العميل",
- });
- return;
- }
+    if (!customerName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "يرجى إدخال اسم العميل",
+      });
+      return;
+    }
 
- // For non-registered customers, phone and email are mandatory
- if (!isRegisteredCustomer) {
- if (!customerPhone.trim()) {
- toast({
- variant: "destructive",
- title: "رقم الجوال مطلوب",
- description: "الرجاء إدخال رقم جوالك (9 أرقام تبدأ بـ 5)",
- });
- return;
- }
+    setShowConfirmation(true);
+  };
 
- // Validate phone format
- if (!/^5\d{8}$/.test(customerPhone.trim())) {
- toast({
- variant: "destructive",
- title: "رقم جوال غير صحيح",
- description: "الرجاء إدخال 9 أرقام تبدأ بـ 5",
- });
- return;
- }
+  const confirmAndCreateOrder = async () => {
+    // For non-registered customers, phone and email are mandatory
+    if (!isRegisteredCustomer) {
+      if (!customerPhone.trim()) {
+        toast({
+          variant: "destructive",
+          title: "رقم الجوال مطلوب",
+          description: "الرجاء إدخال رقم جوالك (9 أرقام تبدأ بـ 5)",
+        });
+        return;
+      }
 
- if (!customerEmail.trim()) {
- toast({
- variant: "destructive",
- title: "البريد الإلكتروني مطلوب",
- description: "الرجاء إدخال بريدك الإلكتروني",
- });
- return;
- }
+      // Validate phone format
+      if (!/^5\d{8}$/.test(customerPhone.trim())) {
+        toast({
+          variant: "destructive",
+          title: "رقم جوال غير صحيح",
+          description: "الرجاء إدخال 9 أرقام تبدأ بـ 5",
+        });
+        return;
+      }
 
- // Validate email format
- const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
- if (!emailRegex.test(customerEmail.trim())) {
- toast({
- variant: "destructive",
- title: "البريد الإلكتروني غير صحيح",
- description: "الرجاء إدخال بريد إلكتروني صحيح",
- });
- return;
- }
+      if (!customerEmail.trim()) {
+        toast({
+          variant: "destructive",
+          title: "البريد الإلكتروني مطلوب",
+          description: "الرجاء إدخال بريدك الإلكتروني",
+        });
+        return;
+      }
 
- // If customer wants to register, validate password
- if (wantToRegister) {
- if (!customerPassword.trim()) {
- toast({
- variant: "destructive",
- title: "كلمة السر مطلوبة",
- description: "الرجاء إدخال كلمة سر قوية",
- });
- return;
- }
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerEmail.trim())) {
+        toast({
+          variant: "destructive",
+          title: "البريد الإلكتروني غير صحيح",
+          description: "الرجاء إدخال بريد إلكتروني صحيح",
+        });
+        return;
+      }
 
- if (customerPassword.length < 6) {
- toast({
- variant: "destructive",
- title: "كلمة السر ضعيفة",
- description: "كلمة السر يجب أن تكون 6 أحرف على الأقل",
- });
- return;
- }
- }
- }
+      // If customer wants to register, validate password
+      if (wantToRegister) {
+        if (!customerPassword.trim()) {
+          toast({
+            variant: "destructive",
+            title: "كلمة السر مطلوبة",
+            description: "الرجاء إدخال كلمة سر قوية",
+          });
+          return;
+        }
 
- // Validate transfer owner name for non-cash payments
- if (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer && !transferOwnerName.trim()) {
- toast({
- variant: "destructive",
- title: "يرجى إدخال اسم صاحب التحويل",
- });
- return;
- }
+        if (customerPassword.length < 6) {
+          toast({
+            variant: "destructive",
+            title: "كلمة السر ضعيفة",
+            description: "كلمة السر يجب أن تكون 6 أحرف على الأقل",
+          });
+          return;
+        }
+      }
+    }
 
- // Validate payment receipt for electronic payments
- const electronicPayments = ['alinma', 'ur', 'barq', 'rajhi'];
- if (electronicPayments.includes(selectedPaymentMethod) && !paymentReceiptUrl) {
- toast({
- variant: "destructive",
- title: "إيصال الدفع مطلوب",
- description: "يرجى رفع صورة إيصال الدفع",
- });
- return;
- }
+    // Validate transfer owner name for non-cash payments
+    if (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer && !transferOwnerName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "يرجى إدخال اسم صاحب التحويل",
+      });
+      return;
+    }
 
- // Check if using qahwa-card payment method (free drink)
- const isQahwaCardPayment = selectedPaymentMethod === 'qahwa-card';
+    // Validate payment receipt for electronic payments
+    const electronicPayments = ['alinma', 'ur', 'barq', 'rajhi'];
+    if (electronicPayments.includes(selectedPaymentMethod!) && !paymentReceiptUrl) {
+      toast({
+        variant: "destructive",
+        title: "إيصال الدفع مطلوب",
+        description: "يرجى رفع صورة إيصال الدفع",
+      });
+      return;
+    }
 
- // Validate qahwa-card usage
- if (isQahwaCardPayment && availableFreeDrinks <= 0) {
- toast({
- variant: "destructive",
- title: "ليس لديك مشروبات مجانية ",
- description: "اطلب المزيد للحصول على مشروب مجاني!"
- });
- return;
- }
+    // Check if using qahwa-card payment method (free drink)
+    const isQahwaCardPayment = selectedPaymentMethod === 'qahwa-card';
 
- // For qahwa-card payment, validate secondary payment for remaining drinks
- if (isQahwaCardPayment && availableFreeDrinks > 0) {
- const totalSelectedFreeItems = Object.values(selectedFreeItems).reduce((sum, val) => sum + val, 0);
- const totalDrinks = cartItems.reduce((sum, item) => sum + item.quantity, 0);
- const remainingDrinks = totalDrinks - totalSelectedFreeItems;
- 
- // If there are remaining drinks, require secondary payment method
- if (remainingDrinks > 0) {
- if (!secondaryPaymentMethod) {
- toast({
- variant: "destructive",
- title: "اختر طريقة دفع للمشروبات المتبقية",
- description: `يتبقى ${remainingDrinks} مشروب يحتاج طريقة دفع إضافية`
- });
- return;
- }
- 
- // Validate secondary payment receipt if needed
- const secondaryElectronicPayments = ['alinma', 'ur', 'barq', 'rajhi'];
- if (secondaryElectronicPayments.includes(secondaryPaymentMethod) && !secondaryPaymentReceiptUrl) {
- toast({
- variant: "destructive",
- title: "إيصال الدفع مطلوب للطريقة الثانية",
- description: "يرجى رفع صورة إيصال الدفع"
- });
- return;
- }
- }
- }
+    // Validate qahwa-card usage
+    if (isQahwaCardPayment && availableFreeDrinks <= 0) {
+      toast({
+        variant: "destructive",
+        title: "ليس لديك مشروبات مجانية ",
+        description: "اطلب المزيد للحصول على مشروب مجاني!"
+      });
+      return;
+    }
 
- // Check if using free drink checkbox (for local storage users)
- const profile = customerStorage.getProfile();
- const hasFreeDrinks = customer?.id ? false : (profile && profile.freeDrinks > 0);
+    // For qahwa-card payment, validate secondary payment for remaining drinks
+    if (isQahwaCardPayment && availableFreeDrinks > 0) {
+      const totalSelectedFreeItems = Object.values(selectedFreeItems).reduce((sum, val) => sum + val, 0);
+      const totalDrinks = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      const remainingDrinks = totalDrinks - totalSelectedFreeItems;
+      
+      // If there are remaining drinks, require secondary payment method
+      if (remainingDrinks > 0) {
+        if (!secondaryPaymentMethod) {
+          toast({
+            variant: "destructive",
+            title: "اختر طريقة دفع للمشروبات المتبقية",
+            description: `يتبقى ${remainingDrinks} مشروب يحتاج طريقة دفع إضافية`
+          });
+          return;
+        }
+        
+        // Validate secondary payment receipt if needed
+        const secondaryElectronicPayments = ['alinma', 'ur', 'barq', 'rajhi'];
+        if (secondaryElectronicPayments.includes(secondaryPaymentMethod) && !secondaryPaymentReceiptUrl) {
+          toast({
+            variant: "destructive",
+            title: "إيصال الدفع مطلوب للطريقة الثانية",
+            description: "يرجى رفع صورة إيصال الدفع"
+          });
+          return;
+        }
+      }
+    }
 
- if (useFreeDrink && !hasFreeDrinks) {
- toast({
- variant: "destructive",
- title: "ليس لديك مشروبات مجانية ",
- description: "يرجى إلغاء تفعيل استخدام بطاقةتي"
- });
- return;
- }
+    // Check if using free drink checkbox (for local storage users)
+    const profile = customerStorage.getProfile();
+    const hasFreeDrinks = customer?.id ? false : (profile && profile.freeDrinks > 0);
 
- // Calculate total amount considering free drinks and discount codes
- let totalAmount = getTotalPrice();
- let freeItemsDiscount = 0; // Initialize freeItemsDiscount
- 
- // If using qahwa-card, calculate based on selected free items (no discount code applies)
- if (isQahwaCardPayment) {
- // Calculate total discount from selected free items
- Object.entries(selectedFreeItems).forEach(([itemId, quantity]) => {
- const item = cartItems.find(ci => ci.coffeeItemId === itemId);
- if (item && quantity > 0) {
- const itemPrice = typeof item.coffeeItem?.price === 'number'
- ? item.coffeeItem.price
- : parseFloat(String(item.coffeeItem?.price || 0));
- freeItemsDiscount += itemPrice * quantity;
- }
- });
- totalAmount = Math.max(0, totalAmount - freeItemsDiscount);
- } else if (useFreeDrink && hasFreeDrinks) {
- totalAmount = 0; // Local storage free drink = full order free
- } else if (appliedDiscount && !useFreeDrink) {
- // Apply discount code if available (and not using other discount methods)
- const discountAmount = totalAmount * (appliedDiscount.percentage / 100);
- totalAmount = Math.max(0, totalAmount - discountAmount);
- }
+    if (useFreeDrink && !hasFreeDrinks) {
+      toast({
+        variant: "destructive",
+        title: "ليس لديك مشروبات مجانية ",
+        description: "يرجى إلغاء تفعيل استخدام بطاقةتي"
+      });
+      return;
+    }
 
- // Final validation - ensure total amount is a valid number
- if (isNaN(totalAmount) || totalAmount === null || totalAmount === undefined) {
- toast({
- variant: "destructive",
- title: "خطأ في حساب المبلغ",
- description: "حدث خطأ في حساب إجمالي الطلب، يرجى المحاولة مرة أخرى"
- });
- return;
- }
+    // Calculate total amount considering free drinks and discount codes
+    let totalAmount = getTotalPrice();
+    let freeItemsDiscount = 0; // Initialize freeItemsDiscount
+    
+    // If using qahwa-card, calculate based on selected free items (no discount code applies)
+    if (isQahwaCardPayment) {
+      // Calculate total discount from selected free items
+      Object.entries(selectedFreeItems).forEach(([itemId, quantity]) => {
+        const item = cartItems.find(ci => ci.coffeeItemId === itemId);
+        if (item && quantity > 0) {
+          const itemPrice = typeof item.coffeeItem?.price === 'number'
+            ? item.coffeeItem.price
+            : parseFloat(String(item.coffeeItem?.price || 0));
+          freeItemsDiscount += itemPrice * quantity;
+        }
+      });
+      totalAmount = Math.max(0, totalAmount - freeItemsDiscount);
+    } else if (useFreeDrink && hasFreeDrinks) {
+      totalAmount = 0; // Local storage free drink = full order free
+    } else if (appliedDiscount && !useFreeDrink) {
+      // Apply discount code if available (and not using other discount methods)
+      const discountAmount = totalAmount * (appliedDiscount.percentage / 100);
+      totalAmount = Math.max(0, totalAmount - discountAmount);
+    }
 
- // Prepare order items
- const orderItems = cartItems.map(item => ({
- coffeeItemId: item.coffeeItemId,
- quantity: item.quantity,
- price: typeof item.coffeeItem?.price === 'number' 
- ? item.coffeeItem.price 
- : parseFloat(String(item.coffeeItem?.price || "0")),
- name: item.coffeeItem?.nameAr || "",
- }));
+    // Final validation - ensure total amount is a valid number
+    if (isNaN(totalAmount) || totalAmount === null || totalAmount === undefined) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في حساب المبلغ",
+        description: "حدث خطأ في حساب إجمالي الطلب، يرجى المحاولة مرة أخرى"
+      });
+      return;
+    }
 
- // Get or create customer ID
- let activeCustomerId = customer?.id;
+    // Prepare order items
+    const orderItems = cartItems.map(item => ({
+      coffeeItemId: item.coffeeItemId,
+      quantity: item.quantity,
+      price: typeof item.coffeeItem?.price === 'number' 
+        ? item.coffeeItem.price 
+        : parseFloat(String(item.coffeeItem?.price || "0")),
+      name: item.coffeeItem?.nameAr || "",
+    }));
 
- // If customer wants to register, register first
- if (!activeCustomerId && wantToRegister && customerPhone && customerEmail && customerPassword) {
- try {
- setIsRegistering(true);
- const registerResponse = await fetch("/api/customers/register", {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({
- name: customerName.trim(),
- phone: customerPhone.trim(),
- email: customerEmail.trim(),
- password: customerPassword
- })
- });
+    // Get or create customer ID
+    let activeCustomerId = customer?.id;
 
- if (registerResponse.ok) {
- const newCustomer = await registerResponse.json();
- activeCustomerId = newCustomer.id;
- 
- // تسجيل الدخول التلقائي بحفظ بيانات المستخدم في CustomerContext
- setCustomer({
- id: newCustomer.id,
- name: newCustomer.name,
- phone: newCustomer.phone,
- email: newCustomer.email
- } as any);
- 
- toast({
- title: "تم التسجيل بنجاح!",
- description: "أهلاً وسهلاً بك في CLUNY CAFE!",
- });
- } else {
- const errorData = await registerResponse.json();
- toast({
- variant: "destructive",
- title: "خطأ في التسجيل",
- description: errorData.error || "حدث خطأ أثناء التسجيل",
- });
- setIsRegistering(false);
- return;
- }
- } catch (error) {
- console.error("Registration error:", error);
- toast({
- variant: "destructive",
- title: "خطأ في التسجيل",
- description: "حدث خطأ أثناء التسجيل",
- });
- setIsRegistering(false);
- return;
- }
- }
+    // If customer wants to register, register first
+    if (!activeCustomerId && wantToRegister && customerPhone && customerEmail && customerPassword) {
+      try {
+        setIsRegistering(true);
+        const registerResponse = await fetch("/api/customers/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: customerName.trim(),
+            phone: customerPhone.trim(),
+            email: customerEmail.trim(),
+            password: customerPassword
+          })
+        });
 
- // If user is authenticated but we need to ensure customer exists in backend
- if (customerPhone && !activeCustomerId && !wantToRegister) {
- try {
- const authResponse = await fetch("/api/customers/auth", {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({
- phone: customerPhone,
- name: customerName.trim()
- })
- });
+        if (registerResponse.ok) {
+          const newCustomer = await registerResponse.json();
+          activeCustomerId = newCustomer.id;
+          
+          // تسجيل الدخول التلقائي بحفظ بيانات المستخدم في CustomerContext
+          setCustomer({
+            id: newCustomer.id,
+            name: newCustomer.name,
+            phone: newCustomer.phone,
+            email: newCustomer.email
+          } as any);
+          
+          toast({
+            title: "تم التسجيل بنجاح!",
+            description: "أهلاً وسهلاً بك في CLUNY CAFE!",
+          });
+        } else {
+          const errorData = await registerResponse.json();
+          toast({
+            variant: "destructive",
+            title: "خطأ في التسجيل",
+            description: errorData.error || "حدث خطأ أثناء التسجيل",
+          });
+          setIsRegistering(false);
+          return;
+        }
+      } catch (error) {
+        console.error("Registration error:", error);
+        toast({
+          variant: "destructive",
+          title: "خطأ في التسجيل",
+          description: "حدث خطأ أثناء التسجيل",
+        });
+        setIsRegistering(false);
+        return;
+      }
+    }
 
- if (authResponse.ok) {
- const customerData = await authResponse.json();
- activeCustomerId = customerData.id;
- }
- } catch (error) {
- console.error("Authentication error:", error);
- }
- }
- setIsRegistering(false);
+    // If user is authenticated but we need to ensure customer exists in backend
+    if (customerPhone && !activeCustomerId && !wantToRegister) {
+      try {
+        const authResponse = await fetch("/api/customers/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: customerPhone,
+            name: customerName.trim()
+          })
+        });
 
- // Calculate number of free drinks used
- const usedFreeDrinks = isQahwaCardPayment ? Object.values(selectedFreeItems).reduce((sum, val) => sum + val, 0) : 0;
-  // Determine the correct order type based on delivery info
-  const isDineIn = deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn;
-  const finalOrderType = isDineIn ? 'dine-in' : 'regular';
+        if (authResponse.ok) {
+          const customerData = await authResponse.json();
+          activeCustomerId = customerData.id;
+        }
+      } catch (error) {
+        console.error("Authentication error:", error);
+      }
+    }
+    setIsRegistering(false);
+
+    // Calculate number of free drinks used
+    const usedFreeDrinks = isQahwaCardPayment ? Object.values(selectedFreeItems).reduce((sum, val) => sum + val, 0) : 0;
+    // Determine the correct order type based on delivery info
+    const isDineIn = deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn;
+    const finalOrderType = isDineIn ? 'dine-in' : 'regular';
 
 
- const orderData = {
- items: orderItems,
- totalAmount: Number(totalAmount.toFixed(2)),
- paymentMethod: selectedPaymentMethod,
- secondaryPaymentMethod: secondaryPaymentMethod || undefined,
- paymentDetails: isSameAsCustomer ? customerName.trim() : transferOwnerName.trim(),
- paymentReceiptUrl: paymentReceiptUrl || undefined,
- secondaryPaymentReceiptUrl: secondaryPaymentReceiptUrl || undefined,
- discountCode: appliedDiscount?.code || null,
- discountPercentage: appliedDiscount?.percentage || null,
- orderType: finalOrderType,
- deliveryType: deliveryInfo?.type || null,
- deliveryAddress: deliveryInfo?.type === 'delivery' ? deliveryInfo.address : null,
- deliveryFee: Number(deliveryInfo?.deliveryFee || 0),
- branchId: deliveryInfo?.branchId || null,
- customerInfo: {
- customerName: customerName.trim(),
- transferOwnerName: isSameAsCustomer ? customerName.trim() : transferOwnerName.trim(),
- phoneNumber: customerPhone.trim() || null,
- },
- customerId: activeCustomerId || null,
- customerNotes: customerNotes.trim() || null,
- freeItemsDiscount: isQahwaCardPayment ? Number(freeItemsDiscount.toFixed(2)) : 0,
- usedFreeDrinks: usedFreeDrinks
- };
+    const orderData = {
+      items: orderItems,
+      totalAmount: Number(totalAmount.toFixed(2)),
+      paymentMethod: selectedPaymentMethod,
+      secondaryPaymentMethod: secondaryPaymentMethod || undefined,
+      paymentDetails: isSameAsCustomer ? customerName.trim() : transferOwnerName.trim(),
+      paymentReceiptUrl: paymentReceiptUrl || undefined,
+      secondaryPaymentReceiptUrl: secondaryPaymentReceiptUrl || undefined,
+      discountCode: appliedDiscount?.code || null,
+      discountPercentage: appliedDiscount?.percentage || null,
+      orderType: finalOrderType,
+      deliveryType: deliveryInfo?.type || null,
+      deliveryAddress: deliveryInfo?.type === 'delivery' ? deliveryInfo.address : null,
+      deliveryFee: Number(deliveryInfo?.deliveryFee || 0),
+      branchId: deliveryInfo?.branchId || null,
+      customerInfo: {
+        customerName: customerName.trim(),
+        transferOwnerName: isSameAsCustomer ? customerName.trim() : transferOwnerName.trim(),
+        phoneNumber: customerPhone.trim() || null,
+      },
+      customerId: activeCustomerId || null,
+      customerNotes: customerNotes.trim() || null,
+      freeItemsDiscount: isQahwaCardPayment ? Number(freeItemsDiscount.toFixed(2)) : 0,
+      usedFreeDrinks: usedFreeDrinks
+    };
 
- createOrderMutation.mutate(orderData);
- };
+    createOrderMutation.mutate(orderData);
+  };
 
  const handlePaymentConfirmed = async (order: any) => {
  try {
