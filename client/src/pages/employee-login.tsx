@@ -28,19 +28,7 @@ export default function EmployeeLogin() {
       try {
         const parsed = JSON.parse(stored);
         if (parsed && (parsed.id || parsed._id)) {
-           // Direct check if session is still valid on server
-           fetch("/api/employees/me", { credentials: 'include' })
-             .then(res => {
-               if (res.ok) {
-                 window.location.href = "/employee/dashboard";
-               } else {
-                 // Session expired on server, clear local storage
-                 localStorage.removeItem("currentEmployee");
-               }
-             })
-             .catch(() => {
-               // Network error or server down, stick with local for now but don't redirect to be safe
-             });
+           window.location.href = "/employee/dashboard";
            return;
         }
       } catch (e) {}

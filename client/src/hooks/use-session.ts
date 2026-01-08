@@ -27,27 +27,13 @@ export function useSession() {
         // Check for employee session
         const employeeData = localStorage.getItem("currentEmployee");
         if (employeeData) {
-          try {
-            const employee = JSON.parse(employeeData);
-            // Verify session with server if possible, but don't block
-            fetch("/api/employees/me", { credentials: 'include' })
-              .then(res => {
-                if (!res.ok) {
-                  localStorage.removeItem("currentEmployee");
-                  setState(prev => ({ ...prev, user: null, isAuthenticated: false, isLoading: false }));
-                }
-              })
-              .catch(() => {});
-
-            setState({
-              user: { ...employee, type: "employee" } as SessionUser,
-              isLoading: false,
-              isAuthenticated: true,
-            });
-            return;
-          } catch (e) {
-            localStorage.removeItem("currentEmployee");
-          }
+          const employee = JSON.parse(employeeData) as Employee;
+          setState({
+            user: { ...employee, type: "employee" } as SessionUser,
+            isLoading: false,
+            isAuthenticated: true,
+          });
+          return;
         }
 
         // Check for customer session

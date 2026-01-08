@@ -41,18 +41,9 @@ export function AuthGuard({
             const employee = localStorage.getItem("currentEmployee");
             if (employee) {
               const parsed = JSON.parse(employee);
-              // Verify server session even if local storage exists
-              const verifyRes = await fetch("/api/employees/me", { credentials: 'include' });
-              if (verifyRes.ok) {
-                const serverUser = await verifyRes.json();
-                localStorage.setItem("currentEmployee", JSON.stringify(serverUser));
-                isAuthenticated = true;
-                userRole = serverUser.role || "";
-                allowedPages = serverUser.allowedPages || [];
-              } else {
-                localStorage.removeItem("currentEmployee");
-                isAuthenticated = false;
-              }
+              isAuthenticated = true;
+              userRole = parsed.role || "";
+              allowedPages = parsed.allowedPages || [];
             } else {
               // Final fallback check session
               const response = await fetch("/api/user", { credentials: 'include' });

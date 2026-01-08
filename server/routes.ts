@@ -844,6 +844,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee profile endpoint (must use this instead of /api/employees/:id for self)
+  app.get("/api/employees/me", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const employee = await storage.getEmployee(req.employee!.id);
+      if (!employee) return res.status(404).json({ error: "Employee not found" });
+      const { password: _, ...employeeData } = employee as any;
+      res.json(employeeData);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employee" });
+    }
+  });
+
   // Get employee by ID (branch-restricted for managers)
   app.get("/api/employees/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
