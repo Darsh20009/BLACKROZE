@@ -3149,7 +3149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update table occupancy if this is a table order
       if (tableId) {
         try {
-          await storage.updateTableOccupancy(tableId, 1, order.id);
+          await storage.updateTableOccupancy(tableId, true, order.id);
         } catch (error) {
           // Continue anyway - order was created successfully
         }
@@ -3284,14 +3284,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build response with deduction report included
       const response = {
         ...serializedOrder,
-        deductionReport: deductionReport ? {
-          success: deductionReport.success,
-          costOfGoods: deductionReport.costOfGoods,
-          grossProfit: deductionReport.grossProfit,
-          deductionDetails: deductionReport.deductionDetails,
-          shortages: deductionReport.shortages,
-          warnings: deductionReport.warnings,
-          errors: deductionReport.errors,
+        deductionReport: (deductionReport as any) ? {
+          success: (deductionReport as any).success,
+          costOfGoods: (deductionReport as any).costOfGoods,
+          grossProfit: (deductionReport as any).grossProfit,
+          deductionDetails: (deductionReport as any).deductionDetails,
+          shortages: (deductionReport as any).shortages,
+          warnings: (deductionReport as any).warnings,
+          errors: (deductionReport as any).errors,
         } : null
       };
 
@@ -5200,7 +5200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { isOccupied, currentOrderId } = req.body;
       const table = await storage.updateTableOccupancy(
         req.params.id, 
-        isOccupied ? 1 : 0, 
+        !!isOccupied, 
         currentOrderId
       );
       if (!table) {
@@ -5906,7 +5906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update table occupancy if applicable
       if (order.tableId) {
-        await storage.updateTableOccupancy(order.tableId, 0);
+        await storage.updateTableOccupancy(order.tableId, false);
       }
 
       res.json(order);
@@ -5973,13 +5973,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         order.status = 'completed';
         // Mark table as available
         if (order.tableId) {
-          await storage.updateTableOccupancy(order.tableId, 0);
+          await storage.updateTableOccupancy(order.tableId, false);
         }
       } else if (tableStatus === 'cancelled') {
         order.status = 'cancelled';
         order.cancelledBy = 'cashier';
         if (order.tableId) {
-          await storage.updateTableOccupancy(order.tableId, 0);
+          await storage.updateTableOccupancy(order.tableId, false);
         }
       }
       
