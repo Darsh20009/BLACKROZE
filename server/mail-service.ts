@@ -97,7 +97,7 @@ export async function sendOrderNotificationEmail(
       return false;
     }
 
-    const senderEmail = process.env.SMTP_FROM || "cluny@ma3k.online";
+    const senderEmail = process.env.SMTP_FROM || "cluny@qirox.online";
     
     const statusAr =
       orderStatus === "completed"
@@ -248,7 +248,7 @@ export async function sendReferralEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@ma3k.online"}>`,
+      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
       to: customerEmail,
       subject: "انضم إلى برنامج الإحالات الخاص بنا",
       html: `
@@ -286,7 +286,7 @@ export async function sendLoyaltyPointsEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@ma3k.online"}>`,
+      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
       to: customerEmail,
       subject: "لقد حصلت على نقاط جديدة!",
       html: `
@@ -322,7 +322,7 @@ export async function sendPromotionEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@ma3k.online"}>`,
+      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
       to: customerEmail,
       subject: promotionTitle,
       html: `
@@ -362,7 +362,7 @@ export async function sendReservationConfirmationEmail(
   }
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "cluny@ma3k.online";
+    const senderEmail = process.env.SMTP_FROM || "cluny@qirox.online";
     const formattedDate = new Date(reservationDate).toLocaleDateString('ar');
     await transporter.sendMail({
       from: senderEmail,
@@ -409,7 +409,7 @@ export async function sendReservationExpiryWarningEmail(
   if (!transporter) return false;
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "cluny@ma3k.online";
+    const senderEmail = process.env.SMTP_FROM || "cluny@qirox.online";
     const expiryTimeFormatted = new Date(expiryTime).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
     await transporter.sendMail({
       from: senderEmail,
@@ -447,7 +447,7 @@ export async function sendWelcomeEmail(customerEmail: string, customerName: stri
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@ma3k.online"}>`,
+      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
       to: customerEmail,
       subject: "أهلاً بك في CLUNY CAFE! ☕",
       html: `
@@ -475,7 +475,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@ma3k.online"}>`,
+      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
       to: customerEmail,
       subject: "نسيت شيئاً في عربتك؟ 🛒",
       html: `

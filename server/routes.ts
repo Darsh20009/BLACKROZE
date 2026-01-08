@@ -225,7 +225,7 @@ function getOrderStatusMessage(status: string, orderNumber: string): string {
 // Maileroo Email Configuration - DISABLED IN FAVOR OF TURBOSMTP
 /*
 const mailerooApiKey = process.env.MAILEROO_API_KEY;
-const mailerooUser = process.env.MAILEROO_USER || 'info@qahwakup.com';
+const mailerooUser = process.env.MAILEROO_USER || 'cluny@qirox.online';
 const transporter = mailerooApiKey ? nodemailer.createTransport({
   host: 'smtp.maileroo.com',
   port: 465,
