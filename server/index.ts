@@ -24,22 +24,57 @@ if (!MONGODB_URI) {
 // Track database connection status
 let isDbConnected = false;
 let isInitializing = false;
+let connectionRetries = 0;
+const MAX_RETRIES = 5;
 
-// Connect to MongoDB in the background (don't block server startup)
+// Connect to MongoDB with robust error handling and retries
 async function connectDatabase() {
   if (isInitializing) return;
   isInitializing = true;
   
+  const options = {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    heartbeatFrequencyMS: 10000,
+  };
+
   try {
-    await mongoose.connect(MONGODB_URI!);
+    console.log(`🔌 Attempting MongoDB connection (Attempt ${connectionRetries + 1})...`);
+    await mongoose.connect(MONGODB_URI!, options);
     isDbConnected = true;
+    connectionRetries = 0;
     console.log("✅ MongoDB connected successfully");
   } catch (error) {
+    isDbConnected = false;
     console.error("❌ MongoDB connection error:", error);
+    
+    if (connectionRetries < MAX_RETRIES) {
+      connectionRetries++;
+      const delay = Math.min(1000 * Math.pow(2, connectionRetries), 30000);
+      console.log(`🔄 Retrying in ${delay / 1000}s...`);
+      setTimeout(() => {
+        isInitializing = false;
+        connectDatabase();
+      }, delay);
+    } else {
+      console.error("❌ Max retries reached. Database functionality will be unavailable.");
+    }
   } finally {
     isInitializing = false;
   }
 }
+
+// Handle connection events
+mongoose.connection.on('disconnected', () => {
+  console.log('📡 MongoDB disconnected. Attempting to reconnect...');
+  isDbConnected = false;
+  connectDatabase();
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('📡 MongoDB error:', err);
+  isDbConnected = false;
+});
 
 // Start database connection in background
 connectDatabase();
@@ -187,8 +222,23 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    database: isDbConnected ? 'connected' : 'connecting'
+    database: isDbConnected ? 'connected' : 'disconnected',
+    readyState: mongoose.connection.readyState
   });
+});
+
+// Middleware to ensure DB connection for API routes
+app.use('/api', (req, res, next) => {
+  if (!isDbConnected && mongoose.connection.readyState !== 1) {
+    console.error(`🚨 API Request failed: Database not connected (State: ${mongoose.connection.readyState})`);
+    // Attempt to reconnect in background
+    connectDatabase();
+    return res.status(503).json({ 
+      message: "خدمة قاعدة البيانات غير متوفرة حالياً، يرجى المحاولة مرة أخرى خلال ثوانٍ.",
+      retryAfter: 5
+    });
+  }
+  next();
 });
 
 // IMPORTANT: Ensure /api, /attached_assets, and health routes are handled BEFORE SPA routing
