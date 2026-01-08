@@ -226,19 +226,6 @@ function getOrderStatusMessage(status: string, orderNumber: string): string {
 /*
 const mailerooApiKey = process.env.MAILEROO_API_KEY;
 const mailerooUser = process.env.MAILEROO_USER || 'cluny@qirox.online';
-const transporter = mailerooApiKey ? nodemailer.createTransport({
-  host: 'smtp.maileroo.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: mailerooUser,
-    pass: mailerooApiKey
-  }
-}) : null;
-
-if (!transporter) {
-  console.warn("⚠️ MAILEROO_API_KEY not set - Email functionality will be disabled");
-}
 */
 
 // Set transporter to null to satisfy the rest of the code that might reference it
