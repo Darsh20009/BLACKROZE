@@ -123,6 +123,46 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
+  getLoyaltyCardsByCustomerId(customerId: string): Promise<LoyaltyCard[]>;
+  setActiveCard(customerId: string, cardId: string): Promise<boolean>;
+
+  getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined>;
+  incrementDiscountCodeUsage(code: string): Promise<void>;
+  updateDiscountCode(id: string, updates: Partial<DiscountCode>): Promise<DiscountCode | undefined>;
+
+  getCustomers(): Promise<Customer[]>;
+  getOrdersByEmployee(employeeId: string): Promise<Order[]>;
+  getAllBranches(): Promise<IBranch[]>;
+
+  getCategories(tenantId?: string): Promise<Category[]>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: string, updates: Partial<Category>): Promise<Category | undefined>;
+  deleteCategory(id: string): Promise<boolean>;
+
+  getTables(branchId?: string): Promise<Table[]>;
+  getTable(id: string): Promise<Table | undefined>;
+  getTableByQRToken(qrToken: string): Promise<Table | undefined>;
+  createTable(table: InsertTable): Promise<Table>;
+  updateTable(id: string, updates: Partial<Table>): Promise<Table | undefined>;
+  deleteTable(id: string): Promise<boolean>;
+  updateTableOccupancy(id: string, isOccupied: boolean, orderId?: string): Promise<Table | undefined>;
+  getPendingTableOrders(branchId?: string): Promise<Order[]>;
+  getTableOrders(tableId: string): Promise<Order[]>;
+
+  getDeliveryZones(tenantId?: string): Promise<DeliveryZone[]>;
+  getDeliveryZone(id: string): Promise<DeliveryZone | undefined>;
+
+  createTaxInvoice(data: any): Promise<any>;
+
+  getAvailableDrivers(): Promise<Employee[]>;
+  updateDriverAvailability(id: string, isAvailable: boolean): Promise<void>;
+  updateDriverLocation(id: string, lat: number, lng: number): Promise<void>;
+  assignDriverToOrder(orderId: string, driverId: string): Promise<void>;
+  startDelivery(orderId: string): Promise<void>;
+  completeDelivery(orderId: string): Promise<void>;
+  getActiveDeliveryOrders(): Promise<Order[]>;
+  getDriverActiveOrders(driverId: string): Promise<Order[]>;
+
   getCafe(id: string): Promise<ICafe | undefined>;
   createCafe(cafe: Partial<ICafe>): Promise<ICafe>;
   updateCafe(id: string, cafe: Partial<ICafe>): Promise<ICafe | undefined>;
@@ -628,6 +668,180 @@ export class DBStorage implements IStorage {
   async createCoffeeItem(item: InsertCoffeeItem): Promise<CoffeeItem> {
     const newItem = await CoffeeItemModel.create(item);
     return serializeDoc(newItem);
+  }
+
+  async getLoyaltyCardsByCustomerId(customerId: string): Promise<LoyaltyCard[]> {
+    const cards = await LoyaltyCardModel.find({ customerId }).lean();
+    return (cards as any[]).map(serializeDoc);
+  }
+
+  async setActiveCard(customerId: string, cardId: string): Promise<boolean> {
+    await LoyaltyCardModel.updateMany({ customerId }, { isActive: 0 });
+    await LoyaltyCardModel.findByIdAndUpdate(cardId, { isActive: 1 });
+    return true;
+  }
+
+  async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
+    const normalizedCode = code.trim().toLowerCase();
+    const result = await DiscountCodeModel.findOne({ code: normalizedCode }).lean();
+    return result ? (result as any) : undefined;
+  }
+
+  async getDiscountCode(id: string): Promise<DiscountCode | undefined> {
+    const code = await DiscountCodeModel.findById(id).lean();
+    return code ? (code as any) : undefined;
+  }
+
+  async incrementDiscountCodeUsage(code: string): Promise<void> {
+    const normalizedCode = code.trim().toLowerCase();
+    await DiscountCodeModel.updateOne({ code: normalizedCode }, { $inc: { usageCount: 1 } });
+  }
+
+  async updateDiscountCode(id: string, updates: Partial<DiscountCode>): Promise<DiscountCode | undefined> {
+    const updated = await DiscountCodeModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
+    return updated ? (updated as any) : undefined;
+  }
+
+  async getCustomers(): Promise<Customer[]> {
+    const customers = await CustomerModel.find({}).lean();
+    return (customers as any[]).map(serializeDoc);
+  }
+
+  async getOrdersByEmployee(employeeId: string): Promise<Order[]> {
+    const orders = await OrderModel.find({ employeeId }).sort({ createdAt: -1 }).lean();
+    return (orders as any[]).map(serializeDoc);
+  }
+
+  async getAllBranches(): Promise<IBranch[]> {
+    const branches = await BranchModel.find({}).lean();
+    return (branches as any[]).map(serializeDoc);
+  }
+
+  async getCategories(tenantId?: string): Promise<Category[]> {
+    const query = tenantId ? { tenantId } : {};
+    const categories = await CategoryModel.find(query).lean();
+    return (categories as any[]).map(serializeDoc);
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const newCategory = await CategoryModel.create(category);
+    return serializeDoc(newCategory);
+  }
+
+  async updateCategory(id: string, updates: Partial<Category>): Promise<Category | undefined> {
+    const updated = await CategoryModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
+    return updated ? serializeDoc(updated) : undefined;
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    const result = await CategoryModel.findByIdAndDelete(id);
+    return !!result;
+  }
+
+  async getTables(branchId?: string): Promise<Table[]> {
+    const query = branchId ? { branchId } : {};
+    const tables = await TableModel.find(query).lean();
+    return (tables as any[]).map(serializeDoc);
+  }
+
+  async getTable(id: string): Promise<Table | undefined> {
+    const table = await TableModel.findOne({ id }).lean();
+    if (!table && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
+      const byId = await TableModel.findById(id).lean();
+      return byId ? serializeDoc(byId) : undefined;
+    }
+    return table ? serializeDoc(table) : undefined;
+  }
+
+  async getTableByQRToken(qrToken: string): Promise<Table | undefined> {
+    const table = await TableModel.findOne({ qrToken }).lean();
+    return table ? serializeDoc(table) : undefined;
+  }
+
+  async createTable(table: InsertTable): Promise<Table> {
+    const newTable = await TableModel.create(table);
+    return serializeDoc(newTable);
+  }
+
+  async updateTable(id: string, updates: Partial<Table>): Promise<Table | undefined> {
+    const table = await TableModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    return table ? serializeDoc(table) : undefined;
+  }
+
+  async deleteTable(id: string): Promise<boolean> {
+    const result = await TableModel.findOneAndDelete({ id });
+    return !!result;
+  }
+
+  async updateTableOccupancy(id: string, isOccupied: boolean, orderId?: string): Promise<Table | undefined> {
+    const updates: any = { isOccupied: isOccupied ? 1 : 0 };
+    if (orderId) updates.currentOrderId = orderId;
+    else updates.currentOrderId = null;
+    
+    return this.updateTable(id, updates);
+  }
+
+  async getPendingTableOrders(branchId?: string): Promise<Order[]> {
+    const query: any = { orderType: 'table', status: 'pending' };
+    if (branchId) query.branchId = branchId;
+    const orders = await OrderModel.find(query).sort({ createdAt: -1 }).lean();
+    return (orders as any[]).map(serializeDoc);
+  }
+
+  async getTableOrders(tableId: string): Promise<Order[]> {
+    const orders = await OrderModel.find({ tableId }).sort({ createdAt: -1 }).lean();
+    return (orders as any[]).map(serializeDoc);
+  }
+
+  async getDeliveryZones(tenantId?: string): Promise<DeliveryZone[]> {
+    const query = tenantId ? { tenantId } : {};
+    const zones = await DeliveryZoneModel.find(query).lean();
+    return (zones as any[]).map(serializeDoc);
+  }
+
+  async getDeliveryZone(id: string): Promise<DeliveryZone | undefined> {
+    const zone = await DeliveryZoneModel.findById(id).lean();
+    return zone ? serializeDoc(zone) : undefined;
+  }
+
+  async createTaxInvoice(data: any): Promise<any> {
+    const invoice = await TaxInvoiceModel.create(data);
+    return serializeDoc(invoice);
+  }
+
+  async getAvailableDrivers(): Promise<Employee[]> {
+    const drivers = await EmployeeModel.find({ role: 'driver', isActivated: 1 }).lean();
+    return (drivers as any[]).map((d: any) => ({ ...d, id: d._id.toString() }));
+  }
+
+  async updateDriverAvailability(id: string, isAvailable: boolean): Promise<void> {
+    await EmployeeModel.findByIdAndUpdate(id, { $set: { isAvailable: isAvailable ? 1 : 0 } });
+  }
+
+  async updateDriverLocation(id: string, lat: number, lng: number): Promise<void> {
+    await EmployeeModel.findByIdAndUpdate(id, { $set: { 'location.lat': lat, 'location.lng': lng } });
+  }
+
+  async assignDriverToOrder(orderId: string, driverId: string): Promise<void> {
+    await OrderModel.findOneAndUpdate({ id: orderId }, { $set: { assignedDriverId: driverId, status: 'assigned' } });
+  }
+
+  async startDelivery(orderId: string): Promise<void> {
+    await OrderModel.findOneAndUpdate({ id: orderId }, { $set: { status: 'shipped', shippedAt: new Date() } });
+  }
+
+  async completeDelivery(orderId: string): Promise<void> {
+    await OrderModel.findOneAndUpdate({ id: orderId }, { $set: { status: 'delivered', deliveredAt: new Date() } });
+  }
+
+  async getActiveDeliveryOrders(): Promise<Order[]> {
+    const orders = await OrderModel.find({ orderType: 'delivery', status: { $in: ['pending', 'assigned', 'shipped'] } }).lean();
+    return (orders as any[]).map(serializeDoc);
+  }
+
+  async getDriverActiveOrders(driverId: string): Promise<Order[]> {
+    const orders = await OrderModel.find({ assignedDriverId: driverId, status: { $in: ['assigned', 'shipped'] } }).lean();
+    return (orders as any[]).map(serializeDoc);
   }
 
   async updateCoffeeItem(id: string, updates: Partial<CoffeeItem>): Promise<CoffeeItem | undefined> {

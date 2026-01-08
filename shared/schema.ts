@@ -902,6 +902,31 @@ LoyaltyCardSchema.index({ customerId: 1 });
 
 export const LoyaltyCardModel = mongoose.model<ILoyaltyCard>("LoyaltyCard", LoyaltyCardSchema);
 
+// Status History Model to track status changes for orders, transfers, etc.
+export interface IStatusHistory extends Document {
+  tenantId: string;
+  referenceId: string; // Order ID, Transfer ID, etc.
+  referenceType: 'order' | 'stock_transfer' | 'purchase_invoice';
+  fromStatus: string;
+  toStatus: string;
+  changedBy: string;
+  notes?: string;
+  createdAt: Date;
+}
+
+const StatusHistorySchema = new Schema<IStatusHistory>({
+  tenantId: { type: String, required: true },
+  referenceId: { type: String, required: true },
+  referenceType: { type: String, enum: ['order', 'stock_transfer', 'purchase_invoice'], required: true },
+  fromStatus: { type: String, required: true },
+  toStatus: { type: String, required: true },
+  changedBy: { type: String, required: true },
+  notes: { type: String },
+  createdAt: { type: Date, default: Date.now },
+});
+
+export const StatusHistoryModel = mongoose.model<IStatusHistory>("StatusHistory", StatusHistorySchema);
+
 export interface ICardCode extends Document {
   code: string;
   issuedForOrderId: string;
