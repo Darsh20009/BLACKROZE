@@ -3764,7 +3764,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/orders/:id/status", requireAuth, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
-      const { status, cancellationReason } = req.body;
+      const { status, cancellationReason, estimatedPrepTimeInMinutes } = req.body;
 
       // Valid statuses for order workflow
       const validStatuses = ['pending', 'payment_confirmed', 'in_progress', 'ready', 'completed', 'cancelled'];
@@ -3778,19 +3778,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Order not found" });
       }
 
-      // Debug logging
-
-      // Managers and admins can update any order
-      // Cashiers can update orders from their branch OR orders without branchId (legacy orders)
-      const isManager = ["admin", "manager"].includes(req.employee?.role || "");
-      const isSameBranch = order.branchId === req.employee?.branchId;
-      const isLegacyOrder = !order.branchId; // Orders created before branchId requirement
+      // Update data object
+      const updateData: any = { 
+        status, 
+        cancellationReason,
+        updatedAt: new Date()
+      };
       
-      if (!isManager && !isSameBranch && !isLegacyOrder) {
-        return res.status(403).json({ error: "Access denied - different branch" });
+      if (estimatedPrepTimeInMinutes !== undefined) {
+        updateData.estimatedPrepTimeInMinutes = estimatedPrepTimeInMinutes;
+        updateData.prepTimeSetAt = new Date();
       }
 
-      const updatedOrder = await storage.updateOrderStatus(id, status, cancellationReason);
+      const updatedOrder = await OrderModel.findByIdAndUpdate(id, { $set: updateData }, { new: true });
 
       if (!updatedOrder) {
         return res.status(404).json({ error: "Order not found" });
