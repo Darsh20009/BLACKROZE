@@ -146,8 +146,8 @@ export default function KitchenDisplay() {
   }, [orders, soundEnabled, toast]);
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      return apiRequest("PUT", `/api/orders/${id}/status`, { status });
+    mutationFn: async ({ id, status, estimatedPrepTimeInMinutes }: { id: string; status: string; estimatedPrepTimeInMinutes?: number }) => {
+      return apiRequest("PUT", `/api/orders/${id}/status`, { status, estimatedPrepTimeInMinutes });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders/kitchen"] });
@@ -165,8 +165,12 @@ export default function KitchenDisplay() {
     },
   });
 
-  const handleStartPreparing = (id: string) => {
-    updateStatusMutation.mutate({ id, status: "in_progress" });
+  const handleStartPreparing = (id: string, estimatedPrepTime?: number) => {
+    updateStatusMutation.mutate({ 
+      id, 
+      status: "in_progress", 
+      estimatedPrepTimeInMinutes: estimatedPrepTime || 5 
+    });
   };
 
   const handleMarkReady = (id: string) => {

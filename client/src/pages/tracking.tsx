@@ -9,8 +9,50 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Coffee, MapPin, Truck, Check, Clock, Package, ExternalLink, Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import LocationPreparationCheck from "@/components/location-preparation-check";
 import type { Order } from "@shared/schema";
+
+function CountdownTimer({ estimatedMinutes, startTime }: { estimatedMinutes: number, startTime: string | Date }) {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [progress, setProgress] = useState(100);
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const start = new Date(startTime).getTime();
+      const end = start + estimatedMinutes * 60 * 1000;
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((end - now) / 1000));
+      const totalSeconds = estimatedMinutes * 60;
+      const elapsed = (now - start) / 1000;
+      
+      setTimeLeft(remaining);
+      setProgress(Math.max(0, Math.min(100, 100 - (elapsed / totalSeconds) * 100)));
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 1000);
+    return () => clearInterval(timer);
+  }, [estimatedMinutes, startTime]);
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+
+  return (
+    <div className="mt-6 space-y-3">
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-medium text-muted-foreground">الوقت المتبقي للتحضير:</span>
+        <span className="text-2xl font-bold text-primary font-mono" dir="ltr">
+          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+        </span>
+      </div>
+      <Progress value={progress} className="h-2" />
+      <p className="text-center text-xs text-muted-foreground">
+        الوقت المقدر: {estimatedMinutes} دقائق
+      </p>
+    </div>
+  );
+}
 
 export default function OrderTrackingPage() {
  const [location] = useLocation();
@@ -186,6 +228,13 @@ export default function OrderTrackingPage() {
                 </div>
               </div>
             </div>
+
+            {order.status === 'in_progress' && order.estimatedPrepTimeInMinutes && (
+              <CountdownTimer 
+                estimatedMinutes={order.estimatedPrepTimeInMinutes} 
+                startTime={order.prepTimeSetAt || order.updatedAt || order.createdAt} 
+              />
+            )}
           </CardContent>
         </Card>
 

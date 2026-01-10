@@ -683,6 +683,8 @@ export interface IOrder extends Document {
   };
   deliveryStatus?: string;
   deliveryStartedAt?: Date;
+  estimatedPrepTimeInMinutes?: number;
+  prepTimeSetAt?: Date;
   estimatedDeliveryTime?: Date;
   deliveredAt?: Date;
   costOfGoods?: number;
@@ -740,6 +742,8 @@ const OrderSchema = new Schema<IOrder>({
   },
   deliveryStatus: { type: String },
   deliveryStartedAt: { type: Date },
+  estimatedPrepTimeInMinutes: { type: Number },
+  prepTimeSetAt: { type: Date },
   estimatedDeliveryTime: { type: Date },
   deliveredAt: { type: Date },
   costOfGoods: { type: Number, default: 0 },

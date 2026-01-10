@@ -39,7 +39,7 @@ interface OrderCardProps {
   variant?: "compact" | "detailed" | "kds";
   showActions?: boolean;
   showTimer?: boolean;
-  onStartPreparing?: (id: string) => void;
+  onStartPreparing?: (id: string, estimatedPrepTime?: number) => void;
   onMarkReady?: (id: string) => void;
   onPrint?: (id: string) => void;
   isPending?: boolean;
@@ -179,15 +179,30 @@ export function OrderCard({
         {showActions && (
           <CardFooter className="pt-2 gap-2">
             {(displayStatus === "confirmed" || displayStatus === "pending" || displayStatus === "payment_confirmed") && onStartPreparing && (
-              <Button 
-                onClick={() => onStartPreparing(order.id)}
-                disabled={isPending}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-black"
-                data-testid={`button-start-preparing-${order.orderNumber}`}
-              >
-                <Play className="h-4 w-4 ml-2" />
-                بدء التحضير
-              </Button>
+              <div className="flex flex-col gap-2 w-full">
+                <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
+                  {[5, 10, 15, 20, 30].map((mins) => (
+                    <Button
+                      key={mins}
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[10px] px-2 min-w-fit"
+                      onClick={() => onStartPreparing(order.id, mins)}
+                    >
+                      {mins} د
+                    </Button>
+                  ))}
+                </div>
+                <Button 
+                  onClick={() => onStartPreparing(order.id, 5)}
+                  disabled={isPending}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-black"
+                  data-testid={`button-start-preparing-${order.orderNumber}`}
+                >
+                  <Play className="h-4 w-4 ml-2" />
+                  بدء (5د)
+                </Button>
+              </div>
             )}
             {displayStatus === "in_progress" && onMarkReady && (
               <Button 
