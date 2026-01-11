@@ -75,15 +75,7 @@ export default function MenuPage() {
       setSelectedItem(item);
       setIsModalOpen(true);
     } else {
-      (addToCart as any)({
-        coffeeItemId: (item as any).id || (item as any)._id,
-        quantity: 1,
-        selectedSize: "default",
-        selectedAddons: [],
-        price: item.price,
-        nameAr: item.nameAr,
-        imageUrl: item.imageUrl
-      });
+      addToCart((item as any).id || (item as any)._id, 1, "default", []);
       toast({
         title: "تمت الإضافة",
         description: `تم إضافة ${item.nameAr} إلى السلة`,
