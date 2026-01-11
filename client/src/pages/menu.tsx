@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCartStore } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PWAInstallButton } from "@/components/pwa-install";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
 import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search } from "lucide-react";
@@ -46,17 +47,31 @@ export default function MenuPage() {
     { id: "desserts", nameAr: "حلويات", icon: Cake },
   ];
 
-  const filteredItems = coffeeItems.filter(item => {
+  // Group items by base name (first word)
+  const groupedItems = coffeeItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
+    const baseName = item.nameAr.split(" ")[0];
+    if (!acc[baseName]) acc[baseName] = [];
+    acc[baseName].push(item);
+    return acc;
+  }, {});
+
+  // For display, we use the first item of each group as representative
+  const representativeItems = Object.values(groupedItems).map(group => group[0]);
+
+  const filteredItems = representativeItems.filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     const matchesSearch = item.nameAr.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   const handleAddToCartDirect = (item: CoffeeItem) => {
+    const group = groupedItems[item.nameAr.split(" ")[0]] || [item];
+    const hasMultipleVariants = group.length > 1;
     const hasSizes = item.availableSizes && item.availableSizes.length > 0;
     const hasAddons = allAddons.filter(a => a.isAvailable === 1).length > 0;
 
-    if (hasSizes || hasAddons) {
+    if (hasMultipleVariants || hasSizes || hasAddons) {
+      // If grouped, show the first variant but modal should handle selection
       setSelectedItem(item);
       setIsModalOpen(true);
     } else {
@@ -90,42 +105,42 @@ export default function MenuPage() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-24 font-sans overflow-x-hidden text-[#2D2424]">
+    <div dir="rtl" className="min-h-screen bg-background pb-24 font-sans overflow-x-hidden text-foreground">
       {/* Dynamic Header */}
-      <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-orange-100 px-4 h-16 flex items-center justify-between shadow-sm">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border px-4 h-16 flex items-center justify-between shadow-sm">
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-3"
         >
           <div className="relative">
-            <img src={clunyLogo} className="w-10 h-10 rounded-2xl shadow-md border-2 border-white" alt="Logo" />
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+            <img src={clunyLogo} className="w-10 h-10 rounded-2xl shadow-md border-2 border-background" alt="Logo" />
           </div>
           <div>
-            <h1 className="font-amiri text-xl font-black leading-none">CLUNY</h1>
-            <span className="text-[10px] text-orange-600 font-bold uppercase tracking-widest">Premium Coffee</span>
+            <h1 className="font-amiri text-xl font-black leading-none text-primary">CLUNY</h1>
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Premium Coffee</span>
           </div>
         </motion.div>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/cart")} className="relative h-10 w-10 bg-orange-50 rounded-xl">
-            <ShoppingCart className="w-5 h-5 text-orange-800" />
+          <PWAInstallButton />
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/cart")} className="relative h-10 w-10 bg-primary/10 rounded-xl">
+            <ShoppingCart className="w-5 h-5 text-primary" />
             <AnimatePresence>
               {totalItems > 0 && (
                 <motion.span 
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-orange-600 rounded-full border-2 border-white"
+                  className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-primary rounded-full border-2 border-background"
                 >
                   {totalItems}
                 </motion.span>
               )}
             </AnimatePresence>
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => setLocation(isAuthenticated ? "/profile" : "/auth")} className="h-10 w-10 bg-gray-50 rounded-xl">
-            <User className="w-5 h-5 text-gray-600" />
+          <Button variant="ghost" size="icon" onClick={() => setLocation(isAuthenticated ? "/profile" : "/auth")} className="h-10 w-10 bg-muted rounded-xl">
+            <User className="w-5 h-5 text-muted-foreground" />
           </Button>
         </div>
       </header>
@@ -133,13 +148,13 @@ export default function MenuPage() {
       <main className="p-4 space-y-8">
         {/* Search Bar */}
         <div className="relative group">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <input 
             type="text"
             placeholder="ابحث عن مشروبك المفضل..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-12 pr-10 pl-4 bg-white border border-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-200 transition-all shadow-sm"
+            className="w-full h-12 pr-10 pl-4 bg-card border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
           />
         </div>
 
@@ -154,56 +169,53 @@ export default function MenuPage() {
               onClick={() => setSelectedCategory(cat.id)}
               className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
                 selectedCategory === cat.id 
-                  ? "bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200 scale-105" 
-                  : "bg-white text-gray-500 border-gray-50 hover:border-orange-100"
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
+                  : "bg-card text-muted-foreground border-border hover:border-primary/30"
               }`}
             >
-              <cat.icon className={`w-3.5 h-3.5 ${selectedCategory === cat.id ? "text-white" : "text-orange-400"}`} />
+              <cat.icon className={`w-3.5 h-3.5 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
               {cat.nameAr}
             </motion.button>
           ))}
         </div>
 
-        {/* Featured Section - Horizontal creative slider */}
+        {/* Featured Section */}
         <section className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="font-amiri text-2xl font-black">الاكثر طلباً ✨</h2>
-            <button className="text-[11px] font-bold text-orange-600">عرض الكل</button>
+            <h2 className="font-amiri text-2xl font-black">المختارات ✨</h2>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-4">
-            {filteredItems.slice(0, 6).map((item, idx) => (
+            {representativeItems.slice(0, 6).map((item, idx) => (
               <motion.div 
                 key={item.id} 
                 whileTap={{ scale: 0.95 }}
-                className="flex-shrink-0 w-[160px] snap-start bg-white rounded-[2rem] border border-orange-50 p-3 space-y-3 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
+                className="flex-shrink-0 w-[160px] snap-start bg-card rounded-[2rem] border border-border p-3 space-y-3 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
                 onClick={() => handleAddToCartDirect(item)}
               >
-                <div className="absolute top-2 left-2 z-10">
-                  <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm">
-                    <Star className="w-3 h-3 text-orange-500 fill-orange-500" />
-                  </div>
-                </div>
-                <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-orange-50/30">
+                <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-muted">
                   <motion.img 
                     whileHover={{ scale: 1.1 }}
                     src={item.imageUrl} 
                     className="w-full h-full object-cover transition-transform duration-700" 
                     alt={item.nameAr} 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
+                    }}
                   />
                 </div>
                 <div className="space-y-1 text-center">
                   <h3 className="text-xs font-black truncate">{item.nameAr}</h3>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-sm font-black text-orange-700">{item.price} <small className="text-[10px] font-normal">ر.س</small></span>
+                    <span className="text-sm font-black text-primary">{item.price} <small className="text-[10px] font-normal">ر.س</small></span>
                   </div>
                 </div>
-                <div className="absolute bottom-0 inset-x-0 h-1 bg-orange-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-right" />
+                <div className="absolute bottom-0 inset-x-0 h-1 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-right" />
               </motion.div>
             ))}
           </div>
         </section>
 
-        {/* Full Menu - Compact Grid */}
+        {/* Full Menu */}
         <section className="space-y-4">
           <h2 className="font-amiri text-2xl font-black px-1">قائمة المشروبات</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -216,19 +228,26 @@ export default function MenuPage() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
                   key={item.id} 
-                  className="bg-white rounded-3xl border border-gray-50 p-2.5 flex gap-4 items-center shadow-sm hover:shadow-md active:scale-98 transition-all group cursor-pointer"
+                  className="bg-card rounded-3xl border border-border p-2.5 flex gap-4 items-center shadow-sm hover:shadow-md active:scale-98 transition-all group cursor-pointer"
                   onClick={() => handleAddToCartDirect(item)}
                 >
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100">
-                    <img src={item.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.nameAr} />
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted flex-shrink-0 border border-border">
+                    <img 
+                      src={item.imageUrl} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                      alt={item.nameAr} 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
+                      }}
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-black truncate text-gray-800 leading-tight mb-1">{item.nameAr}</h3>
-                    <p className="text-[10px] text-gray-400 line-clamp-1 mb-2">تجربة غنية ومميزة</p>
+                    <h3 className="text-sm font-black truncate text-foreground leading-tight mb-1">{item.nameAr}</h3>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1 mb-2">تجربة غنية ومميزة</p>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-black text-orange-600">{item.price} <small className="text-[9px] font-normal">ر.س</small></p>
-                      <div className="bg-orange-50 p-1.5 rounded-xl group-hover:bg-orange-600 group-hover:text-white transition-colors">
-                        <Plus className="w-4 h-4" />
+                      <p className="text-sm font-black text-primary">{item.price} <small className="text-[9px] font-normal">ر.س</small></p>
+                      <div className="bg-primary/10 p-1.5 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        <Plus className="w-4 h-4 text-primary" />
                       </div>
                     </div>
                   </div>
@@ -244,17 +263,17 @@ export default function MenuPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddToCart={(data) => {
-          addToCart(data);
+          (addToCart as any)(data);
           setIsModalOpen(false);
           toast({ 
             title: "تمت الإضافة 🎉", 
             description: `تم إضافة ${selectedItem?.nameAr} إلى سلتك بنجاح`,
-            className: "bg-white border-orange-100 text-orange-900 font-bold"
+            className: "bg-card border-primary/20 text-foreground font-bold"
           });
         }}
       />
 
-      {/* Floating Cart Summary for Mobile */}
+      {/* Floating Cart Summary */}
       {totalItems > 0 && (
         <motion.div 
           initial={{ y: 100 }}
@@ -263,10 +282,10 @@ export default function MenuPage() {
         >
           <Button 
             onClick={() => setLocation("/cart")}
-            className="w-full h-14 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl shadow-2xl shadow-orange-300 flex items-center justify-between px-6"
+            className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-2xl shadow-primary/20 flex items-center justify-between px-6"
           >
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-xl">
+              <div className="bg-background/20 p-2 rounded-xl">
                 <ShoppingCart className="w-5 h-5" />
               </div>
               <div className="text-right">
@@ -276,7 +295,10 @@ export default function MenuPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-black">
-                {cartItems.reduce((sum, i) => sum + ((i as any).price || 0) * i.quantity, 0)} ر.س
+                {cartItems.reduce((sum, i) => {
+                  const price = (i as any).price || (i as any).coffeeItem?.price || 0;
+                  return sum + price * i.quantity;
+                }, 0)} ر.س
               </span>
             </div>
           </Button>
