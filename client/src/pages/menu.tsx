@@ -1,9 +1,8 @@
-import { useState, memo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useCartStore } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PWAInstallButton } from "@/components/pwa-install";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
 import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search } from "lucide-react";
@@ -61,11 +60,14 @@ export default function MenuPage() {
       setSelectedItem(item);
       setIsModalOpen(true);
     } else {
-      addToCart({
+      (addToCart as any)({
         coffeeItemId: (item as any).id || (item as any)._id,
         quantity: 1,
         selectedSize: "default",
         selectedAddons: [],
+        price: item.price,
+        nameAr: item.nameAr,
+        imageUrl: item.imageUrl
       });
       toast({
         title: "تمت الإضافة",
@@ -274,7 +276,7 @@ export default function MenuPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-black">
-                {cartItems.reduce((sum, i) => sum + (i.price || 0) * i.quantity, 0)} ر.س
+                {cartItems.reduce((sum, i) => sum + ((i as any).price || 0) * i.quantity, 0)} ر.س
               </span>
             </div>
           </Button>
