@@ -1,569 +1,285 @@
 import { useState, memo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import DrinkCustomizationDialog, { type DrinkCustomization } from "@/components/drink-customization-dialog";
 import { useCartStore } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PWAInstallButton } from "@/components/pwa-install";
-import CoffeeCard from "@/components/coffee-card";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
-import { Coffee, ShoppingCart, Flame, Snowflake, Star, Filter, CreditCard, Cake, Sprout, Zap, LogOut, User, MapPin, MoreVertical, Download, Info } from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
+import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import clunyLogo from "@/assets/cluny-logo.png";
-import { COFFEE_STRENGTH_CONFIG, getCoffeeStrengthConfig, filterCoffeeByStrength, type CoffeeStrengthType } from "@/lib/utils";
-import type { CoffeeItem, Branch } from "@shared/schema";
-import CurrentOrderBanner from "@/components/current-order-banner";
-import { LoadingState, EmptyState } from "@/components/ui/states";
-import { useSession } from "@/hooks/use-session";
-import BranchCard from "@/components/branch-card";
-import LocationDistanceMap from "@/components/location-distance-map";
-
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371000; // Earth's radius in meters
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
+import type { CoffeeItem, IProductAddon } from "@shared/schema";
+import { AddToCartModal } from "@/components/add-to-cart-modal";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function MenuPage() {
-  const { cartItems } = useCartStore();
+  const { cartItems, addToCart } = useCartStore();
   const { isAuthenticated } = useCustomer();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Set SEO metadata for menu page
-  useEffect(() => {
-    document.title = "قائمة المشروبات - CLUNY CAFE | أفضل قهوة وأصيلة";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'استعرض قائمة CLUNY CAFE المتنوعة من القهوة - إسبريسو، لاتيه، كابتشينو، موكا بتحضير احترافي ودقيق');
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute('content', 'قائمة المشروبات - CLUNY CAFE');
-  }, []);
-
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedStrength, setSelectedStrength] = useState<CoffeeStrengthType | "all">("all");
-  const [selectedBranch, setSelectedBranch] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('selectedBranch') || "";
-    }
-    return "";
-  });
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<CoffeeItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: branches = [] } = useQuery<Branch[]>({
-    queryKey: ["/api/branches"],
-  });
-
-  // Persist selected branch to localStorage whenever it changes
-  useEffect(() => {
-    if (selectedBranch) {
-      localStorage.setItem('selectedBranch', selectedBranch);
-    }
-  }, [selectedBranch]);
-
-  // Get user location on load
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        () => {
-          // Default to Riyadh center if geolocation fails
-          setUserLocation({ lat: 24.7136, lng: 46.6753 });
-        }
-      );
-    }
-  }, []);
-
-  const { data: coffeeItems = [], isLoading, refetch } = useQuery<CoffeeItem[]>({
-    queryKey: ["/api/coffee-items", selectedBranch],
+  const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
+    queryKey: ["/api/coffee-items"],
     queryFn: async () => {
-      const url = `/api/coffee-items${selectedBranch ? `?branchId=${selectedBranch}` : ""}`;
-      const res = await fetch(url, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
+      const res = await fetch("/api/coffee-items");
       const data = await res.json();
       return Array.isArray(data) ? data : [];
     },
-    staleTime: 0, // Force fresh data
-    gcTime: 0,    // Don't cache
   });
 
-  // Refetch when branch changes
-  useEffect(() => {
-    refetch();
-  }, [selectedBranch, refetch]);
+  const { data: allAddons = [] } = useQuery<IProductAddon[]>({
+    queryKey: ["/api/product-addons"],
+  });
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const categories = [
-    { id: "all", nameAr: "الكل", nameEn: "All", icon: Coffee },
-    { id: "basic", nameAr: "قهوة أساسية", nameEn: "Basic Coffee", icon: Coffee },
-    { id: "hot", nameAr: "قهوة ساخنة", nameEn: "Hot Coffee", icon: Flame },
-    { id: "cold", nameAr: "قهوة باردة", nameEn: "Cold Coffee", icon: Snowflake },
-    { id: "specialty", nameAr: "المشروبات الإضافية", nameEn: "Specialty Drinks", icon: Star },
-    { id: "drinks", nameAr: "المشروبات", nameEn: "Drinks", icon: Coffee },
-    { id: "desserts", nameAr: "الحلويات", nameEn: "Desserts", icon: Cake },
+    { id: "all", nameAr: "الكل", icon: Coffee },
+    { id: "hot", nameAr: "ساخن", icon: Flame },
+    { id: "cold", nameAr: "بارد", icon: Snowflake },
+    { id: "specialty", nameAr: "مميز", icon: Star },
+    { id: "desserts", nameAr: "حلويات", icon: Cake },
   ];
 
-  const [isBranchSelectorOpen, setIsBranchSelectorOpen] = useState(false);
+  const filteredItems = coffeeItems.filter(item => {
+    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+    const matchesSearch = item.nameAr.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
-  const strengthOptions = [
-    { id: "all" as const, labelAr: "جميع الأنواع", icon: Star },
-    { id: "mild" as const, labelAr: "خفيف (1-4)", icon: Sprout },
-    { id: "medium" as const, labelAr: "متوسط (4-8)", icon: Zap },
-    { id: "strong" as const, labelAr: "قوي (8-12)", icon: Flame },
-    { id: "classic" as const, labelAr: "العادي/الكلاسيك", icon: Coffee },
-  ];
+  const handleAddToCartDirect = (item: CoffeeItem) => {
+    const hasSizes = item.availableSizes && item.availableSizes.length > 0;
+    const hasAddons = allAddons.filter(a => a.isAvailable === 1).length > 0;
 
-  let filteredItems = selectedCategory === "all" 
-    ? coffeeItems 
-    : coffeeItems.filter(item => item.category === selectedCategory);
-  
-  filteredItems = filterCoffeeByStrength(filteredItems, selectedStrength);
-
-  // Use a simpler grouping logic to ensure all items show up
-  // Grouping by first word was causing items with the same first word to collapse
-    const groupedItems = filteredItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    // Group by the first word of nameAr to group similar items
-    const firstNameWord = item.nameAr.split(' ')[0];
-    const key = item.groupId || firstNameWord;
-    
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(item);
-    return acc;
-  }, {});
-
-  const getCategoryItems = (category: string) => {
-    let items = coffeeItems.filter(item => item.category === category);
-    items = filterCoffeeByStrength(items, selectedStrength);
-    
-    const categoryGrouped: Record<string, CoffeeItem[]> = {};
-    items.forEach(item => {
-      // Group by the first word of nameAr to group similar items
-      const firstNameWord = item.nameAr.split(' ')[0];
-      const key = item.groupId || firstNameWord;
-      if (!categoryGrouped[key]) categoryGrouped[key] = [];
-      categoryGrouped[key].push(item);
-    });
-    
-    return Object.values(categoryGrouped);
+    if (hasSizes || hasAddons) {
+      setSelectedItem(item);
+      setIsModalOpen(true);
+    } else {
+      addToCart({
+        coffeeItemId: (item as any).id || (item as any)._id,
+        quantity: 1,
+        selectedSize: "default",
+        selectedAddons: [],
+      });
+      toast({
+        title: "تمت الإضافة",
+        description: `تم إضافة ${item.nameAr} إلى السلة`,
+      });
+    }
   };
 
   if (isLoading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-secondary/15 rounded-full blur-2xl animate-pulse" style={{animationDelay: '0.8s'}}></div>
-        </div>
-        
-        <div className="text-center relative z-10">
-          <div className="relative mb-8">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse"></div>
-            <Coffee className="w-20 h-20 text-primary mx-auto relative z-10 coffee-steam" />
-          </div>
-          
-          <h3 className="font-amiri text-3xl font-bold text-primary mb-4 golden-gradient">
-            جاري تحضير المنيو
-          </h3>
-          <p className="text-muted-foreground text-xl">أفضل ما لدينا من القهوة الطازجة</p>
-          
-          <div className="flex justify-center mt-8 space-x-3">
-            <div className="w-3 h-3 bg-primary rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-            <div className="w-3 h-3 bg-accent rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-          </div>
-        </div>
+      <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Coffee className="w-10 h-10 text-primary" />
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-muted/50">
-      <div className="max-w-7xl mx-auto px-4">
-        <CurrentOrderBanner />
-      </div>
-      
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
-        <div className="absolute bottom-32 right-16 w-24 h-24 bg-secondary/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
-        <div className="absolute top-1/2 left-10 w-20 h-20 bg-muted/30 rounded-full blur-lg animate-pulse" style={{animationDelay: '4s'}}></div>
-      </div>
-
-      <header className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-40 shadow-sm" data-testid="header-menu">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-2 sm:space-x-4 space-x-reverse">
-              <img 
-                src={clunyLogo} 
-                alt="CLUNY CAFE" 
-                className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-full" 
-                data-testid="logo-header"
-                onError={(e) => {
-                  e.currentTarget.src = "/logo.png";
-                }}
-              />
-              <div>
-                <h1 className="font-amiri text-lg sm:text-2xl font-bold text-foreground" data-testid="text-header-title">
-                  CLUNY CAFE
-                </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">تجربة قهوة استثنائية</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2 sm:gap-3">
-              <PWAInstallButton />
-
-              {selectedBranch && (
-                <div className="relative">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsBranchSelectorOpen(!isBranchSelectorOpen)}
-                    className="h-8 bg-primary/10 border-primary/30 text-primary px-2 sm:px-3 rounded-full hover:bg-primary/20 transition-colors text-[10px] sm:text-xs flex items-center gap-1"
-                  >
-                    <MapPin className="w-3 h-3" />
-                    <span className="truncate max-w-[80px] sm:max-w-none">
-                      {branches.find(b => ((b as any).id || (b as any)._id) === selectedBranch)?.nameAr}
-                    </span>
-                  </Button>
-
-                  {isBranchSelectorOpen && (
-                    <div className="absolute top-full mt-2 left-0 w-64 bg-background border border-border rounded-xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="text-right p-2 border-b mb-2">
-                        <p className="text-xs font-bold text-primary">اختر فرعاً آخر</p>
-                      </div>
-                      <div className="space-y-1 max-h-60 overflow-y-auto">
-                        {branches.map((branch) => (
-                          <div
-                            key={(branch as any).id || (branch as any)._id}
-                            onClick={() => {
-                              setSelectedBranch((branch as any).id || (branch as any)._id || "");
-                              setIsBranchSelectorOpen(false);
-                            }}
-                            className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                              selectedBranch === ((branch as any).id || (branch as any)._id) 
-                                ? "bg-primary/10 text-primary" 
-                                : "hover:bg-muted"
-                            }`}
-                          >
-                            <span className="text-sm font-semibold">{branch.nameAr}</span>
-                            <MapPin className={`w-4 h-4 ${selectedBranch === ((branch as any).id || (branch as any)._id) ? "text-primary" : "text-muted-foreground"}`} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <Button 
-                onClick={() => setLocation("/cart")}
-                variant="default"
-                size="sm"
-                className="relative transition-all duration-300 px-3 sm:px-6 h-9 sm:h-10 text-xs sm:text-base font-semibold shadow-md hover:shadow-lg rounded-lg"
-                data-testid="button-cart"
-              >
-                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 sm:ml-2" />
-                <span className="hidden sm:inline">السلة</span>
-                {totalItems > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1.5 sm:-top-2 -left-1.5 sm:-left-2 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center p-0 text-[10px] sm:text-sm font-bold"
-                    data-testid="badge-cart-count"
-                  >
-                    {totalItems}
-                  </Badge>
-                )}
-              </Button>
-
-              <Button 
-                onClick={() => setLocation(isAuthenticated ? "/copy-card" : "/auth")}
-                variant="outline"
-                size="icon"
-                className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 h-9 w-9 sm:h-10 sm:w-10 rounded-lg shadow-sm"
-                title={isAuthenticated ? "بطاقة كوبي" : "تسجيل الدخول"}
-              >
-                {isAuthenticated ? <User className="w-5 h-5" /> : <LogOut className="w-5 h-5" />}
-              </Button>
-            </div>
+    <div dir="rtl" className="min-h-screen bg-[#FDFCFB] pb-24 font-sans overflow-x-hidden text-[#2D2424]">
+      {/* Dynamic Header */}
+      <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-orange-100 px-4 h-16 flex items-center justify-between shadow-sm">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex items-center gap-3"
+        >
+          <div className="relative">
+            <img src={clunyLogo} className="w-10 h-10 rounded-2xl shadow-md border-2 border-white" alt="Logo" />
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
           </div>
+          <div>
+            <h1 className="font-amiri text-xl font-black leading-none">CLUNY</h1>
+            <span className="text-[10px] text-orange-600 font-bold uppercase tracking-widest">Premium Coffee</span>
+          </div>
+        </motion.div>
+        
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/cart")} className="relative h-10 w-10 bg-orange-50 rounded-xl">
+            <ShoppingCart className="w-5 h-5 text-orange-800" />
+            <AnimatePresence>
+              {totalItems > 0 && (
+                <motion.span 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-orange-600 rounded-full border-2 border-white"
+                >
+                  {totalItems}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setLocation(isAuthenticated ? "/profile" : "/auth")} className="h-10 w-10 bg-gray-50 rounded-xl">
+            <User className="w-5 h-5 text-gray-600" />
+          </Button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12 relative z-10">
-        <section className="mb-12 sm:mb-16 md:mb-20" data-testid="section-menu">
-          <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-in fade-in-0 slide-in-from-bottom-10 duration-1000">
-            <div className="relative inline-block mb-4 sm:mb-6">
-              <h2 className="font-amiri text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2 sm:mb-4" data-testid="text-menu-title">
-                منيو CLUNY CAFE
-              </h2>
-              <div className="absolute -bottom-1 sm:-bottom-2 left-1/2 transform -translate-x-1/2 w-16 sm:w-20 md:w-24 h-0.5 sm:h-1 bg-muted-foreground/30 rounded-full"></div>
-            </div>
-            
-            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-in fade-in-0 slide-in-from-bottom-10 duration-1000 delay-500 px-4" data-testid="text-menu-description">
-              انطلق في رحلة قهوة استثنائية مع تشكيلتنا المختارة بعناية من أجود حبوب القهوة العربية الأصيلة، 
-              محضرة بحرفية عالية لتقدم لك تجربة لا تُنسى مع كل رشفة
-            </p>
-            
-            <div className="flex justify-center space-x-4 mt-6">
-              <div className="w-2 h-2 bg-muted-foreground/50 rounded-full"></div>
-              <div className="w-2 h-2 bg-primary/50 rounded-full"></div>
-              <div className="w-2 h-2 bg-secondary/50 rounded-full"></div>
-            </div>
+      <main className="p-4 space-y-8">
+        {/* Search Bar */}
+        <div className="relative group">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
+          <input 
+            type="text"
+            placeholder="ابحث عن مشروبك المفضل..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-12 pr-10 pl-4 bg-white border border-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-200 transition-all shadow-sm"
+          />
+        </div>
+
+        {/* Categories - Compact Chips */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4">
+          {categories.map((cat, idx) => (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                selectedCategory === cat.id 
+                  ? "bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200 scale-105" 
+                  : "bg-white text-gray-500 border-gray-50 hover:border-orange-100"
+              }`}
+            >
+              <cat.icon className={`w-3.5 h-3.5 ${selectedCategory === cat.id ? "text-white" : "text-orange-400"}`} />
+              {cat.nameAr}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Featured Section - Horizontal creative slider */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="font-amiri text-2xl font-black">الاكثر طلباً ✨</h2>
+            <button className="text-[11px] font-bold text-orange-600">عرض الكل</button>
           </div>
-
-          {/* Branch Selection Overlay - Table-like Design */}
-          {!selectedBranch && userLocation && branches.length > 1 && (
-            <div className="fixed inset-0 z-[100] bg-background flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-              <div className="max-w-4xl w-full py-6 px-4 space-y-6 animate-in fade-in zoom-in-95 duration-500 flex flex-col items-center">
-                <div className="text-center space-y-2 mb-2">
-                  <h2 className="font-amiri text-lg sm:text-2xl font-bold text-foreground leading-tight">أهلاً بك في CLUNY CAFE</h2>
-                  <p className="text-muted-foreground text-xs sm:text-sm max-w-xs mx-auto font-medium">لطفاً اختر الفرع لبدء طلبك</p>
-                </div>
-
-                {/* Map View - Positioned at the Top */}
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-card w-full">
-                  <div className="h-40 sm:h-64 md:h-80">
-                    {(() => {
-                      if (!branches.length) return null;
-                      const coords = (branches as any[]).map(b => ({
-                        lat: b.location?.latitude || 24.7136,
-                        lng: b.location?.longitude || 46.6753,
-                      }));
-                      const center = {
-                        lat: coords.reduce((sum, c) => sum + c.lat, 0) / coords.length,
-                        lng: coords.reduce((sum, c) => sum + c.lng, 0) / coords.length,
-                      };
-                      return (
-                        <LocationDistanceMap
-                          userLocation={userLocation}
-                          branchLocation={center}
-                          distance={0}
-                          allBranches={(branches as any[]).map(b => ({
-                            id: b.id || b._id || "",
-                            lat: b.location?.latitude || 24.7136,
-                            lng: b.location?.longitude || 46.6753,
-                            nameAr: b.nameAr || "فرع"
-                          }))}
-                        />
-                      );
-                    })()}
+          <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-4">
+            {filteredItems.slice(0, 6).map((item, idx) => (
+              <motion.div 
+                key={item.id} 
+                whileTap={{ scale: 0.95 }}
+                className="flex-shrink-0 w-[160px] snap-start bg-white rounded-[2rem] border border-orange-50 p-3 space-y-3 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
+                onClick={() => handleAddToCartDirect(item)}
+              >
+                <div className="absolute top-2 left-2 z-10">
+                  <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm">
+                    <Star className="w-3 h-3 text-orange-500 fill-orange-500" />
                   </div>
                 </div>
-
-                {/* Divider Line - Table-like feel */}
-                <div className="w-full flex items-center gap-4 py-2">
-                  <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-primary/20"></div>
-                  <Coffee className="w-5 h-5 text-primary/40" />
-                  <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-primary/20"></div>
+                <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-orange-50/30">
+                  <motion.img 
+                    whileHover={{ scale: 1.1 }}
+                    src={item.imageUrl} 
+                    className="w-full h-full object-cover transition-transform duration-700" 
+                    alt={item.nameAr} 
+                  />
                 </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 w-full">
-              {branches.map((branch, index) => {
-                const branchLat = (branch as any).location?.latitude || 24.7136;
-                const branchLng = (branch as any).location?.longitude || 24.7136;
-                const distance = calculateDistance(userLocation.lat, userLocation.lng, branchLat, branchLng);
-                const distanceText = distance > 1000 ? `${(distance / 1000).toFixed(1)} كم` : `${Math.round(distance)} متر`;
-
-                return (
-                  <button
-                    key={(branch as any).id || (branch as any)._id}
-                    onClick={() => setSelectedBranch((branch as any).id || (branch as any)._id || "")}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                    className="group relative flex flex-col items-center p-3 sm:p-4 rounded-xl border-2 border-primary/10 bg-card hover:border-primary hover:bg-primary/[0.05] transition-all duration-300 shadow-sm active:scale-95 text-center animate-in slide-in-from-bottom-2"
-                  >
-                    <MapPin className="w-4 h-4 text-primary/60 group-hover:text-primary mb-1.5 transition-colors" />
-                    <h3 className="font-amiri font-bold text-foreground text-[11px] sm:text-[13px] leading-tight mb-1">{branch.nameAr}</h3>
-                    <span className="text-[9px] sm:text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{distanceText}</span>
-                  </button>
-                );
-              })}
-            </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-6 mb-6 sm:mb-8 animate-in fade-in-0 slide-in-from-bottom-10 duration-1000 delay-700" data-testid="filter-categories">
-            {categories.map((category, index) => {
-              const Icon = category.icon;
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`
-                    flex items-center gap-2 transition-all duration-300 px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base font-semibold rounded-full shadow-md transform active:scale-95
-                    ${selectedCategory === category.id 
-                      ? "bg-primary text-primary-foreground btn-primary scale-105" 
-                      : "bg-card/80 border-2 border-primary/30 text-primary hover:bg-primary/10"
-                    }
-                  `}
-                  data-testid={`button-category-${category.id}`}
-                  style={{animationDelay: `${index * 0.1 + 0.8}s`}}
-                >
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>{category.nameAr}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mb-8 sm:mb-10 md:mb-12 animate-in fade-in-0 slide-in-from-bottom-10 duration-1000 delay-900" data-testid="filter-strength">
-            <div className="text-center mb-4 sm:mb-6 px-2">
-              <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                <Filter className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
-                <h3 className="font-amiri text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-primary">
-                  فلتر حسب نسبة القهوة
-                </h3>
-              </div>
-              <p className="text-muted-foreground text-xs sm:text-sm">
-                اختر نسبة القوة المفضلة لديك
-              </p>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 px-2">
-              {strengthOptions.map((strength, index) => {
-                const config = strength.id === "all" ? null : getCoffeeStrengthConfig(strength.id);
-                const isSelected = selectedStrength === strength.id;
-                const StrengthIcon = strength.icon;
-                
-                return (
-                  <button
-                    key={strength.id}
-                    onClick={() => setSelectedStrength(strength.id)}
-                    className={`
-                      flex items-center gap-2 transition-all duration-300 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold rounded-full shadow-sm sm:shadow-md hover:shadow-md sm:hover:shadow-lg transform hover:-translate-y-0.5
-                      ${isSelected 
-                        ? "bg-primary text-primary-foreground glow-effect" 
-                        : config 
-                          ? `${config.bgColor} ${config.textColor} ${config.borderColor} border-2 hover:scale-105`
-                          : "bg-muted text-foreground border-2 border-border hover:bg-muted/80"
-                      }
-                    `}
-                    data-testid={`button-strength-${strength.id}`}
-                    style={{animationDelay: `${index * 0.1 + 1.0}s`}}
-                  >
-                    <StrengthIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                    <span>{strength.labelAr}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {Object.entries(groupedItems).length === 0 ? (
-            <div className="text-center py-20 px-4 animate-in fade-in zoom-in duration-500">
-              <div className="bg-card/50 backdrop-blur-sm border-2 border-dashed border-primary/20 rounded-3xl p-8 sm:p-12 md:p-16 max-w-xl mx-auto shadow-xl">
-                <div className="bg-primary/10 w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 group">
-                  <Coffee className="w-12 h-12 sm:w-16 sm:h-16 text-primary group-hover:scale-110 transition-transform duration-500" />
+                <div className="space-y-1 text-center">
+                  <h3 className="text-xs font-black truncate">{item.nameAr}</h3>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm font-black text-orange-700">{item.price} <small className="text-[10px] font-normal">ر.س</small></span>
+                  </div>
                 </div>
-                <h3 className="font-amiri text-2xl sm:text-3xl font-bold text-foreground mb-4 sm:mb-6">
-                  لا توجد مشروبات متاحة حالياً
-                </h3>
-                <p className="text-muted-foreground text-base sm:text-lg mb-8 sm:mb-10 leading-relaxed">
-                  نأسف، لم نجد أي مشروبات تطابق اختياراتك الحالية. جرب تغيير الفلتر أو العودة لاحقاً
-                </p>
-                <Button 
-                  onClick={() => {
-                    setSelectedCategory("all");
-                    setSelectedStrength("all");
-                  }}
-                  variant="default"
-                  className="px-8 sm:px-12 py-4 sm:py-6 h-auto text-base sm:text-lg font-bold rounded-2xl shadow-lg hover:shadow-primary/25 transition-all"
+                <div className="absolute bottom-0 inset-x-0 h-1 bg-orange-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-right" />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Full Menu - Compact Grid */}
+        <section className="space-y-4">
+          <h2 className="font-amiri text-2xl font-black px-1">قائمة المشروبات</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AnimatePresence mode="popLayout">
+              {filteredItems.map((item, idx) => (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  key={item.id} 
+                  className="bg-white rounded-3xl border border-gray-50 p-2.5 flex gap-4 items-center shadow-sm hover:shadow-md active:scale-98 transition-all group cursor-pointer"
+                  onClick={() => handleAddToCartDirect(item)}
                 >
-                  عرض جميع المشروبات
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-12 sm:space-y-20">
-              {categories.filter(c => c.id !== "all").map((category) => {
-                const categoryItems = getCategoryItems(category.id);
-                if (categoryItems.length === 0) return null;
-
-                const CategoryIcon = category.icon;
-
-                return (
-                  <div key={category.id} className="animate-in fade-in-0 slide-in-from-bottom-10 duration-1000" data-testid={`category-group-${category.id}`}>
-                    <div className="flex items-center gap-4 mb-6 sm:mb-10 px-2 sm:px-4">
-                      <div className="bg-primary/10 p-3 sm:p-4 rounded-2xl">
-                        <CategoryIcon className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100">
+                    <img src={item.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.nameAr} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-black truncate text-gray-800 leading-tight mb-1">{item.nameAr}</h3>
+                    <p className="text-[10px] text-gray-400 line-clamp-1 mb-2">تجربة غنية ومميزة</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-black text-orange-600">{item.price} <small className="text-[9px] font-normal">ر.س</small></p>
+                      <div className="bg-orange-50 p-1.5 rounded-xl group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                        <Plus className="w-4 h-4" />
                       </div>
-                      <div>
-                        <h3 className="font-amiri text-2xl sm:text-3xl md:text-4xl font-bold text-foreground" data-testid={`text-category-title-${category.id}`}>
-                          {category.nameAr}
-                        </h3>
-                        <div className="h-1 w-12 sm:w-16 bg-primary/30 rounded-full mt-2"></div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                      {categoryItems.map((items, idx) => (
-                        <div key={items[0].id} className="animate-in fade-in zoom-in duration-500" style={{animationDelay: `${idx * 0.1}s`}}>
-                          <CoffeeCard 
-                            item={items[0]} 
-                            variants={items.length > 1 ? items : undefined}
-                          />
-                        </div>
-                      ))}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </section>
       </main>
 
-      <footer className="bg-card border-t border-border mt-12 sm:mt-24 py-8 sm:py-16 relative z-10" data-testid="footer-menu">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="flex justify-center mb-6 sm:mb-8">
-            <img 
-              src={clunyLogo} 
-              alt="CLUNY CAFE" 
-              className="w-16 h-16 sm:w-20 sm:h-20 object-contain grayscale opacity-50" 
-              onError={(e) => {
-                e.currentTarget.src = "/logo.png";
-              }}
-            />
-          </div>
-          <p className="font-amiri text-xl sm:text-2xl font-bold text-muted-foreground mb-4">
-            CLUNY CAFE
-          </p>
-          <p className="text-muted-foreground/60 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-            جميع الحقوق محفوظة © {new Date().getFullYear()} - نقدم لك أفضل تجربة قهوة يومية بأعلى المعايير
-          </p>
-          
-          <div className="flex justify-center gap-4 sm:gap-6 mt-6 sm:mt-8">
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary">
-              <Info className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary">
-              <Download className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </footer>
+      <AddToCartModal
+        item={selectedItem}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddToCart={(data) => {
+          addToCart(data);
+          setIsModalOpen(false);
+          toast({ 
+            title: "تمت الإضافة 🎉", 
+            description: `تم إضافة ${selectedItem?.nameAr} إلى سلتك بنجاح`,
+            className: "bg-white border-orange-100 text-orange-900 font-bold"
+          });
+        }}
+      />
+
+      {/* Floating Cart Summary for Mobile */}
+      {totalItems > 0 && (
+        <motion.div 
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-6 inset-x-4 z-50"
+        >
+          <Button 
+            onClick={() => setLocation("/cart")}
+            className="w-full h-14 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl shadow-2xl shadow-orange-300 flex items-center justify-between px-6"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-xl">
+                <ShoppingCart className="w-5 h-5" />
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold opacity-80 leading-none">عرض السلة</p>
+                <p className="text-sm font-black">{totalItems} منتجات</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-black">
+                {cartItems.reduce((sum, i) => sum + (i.price || 0) * i.quantity, 0)} ر.س
+              </span>
+            </div>
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 }
