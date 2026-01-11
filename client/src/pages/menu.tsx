@@ -49,7 +49,8 @@ export default function MenuPage() {
 
   // Group items by base name (first word)
   const groupedItems = coffeeItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    const baseName = item.nameAr.split(" ")[0];
+    // Normalize base name by trimming and taking the first word
+    const baseName = item.nameAr.trim().split(/\s+/)[0];
     if (!acc[baseName]) acc[baseName] = [];
     acc[baseName].push(item);
     return acc;
@@ -65,7 +66,8 @@ export default function MenuPage() {
   });
 
   const handleAddToCartDirect = (item: CoffeeItem) => {
-    const group = groupedItems[item.nameAr.split(" ")[0]] || [item];
+    const baseName = item.nameAr.trim().split(/\s+/)[0];
+    const group = groupedItems[baseName] || [item];
     const hasMultipleVariants = group.length > 1;
     const hasSizes = item.availableSizes && item.availableSizes.length > 0;
     const hasAddons = allAddons.filter(a => a.isAvailable === 1).length > 0;
