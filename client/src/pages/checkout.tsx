@@ -325,6 +325,42 @@ export default function CheckoutPage() {
   };
 
   const confirmAndCreateOrder = async () => {
+    // 500m restriction for cash payment
+    if (selectedPaymentMethod === 'cash') {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        
+        const branchId = deliveryInfo?.branchId;
+        if (branchId) {
+          const res = await fetch(`/api/branches/${branchId}/check-location`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            })
+          });
+          const locationData = await res.json();
+          if (!locationData.withinRange) {
+            toast({
+              variant: "destructive",
+              title: "عذراً، أنت بعيد جداً",
+              description: `الدفع كاش متاح فقط إذا كنت ضمن 500 متر من الفرع. أنت حالياً على بعد ${locationData.distance} متر.`
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        toast({
+          variant: "destructive",
+          title: "فشل الوصول للموقع",
+          description: "يرجى السماح بالوصول للموقع لتفعيل الدفع كاش"
+        });
+        return;
+      }
+    }
     // For non-registered customers, phone and email are mandatory
     if (!isRegisteredCustomer) {
       if (!customerPhone.trim()) {
@@ -593,6 +629,20 @@ export default function CheckoutPage() {
     const isDineIn = deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn;
     const finalOrderType = isDineIn ? 'dine-in' : 'regular';
 
+    // Get current location for all orders to display to cashier
+    let customerCoords = null;
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+      });
+      customerCoords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+    } catch (e) {
+      console.warn("Could not get location for order tracking:", e);
+    }
+
     const orderData = {
       items: orderItems,
       totalAmount: Number(totalAmount.toFixed(2)),
@@ -605,7 +655,7 @@ export default function CheckoutPage() {
       discountPercentage: appliedDiscount?.percentage || null,
       orderType: finalOrderType,
       deliveryType: deliveryInfo?.type || null,
-      deliveryAddress: deliveryInfo?.type === 'delivery' ? deliveryInfo.address : null,
+      deliveryAddress: deliveryInfo?.type === 'delivery' ? deliveryInfo.address : (customerCoords || null),
       deliveryFee: Number(deliveryInfo?.deliveryFee || 0),
       branchId: deliveryInfo?.branchId || null,
       customerInfo: {
