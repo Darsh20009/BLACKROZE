@@ -623,21 +623,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/payment-methods", async (req, res) => {
-    const hasFreeDrinks = req.query.hasFreeDrinks === 'true';
     const methods = [
       { id: 'cash', nameAr: 'كاش / عند الاستلام', details: 'ادفع عند استلام طلبك', icon: 'fas fa-money-bill-wave' },
+      { id: 'qahwa-card', nameAr: 'بطاقة كلوني كافيه (كوبي)', details: 'ادفع باستخدام مشروباتك المجانية', icon: 'fas fa-gift' },
     ];
     
-    // Only show Geidea/Apple Pay if keys are configured (simulated for now by hiding)
+    // Only show Geidea/Apple Pay if keys are configured
     const geideaEnabled = process.env.GEIDEA_MERCHANT_ID && process.env.GEIDEA_API_PASSWORD;
     if (geideaEnabled) {
       methods.push({ id: 'geidea', nameAr: 'بطاقة صراف (Geidea)', details: 'مدى، فيزا، ماستر كارد', icon: 'fas fa-credit-card' });
       methods.push({ id: 'apple-pay', nameAr: 'Apple Pay', details: 'دفع سريع وآمن', icon: 'fas fa-mobile-alt' });
     }
 
-    if (hasFreeDrinks) {
-      methods.push({ id: 'qahwa-card', nameAr: 'بطاقة كلوني كافيه (كوبي)', details: 'ادفع باستخدام مشروباتك المجانية', icon: 'fas fa-gift' });
-    }
     res.json(methods);
   });
 

@@ -167,18 +167,12 @@ export default function CheckoutPage() {
  const hasFreeDrinks = localFreeDrinks || availableFreeDrinks > 0;
 
   const { data: paymentMethods = [], isLoading: loadingPaymentMethods } = useQuery<PaymentMethodInfo[]>({
-    queryKey: ["/api/payment-methods", hasFreeDrinks ? 'true' : 'false'],
+    queryKey: ["/api/payment-methods"],
     queryFn: async () => {
-      const res = await fetch(`/api/payment-methods?hasFreeDrinks=${hasFreeDrinks}`);
+      const res = await fetch(`/api/payment-methods`);
       if (!res.ok) throw new Error('Failed to fetch payment methods');
       const data = await res.json();
-      // Added Geidea and Apple Pay
-      return data.filter((m: any) => 
-        m.id === 'cash' || 
-        m.id === 'qahwa-card' || 
-        m.id === 'geidea' || 
-        m.id === 'apple-pay'
-      );
+      return data;
     }
   });
 
@@ -599,7 +593,6 @@ export default function CheckoutPage() {
     const isDineIn = deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn;
     const finalOrderType = isDineIn ? 'dine-in' : 'regular';
 
-
     const orderData = {
       items: orderItems,
       totalAmount: Number(totalAmount.toFixed(2)),
@@ -621,90 +614,91 @@ export default function CheckoutPage() {
         phoneNumber: customerPhone.trim() || null,
       },
       customerId: activeCustomerId || null,
-      customerNotes: customerNotes.trim() || null,
+      usedFreeDrinks: usedFreeDrinks,
       freeItemsDiscount: isQahwaCardPayment ? Number(freeItemsDiscount.toFixed(2)) : 0,
-      usedFreeDrinks: usedFreeDrinks
+      customerNotes: customerNotes.trim() || null
     };
 
+    console.log("Submitting order data:", JSON.stringify(orderData, null, 2));
     createOrderMutation.mutate(orderData);
   };
 
- const handlePaymentConfirmed = async (order: any) => {
- try {
- // Save order to localStorage if customer is registered
- if (isRegisteredCustomer && !customerStorage.isGuestMode()) {
- customerStorage.addOrder({
- orderNumber: order.orderNumber,
- items: cartItems.map(item => {
- const priceValue = typeof item.coffeeItem?.price === 'number' 
- ? item.coffeeItem.price 
- : parseFloat(String(item.coffeeItem?.price || "0"));
- return {
- id: item.coffeeItemId,
- nameAr: item.coffeeItem?.nameAr || "",
- quantity: item.quantity,
- price: priceValue
- };
- }),
- totalAmount: parseFloat(order.totalAmount),
- paymentMethod: selectedPaymentMethod!,
- transferOwnerName: isSameAsCustomer ? customerName : transferOwnerName,
- usedFreeDrink: useFreeDrink
- });
+  const handlePaymentConfirmed = async (order: any) => {
+    try {
+      // Save order to localStorage if customer is registered
+      if (isRegisteredCustomer && !customerStorage.isGuestMode()) {
+        customerStorage.addOrder({
+          orderNumber: order.orderNumber,
+          items: cartItems.map(item => {
+            const priceValue = typeof item.coffeeItem?.price === 'number' 
+              ? item.coffeeItem.price 
+              : parseFloat(String(item.coffeeItem?.price || "0"));
+            return {
+              id: item.coffeeItemId,
+              nameAr: item.coffeeItem?.nameAr || "",
+              quantity: item.quantity,
+              price: priceValue
+            };
+          }),
+          totalAmount: parseFloat(order.totalAmount),
+          paymentMethod: selectedPaymentMethod!,
+          transferOwnerName: isSameAsCustomer ? customerName : transferOwnerName,
+          usedFreeDrink: useFreeDrink
+        });
 
- // Use free drink if selected
- if (useFreeDrink) {
- customerStorage.useFreeDrink();
- toast({
- title: "تم استخدام المشروب المجاني!",
- description: "استمتع بقهوتك",
- });
- }
- }
+        // Use free drink if selected
+        if (useFreeDrink) {
+          customerStorage.useFreeDrink();
+          toast({
+            title: "تم استخدام المشروب المجاني!",
+            description: "استمتع بقهوتك",
+          });
+        }
+      }
 
- // Generate PDF invoice
- const pdfCartItems = cartItems.map(item => ({
- coffeeItemId: item.coffeeItemId,
- quantity: item.quantity,
- coffeeItem: item.coffeeItem ? {
- nameAr: item.coffeeItem.nameAr,
- nameEn: item.coffeeItem.nameEn ?? null,
- price: typeof item.coffeeItem.price === 'number' 
- ? String(item.coffeeItem.price) 
- : String(item.coffeeItem.price || "0")
- } : undefined
- }));
- const pdfBlob = await generatePDF(order, pdfCartItems, selectedPaymentMethod!);
+      // Generate PDF invoice
+      const pdfCartItems = cartItems.map(item => ({
+        coffeeItemId: item.coffeeItemId,
+        quantity: item.quantity,
+        coffeeItem: item.coffeeItem ? {
+          nameAr: item.coffeeItem.nameAr,
+          nameEn: item.coffeeItem.nameEn ?? null,
+          price: typeof item.coffeeItem.price === 'number' 
+            ? String(item.coffeeItem.price) 
+            : String(item.coffeeItem.price || "0")
+        } : undefined
+      }));
+      const pdfBlob = await generatePDF(order, pdfCartItems, selectedPaymentMethod!);
 
- // Create download link
- const url = URL.createObjectURL(pdfBlob);
- const link = document.createElement('a');
- link.href = url;
- link.download = `invoice-${order.orderNumber}.pdf`;
- document.body.appendChild(link);
- link.click();
- document.body.removeChild(link);
- URL.revokeObjectURL(url);
+      // Create download link
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${order.orderNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
- // Generate loyalty codes
- if (order.id) {
- generateCodesMutation.mutate(order.id);
- }
+      // Generate loyalty codes
+      if (order.id) {
+        generateCodesMutation.mutate(order.id);
+      }
 
- // Clear cart
- clearCart();
+      // Clear cart
+      clearCart();
 
- // Show success page
- setShowSuccessPage(true);
- setShowConfirmation(false);
- } catch (error) {
- toast({
- variant: "destructive",
- title: "خطأ في توليد الفاتورة ",
- description: "حدث خطأ أثناء إنشاء الفاتورة ",
- });
- }
- };
+      // Show success page
+      setShowSuccessPage(true);
+      setShowConfirmation(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في توليد الفاتورة ",
+        description: "حدث خطأ أثناء إنشاء الفاتورة ",
+      });
+    }
+  };
 
  const handleCopyCode = async (code: string, codeId: string) => {
  try {
@@ -712,14 +706,14 @@ export default function CheckoutPage() {
  setCopiedCodeId(codeId);
  setTimeout(() => setCopiedCodeId(null), 2000);
  toast({
- title: "تم نسخالكود",
+ title: "تم نسخ الكود",
  description: "الكود جاهز للاستخدام في صفحة بطاقتي",
  });
  } catch (error) {
  toast({
  variant: "destructive",
  title: "خطأ في النسخ",
- description: "حدث خطأ أثناء نسخالكود",
+ description: "حدث خطأ أثناء نسخ الكود",
  });
  }
  };
@@ -818,160 +812,95 @@ ${itemsWithPrices}
    <div className="absolute bottom-20 right-32 w-14 h-14 bg-primary/12 rounded-full blur-xl animate-bounce" style={{animationDelay: '1.5s'}}></div>
    </div>
    <div className="relative z-10 flex items-center justify-center min-h-screen p-8 bg-[#533d2d]">
-   <Card className="max-w-2xl w-full bg-white dark:bg-card border-accent/40 dark:border-primary/30 shadow-lg dark:shadow-2xl">
-   <CardContent className="p-12 text-center">
-   {/* Success Icon */}
-   <div className="relative mb-8">
-   <div className="w-32 h-32 bg-gradient-to-br from-orange-400/20 to-background0/20 rounded-full mx-auto flex items-center justify-center mb-6">
-   <CheckCircle className="w-20 h-20 text-accent dark:text-accent animate-pulse" />
+   <div className="max-w-md w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-2 border-primary/20 text-center space-y-6">
+   <div className="relative">
+   <div className="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+   <CheckCircle className="w-12 h-12 text-green-600 animate-in zoom-in duration-500" />
    </div>
-   <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent/50 dark:bg-primary/50 rounded-full animate-ping"></div>
+   <Sparkles className="absolute top-0 right-1/4 w-6 h-6 text-yellow-400 animate-pulse" />
+   <Sparkles className="absolute bottom-0 left-1/4 w-4 h-4 text-yellow-400 animate-pulse" style={{animationDelay: '1s'}} />
    </div>
 
-   {/* Main Message */}
-   <h1 className="font-playfair text-5xl font-bold text-accent dark:text-accent mb-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000">
-   تم إنشاء طلبك بنجاح!
-   </h1>
+   <div className="space-y-2">
+   <h2 className="text-3xl font-playfair font-bold text-accent dark:text-accent">شكراً لطلبك!</h2>
+   <p className="text-slate-600 dark:text-slate-400">طلبك رقم <span className="font-bold text-primary">#{orderDetails?.orderNumber}</span> قيد التحضير الآن بكل حب</p>
+   </div>
 
-   {/* Personal Welcome for Customer */}
-   {(orderDetails?.customerInfo?.customerName || customer?.name) && (
-   <div className="mb-6 bg-gradient-to-r from-orange-100/50 to-amber-100/50 dark:from-amber-600/15 dark:to-orange-600/15 rounded-2xl p-6 border-2 border-accent/50 dark:border-primary/40 shadow-lg animate-in fade-in-20 slide-in-from-top-4 duration-1500">
-   <div className="flex items-center justify-center mb-3">
-   <div className="w-16 h-16 bg-accent/60 dark:bg-primary/30 rounded-full flex items-center justify-center ml-3">
-   <User className="w-8 h-8 text-accent dark:text-accent" />
+   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 space-y-3">
+   <div className="flex justify-between items-center text-sm">
+   <span className="text-slate-500">حالة الطلب:</span>
+   <span className="bg-primary/10 text-primary px-3 py-1 rounded-full font-bold">بانتظار التأكيد</span>
    </div>
-   <div className="text-center">
-   <p className="font-playfair text-lg text-accent dark:text-accent/80 mb-1">أهلاً وسهلاً</p>
-   <h2 className="font-playfair text-3xl font-bold text-accent dark:text-accent">
-   {orderDetails?.customerInfo?.customerName || customer?.name}
-   </h2>
-   <p className="text-sm text-accent/70 dark:text-accent/60 mt-1">لكل لحظة قهوة ، لحظة نجاح</p>
+   <div className="flex justify-between items-center text-sm">
+   <span className="text-slate-500">طريقة الدفع:</span>
+   <span className="font-bold">{getPaymentMethodName(selectedPaymentMethod!)}</span>
+   </div>
+   <div className="flex justify-between items-center text-sm">
+   <span className="text-slate-500">المبلغ الإجمالي:</span>
+   <span className="font-bold text-lg text-primary">{parseFloat(orderDetails?.totalAmount || 0).toFixed(2)} ريال</span>
    </div>
    </div>
-   <div className="text-center text-accent dark:text-accent/70 text-sm bg-accent/60 dark:bg-primary/10 rounded-lg p-3">
-   شكراً لثقتك في CLUNY CAFE - طلبك الآن في قائمةالتحضير
+
+   {loyaltyCodes.length > 0 && (
+   <div className="space-y-4">
+   <div className="flex items-center justify-center gap-2 text-accent dark:text-accent">
+   <Award className="w-5 h-5" />
+   <h3 className="font-bold">أكواد الختم الخاصة بك</h3>
+   </div>
+   <p className="text-xs text-slate-500">استخدم هذه الأكواد في صفحة "بطاقتي" للحصول على أختام</p>
+   <div className="space-y-2">
+   {loyaltyCodes.map((code) => (
+   <div key={code.id} className="flex items-center justify-between bg-white dark:bg-slate-800 border-2 border-dashed border-primary/30 p-3 rounded-xl">
+   <span className="font-mono font-bold tracking-wider">{code.code}</span>
+   <Button
+   variant="ghost"
+   size="sm"
+   onClick={() => handleCopyCode(code.code, code.id)}
+   className="text-primary hover:bg-primary/10"
+   >
+   {copiedCodeId === code.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+   </Button>
+   </div>
+   ))}
    </div>
    </div>
    )}
 
-   <div className="space-y-6 mb-8">
-   <div className="bg-gradient-to-r from-orange-100/70 to-amber-100/70 dark:from-amber-600/15 dark:to-orange-600/15 rounded-xl p-6 border border-accent/50 dark:border-primary/40">
-   <p className="text-2xl text-accent dark:text-accent font-medium mb-2">
-   رقم الطلب: <span className="font-bold text-accent dark:text-accent">{orderDetails?.orderNumber}</span>
-   </p>
-   <p className="text-lg text-accent/80 dark:text-accent/70">
-   المبلغ المدفوع: <span className="font-semibold text-accent dark:text-accent">{parseFloat(orderDetails.totalAmount).toFixed(2)} ريال</span>
-   </p>
-   </div>
-
-   {/* Coffee Animation */}
-   <div className="flex justify-center items-center space-x-4 py-6">
-   <Coffee className="w-12 h-12 text-accent dark:text-accent animate-bounce" style={{animationDelay: '0s'}} />
-   <div className="w-4 h-4 bg-accent/60 dark:bg-primary/60 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-   <div className="w-3 h-3 bg-accent/40 dark:bg-primary/40 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-   <div className="w-2 h-2 bg-accent/20 dark:bg-primary/20 rounded-full animate-bounce" style={{animationDelay: '0.6s'}}></div>
-   </div>
-
-   {/* Instructions */}
-   <div className="bg-gradient-to-br from-orange-100/60 to-amber-100/60 dark:from-card/50 dark:to-slate-900/50 rounded-xl p-6 border border-accent/50 dark:border-primary/30">
-   <div className="flex items-center justify-center mb-4">
-   <Clock className="w-6 h-6 text-accent dark:text-accent ml-2" />
-   <h3 className="font-playfair text-xl font-bold text-accent dark:text-accent">خطوات الاستلام</h3>
-   </div>
-   <div className="space-y-3 text-right">
-   <div className="flex items-start space-x-3 space-x-reverse">
-   <div className="w-6 h-6 bg-accent dark:bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
-   <p className="text-accent dark:text-accent/70 flex-1">توجه إلى مقهى CLUNY CAFE</p>
-   </div>
-   <div className="flex items-start space-x-3 space-x-reverse">
-   <div className="w-6 h-6 bg-accent dark:bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
-   <p className="text-accent dark:text-accent/70 flex-1">أظهر رقم الطلب للموظف</p>
-   </div>
-   <div className="flex items-start space-x-3 space-x-reverse">
-   <div className="w-6 h-6 bg-accent dark:bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
-   <p className="text-accent dark:text-accent/70 flex-1">استمتع بقهوتك الطازجة !</p>
-   </div>
-   </div>
-   </div>
-
-   {/* Rating Section */}
-   <div className="bg-gradient-to-r from-orange-100/60 to-amber-100/60 dark:from-amber-600/12 dark:to-orange-600/12 rounded-xl p-6 border border-accent/50 dark:border-primary/30">
-   <h4 className="font-playfair text-lg font-bold text-accent dark:text-accent mb-3">شاركنا تقييمك</h4>
-   <div className="flex justify-center space-x-2 mb-3">
-   {[...Array(5)].map((_, i) => (
-   <Star key={i} className="w-8 h-8 text-accent dark:text-accent fill-orange-500 dark:fill-amber-500 cursor-pointer hover:scale-110 transition-transform" />
-   ))}
-   </div>
-   <p className="text-sm text-accent/70 dark:text-accent/70">تقييمك يساعدنا على تحسين خدماتنا</p>
-   </div>
-
-   
-   </div>
-
-   {/* Action Buttons */}
-   <div className="space-y-4">
-   <Button
-   onClick={() => {
-   window.location.href = '/my-orders';
-   }}
-   className="w-full bg-gradient-to-r from-orange-600 dark:from-amber-600 to-orange-600/90 dark:to-amber-600/90 hover:from-orange-600/90 dark:hover:from-amber-600/90 hover:to-orange-600 dark:hover:to-amber-600 text-white py-4 text-lg font-semibold"
-   >
-   <ShoppingBag className="w-5 h-5 ml-2" />
-   عرض طلباتي
-   </Button>
-
+   <div className="grid grid-cols-1 gap-3 pt-4">
    <Button
    onClick={handleShareWhatsApp}
-   className="w-full bg-green-700 hover:bg-green-800 text-white py-4 text-lg font-semibold"
+   className="w-full h-12 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg"
    >
-   <MessageCircle className="w-5 h-5 ml-2" />
-   مشاركةلتجهيز الطلب
+   <MessageCircle className="w-5 h-5" />
+   إرسال الطلب عبر الواتساب
    </Button>
-
+   <div className="grid grid-cols-2 gap-3">
    <Button
-   onClick={() => {
-   setShowSuccessPage(false);
-   setOrderDetails(null);
-   window.location.href = '/menu';
-   }}
    variant="outline"
-   className="w-full border-accent/50 dark:border-primary/50 text-accent dark:text-accent hover:bg-accent/10 dark:hover:bg-primary/10 py-4 text-lg font-semibold"
+   onClick={() => setLocation("/tracking")}
+   className="h-12 border-2 border-primary/20 hover:bg-primary/5 rounded-xl flex items-center justify-center gap-2"
    >
-   <Coffee className="w-5 h-5 ml-2" />
-   طلب المزيد من القهوة 
+   <Clock className="w-5 h-5" />
+   تتبع الطلب
+   </Button>
+   <Button
+   onClick={() => setLocation("/menu")}
+   className="h-12 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold shadow-md"
+   >
+   العودة للقائمة
    </Button>
    </div>
-
-   {/* Footer Message */}
-   <div className="mt-8 pt-6 border-t border-accent/50 dark:border-primary/30">
-   <p className="text-accent/80 dark:text-accent/70 text-sm">
-   شكراً لاختيارك CLUNY CAFE - لكل لحظة قهوة ، لحظة نجاح
-   </p>
    </div>
-   </CardContent>
-   </Card>
+   </div>
    </div>
   </div>
  );
  }
 
- if (cartItems.length === 0 && !showSuccessPage) {
  return (
- <div className="min-h-screen bg-background flex items-center justify-center" data-testid="page-checkout-empty">
- <Card className="w-full max-w-md mx-4">
- <CardContent className="pt-6 text-center">
- <p className="text-muted-foreground mb-4">السلةفارغة</p>
- <Button variant="outline">العودةللمنيو</Button>
- </CardContent>
- </Card>
- </div>
- );
- }
-
- return (
-  <div className="min-h-screen bg-gradient-to-br from-orange-50 via-primary/5/70 to-background dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" data-testid="page-checkout">
-   {/* Soft Background Elements */}
-   <div className="absolute inset-0 pointer-events-none overflow-hidden">
+  <div className="min-h-screen bg-[#F7F8F8] dark:bg-[#1a1410] relative overflow-hidden font-ibm-arabic" dir="rtl">
+   {/* Creative Background Decorations */}
+   <div className="absolute inset-0 pointer-events-none opacity-20">
    <div className="absolute top-20 left-20 w-32 h-32 bg-accent/15 dark:bg-accent/20 rounded-full blur-2xl animate-pulse"></div>
    <div className="absolute bottom-32 right-16 w-24 h-24 bg-primary/10 dark:bg-primary/15 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
    <div className="absolute top-1/2 left-10 w-20 h-20 bg-accent/8 dark:bg-accent/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '4s'}}></div>
@@ -981,10 +910,10 @@ ${itemsWithPrices}
    {/* Clean Header */}
    <div className="text-center mb-6 md:mb-12">
    <h1 className="font-playfair text-2xl sm:text-3xl md:text-4xl font-bold text-accent dark:text-accent mb-2 md:mb-4">
-   إتمام عمليةالدفع
+   إتمام عملية الدفع
    </h1>
    <p className="text-accent dark:text-accent/80 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed px-4">
-   اختر طريقة الدفع المفضلةلديك واستمتع بتجربة قهوة لا تُنسى
+   اختر طريقة الدفع المفضلة لديك واستمتع بتجربة قهوة لا تُنسى
    </p>
    <div className="mt-4 md:mt-6 flex items-center justify-center space-x-2">
    <div className="w-6 md:w-8 h-1 bg-primary/50 rounded-full animate-pulse"></div>
@@ -1152,7 +1081,7 @@ ${itemsWithPrices}
    </p>
    )}
    <p className="text-xs mt-1 text-muted-foreground">
-   سيتم إعلامك عند جاهزيةالطلب
+   سيتم إعلامك عند جاهزية الطلب
    </p>
    </div>
    </div>
@@ -1223,7 +1152,7 @@ ${itemsWithPrices}
    </div>
    </div>
    <div className="mt-3 text-center text-sm opacity-90 bg-white/20 rounded-lg p-2">
-   {useFreeDrink ? 'استخدمت بطاقةتك - استمتع بقهوتك المجانية !' : 'لكل لحظة قهوة ، لحظة نجاح'}
+   {useFreeDrink ? 'استخدمت بطاقتك - استمتع بقهوتك المجانية !' : 'لكل لحظة قهوة ، لحظة نجاح'}
    </div>
    </div>
    {/* Decorative elements */}
@@ -1358,7 +1287,7 @@ ${itemsWithPrices}
    <Input
    id="customer-password"
    type={showPassword ? "text" : "password"}
-   placeholder="أدخل كلمة سرقوية"
+   placeholder="أدخل كلمة سر قوية"
    value={customerPassword}
    onChange={(e) => setCustomerPassword(e.target.value)}
    className="text-right pr-10"
@@ -1520,7 +1449,7 @@ ${itemsWithPrices}
    </div>
    <div>
    <Label htmlFor="use-free-drink" className="font-playfair text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-700 bg-clip-text text-transparent cursor-pointer">
-   استخدام بطاقةتي (مشروب مجاني)
+   استخدام بطاقتي (مشروب مجاني)
    </Label>
    <p className="text-sm text-green-700 font-cairo">
    لديك {customerStorage.getProfile()?.freeDrinks} مشروب مجاني متاح!
@@ -1532,352 +1461,210 @@ ${itemsWithPrices}
    </div>
    )}
 
-   {/* بطاقةتي - رابط سريع - Only show for non-registered users */}
-   {!isRegisteredCustomer && (
-   <div className="mt-6 relative group">
-   <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-primary/50/30 to-amber-400/30 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
-
-   <div className="relative bg-gradient-to-br from-amber-50/90 via-primary/5/80 to-background/90 backdrop-blur-sm rounded-2xl p-5 border-2 border-primary/50 shadow-xl">
-   <div className="flex items-center justify-between">
-   <div className="flex items-center gap-3">
-   <div className="relative">
-   <div className="absolute -inset-2 bg-gradient-to-r from-amber-400 to-background0 rounded-full opacity-20 blur animate-pulse"></div>
-   <div className="relative bg-gradient-to-r from-amber-500 to-orange-600 rounded-full p-2.5 text-white shadow-lg">
-   <Gift className="w-6 h-6" />
-   </div>
-   </div>
-   <div>
-   <h4 className="font-playfair text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-700 bg-clip-text text-transparent">
-   سجل دخولك واحصل على مشروبات مجانية !
-   </h4>
-   <p className="text-sm text-accent font-cairo">
-   5 طوابع = قهوة مجانية
-   </p>
-   </div>
-   </div>
-   <Button
-   onClick={() => window.location.href = '/customer-login'}
-   variant="outline"
-   className="border-primary text-accent hover:bg-primary font-cairo"
-   data-testid="button-register-link"
-   >
-   تسجيل
-   </Button>
-   </div>
-   </div>
-   </div>
-   )}
-
-   <div className="grid grid-cols-1 gap-4 mt-4">
-
-   {/* Customer Notes Section */}
-   <div className="space-y-2 bg-gradient-to-br from-blue-50/80 to-indigo-50/60 rounded-lg p-4 border border-blue-200">
-   <Label htmlFor="customer-notes" className="text-sm font-semibold text-blue-800 flex items-center gap-2">
-   <MessageCircle className="w-4 h-4" />
-   ملاحظات إضافية على الطلب (اختياري)
-   </Label>
-   <textarea
-   id="customer-notes"
-   placeholder="مثال: بدون سكر، قهوة ساخنةجداً، إضافة كريمة ..."
-   value={customerNotes}
-   onChange={(e) => setCustomerNotes(e.target.value)}
-   className="w-full min-h-[80px] text-right p-3 border border-blue-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 resize-none bg-white/80"
-   data-testid="textarea-customer-notes"
-   maxLength={500}
-   />
-   <p className="text-xs text-blue-600">
-   شارك أي تفضيلات خاصةبطلبك ({customerNotes.length}/500 حرف)
-   </p>
-   </div>
-
-   {/* Transfer name section - always visible */}
-   <div className="space-y-4 bg-slate-50 rounded-lg p-4 border border-slate-200">
-   <Label className="text-sm font-semibold text-slate-700 flex items-center">
-   <CreditCard className="w-4 h-4 ml-1" />
-   معلومات صاحب التحويل (إجباري)
-   </Label>
-
-   {/* Checkbox for same as customer */}
-   <div className="flex items-center space-x-3 space-x-reverse bg-primary/5 rounded-lg p-3 border border-primary/20">
-   <Checkbox
-   id="same-as-customer"
-   checked={isSameAsCustomer}
-   onCheckedChange={(checked) => setIsSameAsCustomer(!!checked)}
-   data-testid="checkbox-same-as-customer"
-   className="border-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-   />
-   <Label htmlFor="same-as-customer" className="text-sm font-medium text-slate-700 cursor-pointer flex items-center">
-   <User className="w-4 h-4 ml-2 text-primary" />
-   اسم صاحب التحويل هو نفس اسم العميل 
-   </Label>
-   </div>
-
-   {/* Transfer name input - only show when not same as customer */}
-   {!isSameAsCustomer && (
-   <div className="space-y-2">
-   <Label htmlFor="transfer-name" className="text-sm font-medium text-slate-700">
-   اسم صاحب التحويل *
-   </Label>
-   <Input
-   id="transfer-name"
-   type="text"
-   placeholder="أدخل اسم صاحب التحويل"
-   value={transferOwnerName}
-   onChange={(e) => setTransferOwnerName(e.target.value)}
-   className="text-right focus:border-primary focus:ring-primary"
-   data-testid="input-transfer-name"
-   required
-   />
-   <p className="text-xs text-slate-600 bg-blue-50 p-2 rounded">
-   يرجى إدخال اسم الشخص الذي سيقوم بالتحويل
-   </p>
-   </div>
-   )}
-
-   {/* Info message based on selection */}
-   {isSameAsCustomer ? (
-   <p className="text-xs text-emerald-700 bg-emerald-50 p-2 rounded-lg flex items-center">
-   سيتم استخدام اسم العميل كاسم صاحب التحويل
-   </p>
-   ) : (
-   <p className="text-xs text-blue-700 bg-blue-50 p-2 rounded-lg flex items-center">
-   يرجى كتابةاسم صاحب التحويل بوضوح
-   </p>
-   )}
-   </div>
-   </div>
-
-   {selectedPaymentMethod === 'cash' && (
-   <p className="text-xs text-emerald-600 mt-3 bg-emerald-50 p-2 rounded-lg">
-   الدفع النقدي - لا يتطلب تفاصيل تحويل إضافية 
-   </p>
-   )}
-   {selectedPaymentMethod && selectedPaymentMethod !== 'cash' && (
-   <p className="text-xs text-blue-600 mt-3 bg-blue-50 p-2 rounded-lg">
-   للدفع الإلكتروني - يرجى إدخال اسم صاحب التحويل أو علامةصح للتأكيد
-   </p>
-   )}
-
-   {/* Decorative elements */}
-   <div className="absolute top-4 right-4 w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full opacity-60 animate-bounce"></div>
-   <div className="absolute bottom-4 left-4 w-2 h-2 bg-gradient-to-r from-primary to-blue-500 rounded-full opacity-40 animate-ping"></div>
    </div>
    </div>
    </div>
 
-   {/* Payment Methods */}
+   {/* Payment Methods Component */}
+   <div className="space-y-6">
    <PaymentMethods
    paymentMethods={paymentMethods}
    selectedMethod={selectedPaymentMethod}
-   onSelectMethod={setSelectedPaymentMethod}
+   onSelectMethod={(method) => {
+   setSelectedPaymentMethod(method);
+   // Reset secondary payment if switching to anything other than qahwa-card
+   if (method !== 'qahwa-card') {
+   setSecondaryPaymentMethod(null);
+   }
+   }}
+   customerPhone={customerPhone}
    loyaltyCard={loyaltyCard}
    />
 
-   {/* Secondary Payment Method - For remaining drinks after loyalty card */}
-   {selectedPaymentMethod === 'qahwa-card' && availableFreeDrinks > 0 && (() => {
+   {/* Secondary Payment Selection - Only if qahwa-card selected and remaining drinks exist */}
+   {selectedPaymentMethod === 'qahwa-card' && (() => {
    const totalDrinks = cartItems.reduce((sum, item) => sum + item.quantity, 0);
    const freeApplied = Object.values(selectedFreeItems).reduce((sum, val) => sum + val, 0);
-   const remainingDrinks = totalDrinks - freeApplied;
-   return remainingDrinks > 0 ? (
-   <div className="mt-6 relative group">
-   <div className="absolute -inset-1 bg-gradient-to-r from-yellow-700/30 via-amber-700/30 to-yellow-700/30 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
-   <div className="relative from-yellow-900/40 via-amber-900/35 to-yellow-900/40 backdrop-blur-sm rounded-2xl p-5 border-2 border-yellow-800/40 shadow-xl bg-[#222429]">
-   <h4 className="font-playfair text-lg font-bold text-accent mb-4 flex items-center gap-2">
+   return totalDrinks > freeApplied;
+   })() && (
+   <div className="p-6 bg-blue-50 border-2 border-blue-200 rounded-2xl space-y-4 animate-in fade-in zoom-in duration-500">
+   <h4 className="font-bold text-blue-800 flex items-center gap-2">
    <CreditCard className="w-5 h-5" />
-   طريقة الدفع للمشروبات المتبقية ({remainingDrinks} مشروب)
+   طريقة دفع للمشروبات المتبقية
    </h4>
-   <p className="text-sm text-blue-400 mb-3">
-   اختر طريقة دفع إضافية للمشروبات المتبقية:
-   </p>
-   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-   {paymentMethods
-   .filter(m => m.id !== 'qahwa-card')
-   .map((method) => (
+   <p className="text-sm text-blue-600">لديك مشروبات متبقية لا يغطيها الرصيد المجاني. يرجى اختيار طريقة دفع ثانية:</p>
+   
+   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   {paymentMethods.filter(m => m.id !== 'qahwa-card').map(method => (
    <Button
-   key={method.id}
-   onClick={() => setSecondaryPaymentMethod(method.id as PaymentMethod)}
+   key={`secondary-${method.id}`}
    variant={secondaryPaymentMethod === method.id ? 'default' : 'outline'}
-   className={`p-4 h-auto flex flex-col items-center justify-center gap-2 ${
-   secondaryPaymentMethod === method.id 
-   ? 'bg-yellow-700 text-yellow-100 border-yellow-600' 
-   : 'border-yellow-800/50 text-yellow-100 hover:bg-yellow-900/40'
-   }`}
-   data-testid={`button-secondary-payment-${method.id}`}
+   className={`h-12 justify-start gap-3 rounded-xl border-2 ${secondaryPaymentMethod === method.id ? 'border-primary' : 'border-blue-100 bg-white hover:bg-blue-50'}`}
+   onClick={() => setSecondaryPaymentMethod(method.id)}
    >
-   <span className="font-semibold text-center">{method.nameAr}</span>
-   {method.details && <span className="text-xs opacity-75">{method.details}</span>}
+   {secondaryPaymentMethod === method.id && <CheckCircle className="w-4 h-4 text-white" />}
+   <span className="font-bold">{method.nameAr}</span>
    </Button>
    ))}
    </div>
    </div>
-   </div>
-   ) : null;
-   })()}
+   )}
 
-   {/* Payment Receipt Upload - For electronic payments only */}
-   {secondaryPaymentMethod && ['alinma', 'ur', 'barq', 'rajhi'].includes(secondaryPaymentMethod) && selectedPaymentMethod === 'qahwa-card' && (
-   <div className="mt-6 animate-in fade-in-0 slide-in-from-bottom-5 duration-500">
-   <Card className="border-2 border-yellow-800/40 bg-gradient-to-br from-yellow-900/30 to-amber-900/30">
-   <CardHeader>
-   <CardTitle className="font-playfair text-lg flex items-center gap-2 text-accent">
-   <FileText className="w-5 h-5" />
-   رفع إيصال الدفع (إجباري) - للطريقة الثانية
-   </CardTitle>
-   </CardHeader>
-   <CardContent>
-   <FileUpload
-   onFileUpload={(url) => setSecondaryPaymentReceiptUrl(url)}
-   uploadedFileUrl={secondaryPaymentReceiptUrl}
-   label="اضغط لرفع صورة الإيصال أو PDF"
+   {/* Electronic Payment Details - Creative Area */}
+   {(selectedPaymentMethod === 'alinma' || selectedPaymentMethod === 'ur' || selectedPaymentMethod === 'barq' || selectedPaymentMethod === 'rajhi') && (
+   <div className="relative group animate-in slide-in-from-top-4 duration-500">
+   <div className="absolute -inset-1 bg-gradient-to-r from-blue-400/20 to-primary/20 rounded-2xl blur opacity-25"></div>
+   <div className="relative bg-white/95 backdrop-blur-md p-6 rounded-2xl border-2 border-primary/20 shadow-xl space-y-6">
+   <div className="flex items-center gap-3">
+   <div className="p-3 bg-primary/10 rounded-full">
+   <FileText className="w-6 h-6 text-primary" />
+   </div>
+   <div>
+   <h4 className="font-bold text-lg text-accent">تفاصيل التحويل البنكي</h4>
+   <p className="text-sm text-slate-500">يرجى إتمام التحويل وإرفاق صورة الإيصال</p>
+   </div>
+   </div>
+
+   <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-100">
+   <div className="flex items-center justify-between">
+   <Label className="text-sm text-slate-500 font-bold flex items-center gap-2">
+   <input
+   type="checkbox"
+   checked={isSameAsCustomer}
+   onChange={(e) => setIsSameAsCustomer(e.target.checked)}
+   className="w-4 h-4 text-primary rounded"
    />
-   <p className="text-xs text-muted-foreground mt-2">
-   يرجى رفع صورة واضحة لإيصال التحويل (الحد الأقصى 5 ميجابايت)
-   </p>
-   </CardContent>
-   </Card>
+   صاحب التحويل هو نفس العميل؟
+   </Label>
+   </div>
+
+   {!isSameAsCustomer && (
+   <div className="space-y-2 animate-in fade-in duration-300">
+   <Label className="text-xs text-slate-600 font-bold">اسم صاحب التحويل</Label>
+   <Input
+   placeholder="أدخل الاسم كما يظهر في الحساب البنكي"
+   value={transferOwnerName}
+   onChange={(e) => setTransferOwnerName(e.target.value)}
+   className="bg-white"
+   data-testid="input-transfer-owner"
+   />
+   </div>
+   )}
+   </div>
+
+   <div className="space-y-3">
+   <Label className="text-base font-bold text-accent flex items-center gap-2">
+   صورة الإيصال (مطلوب)
+   <small className="font-normal text-slate-400">(JPG, PNG)</small>
+   </Label>
+   <FileUpload
+   onUploadComplete={(url) => setPaymentReceiptUrl(url)}
+   className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors"
+   />
+   </div>
+   </div>
    </div>
    )}
 
-   {/* Original Payment Receipt Upload - For non-qahwa card payments */}
-   {selectedPaymentMethod && selectedPaymentMethod !== 'qahwa-card' && ['alinma', 'ur', 'barq', 'rajhi'].includes(selectedPaymentMethod) && (
-   <div className="mt-6 animate-in fade-in-0 slide-in-from-bottom-5 duration-500">
-   <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-   <CardHeader>
-   <CardTitle className="font-playfair text-lg flex items-center gap-2 text-primary">
-   <FileText className="w-5 h-5" />
-   رفع إيصال الدفع (إجباري)
-   </CardTitle>
-   </CardHeader>
-   <CardContent>
-   <FileUpload
-   onFileUpload={(url) => setPaymentReceiptUrl(url)}
-   uploadedFileUrl={paymentReceiptUrl}
-   label="اضغط لرفع صورة الإيصال أو PDF"
-   />
-   <p className="text-xs text-muted-foreground mt-2">
-   يرجى رفع صورة واضحة لإيصال التحويل (الحد الأقصى 5 ميجابايت)
-   </p>
-   </CardContent>
-   </Card>
+   {/* Secondary Receipt Upload */}
+   {secondaryPaymentMethod && ['alinma', 'ur', 'barq', 'rajhi'].includes(secondaryPaymentMethod) && (
+   <div className="p-6 bg-blue-50/50 border-2 border-blue-200 rounded-2xl space-y-4">
+   <Label className="font-bold text-blue-800">إيصال الدفع للطريقة الثانية</Label>
+   <FileUpload onUploadComplete={(url) => setSecondaryPaymentReceiptUrl(url)} />
    </div>
    )}
 
-   {/* Payment Confirmation - Creative Popup Style */}
-   {showConfirmation && (
-   <div className="relative group animate-in fade-in-0 slide-in-from-bottom-10 duration-700" data-testid="section-payment-confirmation">
-   {/* Animated glow background */}
-   <div className="absolute -inset-2 bg-gradient-to-r from-green-400/30 via-primary/30 to-emerald-500/30 rounded-3xl blur-xl opacity-40 animate-pulse"></div>
-
-   {/* Main confirmation popup */}
-   <div className="relative bg-gradient-to-br from-card/95 via-green-50/90 to-emerald-50/85 backdrop-blur-sm rounded-3xl p-8 border-2 border-emerald-300/50 shadow-2xl transform transition-all duration-500 hover:scale-[1.02] hover:shadow-3xl">
-   {/* Header with animated checkmark */}
-   <div className="flex items-center justify-center mb-6">
-   <div className="relative">
-   <div className="absolute -inset-3 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full opacity-20 blur animate-pulse"></div>
-   <div className="relative bg-gradient-to-r from-emerald-500 to-green-600 rounded-full p-4 text-white shadow-xl animate-bounce">
-   <CheckCircle className="w-10 h-10" />
-   </div>
-   {/* Sparkle effects */}
-   <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping opacity-60"></div>
-   <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-emerald-300 rounded-full animate-pulse"></div>
-   </div>
+   <div className="space-y-4">
+   <Label className="text-lg font-bold text-accent flex items-center gap-2">
+   <FileText className="w-5 h-5" />
+   ملاحظات خاصة (اختياري)
+   </Label>
+   <textarea
+   className="w-full min-h-32 p-4 bg-white border-2 border-slate-200 rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-right resize-none"
+   placeholder="هل لديك طلب خاص؟ (مثال: سكر زيادة، حليب لوز...)"
+   value={customerNotes}
+   onChange={(e) => setCustomerNotes(e.target.value)}
+   data-testid="textarea-notes"
+   />
    </div>
 
-   <h4 className="font-playfair text-3xl font-bold text-center mb-3 bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent">
-   تأكيد الدفع
-   </h4>
-
-   <div className="text-center mb-8 space-y-3">
-   <p className="text-slate-700 text-lg leading-relaxed">
-   هل قمت بإرسال المبلغ المطلوب؟
-   </p>
-   <div className="bg-gradient-to-r from-primary/20 to-emerald-500/20 rounded-2xl p-4 border border-primary/30">
-   <div className="text-3xl font-bold font-playfair bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
-   {getTotalPrice().toFixed(2)} ريال
-   </div>
-   <p className="text-sm text-slate-600 mt-1">باستخدام الطريقة المحددة </p>
-   </div>
-   </div>
-   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+   <div className="pt-6">
    <Button
-   onClick={() => handlePaymentConfirmed(orderDetails)}
-   className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3"
-   data-testid="button-confirm-payment"
+   onClick={handleProceedPayment}
+   className="w-full h-16 bg-primary hover:bg-primary/95 text-white text-xl font-black rounded-2xl shadow-xl shadow-primary/20 transform transition-all active:scale-95 group overflow-hidden"
+   disabled={createOrderMutation.isPending}
+   data-testid="button-complete-purchase"
    >
-   <FileText className="w-4 h-4 ml-2" />
-   نعم، تم الدفع
+   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+   {createOrderMutation.isPending ? (
+   <span className="flex items-center gap-2">
+   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+   جاري المعالجة...
+   </span>
+   ) : (
+   <span className="flex items-center gap-3">
+   تأكيد الطلب والدفع
+   <ShoppingBag className="w-6 h-6 animate-pulse" />
+   </span>
+   )}
    </Button>
+   <p className="text-center text-xs text-slate-400 mt-4">بإتمام الطلب، أنت توافق على شروط وأحكام CLUNY CAFE</p>
+   </div>
+   </div>
+   </div>
+   </div>
+   </div>
+   </div>
+
+   {/* Modern Confirmation Modal */}
+   {showConfirmation && (
+   <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+   <div className="absolute inset-0 bg-accent/60 backdrop-blur-sm" onClick={() => setShowConfirmation(false)}></div>
+   <Card className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-3xl border-2 border-primary/20 animate-in zoom-in-95 duration-300">
+   <div className="p-8 space-y-6">
+   <div className="text-center space-y-2">
+   <div className="w-20 h-24 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+   <CheckCircle className="w-12 h-12 text-primary" />
+   </div>
+   <h3 className="text-2xl font-playfair font-bold text-accent dark:text-accent">تأكيد الطلب النهائي</h3>
+   <p className="text-slate-500">هل أنت متأكد من تفاصيل طلبك؟</p>
+   </div>
+
+   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 space-y-4">
+   <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
+   <span className="text-slate-500">المجموع النهائي:</span>
+   <span className="text-2xl font-black text-primary">{calculateFinalPrice().toFixed(2)} ريال</span>
+   </div>
+   <div className="flex justify-between items-center">
+   <span className="text-slate-500">طريقة الدفع:</span>
+   <span className="font-bold text-accent">{getPaymentMethodName(selectedPaymentMethod!)}</span>
+   </div>
+   <div className="flex justify-between items-center">
+   <span className="text-slate-500">اسم العميل:</span>
+   <span className="font-bold">{customerName}</span>
+   </div>
+   </div>
+
+   <div className="grid grid-cols-2 gap-4">
    <Button
    variant="outline"
    onClick={() => setShowConfirmation(false)}
-   className="border-border hover:bg-muted font-semibold py-3"
-   data-testid="button-cancel-payment"
+   className="h-14 rounded-2xl font-bold border-2 border-slate-200 hover:bg-slate-50"
    >
-   لا، لم أدفع بعد
+   إلغاء
    </Button>
-   </div>
    <Button
-   variant="outline"
-   onClick={handleShareWhatsApp}
-   className="w-full border-primary/50 text-primary hover:bg-primary/10 font-semibold py-3"
-   data-testid="button-share-whatsapp"
+   onClick={confirmAndCreateOrder}
+   disabled={createOrderMutation.isPending}
+   className="h-14 rounded-2xl bg-primary hover:bg-primary font-black text-lg shadow-lg shadow-primary/20"
    >
-   <MessageCircle className="w-4 h-4 ml-2" />
-   مشاركةلتجهيز الطلب
-   </Button>
-
-   {/* Decorative floating elements */}
-   <div className="absolute top-6 right-6 w-4 h-4 bg-gradient-to-r from-yellow-400 to-background0 rounded-full opacity-50 animate-pulse"></div>
-   <div className="absolute bottom-8 left-8 w-3 h-3 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full opacity-40 animate-bounce"></div>
-   </div>
-   </div>
-   )}
-
-   {/* Creative Proceed Button */}
-   <div className="relative group">
-   <div className="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-lg blur-sm opacity-75 group-hover:opacity-100 transition duration-300"></div>
-   <Button
-   onClick={handleProceedPayment}
-   disabled={!selectedPaymentMethod || createOrderMutation.isPending}
-   size="lg"
-   className="relative w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground py-6 text-xl font-bold transition-all duration-500 shadow-xl hover:shadow-2xl rounded-lg transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden"
-   data-testid="button-proceed-payment"
-   >
-   {/* Animated background sparkle effect */}
-   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
-
-   {createOrderMutation.isPending ? (
-   <div className="flex items-center justify-center relative z-10">
-   <div className="flex space-x-1 space-x-reverse">
-   <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-   <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-   <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-   </div>
-   <span className="mr-3 font-playfair">
-   جاري معالجةطلبك بعناية ...
-   </span>
-   <Coffee className="w-6 h-6 animate-pulse ml-2" />
-   </div>
-   ) : (
-   <div className="flex items-center justify-center relative z-10">
-   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ml-3 group-hover:scale-110 transition-transform duration-300">
-   <CreditCard className="w-6 h-6 text-white" />
-   </div>
-   <div className="text-center">
-   <div className="font-playfair text-xl">تأكيد طلب القهوة </div>
-   <div className="text-sm opacity-90">{calculateFinalPrice().toFixed(2)} ريال</div>
-   </div>
-   <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-   </div>
-   )}
+   {createOrderMutation.isPending ? "جاري الحفظ..." : "تأكيد وإرسال"}
    </Button>
    </div>
-   </CardContent>
+   </div>
    </Card>
    </div>
-   </div>
-   </div>
-   </div>
+   )}
   </div>
  );
 }
