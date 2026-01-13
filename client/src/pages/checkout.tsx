@@ -1558,8 +1558,7 @@ ${itemsWithPrices}
    <small className="font-normal text-slate-400">(JPG, PNG)</small>
    </Label>
    <FileUpload
-   onUploadComplete={(url) => setPaymentReceiptUrl(url)}
-   className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors"
+   onFileUpload={(url: string) => setPaymentReceiptUrl(url)}
    />
    </div>
    </div>
@@ -1570,7 +1569,7 @@ ${itemsWithPrices}
    {secondaryPaymentMethod && ['alinma', 'ur', 'barq', 'rajhi'].includes(secondaryPaymentMethod) && (
    <div className="p-6 bg-blue-50/50 border-2 border-blue-200 rounded-2xl space-y-4">
    <Label className="font-bold text-blue-800">إيصال الدفع للطريقة الثانية</Label>
-   <FileUpload onUploadComplete={(url) => setSecondaryPaymentReceiptUrl(url)} />
+   <FileUpload onFileUpload={(url: string) => setSecondaryPaymentReceiptUrl(url)} />
    </div>
    )}
 
@@ -1611,6 +1610,8 @@ ${itemsWithPrices}
    <p className="text-center text-xs text-slate-400 mt-4">بإتمام الطلب، أنت توافق على شروط وأحكام CLUNY CAFE</p>
    </div>
    </div>
+   </CardContent>
+   </Card>
    </div>
    </div>
    </div>
