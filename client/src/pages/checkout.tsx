@@ -172,8 +172,13 @@ export default function CheckoutPage() {
       const res = await fetch(`/api/payment-methods?hasFreeDrinks=${hasFreeDrinks}`);
       if (!res.ok) throw new Error('Failed to fetch payment methods');
       const data = await res.json();
-      // Only show cash and qahwa-card (loyalty card)
-      return data.filter((m: any) => m.id === 'cash' || m.id === 'qahwa-card');
+      // Added Geidea and Apple Pay
+      return data.filter((m: any) => 
+        m.id === 'cash' || 
+        m.id === 'qahwa-card' || 
+        m.id === 'geidea' || 
+        m.id === 'apple-pay'
+      );
     }
   });
 
