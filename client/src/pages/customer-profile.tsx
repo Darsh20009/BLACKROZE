@@ -19,7 +19,7 @@ export default function CustomerProfile() {
  useEffect(() => {
  const loadedProfile = customerStorage.getProfile();
  if (!loadedProfile) {
- setLocation("/customer-login");
+ setLocation("/auth");
  return;
  }
  setProfile(loadedProfile);
@@ -40,7 +40,7 @@ export default function CustomerProfile() {
  title: "تم تسجيل الخروج",
  description: "نراك قريباً!"
  });
- setLocation("/customer-login");
+ setLocation("/auth");
  };
 
  const handleDownloadCard = () => {

@@ -13,7 +13,7 @@ import { CustomerProvider } from "@/contexts/CustomerContext";
 
 // Lazy load all non-critical pages
 const MenuPage = lazy(() => import("@/pages/menu"));
-const CustomerProfile = lazy(() => import("@/pages/customer-profile"));
+import CustomerProfile from "@/pages/customer-profile";
 const ProductDetails = lazy(() => import("@/pages/product-details"));
 const MenuView = lazy(() => import("@/pages/menu-view"));
 const CartPage = lazy(() => import("@/pages/cart-page"));
