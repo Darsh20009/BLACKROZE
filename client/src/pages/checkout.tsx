@@ -355,8 +355,8 @@ export default function CheckoutPage() {
      usedFreeDrink: useFreeDrink || isQahwaCardPayment,
      freeDrinksUsed: usedFreeDrinksCount,
      deliveryAddress: customerLocation ? JSON.stringify(customerLocation) : (typeof deliveryInfo?.address === 'string' ? deliveryInfo.address : JSON.stringify(deliveryInfo?.address)),
-    latitude: customerLocation?.lat || deliveryInfo?.latitude,
-    longitude: customerLocation?.lng || deliveryInfo?.longitude,
+    latitude: customerLocation?.lat || (deliveryInfo as any)?.latitude,
+    longitude: customerLocation?.lng || (deliveryInfo as any)?.longitude,
      transferOwnerName: (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer) ? transferOwnerName : null,
    };
 
