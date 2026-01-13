@@ -302,13 +302,13 @@ export default function CheckoutPage() {
        }
      });
      totalAmount = Math.max(0, totalAmount - freeItemsDiscount);
-   } else if (useFreeDrink && (availableFreeDrinks > 0 || (profile && profile.freeDrinks > 0))) {
+   } else if (useFreeDrink && availableFreeDrinks > 0) {
      totalAmount = 0;
    } else if (appliedDiscount) {
      totalAmount = Math.max(0, totalAmount - (totalAmount * (appliedDiscount.percentage / 100)));
    }
 
-   let activeCustomerId = customer?.id;
+   let activeCustomerId = (customer as any)?.id || (customer as any)?._id;
    if (!activeCustomerId && wantToRegister) {
      try {
        setIsRegistering(true);
@@ -347,16 +347,18 @@ export default function CheckoutPage() {
      secondaryPaymentReceiptUrl,
      status: "pending",
      branchId: deliveryInfo?.branchId || "default-branch",
-     tenantId: customer?.tenantId || "demo-tenant",
+     tenantId: (customer as any)?.tenantId || "demo-tenant",
      orderType: deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn ? 'dine-in' : 'regular',
      notes: customerNotes,
      discountCode: appliedDiscount?.code,
      discountPercentage: appliedDiscount?.percentage,
      usedFreeDrink: useFreeDrink || isQahwaCardPayment,
      freeDrinksUsed: usedFreeDrinksCount,
-     deliveryAddress: customerLocation ? JSON.stringify(customerLocation) : (typeof deliveryInfo?.address === 'string' ? deliveryInfo.address : JSON.stringify(deliveryInfo?.address)),
-    latitude: customerLocation?.lat || (deliveryInfo as any)?.latitude,
-    longitude: customerLocation?.lng || (deliveryInfo as any)?.longitude,
+     deliveryAddress: {
+      fullAddress: typeof deliveryInfo?.address === 'string' ? deliveryInfo.address : (deliveryInfo?.address as any)?.fullAddress || "",
+      lat: customerLocation?.lat || (deliveryInfo as any)?.latitude || (deliveryInfo?.address as any)?.lat || 0,
+      lng: customerLocation?.lng || (deliveryInfo as any)?.longitude || (deliveryInfo?.address as any)?.lng || 0,
+    },
      transferOwnerName: (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer) ? transferOwnerName : null,
    };
 

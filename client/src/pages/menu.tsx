@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function MenuPage() {
   const { cartItems, addToCart } = useCartStore();
-  const { isAuthenticated } = useCustomer();
+  const { isAuthenticated, customer } = useCustomer();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -139,7 +139,19 @@ export default function MenuPage() {
               )}
             </AnimatePresence>
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => setLocation(isAuthenticated ? "/profile" : "/auth")} className="h-10 w-10 bg-muted rounded-xl">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => {
+              if (isAuthenticated || customer) {
+                setLocation("/profile");
+              } else {
+                setLocation("/auth");
+              }
+            }} 
+            className="h-10 w-10 bg-muted rounded-xl"
+            data-testid="button-user-profile"
+          >
             <User className="w-5 h-5 text-muted-foreground" />
           </Button>
         </div>
