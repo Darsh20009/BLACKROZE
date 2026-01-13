@@ -26,7 +26,7 @@ export function CustomerLayout({
     { path: "/menu", icon: Home, label: "القائمة", testId: "nav-menu" },
     { path: "/my-orders", icon: ClipboardList, label: "طلباتي", testId: "nav-my-orders" },
     { path: "/my-card", icon: CreditCard, label: "بطاقتي", testId: "nav-my-card" },
-    { path: "/auth", icon: User, label: "حسابي", testId: "nav-auth" },
+    { path: "/profile", icon: User, label: "حسابي", testId: "nav-profile" },
   ];
 
   return (
