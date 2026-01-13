@@ -47,9 +47,10 @@ export default function MenuPage() {
     { id: "desserts", nameAr: "حلويات", icon: Cake },
   ];
 
-  // Group items by base name (first word)
+  // Group items by base name (first word or manually specified)
   const groupedItems = coffeeItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    // Normalize base name by trimming and taking the first word
+    // Normalize base name: use nameAr directly for grouping or first word
+    // Logic: "V60" and "V60 M" both start with "V60"
     const baseName = item.nameAr.trim().split(/\s+/)[0];
     if (!acc[baseName]) acc[baseName] = [];
     acc[baseName].push(item);
@@ -261,6 +262,7 @@ export default function MenuPage() {
         item={selectedItem}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        variants={selectedItem ? (groupedItems[selectedItem.nameAr.trim().split(/\s+/)[0]] || [selectedItem]) : []}
         onAddToCart={(data) => {
           (addToCart as any)(data);
           setIsModalOpen(false);

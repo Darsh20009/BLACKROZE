@@ -28,6 +28,7 @@ interface AddToCartModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToCart: (itemData: any) => void;
+  variants?: CoffeeItem[]; // Optional prop for grouped variants
 }
 
 export function AddToCartModal({
@@ -35,26 +36,35 @@ export function AddToCartModal({
   isOpen,
   onClose,
   onAddToCart,
+  variants = [],
 }: AddToCartModalProps) {
+  const [selectedVariant, setSelectedVariant] = useState<CoffeeItem | null>(item);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const { toast } = useToast();
 
+  // Update selectedVariant when item changes
+  useMemo(() => {
+    setSelectedVariant(item);
+  }, [item]);
+
+  const activeItem = selectedVariant || item;
+
   const { data: allAddons = [] } = useQuery<IProductAddon[]>({
     queryKey: ["/api/product-addons"],
-    enabled: isOpen && !!item,
+    enabled: isOpen && !!activeItem,
   });
 
   const itemAddons = useMemo(() => {
-    if (!item) return [];
+    if (!activeItem) return [];
     return allAddons.filter(addon => addon.isAvailable === 1);
-  }, [item, allAddons]);
+  }, [activeItem, allAddons]);
 
   const handleAddToCart = () => {
-    if (!item) return;
+    if (!activeItem) return;
 
-    if (item.availableSizes && item.availableSizes.length > 0 && !selectedSize) {
+    if (activeItem.availableSizes && activeItem.availableSizes.length > 0 && !selectedSize) {
       toast({
         title: "تنبيه",
         description: "يرجى اختيار حجم المشروب",
@@ -63,12 +73,8 @@ export function AddToCartModal({
       return;
     }
 
-    const sizeData = selectedSize
-      ? item.availableSizes?.find((s) => s.nameAr === selectedSize)
-      : null;
-
     const cartItem = {
-      coffeeItemId: item.id,
+      coffeeItemId: activeItem.id,
       quantity,
       selectedSize: selectedSize || "default",
       selectedAddons: selectedAddons.map((addonId) => {
@@ -88,13 +94,13 @@ export function AddToCartModal({
     onClose();
   };
 
-  if (!item) return null;
+  if (!activeItem) return null;
 
   const totalPrice =
     (selectedSize
-      ? item.availableSizes?.find((s) => s.nameAr === selectedSize)?.price ??
-        item.price
-      : item.price) * quantity +
+      ? activeItem.availableSizes?.find((s) => s.nameAr === selectedSize)?.price ??
+        activeItem.price
+      : activeItem.price) * quantity +
     selectedAddons.reduce((sum, addonId) => {
       const addon = allAddons.find((a) => a.id === addonId);
       return sum + (addon?.price ?? 0);
@@ -107,37 +113,63 @@ export function AddToCartModal({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <DialogTitle className="text-3xl font-bold text-right text-primary mb-2">
-                {item.nameAr}
+                {activeItem.nameAr}
               </DialogTitle>
-              <p className="text-sm text-secondary text-right">{item.description}</p>
+              <p className="text-sm text-secondary text-right">{activeItem.description}</p>
             </div>
             <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-primary/20 bg-slate-800">
-              {item.imageUrl && (
-                <img src={item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`} alt={item.nameAr} className="w-full h-full object-cover" />
+              {activeItem.imageUrl && (
+                <img src={activeItem.imageUrl.startsWith('/') ? activeItem.imageUrl : `/${activeItem.imageUrl}`} alt={activeItem.nameAr} className="w-full h-full object-cover" />
               )}
             </div>
           </div>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Variants Selection (if multiple) */}
+          {variants.length > 1 && (
+            <div className="space-y-3">
+              <Label className="text-lg font-bold text-primary">☕ اختر النوع</Label>
+              <div className="flex flex-wrap gap-2">
+                {variants.map((variant) => (
+                  <Button
+                    key={variant.id}
+                    variant={selectedVariant?.id === variant.id ? "default" : "outline"}
+                    onClick={() => {
+                      setSelectedVariant(variant);
+                      setSelectedSize(null); // Reset size on variant change
+                    }}
+                    className={`rounded-xl px-4 py-2 ${
+                      selectedVariant?.id === variant.id 
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                        : "border-primary/20 hover:border-primary/50"
+                    }`}
+                  >
+                    {variant.nameAr}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Main Image */}
-          {item.imageUrl && (
+          {activeItem.imageUrl && (
             <div className="w-full h-64 rounded-lg overflow-hidden border border-primary/20 shadow-lg">
               <img
-                src={item.imageUrl}
-                alt={item.nameAr}
+                src={activeItem.imageUrl}
+                alt={activeItem.nameAr}
                 className="w-full h-full object-cover"
               />
             </div>
           )}
 
           {/* Sizes Selection - Creative Card Layout */}
-          {item.availableSizes && item.availableSizes.length > 0 && (
+          {activeItem.availableSizes && activeItem.availableSizes.length > 0 && (
             <div className="space-y-3">
               <Label className="text-lg font-bold text-primary">✨ اختر الحجم المفضل</Label>
               <RadioGroup value={selectedSize || ""} onValueChange={setSelectedSize}>
                 <div className="grid grid-cols-3 gap-3">
-                  {item.availableSizes.map((size) => (
+                  {activeItem.availableSizes.map((size) => (
                     <div key={size.nameAr}>
                       <RadioGroupItem
                         value={size.nameAr}
