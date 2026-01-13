@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { PWAInstallButton } from "@/components/pwa-install";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
-import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search } from "lucide-react";
+import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import clunyLogo from "@/assets/cluny-logo.png";
 import type { CoffeeItem, IProductAddon } from "@shared/schema";
@@ -118,6 +118,11 @@ export default function MenuPage() {
         
         <div className="flex items-center gap-2">
           <PWAInstallButton />
+          {isAuthenticated && (
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/my-card")} className="h-10 w-10 bg-primary/5 rounded-xl">
+              <QrCode className="w-5 h-5 text-primary" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" onClick={() => setLocation("/cart")} className="relative h-10 w-10 bg-primary/10 rounded-xl">
             <ShoppingCart className="w-5 h-5 text-primary" />
             <AnimatePresence>

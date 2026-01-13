@@ -13,6 +13,7 @@ import { CustomerProvider } from "@/contexts/CustomerContext";
 
 // Lazy load all non-critical pages
 const MenuPage = lazy(() => import("@/pages/menu"));
+const CustomerProfile = lazy(() => import("@/pages/customer-profile"));
 const ProductDetails = lazy(() => import("@/pages/product-details"));
 const MenuView = lazy(() => import("@/pages/menu-view"));
 const CartPage = lazy(() => import("@/pages/cart-page"));
@@ -182,6 +183,7 @@ function Router() {
  <Route path="/delivery/map">{() => <AuthGuard userType="customer"><DeliveryMapPage /></AuthGuard>}</Route>
  <Route path="/checkout">{() => <AuthGuard userType="customer"><CheckoutPage /></AuthGuard>}</Route>
  <Route path="/tracking">{() => <AuthGuard userType="customer"><OrderTrackingPage /></AuthGuard>}</Route>
+ <Route path="/profile">{() => <AuthGuard userType="customer"><CustomerProfile /></AuthGuard>}</Route>
  
  {/* Employee auth routes (public) */}
  <Route path="/employee"><EmployeeSplash /></Route>
