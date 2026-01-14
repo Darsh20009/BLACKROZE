@@ -170,20 +170,20 @@ function AppRouter() {
         </Route>
  
  {/* Notifications - for all users */}
- <Route path="/notifications">{() => <NotificationsPage />}</Route>
+ <Route path="/notifications"><NotificationsPage /></Route>
  
  {/* Customer protected routes */}
- <Route path="/copy-card">{() => <AuthGuard userType="customer"><CopyCard /></AuthGuard>}</Route>
- <Route path="/card-customization">{() => <AuthGuard userType="customer"><CardCustomization /></AuthGuard>}</Route>
- <Route path="/my-orders">{() => <AuthGuard userType="customer"><MyOrdersPage /></AuthGuard>}</Route>
- <Route path="/my-card">{() => <AuthGuard userType="customer"><MyCard /></AuthGuard>}</Route>
- <Route path="/referrals">{() => <AuthGuard userType="customer"><ReferralProgram /></AuthGuard>}</Route>
- <Route path="/cart">{() => <AuthGuard userType="customer"><CartPage /></AuthGuard>}</Route>
- <Route path="/delivery">{() => <AuthGuard userType="customer"><DeliverySelectionPage /></AuthGuard>}</Route>
- <Route path="/delivery/map">{() => <AuthGuard userType="customer"><DeliveryMapPage /></AuthGuard>}</Route>
- <Route path="/checkout">{() => <AuthGuard userType="customer"><CheckoutPage /></AuthGuard>}</Route>
- <Route path="/tracking">{() => <AuthGuard userType="customer"><OrderTrackingPage /></AuthGuard>}</Route>
- <Route path="/profile">{() => <AuthGuard userType="customer"><CustomerProfile /></AuthGuard>}</Route>
+ <Route path="/copy-card"><AuthGuard userType="customer"><CopyCard /></AuthGuard></Route>
+ <Route path="/card-customization"><AuthGuard userType="customer"><CardCustomization /></AuthGuard></Route>
+ <Route path="/my-orders"><AuthGuard userType="customer"><MyOrdersPage /></AuthGuard></Route>
+ <Route path="/my-card"><AuthGuard userType="customer"><MyCard /></AuthGuard></Route>
+ <Route path="/referrals"><AuthGuard userType="customer"><ReferralProgram /></AuthGuard></Route>
+ <Route path="/cart"><AuthGuard userType="customer"><CartPage /></AuthGuard></Route>
+ <Route path="/delivery"><AuthGuard userType="customer"><DeliverySelectionPage /></AuthGuard></Route>
+ <Route path="/delivery/map"><AuthGuard userType="customer"><DeliveryMapPage /></AuthGuard></Route>
+ <Route path="/checkout"><AuthGuard userType="customer"><CheckoutPage /></AuthGuard></Route>
+ <Route path="/tracking"><AuthGuard userType="customer"><OrderTrackingPage /></AuthGuard></Route>
+ <Route path="/profile"><AuthGuard userType="customer"><CustomerProfile /></AuthGuard></Route>
  
  {/* Employee auth routes (public) */}
  <Route path="/employee"><EmployeeSplash /></Route>
@@ -194,21 +194,21 @@ function AppRouter() {
  <Route path="/employee/activate"><EmployeeActivation /></Route>
  
  {/* Employee protected routes */}
- <Route path="/employee/dashboard">{() => <AuthGuard userType="employee"><EmployeeDashboard /></AuthGuard>}</Route>
- <Route path="/employee/cashier">{() => <AuthGuard userType="employee"><EmployeeCashier /></AuthGuard>}</Route>
- <Route path="/employee/pos">{() => <AuthGuard userType="employee"><POSSystem /></AuthGuard>}</Route>
- <Route path="/employee/kitchen">{() => <AuthGuard userType="employee"><KitchenDisplay /></AuthGuard>}</Route>
- <Route path="/employee/tables">{() => <AuthGuard userType="employee"><CashierTables /></AuthGuard>}</Route>
- <Route path="/employee/table-orders">{() => <AuthGuard userType="employee"><CashierTableOrders /></AuthGuard>}</Route>
- <Route path="/employee/orders">{() => <AuthGuard userType="employee"><EmployeeOrders /></AuthGuard>}</Route>
- <Route path="/employee/orders-display">{() => <AuthGuard userType="employee"><EmployeeOrdersDisplay /></AuthGuard>}</Route>
- <Route path="/employee/loyalty">{() => <AuthGuard userType="employee"><EmployeeLoyalty /></AuthGuard>}</Route>
- <Route path="/employee/menu-management">{() => <AuthGuard userType="employee" allowedRoles={["manager", "admin"]}><EmployeeMenuManagement /></AuthGuard>}</Route>
- <Route path="/employee/ingredients">{() => <AuthGuard userType="employee" allowedRoles={["manager", "admin"]}><EmployeeIngredientsManagement /></AuthGuard>}</Route>
- <Route path="/employee/availability">{() => <AuthGuard userType="employee"><EmployeeAvailability /></AuthGuard>}</Route>
- <Route path="/employee/attendance">{() => <AuthGuard userType="employee"><EmployeeAttendance /></AuthGuard>}</Route>
-<Route path="/employee/leave-request">{() => <AuthGuard userType="employee"><LeaveRequestPage /></AuthGuard>}</Route>
-<Route path="/employee/reservations">{() => <AuthGuard userType="employee"><CashierReservations /></AuthGuard>}</Route>
+ <Route path="/employee/dashboard"><AuthGuard userType="employee"><EmployeeDashboard /></AuthGuard></Route>
+ <Route path="/employee/cashier"><AuthGuard userType="employee"><EmployeeCashier /></AuthGuard></Route>
+ <Route path="/employee/pos"><AuthGuard userType="employee"><POSSystem /></AuthGuard></Route>
+ <Route path="/employee/kitchen"><AuthGuard userType="employee"><KitchenDisplay /></AuthGuard></Route>
+ <Route path="/employee/tables"><AuthGuard userType="employee"><CashierTables /></AuthGuard></Route>
+ <Route path="/employee/table-orders"><AuthGuard userType="employee"><CashierTableOrders /></AuthGuard></Route>
+ <Route path="/employee/orders"><AuthGuard userType="employee"><EmployeeOrders /></AuthGuard></Route>
+ <Route path="/employee/orders-display"><AuthGuard userType="employee"><EmployeeOrdersDisplay /></AuthGuard></Route>
+ <Route path="/employee/loyalty"><AuthGuard userType="employee"><EmployeeLoyalty /></AuthGuard></Route>
+ <Route path="/employee/menu-management"><AuthGuard userType="employee" allowedRoles={["manager", "admin"]}><EmployeeMenuManagement /></AuthGuard></Route>
+ <Route path="/employee/ingredients"><AuthGuard userType="employee" allowedRoles={["manager", "admin"]}><EmployeeIngredientsManagement /></AuthGuard></Route>
+ <Route path="/employee/availability"><AuthGuard userType="employee"><EmployeeAvailability /></AuthGuard></Route>
+ <Route path="/employee/attendance"><AuthGuard userType="employee"><EmployeeAttendance /></AuthGuard></Route>
+<Route path="/employee/leave-request"><AuthGuard userType="employee"><LeaveRequestPage /></AuthGuard></Route>
+<Route path="/employee/reservations"><AuthGuard userType="employee"><CashierReservations /></AuthGuard></Route>
  
  {/* Manager auth routes (public) */}
  <Route path="/manager"><ManagerLogin /></Route>
@@ -216,59 +216,59 @@ function AppRouter() {
  <Route path="/manager/login"><ManagerLogin /></Route>
  
  {/* Manager protected routes */}
- <Route path="/manager/employees">{() => <AuthGuard userType="manager"><ManagerEmployees /></AuthGuard>}</Route>
- <Route path="/manager/drivers">{() => <AuthGuard userType="manager"><ManagerDrivers /></AuthGuard>}</Route>
- <Route path="/manager/dashboard">{() => <AuthGuard userType="manager"><ManagerDashboard /></AuthGuard>}</Route>
- <Route path="/manager/tables">{() => <AuthGuard userType="manager"><ManagerTables /></AuthGuard>}</Route>
- <Route path="/manager/attendance">{() => <AuthGuard userType="manager"><ManagerAttendance /></AuthGuard>}</Route>
- <Route path="/manager/inventory">{() => <AuthGuard userType="manager"><InventorySmartPage /></AuthGuard>}</Route>
- <Route path="/manager/inventory/raw-items">{() => <AuthGuard userType="manager"><InventoryRawItems /></AuthGuard>}</Route>
- <Route path="/manager/inventory/suppliers">{() => <AuthGuard userType="manager"><InventorySuppliers /></AuthGuard>}</Route>
- <Route path="/manager/inventory/purchases">{() => <AuthGuard userType="manager"><InventoryPurchases /></AuthGuard>}</Route>
- <Route path="/manager/inventory/transfers">{() => <AuthGuard userType="manager"><InventoryTransfers /></AuthGuard>}</Route>
- <Route path="/manager/inventory/recipes">{() => <AuthGuard userType="manager"><InventoryRecipes /></AuthGuard>}</Route>
- <Route path="/manager/inventory/stock">{() => <AuthGuard userType="manager"><InventoryStock /></AuthGuard>}</Route>
- <Route path="/manager/inventory/alerts">{() => <AuthGuard userType="manager"><InventoryAlerts /></AuthGuard>}</Route>
- <Route path="/manager/inventory/movements">{() => <AuthGuard userType="manager"><InventoryMovements /></AuthGuard>}</Route>
- <Route path="/manager/accounting">{() => <AuthGuard userType="manager"><AccountingDashboard /></AuthGuard>}</Route>
- <Route path="/manager/inventory/smart">{() => <AuthGuard userType="manager"><InventorySmartPage /></AuthGuard>}</Route>
- <Route path="/manager/accounting/smart">{() => <AuthGuard userType="manager"><AccountingSmartPage /></AuthGuard>}</Route>
- <Route path="/manager/ingredients-recipes">{() => <AuthGuard userType="manager"><IngredientsRecipesInventory /></AuthGuard>}</Route>
- <Route path="/manager/os-inventory">{() => <AuthGuard userType="manager"><OSInventoryManagement /></AuthGuard>}</Route>
- <Route path="/manager/unified-inventory">{() => <AuthGuard userType="manager"><UnifiedInventoryRecipes /></AuthGuard>}</Route>
- <Route path="/manager/zatca">{() => <AuthGuard userType="manager"><ZATCAInvoices /></AuthGuard>}</Route>
- <Route path="/manager/guide">{() => <AuthGuard userType="manager"><UserGuide /></AuthGuard>}</Route>
- <Route path="/guide">{() => <UserGuide />}</Route>
- <Route path="/manager/analytics">{() => <AuthGuard userType="manager"><AdvancedAnalytics /></AuthGuard>}</Route>
- <Route path="/manager/suppliers">{() => <AuthGuard userType="manager"><SupplierManagement /></AuthGuard>}</Route>
- <Route path="/manager/loyalty">{() => <AuthGuard userType="manager"><LoyaltyProgram /></AuthGuard>}</Route>
- <Route path="/manager/integrations">{() => <AuthGuard userType="manager"><ExternalIntegrations /></AuthGuard>}</Route>
- <Route path="/manager/warehouse">{() => <AuthGuard userType="manager"><WarehouseManagement /></AuthGuard>}</Route>
- <Route path="/manager/support">{() => <AuthGuard userType="manager"><SupportSystem /></AuthGuard>}</Route>
- <Route path="/manager/inventory/stock-organization">{() => <AuthGuard userType="manager"><StockOrganizationDashboard /></AuthGuard>}</Route>
- <Route path="/manager/delivery-services">{() => <AuthGuard userType="manager"><DeliveryServiceStatus /></AuthGuard>}</Route>
- <Route path="/manager/os-recipes">{() => <AuthGuard userType="manager"><OSRecipeManagement /></AuthGuard>}</Route>
- <Route path="/manager/os-accounting">{() => <AuthGuard userType="manager"><OSAccountingDashboard /></AuthGuard>}</Route>
- <Route path="/manager/os-stock">{() => <AuthGuard userType="manager"><OSStockManagement /></AuthGuard>}</Route>
- <Route path="/manager/os-roles">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin"]}><OSRolesManagement /></AuthGuard>}</Route>
+ <Route path="/manager/employees"><AuthGuard userType="manager"><ManagerEmployees /></AuthGuard></Route>
+ <Route path="/manager/drivers"><AuthGuard userType="manager"><ManagerDrivers /></AuthGuard></Route>
+ <Route path="/manager/dashboard"><AuthGuard userType="manager"><ManagerDashboard /></AuthGuard></Route>
+ <Route path="/manager/tables"><AuthGuard userType="manager"><ManagerTables /></AuthGuard></Route>
+ <Route path="/manager/attendance"><AuthGuard userType="manager"><ManagerAttendance /></AuthGuard></Route>
+ <Route path="/manager/inventory"><AuthGuard userType="manager"><InventorySmartPage /></AuthGuard></Route>
+ <Route path="/manager/inventory/raw-items"><AuthGuard userType="manager"><InventoryRawItems /></AuthGuard></Route>
+ <Route path="/manager/inventory/suppliers"><AuthGuard userType="manager"><InventorySuppliers /></AuthGuard></Route>
+ <Route path="/manager/inventory/purchases"><AuthGuard userType="manager"><InventoryPurchases /></AuthGuard></Route>
+ <Route path="/manager/inventory/transfers"><AuthGuard userType="manager"><InventoryTransfers /></AuthGuard></Route>
+ <Route path="/manager/inventory/recipes"><AuthGuard userType="manager"><InventoryRecipes /></AuthGuard></Route>
+ <Route path="/manager/inventory/stock"><AuthGuard userType="manager"><InventoryStock /></AuthGuard></Route>
+ <Route path="/manager/inventory/alerts"><AuthGuard userType="manager"><InventoryAlerts /></AuthGuard></Route>
+ <Route path="/manager/inventory/movements"><AuthGuard userType="manager"><InventoryMovements /></AuthGuard></Route>
+ <Route path="/manager/accounting"><AuthGuard userType="manager"><AccountingDashboard /></AuthGuard></Route>
+ <Route path="/manager/inventory/smart"><AuthGuard userType="manager"><InventorySmartPage /></AuthGuard></Route>
+ <Route path="/manager/accounting/smart"><AuthGuard userType="manager"><AccountingSmartPage /></AuthGuard></Route>
+ <Route path="/manager/ingredients-recipes"><AuthGuard userType="manager"><IngredientsRecipesInventory /></AuthGuard></Route>
+ <Route path="/manager/os-inventory"><AuthGuard userType="manager"><OSInventoryManagement /></AuthGuard></Route>
+ <Route path="/manager/unified-inventory"><AuthGuard userType="manager"><UnifiedInventoryRecipes /></AuthGuard></Route>
+ <Route path="/manager/zatca"><AuthGuard userType="manager"><ZATCAInvoices /></AuthGuard></Route>
+ <Route path="/manager/guide"><AuthGuard userType="manager"><UserGuide /></AuthGuard></Route>
+ <Route path="/guide"><UserGuide /></Route>
+ <Route path="/manager/analytics"><AuthGuard userType="manager"><AdvancedAnalytics /></AuthGuard></Route>
+ <Route path="/manager/suppliers"><AuthGuard userType="manager"><SupplierManagement /></AuthGuard></Route>
+ <Route path="/manager/loyalty"><AuthGuard userType="manager"><LoyaltyProgram /></AuthGuard></Route>
+ <Route path="/manager/integrations"><AuthGuard userType="manager"><ExternalIntegrations /></AuthGuard></Route>
+ <Route path="/manager/warehouse"><AuthGuard userType="manager"><WarehouseManagement /></AuthGuard></Route>
+ <Route path="/manager/support"><AuthGuard userType="manager"><SupportSystem /></AuthGuard></Route>
+ <Route path="/manager/inventory/stock-organization"><AuthGuard userType="manager"><StockOrganizationDashboard /></AuthGuard></Route>
+ <Route path="/manager/delivery-services"><AuthGuard userType="manager"><DeliveryServiceStatus /></AuthGuard></Route>
+ <Route path="/manager/os-recipes"><AuthGuard userType="manager"><OSRecipeManagement /></AuthGuard></Route>
+ <Route path="/manager/os-accounting"><AuthGuard userType="manager"><OSAccountingDashboard /></AuthGuard></Route>
+ <Route path="/manager/os-stock"><AuthGuard userType="manager"><OSStockManagement /></AuthGuard></Route>
+ <Route path="/manager/os-roles"><AuthGuard userType="manager" allowedRoles={["owner", "admin"]}><OSRolesManagement /></AuthGuard></Route>
  
  {/* Owner protected routes */}
- <Route path="/owner/dashboard">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin"]}><OwnerDashboard /></AuthGuard>}</Route>
- <Route path="/executive">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ExecutiveDashboard /></AuthGuard>}</Route>
+ <Route path="/owner/dashboard"><AuthGuard userType="manager" allowedRoles={["owner", "admin"]}><OwnerDashboard /></AuthGuard></Route>
+ <Route path="/executive"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ExecutiveDashboard /></AuthGuard></Route>
 
  {/* Admin protected routes */}
- <Route path="/admin/dashboard">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminDashboard /></AuthGuard>}</Route>
- <Route path="/admin/employees">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminEmployees /></AuthGuard>}</Route>
-    <Route path="/admin/reports">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminReports /></AuthGuard>}</Route>
-    <Route path="/admin/settings">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminSettings /></AuthGuard>}</Route>
-    <Route path="/admin/branches">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminBranches /></AuthGuard>}</Route>
+ <Route path="/admin/dashboard"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminDashboard /></AuthGuard></Route>
+ <Route path="/admin/employees"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminEmployees /></AuthGuard></Route>
+    <Route path="/admin/reports"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminReports /></AuthGuard></Route>
+    <Route path="/admin/settings"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminSettings /></AuthGuard></Route>
+    <Route path="/admin/branches"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminBranches /></AuthGuard></Route>
 
  {/* Phase 5 - New Dashboard Pages */}
- <Route path="/recipes/management">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><RecipesManagement /></AuthGuard>}</Route>
- <Route path="/inventory/dashboard">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><InventorySmartDashboard /></AuthGuard>}</Route>
- <Route path="/accounting/dashboard">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AccountingSmartDashboard /></AuthGuard>}</Route>
- <Route path="/reports">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ReportsPage /></AuthGuard>}</Route>
- <Route path="/stock-movements">{() => <AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><StockMovementsPage /></AuthGuard>}</Route>
+ <Route path="/recipes/management"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><RecipesManagement /></AuthGuard></Route>
+ <Route path="/inventory/dashboard"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><InventorySmartDashboard /></AuthGuard></Route>
+ <Route path="/accounting/dashboard"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AccountingSmartDashboard /></AuthGuard></Route>
+ <Route path="/reports"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ReportsPage /></AuthGuard></Route>
+ <Route path="/stock-movements"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><StockMovementsPage /></AuthGuard></Route>
  
  <Route component={MenuPage} />
  </Switch>

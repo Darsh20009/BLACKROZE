@@ -143,7 +143,9 @@ export default function MenuPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => {
-              if (isAuthenticated || customer) {
+              // Ensure we check both context and localStorage for maximum robustness
+              const storedCustomer = localStorage.getItem("qahwa-customer") || localStorage.getItem("currentCustomer");
+              if (isAuthenticated || customer || storedCustomer) {
                 setLocation("/profile");
               } else {
                 setLocation("/auth");
