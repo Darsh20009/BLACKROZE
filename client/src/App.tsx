@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Router as WouterRouter, Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -120,7 +120,7 @@ const PageLoader = () => (
   </div>
 );
 
-function Router() {
+function AppRouter() {
  return (
  <Suspense fallback={<PageLoader />}>
  <Switch>
@@ -282,13 +282,13 @@ function AppContent() {
   const isCheckoutOpen = cartStore?.isCheckoutOpen;
 
   return (
-    <>
-      <Router />
-      {/* Modals outside Router to ensure they don't break routing context if they use hooks incorrectly, though they should be fine */}
+    <WouterRouter>
+      <AppRouter />
+      {/* Modals inside Router to ensure they can use routing hooks if needed */}
       {isCartOpen && <CartModal />}
       {isCheckoutOpen && <CheckoutModal />}
       <Toaster />
-    </>
+    </WouterRouter>
   );
 }
 
