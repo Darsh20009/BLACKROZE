@@ -1805,6 +1805,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get orders for a specific customer by phone
+  app.get("/api/orders/customer/:phone", async (req, res) => {
+    try {
+      const { phone } = req.params;
+      const { OrderModel } = await import("@shared/schema");
+      
+      const orders = await OrderModel.find({
+        $or: [
+          { "customerInfo.customerPhone": phone },
+          { "customerInfo.phone": phone },
+          { "phone": phone }
+        ]
+      }).sort({ createdAt: -1 });
+
+      const serializedOrders = orders.map(order => serializeDoc(order));
+      res.json(serializedOrders);
+    } catch (error) {
+      console.error("[GET /api/orders/customer/:phone] Error:", error);
+      res.status(500).json({ error: "Failed to fetch customer orders" });
+    }
+  });
+
   // Quick customer registration by cashier - تسجيل عميل سريع من الكاشير
   app.post("/api/customers/register-by-cashier", async (req, res) => {
     try {
