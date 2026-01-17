@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import BranchLocationPicker from "@/components/branch-location-picker";
+import CouponManagement from "@/components/coupon-management";
 import { 
  Coffee, Users, ShoppingBag, TrendingUp, DollarSign, 
  Package, MapPin, Layers, ArrowLeft, Calendar, Warehouse,
@@ -860,12 +861,14 @@ export default function ManagerDashboard() {
  </div>
 
  <Tabs defaultValue="orders" className="space-y-4">
- <TabsList className="grid w-full grid-cols-5 h-14">
+ <TabsList className="grid w-full grid-cols-7 h-14">
  <TabsTrigger value="orders" className="rounded-lg">الطلبات</TabsTrigger>
  <TabsTrigger value="analytics" className="rounded-lg">التحليلات</TabsTrigger>
  <TabsTrigger value="top-items" className="rounded-lg">الأكثر مبيعاً</TabsTrigger>
  <TabsTrigger value="employees" className="rounded-lg">أداء الموظفين</TabsTrigger>
  <TabsTrigger value="branches" className="rounded-lg">الفروع</TabsTrigger>
+ <TabsTrigger value="coupons" className="rounded-lg">الكوبونات</TabsTrigger>
+ <TabsTrigger value="erp" className="rounded-lg">المحاسبة</TabsTrigger>
  </TabsList>
 
  <TabsContent value="orders" className="space-y-4">
@@ -1491,6 +1494,86 @@ export default function ManagerDashboard() {
  </Card>
  ))
  )}
+ </div>
+ </CardContent>
+ </Card>
+ </TabsContent>
+
+ <TabsContent value="coupons" className="space-y-4">
+ <Card>
+ <CardHeader>
+ <div className="flex items-center justify-between">
+ <div>
+ <CardTitle>إدارة أكواد الخصم</CardTitle>
+ <CardDescription>إنشاء وإدارة أكواد الخصم للعملاء</CardDescription>
+ </div>
+ </div>
+ </CardHeader>
+ <CardContent>
+ <CouponManagement employeeId={manager?._id || manager?.id || ''} />
+ </CardContent>
+ </Card>
+ </TabsContent>
+
+ <TabsContent value="erp" className="space-y-4">
+ <Card>
+ <CardHeader>
+ <div className="flex items-center justify-between">
+ <div>
+ <CardTitle>نظام المحاسبة والفواتير</CardTitle>
+ <CardDescription>إدارة الحسابات والفواتير الضريبية ومتابعة الأرباح</CardDescription>
+ </div>
+ <Button onClick={() => setLocation('/erp/accounting')} data-testid="button-open-erp">
+ <ExternalLink className="w-4 h-4 ml-2" />
+ فتح نظام المحاسبة
+ </Button>
+ </div>
+ </CardHeader>
+ <CardContent>
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+ <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+ <CardContent className="p-4 flex items-center gap-4">
+ <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+ <TrendingUp className="w-6 h-6 text-green-600" />
+ </div>
+ <div>
+ <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
+ <p className="text-2xl font-bold text-green-600">{totalRevenue.toFixed(2)} ر.س</p>
+ </div>
+ </CardContent>
+ </Card>
+ <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+ <CardContent className="p-4 flex items-center gap-4">
+ <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+ <Receipt className="w-6 h-6 text-blue-600" />
+ </div>
+ <div>
+ <p className="text-sm text-muted-foreground">عدد الطلبات</p>
+ <p className="text-2xl font-bold text-blue-600">{filteredOrders.length}</p>
+ </div>
+ </CardContent>
+ </Card>
+ <Card className="bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+ <CardContent className="p-4 flex items-center gap-4">
+ <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+ <DollarSign className="w-6 h-6 text-purple-600" />
+ </div>
+ <div>
+ <p className="text-sm text-muted-foreground">متوسط الطلب</p>
+ <p className="text-2xl font-bold text-purple-600">{filteredOrders.length > 0 ? (totalRevenue / filteredOrders.length).toFixed(2) : '0.00'} ر.س</p>
+ </div>
+ </CardContent>
+ </Card>
+ </div>
+ <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+ <p className="text-sm text-muted-foreground mb-2">للوصول إلى نظام المحاسبة الكامل مع:</p>
+ <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+ <li>دليل الحسابات</li>
+ <li>قيود اليومية</li>
+ <li>ميزان المراجعة</li>
+ <li>قائمة الدخل والميزانية العمومية</li>
+ <li>الفواتير الضريبية المتوافقة مع ZATCA</li>
+ </ul>
  </div>
  </CardContent>
  </Card>
