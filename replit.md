@@ -32,6 +32,14 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Integrated PWA install button and floating cart summary
 - ✅ Maintained compatibility with existing AddToCartModal and CartStore
 
+### 🚀 TABLE RESERVATION SYSTEM - COMPLETED (January 2026)
+- ✅ Time-based table occupancy: Tables now show as occupied only within reservation window
+- ✅ Reservation activates 30 minutes BEFORE scheduled time
+- ✅ Auto-expiry 5 minutes AFTER scheduled time if customer doesn't arrive
+- ✅ Reservation creation no longer marks table as immediately occupied
+- ✅ Staff can extend reservations (autoExpiryTime) and expiry respects extensions
+- ✅ OrderCard component displays table number and order time for employees
+
 ### 🚀 BUG FIXES - COMPLETED
 - ✅ Fixed drink creation silently failing - removed strict branchId requirement
 - ✅ Added fallback values for missing tenantId and branchId (demo-tenant, default-branch)
