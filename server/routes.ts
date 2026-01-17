@@ -4686,6 +4686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newBranch = await BranchModel.create({
         ...branchData,
         id,
+        tenantId,
         cafeId,
         isActive: 1, // Ensure numeric 1 for isActive consistency
         createdAt: new Date(),
@@ -4804,7 +4805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/branches/:id", async (req, res) => {
+  app.put("/api/branches/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
       const branch = await storage.updateBranch(id, req.body);
@@ -4817,7 +4818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/branches/:id", async (req, res) => {
+  app.delete("/api/branches/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteBranch(id);
@@ -4826,6 +4827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(204).send();
     } catch (error) {
+      console.error("Error deleting branch:", error);
       res.status(500).json({ error: "Failed to delete branch" });
     }
   });
