@@ -86,6 +86,11 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Created ManagerNotification model for employee alerts (late check-in, leaving branch, no check-in)
 - ✅ Updated admin-branches UI to capture geofencing configuration (lat/lng, radius, late threshold)
 - ✅ Added working hours configuration to branch form
+- ✅ **Polygon-based boundaries**: Added `geofenceBoundary` field for precise branch territory definition
+- ✅ Interactive map component (`BranchPolygonPicker`) for drawing custom polygon boundaries
+- ✅ Point-in-polygon validation using turf.js `booleanPointInPolygon` for accurate attendance checks
+- ✅ Graceful fallback to radius-based check when no polygon boundary is defined
+- ✅ Undo/clear functionality for polygon editing in admin UI
 
 ### 🚀 SHIFT MANAGEMENT SYSTEM - COMPLETED (January 2026)
 - ✅ Created IShift model with start/end time, break duration, overnight shift support
