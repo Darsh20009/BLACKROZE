@@ -5164,9 +5164,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Table not found" });
       }
 
-      // Check if table is available
+      // Check if table is available - consider expired reservations as available
       if (table.reservedFor && (table.reservedFor.status === 'pending' || table.reservedFor.status === 'confirmed')) {
-        return res.status(400).json({ error: "الطاولة محجوزة بالفعل" });
+        const now = new Date();
+        const resDate = new Date(table.reservedFor.reservationDate);
+        const resTime = table.reservedFor.reservationTime || '12:00';
+        const [hours, minutes] = resTime.split(':').map(Number);
+        
+        const reservationDateTime = new Date(resDate);
+        reservationDateTime.setHours(hours || 12, minutes || 0, 0, 0);
+        
+        // Reservation expires 5 minutes AFTER the scheduled time
+        const expiryTime = new Date(reservationDateTime.getTime() + 5 * 60 * 1000);
+        
+        // If reservation hasn't expired yet, block booking
+        if (now < expiryTime) {
+          return res.status(400).json({ error: "الطاولة محجوزة بالفعل" });
+        }
+        
+        // If expired, auto-clear the old reservation before proceeding
+        console.log(`[TABLES] Auto-clearing expired reservation for table ${table.tableNumber}`);
       }
 
       // Create booking with generated ID
