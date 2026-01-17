@@ -217,7 +217,7 @@ export default function CustomerProfile() {
                 {/* Card Number */}
                 <div className="absolute top-1/2 left-8 transform -translate-y-1/2 w-full">
                   <p className="text-2xl font-mono tracking-[0.25em] text-white drop-shadow-lg">
-                    {profile.cardNumber.match(/.{1,4}/g)?.join(' ') || profile.cardNumber}
+                    {profile?.cardNumber?.match(/.{1,4}/g)?.join(' ') || profile?.cardNumber || '**** **** **** ****'}
                   </p>
                 </div>
 
