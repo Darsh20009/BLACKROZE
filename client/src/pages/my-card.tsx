@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -8,36 +7,31 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, Download, Coffee, Check, Gift, Sparkles, Star, Loader2 } from "lucide-react";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCustomer } from "@/contexts/CustomerContext";
-
-interface LoyaltyCard {
- id: string;
- customerName: string;
- phoneNumber: string;
- stamps: number;
- freeCupsEarned: number;
- freeCupsRedeemed: number;
- cardNumber: string;
- qrToken: string;
- createdAt: string;
-}
+import { useLoyaltyCard, type LoyaltyCard } from "@/hooks/useLoyaltyCard";
 
 export default function MyCard() {
  const [, setLocation] = useLocation();
  const { toast } = useToast();
- const { customer } = useCustomer();
- const [hasCard, setHasCard] = useState(false);
- const [card, setCard] = useState<LoyaltyCard | null>(null);
- const [isAutoLoading, setIsAutoLoading] = useState(false);
+ 
+ const { 
+   card, 
+   isLoading: isAutoLoading, 
+   hasCard, 
+   createCard, 
+   isCreating,
+   redeemCode: redeemCodeMutate,
+   isRedeeming,
+   refetch 
+ } = useLoyaltyCard();
 
- // Set SEO metadata
  useEffect(() => {
    document.title = "بطاقة الولاء - CLUNY CAFE | اكسب المكافآت";
    const metaDesc = document.querySelector('meta[name="description"]');
    if (metaDesc) metaDesc.setAttribute('content', 'بطاقة الولاء CLUNY CAFE - اجمع الطوابع واحصل على قهوة مجانية وعروض حصرية');
  }, []);
+ 
  const [qrDataUrl, setQrDataUrl] = useState("");
  const [redeemCode, setRedeemCode] = useState("");
  const [showConfetti, setShowConfetti] = useState(false);
@@ -49,44 +43,11 @@ export default function MyCard() {
 
  const totalStamps = 6;
 
- // Auto-fetch card if customer is logged in
  useEffect(() => {
-   const fetchCardForLoggedInCustomer = async () => {
-     if (customer?.phone && !hasCard) {
-       setIsAutoLoading(true);
-       try {
-         const response = await fetch(`/api/loyalty/cards/phone/${customer.phone}`);
-         if (response.ok) {
-           const existingCard = await response.json();
-           localStorage.setItem("qahwa-loyalty-card", JSON.stringify(existingCard));
-           setCard(existingCard);
-           setHasCard(true);
-           generateQRCode(existingCard);
-         }
-       } catch (error) {
-         console.error("Error fetching card for logged in customer:", error);
-       } finally {
-         setIsAutoLoading(false);
-       }
-     }
-   };
-   
-   fetchCardForLoggedInCustomer();
- }, [customer?.phone, hasCard]);
-
- useEffect(() => {
- const savedCard = localStorage.getItem("qahwa-loyalty-card");
- if (savedCard) {
- try {
- const cardData = JSON.parse(savedCard);
- setCard(cardData);
- setHasCard(true);
- generateQRCode(cardData);
- } catch (error) {
- console.error("Error loading card:", error);
- }
- }
- }, []);
+   if (card) {
+     generateQRCode(card);
+   }
+ }, [card]);
 
  const generateQRCode = async (cardData: LoyaltyCard) => {
  try {
@@ -105,54 +66,6 @@ export default function MyCard() {
  }
  };
 
- const redeemMutation = useMutation({
- mutationFn: async (code: string) => {
- if (!card) throw new Error("No card found");
- const response = await apiRequest("POST", "/api/loyalty/redeem-code", {
- code,
- cardId: card.id,
- });
- return await response.json();
- },
- onSuccess: (data: any) => {
- const updatedCard = data.card;
- setCard(updatedCard);
- localStorage.setItem("qahwa-loyalty-card", JSON.stringify(updatedCard));
- generateQRCode(updatedCard);
- 
- if (updatedCard.stamps === 6) {
- setShowConfetti(true);
- setTimeout(() => setShowConfetti(false), 3000);
- toast({
- title: " مبروك! قهوة مجانية!",
- description: "لقد حصلت على 6 أختام! استخدم قهوتك المجانية في طلبك القادم",
- duration: 5000,
- });
- } else if (updatedCard.stamps === 5) {
- toast({
- title: " تم فتح خصم 10%!",
- description: "ختم واحد فقط لقهوة مجانية!",
- duration: 5000,
- });
- } else {
- toast({
- title: " تم إضافة الختم بنجاح!",
- description: `لديك الآن ${updatedCard.stamps} أختام من ${totalStamps}`,
- });
- }
- 
- setRedeemCode("");
- queryClient.invalidateQueries({ queryKey: ["/api/loyalty/cards"] });
- },
- onError: (error: any) => {
- toast({
- title: " خطأ في استخدام الكود",
- description: error.message || "الكود غير صالح أو مستخدم مسبقاً",
- variant: "destructive",
- });
- },
- });
-
  const handleRedeemCode = () => {
  if (!redeemCode.trim()) {
  toast({
@@ -162,7 +75,50 @@ export default function MyCard() {
  });
  return;
  }
- redeemMutation.mutate(redeemCode.trim());
+ if (!card) {
+   toast({
+     title: "خطأ",
+     description: "لم يتم العثور على بطاقة",
+     variant: "destructive",
+   });
+   return;
+ }
+ redeemCodeMutate(
+   { code: redeemCode.trim(), cardId: card.id },
+   {
+     onSuccess: (data: any) => {
+       const updatedCard = data.card;
+       if (updatedCard?.stamps === 6) {
+         setShowConfetti(true);
+         setTimeout(() => setShowConfetti(false), 3000);
+         toast({
+           title: "مبروك! قهوة مجانية!",
+           description: "لقد حصلت على 6 أختام! استخدم قهوتك المجانية في طلبك القادم",
+           duration: 5000,
+         });
+       } else if (updatedCard?.stamps === 5) {
+         toast({
+           title: "تم فتح خصم 10%!",
+           description: "ختم واحد فقط لقهوة مجانية!",
+           duration: 5000,
+         });
+       } else {
+         toast({
+           title: "تم إضافة الختم بنجاح!",
+           description: `لديك الآن ${updatedCard?.stamps || 0} أختام من ${totalStamps}`,
+         });
+       }
+       setRedeemCode("");
+     },
+     onError: (error: any) => {
+       toast({
+         title: "خطأ في استخدام الكود",
+         description: error.message || "الكود غير صالح أو مستخدم مسبقاً",
+         variant: "destructive",
+       });
+     }
+   }
+ );
  };
 
  const createOrRetrieveCard = async () => {
@@ -182,39 +138,30 @@ export default function MyCard() {
  
  if (response.ok) {
  const existingCard = await response.json();
- localStorage.setItem("qahwa-loyalty-card", JSON.stringify(existingCard));
- setCard(existingCard);
- setHasCard(true);
- await generateQRCode(existingCard);
- 
+ await refetch();
  toast({
- title: "تم استرجاع بطاقتك! ",
+ title: "تم استرجاع بطاقتك!",
  description: `مرحباً مجدداً ${existingCard.customerName}! لديك ${existingCard.stamps} ختم`,
  });
  } else {
- const newCardResponse = await fetch("/api/loyalty/cards", {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({
- customerName: customerName.trim(),
- phoneNumber: phoneNumber.trim(),
- }),
- });
-
- if (!newCardResponse.ok) {
- throw new Error("Failed to create card");
- }
-
- const newCard = await newCardResponse.json();
- localStorage.setItem("qahwa-loyalty-card", JSON.stringify(newCard));
- setCard(newCard);
- setHasCard(true);
- await generateQRCode(newCard);
-
- toast({
- title: "تم إصدار البطاقةبنجاح! ",
- description: "احفظ بطاقتك كصورة أو استخدم QR للوصول إليها",
- });
+ createCard(
+   { customerName: customerName.trim(), phoneNumber: phoneNumber.trim() },
+   {
+     onSuccess: (newCard: any) => {
+       toast({
+         title: "تم إصدار البطاقة بنجاح!",
+         description: "احفظ بطاقتك كصورة أو استخدم QR للوصول إليها",
+       });
+     },
+     onError: (error: any) => {
+       toast({
+         title: "خطأ",
+         description: "حدث خطأ في إصدار البطاقة",
+         variant: "destructive",
+       });
+     }
+   }
+ );
  }
  } catch (error) {
  console.error("Error creating/retrieving card:", error);
@@ -258,11 +205,10 @@ export default function MyCard() {
 
  const resetCard = () => {
  localStorage.removeItem("qahwa-loyalty-card");
- setCard(null);
- setHasCard(false);
  setCustomerName("");
  setPhoneNumber("");
  setQrDataUrl("");
+ queryClient.invalidateQueries({ queryKey: ["/api/loyalty/cards/phone"] });
  };
 
  const filledStamps = card?.stamps || 0;
@@ -521,11 +467,11 @@ export default function MyCard() {
  />
  <Button
  onClick={handleRedeemCode}
- disabled={redeemMutation.isPending}
+ disabled={isRedeeming}
  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-cairo whitespace-nowrap px-6 shadow-lg"
  data-testid="button-redeem-code"
  >
- {redeemMutation.isPending ? "⏳" : "استخدام"}
+ {isRedeeming ? "..." : "استخدام"}
  </Button>
  </div>
  </Card>

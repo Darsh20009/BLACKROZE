@@ -10,24 +10,16 @@ import { customerStorage, type CustomerProfile, type LocalOrder } from "@/lib/cu
 import { useToast } from "@/hooks/use-toast";
 import QRCode from "qrcode";
 import { useQuery } from "@tanstack/react-query";
+import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
 
-export default function CustomerProfile() {
+export default function CustomerProfilePage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { customer, logout } = useCustomer();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [cardQrUrl, setCardQrUrl] = useState<string>("");
 
-  // Fetch real customer data from server
-  const { data: serverCustomer } = useQuery<any>({
-    queryKey: ["/api/customers/by-phone", customer?.phone],
-    enabled: !!customer?.phone,
-    queryFn: async () => {
-      const res = await fetch(`/api/customers/by-phone/${customer?.phone}`);
-      if (!res.ok) return null;
-      return res.json();
-    }
-  });
+  const { card: loyaltyCard, isLoading: isLoadingCard } = useLoyaltyCard();
 
   const { data: serverOrders = [], isLoading: isLoadingOrders } = useQuery<any[]>({
     queryKey: ["/api/orders/customer", customer?.phone],
@@ -46,25 +38,22 @@ export default function CustomerProfile() {
       return;
     }
     
-    // Use server data if available, fallback to local storage
     const baseProfile = loadedProfile || (customer as unknown as CustomerProfile);
     const activeProfile = {
       ...baseProfile,
-      // Override with real server data if available
-      cardNumber: serverCustomer?.cardNumber || baseProfile.cardNumber,
-      stamps: serverCustomer?.stamps ?? baseProfile.stamps ?? 0,
-      freeDrinks: serverCustomer?.freeDrinks ?? baseProfile.freeDrinks ?? 0,
+      cardNumber: loyaltyCard?.cardNumber || baseProfile.cardNumber,
+      stamps: loyaltyCard?.stamps ?? baseProfile.stamps ?? 0,
+      freeDrinks: loyaltyCard ? Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)) : (baseProfile.freeDrinks ?? 0),
     };
     setProfile(activeProfile);
 
-    // Generate QR code for the card
-    const cardData = JSON.stringify({
+    const cardData = loyaltyCard?.qrToken || JSON.stringify({
       cardNumber: activeProfile.cardNumber,
       name: activeProfile.name,
       phone: activeProfile.phone
     });
     QRCode.toDataURL(cardData, { width: 200, margin: 1 }).then(setCardQrUrl);
-  }, [setLocation, customer, serverCustomer]);
+  }, [setLocation, customer, loyaltyCard]);
 
   const handleLogout = () => {
     logout();

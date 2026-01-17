@@ -2,12 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Smartphone, CreditCard, University, Zap, Building, Banknote, Gift, Truck, Plus, Phone, Search, Coffee, Check } from "lucide-react";
 import type { PaymentMethodInfo, PaymentMethod } from "@shared/schema";
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { useCustomer } from "@/contexts/CustomerContext";
+import { useLoyaltyCard, type LoyaltyCard } from "@/hooks/useLoyaltyCard";
 
 interface PaymentMethodsProps {
  paymentMethods: PaymentMethodInfo[];
@@ -25,40 +24,15 @@ export default function PaymentMethods({
  loyaltyCard: initialLoyaltyCard,
 }: PaymentMethodsProps) {
  const { toast } = useToast();
- const { customer } = useCustomer();
   const [cardMode, setCardMode] = useState<'use' | 'add' | null>(null);
   const [searchPhone, setSearchPhone] = useState("");
   const [searchCardNumber, setSearchCardNumber] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isAddingCard, setIsAddingCard] = useState(false);
-  const [foundCard, setFoundCard] = useState<any>(initialLoyaltyCard || null);
- 
- // Use provided phone or customer phone
- const activePhone = propCustomerPhone || customer?.phone;
- 
- // Fetch loyalty card automatically if customer has phone
- const { data: autoFetchedCard } = useQuery({
-   queryKey: ["/api/loyalty/cards/phone", activePhone],
-   queryFn: async () => {
-     if (!activePhone) return null;
-     const res = await fetch(`/api/loyalty/cards/phone/${activePhone}`);
-     if (!res.ok) return null;
-     return res.json();
-   },
-   enabled: !!activePhone,
-   staleTime: 0,
-   refetchOnWindowFocus: true,
-   refetchInterval: 5000,
- });
- 
-  // Update foundCard when auto-fetched card arrives
-  useEffect(() => {
-    if (autoFetchedCard) {
-      setFoundCard(autoFetchedCard);
-    }
-  }, [autoFetchedCard]);
+  const { card: autoCard, isLoading: isLoadingCard, updateCardInCache } = useLoyaltyCard(propCustomerPhone);
+  
+  const foundCard = autoCard || initialLoyaltyCard;
 
-  // Auto-expand "use" mode if card is found and loyalty card method is selected
   useEffect(() => {
     if (foundCard && cardMode === null) {
       setCardMode('use');
@@ -109,12 +83,13 @@ export default function PaymentMethods({
 
    const res = await fetch(url);
    if (!res.ok) throw new Error("البطاقة غير موجودة");
-   const card = await res.json();
-   setFoundCard(card);
+   const cardData = await res.json();
+   updateCardInCache(cardData);
    setIsAddingCard(false);
+   setCardMode('use');
    toast({
     title: "تم العثور على البطاقة",
-    description: `أهلاً ${card.customerName || 'عميلنا العزيز'}`,
+    description: `أهلاً ${cardData.customerName || 'عميلنا العزيز'}`,
    });
   } catch (error) {
    toast({
