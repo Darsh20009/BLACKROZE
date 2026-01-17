@@ -4,10 +4,11 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coffee, User, Lock, Loader2, Eye, EyeOff, QrCode } from "lucide-react";
+import { User, Lock, Loader2, Eye, EyeOff, QrCode } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
+import qiroxLogo from "@assets/QIROX_LOGO_1768660955394.png";
 
 export default function EmployeeLogin() {
   const [location, setLocation] = useLocation();
@@ -127,8 +128,8 @@ export default function EmployeeLogin() {
     <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 mb-4 bg-primary/10 rounded-full">
-            <Coffee className="w-10 h-10 text-primary" />
+          <div className="inline-flex items-center justify-center w-40 h-28 mb-4">
+            <img src={qiroxLogo} alt="QIROX" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">CLUNY SYSTEMS</h1>
           <p className="text-muted-foreground font-cairo">تسجيل دخول الموظف</p>
