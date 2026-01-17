@@ -123,6 +123,22 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Vehicle type support: motorcycle, car, bicycle
 - ✅ API key and webhook configuration for external integrations
 
+### 🚀 DRIVER PORTAL & TRACKING - COMPLETED (January 2026)
+- ✅ Driver login page at /driver/login with phone-based authentication
+- ✅ Rate limiting: 5 login attempts per 15 minutes (in-memory Map)
+- ✅ Driver portal page at /driver/portal with order queue tabs (active/completed)
+- ✅ Status update buttons: Accept, Pick Up, Deliver with real-time feedback
+- ✅ Vehicle type badges and driver info display
+- ✅ Customer delivery tracking page at /delivery/track/:orderId
+- ✅ Progress visualization with status steps and ETA display
+- ✅ Driver info card showing name and vehicle type
+- ✅ WebSocket integration for real-time delivery updates
+- ✅ broadcastDeliveryUpdate() for order status changes
+- ✅ broadcastDriverLocation() for real-time driver position
+- ✅ broadcastNewDeliveryOrder() for notifying available drivers
+- ✅ ID normalization for MongoDB ObjectId compatibility (id/\_id fallback)
+- ✅ Routes registered: /driver/login, /driver/portal, /delivery/track/:orderId
+
 ### 🚀 BRANCH GEOFENCING SYSTEM - COMPLETED (January 2026)
 - ✅ Added `geofenceRadius` field to Branch schema (default 200 meters)
 - ✅ Added `lateThresholdMinutes` field to Branch schema (default 15 minutes)
