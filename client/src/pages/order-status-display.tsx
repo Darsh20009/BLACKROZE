@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/states";
-import { playNotificationSound } from "@/lib/notification-sounds";
 import { useOrderWebSocket } from "@/lib/websocket";
 import { 
   Coffee, 
@@ -17,8 +16,6 @@ import {
   MapPin,
   Truck,
   Bell,
-  Volume2,
-  VolumeX,
   Maximize,
   Minimize,
   Wifi,
@@ -104,7 +101,6 @@ function OrderCard({ order, isReady, isFullscreen }: { order: Order; isReady: bo
 
 export default function OrderStatusDisplayPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [soundEnabled, setSoundEnabled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const previousReadyIdsRef = useRef<Set<string>>(new Set());
   const isFirstLoadRef = useRef<boolean>(true);
@@ -221,17 +217,6 @@ export default function OrderStatusDisplayPage() {
             <div className={`font-mono text-foreground ${isFullscreen ? 'text-4xl' : 'text-2xl'}`}>
               {currentTime.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </div>
-            
-            <Button
-              variant="outline"
-              size={isFullscreen ? "lg" : "icon"}
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className={soundEnabled ? 'text-green-400 border-green-500/50' : 'text-muted-foreground'}
-              data-testid="button-toggle-sound"
-              aria-label={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
-            >
-              {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-            </Button>
             
             <Button
               variant="outline"

@@ -14,7 +14,6 @@ import {
   Truck,
   AlertCircle,
 } from "lucide-react";
-import { playNotificationSound } from "@/lib/notification-sounds";
 import {
   AlertDialog,
   AlertDialogAction,

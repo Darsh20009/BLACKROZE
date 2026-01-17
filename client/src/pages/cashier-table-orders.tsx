@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, CheckCircle, ChefHat, Truck, XCircle, User, MapPin } from "lucide-react";
+import { Clock, CheckCircle, ChefHat, Truck, XCircle, User, MapPin, Volume2, VolumeX } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import {
@@ -54,6 +54,7 @@ interface IBranch {
 export default function CashierTableOrders() {
   const [, setLocation] = useLocation();
   const [employee, setEmployee] = useState<Employee | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const previousOrderIdsRef = useRef<Set<string>>(new Set());
   const { toast } = useToast();
 
@@ -88,7 +89,9 @@ export default function CashierTableOrders() {
       
       if (newOrderIds.length > 0 && previousOrderIdsRef.current.size > 0) {
         // Play notification sound for new orders
-        playNotificationSound('newOrder', 0.6);
+        if (soundEnabled) {
+          playNotificationSound('newOrder', 0.6);
+        }
         
         toast({
           title: `طلب جديد من الطاولة`,
@@ -148,7 +151,9 @@ export default function CashierTableOrders() {
       queryClient.invalidateQueries({ queryKey: ["/api/cashier", employee?._id, "orders"] });
       
       // Play success sound when accepting order
-      playNotificationSound('success', 0.5);
+      if (soundEnabled) {
+        playNotificationSound('success', 0.5);
+      }
       
       toast({
         title: "تم استلام الطلب",
@@ -212,10 +217,12 @@ export default function CashierTableOrders() {
       queryClient.invalidateQueries({ queryKey: ["/api/cashier", employee?._id, "orders"] });
       
       // Play different sounds based on status
-      if (variables.status === 'delivered') {
-        playNotificationSound('success', 0.5);
-      } else {
-        playNotificationSound('statusChange', 0.4);
+      if (soundEnabled) {
+        if (variables.status === 'delivered') {
+          playNotificationSound('success', 0.5);
+        } else {
+          playNotificationSound('statusChange', 0.4);
+        }
       }
       
       toast({
@@ -306,9 +313,21 @@ export default function CashierTableOrders() {
               مرحباً {employee?.fullName}
             </p>
           </div>
-          <Button variant="outline" className="bg-[#944219]" onClick={() => setLocation("/employee/dashboard")}>
-            العودة للوحة التحكم
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className={soundEnabled ? "border-green-500 text-green-500" : "border-muted text-muted-foreground"}
+              data-testid="button-toggle-sound"
+              aria-label={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
+            >
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+            <Button variant="outline" className="bg-[#944219]" onClick={() => setLocation("/employee/dashboard")}>
+              العودة للوحة التحكم
+            </Button>
+          </div>
         </div>
 
 
