@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Coffee, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
+import qiroxLogo from "@assets/QIROX_LOGO_1768660955394.png";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();
@@ -52,7 +53,7 @@ export default function EmployeeSplash() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        {/* Logo */}
+        {/* QIROX Logo */}
         <motion.div
           className="relative"
           animate={{
@@ -60,32 +61,22 @@ export default function EmployeeSplash() {
           }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-primary to-primary/80 p-2 shadow-2xl shadow-primary/50">
+          <div className="relative w-64 h-40 flex items-center justify-center">
             <img
-              src="/logo.png"
-              alt="CLUNY SYSTEMS"
-              className="w-full h-full object-contain rounded-full bg-background"
+              src={qiroxLogo}
+              alt="QIROX - Build systems. Stay human."
+              className="w-full h-full object-contain"
             />
           </div>
-          <motion.div
-            className="absolute -top-4 -right-4 bg-accent text-background rounded-full p-2 shadow-lg"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Zap className="w-6 h-6 fill-current" />
-          </motion.div>
         </motion.div>
 
-        {/* Title */}
+        {/* Subtitle */}
         <motion.div
           className="text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2 font-playfair">
-            CLUNY SYSTEMS
-          </h1>
           <p className="text-muted text-lg font-cairo">نظام إدارة الموظفين</p>
         </motion.div>
 
