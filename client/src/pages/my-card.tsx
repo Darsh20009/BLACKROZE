@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, Download, Coffee, Check, Gift, Sparkles, Star } from "lucide-react";
+import { ArrowRight, Download, Coffee, Check, Gift, Sparkles, Star, Loader2 } from "lucide-react";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCustomer } from "@/contexts/CustomerContext";
 
 interface LoyaltyCard {
  id: string;
@@ -26,8 +27,10 @@ interface LoyaltyCard {
 export default function MyCard() {
  const [, setLocation] = useLocation();
  const { toast } = useToast();
+ const { customer } = useCustomer();
  const [hasCard, setHasCard] = useState(false);
  const [card, setCard] = useState<LoyaltyCard | null>(null);
+ const [isAutoLoading, setIsAutoLoading] = useState(false);
 
  // Set SEO metadata
  useEffect(() => {
@@ -45,6 +48,31 @@ export default function MyCard() {
  const [isLoading, setIsLoading] = useState(false);
 
  const totalStamps = 6;
+
+ // Auto-fetch card if customer is logged in
+ useEffect(() => {
+   const fetchCardForLoggedInCustomer = async () => {
+     if (customer?.phone && !hasCard) {
+       setIsAutoLoading(true);
+       try {
+         const response = await fetch(`/api/loyalty/cards/phone/${customer.phone}`);
+         if (response.ok) {
+           const existingCard = await response.json();
+           localStorage.setItem("qahwa-loyalty-card", JSON.stringify(existingCard));
+           setCard(existingCard);
+           setHasCard(true);
+           generateQRCode(existingCard);
+         }
+       } catch (error) {
+         console.error("Error fetching card for logged in customer:", error);
+       } finally {
+         setIsAutoLoading(false);
+       }
+     }
+   };
+   
+   fetchCardForLoggedInCustomer();
+ }, [customer?.phone, hasCard]);
 
  useEffect(() => {
  const savedCard = localStorage.getItem("qahwa-loyalty-card");
@@ -319,7 +347,12 @@ export default function MyCard() {
  )}
  </motion.div>
 
- {!hasCard ? (
+ {isAutoLoading ? (
+ <div className="flex flex-col items-center justify-center py-16">
+   <Loader2 className="w-12 h-12 text-amber-600 animate-spin mb-4" />
+   <p className="text-accent font-cairo text-lg">جاري تحميل بطاقتك...</p>
+ </div>
+ ) : !hasCard ? (
  <motion.div
  initial={{ opacity: 0, scale: 0.95 }}
  animate={{ opacity: 1, scale: 1 }}
