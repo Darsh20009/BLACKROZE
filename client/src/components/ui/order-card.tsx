@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge, DeliveryTypeBadge, TimerBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
-import { Play, Check, Printer, Clock, Coffee, MapPin, User } from "lucide-react";
+import { Play, Check, Printer, Clock, Coffee, MapPin, User, AlertTriangle, Flame, Timer, UtensilsCrossed } from "lucide-react";
 
 interface OrderItem {
   coffeeItemId: string;
@@ -17,6 +18,9 @@ interface OrderItem {
     price?: number;
     imageUrl?: string;
     category?: string;
+    prepTimeMinutes?: number;
+    station?: string;
+    allergens?: string[];
   };
 }
 
@@ -35,6 +39,9 @@ interface OrderCardProps {
     customerNotes?: string;
     customerName?: string;
     branchId?: string;
+    estimatedPrepTimeMinutes?: number;
+    prepStartedAt?: string;
+    priority?: 'normal' | 'rush' | 'vip';
   };
   variant?: "compact" | "detailed" | "kds";
   showActions?: boolean;
@@ -64,6 +71,64 @@ function getSizeAr(size: string): string {
     large: "كبير",
   };
   return sizes[size] || size;
+}
+
+function getStationAr(station?: string): string {
+  const stations: Record<string, string> = {
+    barista: "باريستا",
+    kitchen: "المطبخ",
+    cold: "المشروبات الباردة",
+    hot: "المشروبات الساخنة",
+    food: "الطعام",
+    desserts: "الحلويات",
+  };
+  return station ? stations[station] || station : "";
+}
+
+function calculateTotalPrepTime(items: OrderItem[]): number {
+  return items.reduce((total, item) => {
+    const itemPrepTime = item.coffeeItem?.prepTimeMinutes || 3;
+    return total + (itemPrepTime * item.quantity);
+  }, 0);
+}
+
+function getPrepTimeRemaining(order: { prepStartedAt?: string; estimatedPrepTimeMinutes?: number }): number | null {
+  if (!order.prepStartedAt || !order.estimatedPrepTimeMinutes) return null;
+  const startTime = new Date(order.prepStartedAt).getTime();
+  const now = Date.now();
+  const elapsedMinutes = (now - startTime) / (1000 * 60);
+  return Math.ceil(order.estimatedPrepTimeMinutes - elapsedMinutes);
+}
+
+function getSlaStatus(elapsedMinutes: number, estimatedPrepTime?: number): 'on-track' | 'warning' | 'overdue' {
+  const targetTime = estimatedPrepTime || 10;
+  if (elapsedMinutes >= targetTime) return 'overdue';
+  if (elapsedMinutes >= targetTime * 0.7) return 'warning';
+  return 'on-track';
+}
+
+function getUniqueStations(items: OrderItem[]): string[] {
+  const stations = items
+    .map(item => item.coffeeItem?.station || item.coffeeItem?.category)
+    .filter((station): station is string => !!station && station !== 'general')
+    .filter((v, i, a) => a.indexOf(v) === i);
+  return stations;
+}
+
+function hasAllergens(items: OrderItem[]): boolean {
+  return items.some(item => item.coffeeItem?.allergens && item.coffeeItem.allergens.length > 0);
+}
+
+function getAllAllergens(items: OrderItem[]): string[] {
+  const allergens: string[] = [];
+  items.forEach(item => {
+    if (item.coffeeItem?.allergens) {
+      item.coffeeItem.allergens.forEach(a => {
+        if (!allergens.includes(a)) allergens.push(a);
+      });
+    }
+  });
+  return allergens;
 }
 
 export function OrderCard({
@@ -110,14 +175,39 @@ export function OrderCard({
   }
 
   if (variant === "kds") {
+    const hasPrepMetadata = !!(order.estimatedPrepTimeMinutes || order.prepStartedAt);
+    const slaStatus = hasPrepMetadata 
+      ? getSlaStatus(elapsedMinutes, order.estimatedPrepTimeMinutes) 
+      : (isDelayed ? 'overdue' : isWarning ? 'warning' : 'on-track');
+    const prepTimeRemaining = hasPrepMetadata ? getPrepTimeRemaining(order) : null;
+    const stations = getUniqueStations(order.items);
+    const orderHasAllergens = hasAllergens(order.items);
+    const allergensList = getAllAllergens(order.items);
+    const estimatedTime = calculateTotalPrepTime(order.items);
+    
+    const slaBorderClass = slaStatus === 'overdue' 
+      ? "border-red-500 border-2" 
+      : slaStatus === 'warning' 
+      ? "border-amber-500 border-2" 
+      : cardBorderClass;
+
     return (
-      <Card className={cn("flex flex-col h-full", cardBorderClass, className)} data-testid={`card-order-kds-${order.id}`}>
+      <Card className={cn("flex flex-col h-full", slaBorderClass, className)} data-testid={`card-order-kds-${order.id}`}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold font-mono text-primary" data-testid="text-order-number-kds">
                 #{lastThreeDigits}
               </span>
+              {order.priority === 'rush' && (
+                <Badge className="bg-red-500 text-white animate-pulse">
+                  <Flame className="h-3 w-3 ml-1" />
+                  مستعجل
+                </Badge>
+              )}
+              {order.priority === 'vip' && (
+                <Badge className="bg-amber-500 text-black">VIP</Badge>
+              )}
               {order.deliveryType && (
                 <DeliveryTypeBadge type={order.deliveryType} size="sm" />
               )}
@@ -127,10 +217,48 @@ export function OrderCard({
               {showTimer && <TimerBadge minutes={elapsedMinutes} />}
             </div>
           </div>
-          {order.tableNumber && (
-            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-              <MapPin className="h-3.5 w-3.5" />
-              <span>طاولة {order.tableNumber}</span>
+          
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            {order.tableNumber && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5" />
+                <span>طاولة {order.tableNumber}</span>
+              </div>
+            )}
+            {stations.length > 0 && (
+              <div className="flex items-center gap-1">
+                {stations.map((station, idx) => (
+                  <Badge key={idx} variant="outline" className="text-xs">
+                    <UtensilsCrossed className="h-3 w-3 ml-1" />
+                    {getStationAr(station) || station}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Timer className="h-3 w-3" />
+              <span>~{estimatedTime} د</span>
+            </div>
+          </div>
+          
+          {orderHasAllergens && (
+            <div className="flex items-center gap-1 mt-2 p-1.5 rounded bg-red-500/10 border border-red-500/30">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+              <span className="text-xs text-red-600 font-medium">تنبيه: {allergensList.join(", ")}</span>
+            </div>
+          )}
+          
+          {prepTimeRemaining !== null && displayStatus === "in_progress" && (
+            <div className={cn(
+              "flex items-center gap-1 mt-2 p-1.5 rounded text-xs font-medium",
+              prepTimeRemaining <= 0 ? "bg-red-500/10 text-red-600" : 
+              prepTimeRemaining <= 2 ? "bg-amber-500/10 text-amber-600" : 
+              "bg-green-500/10 text-green-600"
+            )}>
+              <Timer className="h-3.5 w-3.5" />
+              {prepTimeRemaining <= 0 
+                ? `متأخر ${Math.abs(prepTimeRemaining)} دقيقة` 
+                : `متبقي ${prepTimeRemaining} دقيقة`}
             </div>
           )}
         </CardHeader>

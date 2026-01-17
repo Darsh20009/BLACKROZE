@@ -4,18 +4,47 @@ import JsBarcode from "jsbarcode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Wallet, Coffee, Award, Sparkles, Gift, Star, CreditCard } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Download, Wallet, Coffee, Award, Sparkles, Gift, Star, CreditCard, TrendingUp, Crown } from "lucide-react";
 import type { LoyaltyCard } from "@shared/schema";
 
 interface LoyaltyCardProps {
   card: LoyaltyCard;
   showActions?: boolean;
   compact?: boolean;
+  showTierProgress?: boolean;
 }
 
-export default function LoyaltyCardComponent({ card, showActions = true, compact = false }: LoyaltyCardProps) {
+const tierThresholds = {
+  bronze: { min: 0, max: 499, next: 'silver' },
+  silver: { min: 500, max: 1499, next: 'gold' },
+  gold: { min: 1500, max: 4999, next: 'platinum' },
+  platinum: { min: 5000, max: Infinity, next: null },
+};
+
+function getTierProgress(tier: string, totalSpent: number): { percentage: number; toNext: number; nextTier: string | null } {
+  const currentTier = tierThresholds[tier as keyof typeof tierThresholds] || tierThresholds.bronze;
+  const nextTier = currentTier.next;
+  
+  if (!nextTier) {
+    return { percentage: 100, toNext: 0, nextTier: null };
+  }
+  
+  const nextThreshold = tierThresholds[nextTier as keyof typeof tierThresholds]?.min || 0;
+  const currentMin = currentTier.min;
+  const range = nextThreshold - currentMin;
+  const progress = totalSpent - currentMin;
+  const percentage = Math.min(100, Math.max(0, (progress / range) * 100));
+  const toNext = Math.max(0, nextThreshold - totalSpent);
+  
+  return { percentage, toNext, nextTier };
+}
+
+export default function LoyaltyCardComponent({ card, showActions = true, compact = false, showTierProgress = true }: LoyaltyCardProps) {
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
   const barcodeSvgRef = useRef<SVGSVGElement>(null);
+  const hasTierData = !!(card.tier && card.totalSpent !== undefined);
+  const tierProgress = getTierProgress(card.tier || 'bronze', card.totalSpent || 0);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [barcodeDataUrl, setBarcodeDataUrl] = useState<string>("");
 
@@ -356,6 +385,36 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
           <div className="bg-white rounded-lg p-2 overflow-hidden flex justify-center">
             <svg ref={barcodeSvgRef} data-testid="svg-barcode" />
           </div>
+
+          {showTierProgress && hasTierData && tierProgress.nextTier && (
+            <div className="bg-white/10 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="text-sm font-medium">تقدم المستوى</span>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <Crown className="w-3 h-3" />
+                  <span>المستوى التالي: {tierProgress.nextTier === 'silver' ? 'فضي' : tierProgress.nextTier === 'gold' ? 'ذهبي' : 'بلاتيني'}</span>
+                </div>
+              </div>
+              <Progress value={tierProgress.percentage} className="h-2" />
+              <div className="flex justify-between text-xs opacity-80">
+                <span>{tierProgress.percentage.toFixed(0)}% مكتمل</span>
+                <span>متبقي {tierProgress.toNext} ر.س للترقية</span>
+              </div>
+            </div>
+          )}
+
+          {showTierProgress && hasTierData && !tierProgress.nextTier && (
+            <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-xl p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Crown className="w-5 h-5 text-yellow-300" />
+                <span className="font-bold text-yellow-200">أعلى مستوى!</span>
+              </div>
+              <p className="text-xs opacity-80">أنت في المستوى البلاتيني - استمتع بجميع المزايا الحصرية</p>
+            </div>
+          )}
         </div>
       </Card>
 

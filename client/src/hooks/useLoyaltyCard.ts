@@ -13,16 +13,26 @@ export interface LoyaltyCard {
   cardNumber: string;
   qrToken: string;
   points?: number;
+  tier?: string;
+  totalSpent?: number;
+  discountCount?: number;
   createdAt: string;
   updatedAt?: string;
+  lastSyncedAt?: string;
 }
 
 const STORAGE_KEY = "qahwa-loyalty-card";
 const PROFILE_STORAGE_KEY = "qahwa-customer-profile";
+const PENDING_SYNC_KEY = "qahwa-loyalty-pending-sync";
+const QUERY_KEY_PREFIX = "/api/loyalty/cards/phone";
 
-function syncAllStorages(card: LoyaltyCard | null) {
+function syncAllStorages(card: LoyaltyCard | null, isServerData = false) {
   if (card) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(card));
+    const cardWithSync = {
+      ...card,
+      lastSyncedAt: isServerData ? new Date().toISOString() : card.lastSyncedAt,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cardWithSync));
     
     const profile = localStorage.getItem(PROFILE_STORAGE_KEY);
     if (profile) {
@@ -32,6 +42,8 @@ function syncAllStorages(card: LoyaltyCard | null) {
           ...parsed,
           cardNumber: card.cardNumber,
           stamps: card.stamps,
+          tier: card.tier,
+          totalSpent: card.totalSpent,
           freeDrinks: Math.max(0, (card.freeCupsEarned || 0) - (card.freeCupsRedeemed || 0)),
         };
         localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updated));
@@ -39,9 +51,33 @@ function syncAllStorages(card: LoyaltyCard | null) {
         console.error("Failed to sync to profile:", e);
       }
     }
+    
+    if (isServerData) {
+      localStorage.removeItem(PENDING_SYNC_KEY);
+    }
   } else {
     localStorage.removeItem(STORAGE_KEY);
   }
+}
+
+function markPendingSync(operation: { type: string; data: any }) {
+  const pending = getPendingSyncOperations();
+  pending.push({ ...operation, timestamp: new Date().toISOString() });
+  localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(pending));
+}
+
+function getPendingSyncOperations(): Array<{ type: string; data: any; timestamp: string }> {
+  try {
+    const stored = localStorage.getItem(PENDING_SYNC_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function needsSync(): boolean {
+  const pendingOps = getPendingSyncOperations();
+  return pendingOps.length > 0;
 }
 
 function getFromLocalStorage(): LoyaltyCard | null {
@@ -76,7 +112,7 @@ export function useLoyaltyCard(phoneNumber?: string) {
         const response = await fetch(`/api/loyalty/cards/phone/${phone}`);
         if (response.ok) {
           const data = await response.json();
-          syncAllStorages(data);
+          syncAllStorages(data, true);
           return data;
         }
         if (response.status === 404) {
@@ -85,7 +121,10 @@ export function useLoyaltyCard(phoneNumber?: string) {
         throw new Error("Failed to fetch card");
       } catch (error) {
         const cached = getFromLocalStorage();
-        if (cached) return cached;
+        if (cached) {
+          console.log("Using cached loyalty card data (offline mode)");
+          return cached;
+        }
         throw error;
       }
     },
@@ -100,7 +139,7 @@ export function useLoyaltyCard(phoneNumber?: string) {
       return await response.json();
     },
     onSuccess: (newCard) => {
-      syncAllStorages(newCard);
+      syncAllStorages(newCard, true);
       queryClient.setQueryData(["/api/loyalty/cards/phone", newCard.phoneNumber], newCard);
     },
   });
@@ -112,16 +151,18 @@ export function useLoyaltyCard(phoneNumber?: string) {
     },
     onSuccess: (data) => {
       if (data.card) {
-        syncAllStorages(data.card);
+        syncAllStorages(data.card, true);
         queryClient.setQueryData(["/api/loyalty/cards/phone", data.card.phoneNumber], data.card);
       }
     },
   });
 
-  const updateCardInCache = (updatedCard: LoyaltyCard) => {
-    syncAllStorages(updatedCard);
+  const updateCardInCache = (updatedCard: LoyaltyCard, isServerData = false) => {
+    syncAllStorages(updatedCard, isServerData);
     queryClient.setQueryData(["/api/loyalty/cards/phone", updatedCard.phoneNumber], updatedCard);
   };
+
+  const hasPendingSync = needsSync();
 
   const availableFreeDrinks = card ? Math.max(0, (card.freeCupsEarned || 0) - (card.freeCupsRedeemed || 0)) : 0;
   const stampsToNextFreeDrink = card ? 6 - (card.stamps % 6) : 6;
@@ -139,6 +180,8 @@ export function useLoyaltyCard(phoneNumber?: string) {
     availableFreeDrinks,
     stampsToNextFreeDrink,
     hasCard: !!card,
+    hasPendingSync,
+    lastSyncedAt: card?.lastSyncedAt,
   };
 }
 
