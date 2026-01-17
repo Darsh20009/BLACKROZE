@@ -21,11 +21,11 @@ export default function SplashScreen() {
     setShouldShow(true);
     localStorage.setItem("hasSeenSplash", "true");
 
-    // After 4.5 seconds (animation duration), redirect to menu
+    // After 2 seconds, redirect to menu
     const timer = setTimeout(() => {
       setLoading(false);
-      setTimeout(() => setLocation("/menu"), 500);
-    }, 4500);
+      setTimeout(() => setLocation("/menu"), 300);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [setLocation]);
 

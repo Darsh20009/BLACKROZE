@@ -16,8 +16,8 @@ export default function EmployeeSplash() {
 
     const timer = setTimeout(() => {
       setIsLoading(false);
-      setTimeout(() => setLocation("/employee/gateway"), 600);
-    }, 4000);
+      setTimeout(() => setLocation("/employee/gateway"), 300);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [setLocation]);
