@@ -98,7 +98,6 @@ export function ManagerLayout({
     { path: "/manager/inventory/recipes", label: "الوصفات", id: "inventory-recipes" },
     { path: "/manager/inventory/suppliers", label: "الموردين", id: "inventory-suppliers" },
     { path: "/manager/inventory/purchases", label: "المشتريات", id: "inventory-purchases" },
-    { path: "/manager/inventory/transfers", label: "التحويلات", id: "inventory-transfers" },
     { path: "/manager/inventory/alerts", label: "التنبيهات", id: "inventory-alerts" },
   ];
 

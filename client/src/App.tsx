@@ -62,7 +62,6 @@ const InventoryDashboard = lazy(() => import("@/pages/inventory-dashboard"));
 const InventoryRawItems = lazy(() => import("@/pages/inventory-raw-items"));
 const InventorySuppliers = lazy(() => import("@/pages/inventory-suppliers"));
 const InventoryPurchases = lazy(() => import("@/pages/inventory-purchases"));
-const InventoryTransfers = lazy(() => import("@/pages/inventory-transfers"));
 const InventoryRecipes = lazy(() => import("@/pages/inventory-recipes"));
 const InventoryStock = lazy(() => import("@/pages/inventory-stock"));
 const InventoryAlerts = lazy(() => import("@/pages/inventory-alerts"));
@@ -225,7 +224,6 @@ function AppRouter() {
  <Route path="/manager/inventory/raw-items"><AuthGuard userType="manager"><InventoryRawItems /></AuthGuard></Route>
  <Route path="/manager/inventory/suppliers"><AuthGuard userType="manager"><InventorySuppliers /></AuthGuard></Route>
  <Route path="/manager/inventory/purchases"><AuthGuard userType="manager"><InventoryPurchases /></AuthGuard></Route>
- <Route path="/manager/inventory/transfers"><AuthGuard userType="manager"><InventoryTransfers /></AuthGuard></Route>
  <Route path="/manager/inventory/recipes"><AuthGuard userType="manager"><InventoryRecipes /></AuthGuard></Route>
  <Route path="/manager/inventory/stock"><AuthGuard userType="manager"><InventoryStock /></AuthGuard></Route>
  <Route path="/manager/inventory/alerts"><AuthGuard userType="manager"><InventoryAlerts /></AuthGuard></Route>

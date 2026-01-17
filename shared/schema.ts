@@ -2139,7 +2139,7 @@ export type InsertTable = z.infer<typeof insertTableSchema>;
 export type Attendance = IAttendance;
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 
-export type PaymentMethod = 'cash' | 'alinma' | 'ur' | 'barq' | 'rajhi' | 'qahwa-card' | 'pos' | 'delivery' | 'apple_pay';
+export type PaymentMethod = 'cash' | 'qahwa-card' | 'loyalty-card' | 'pos' | 'geidea' | 'apple-pay' | 'mada';
 
 export interface PaymentMethodInfo {
   id: PaymentMethod;

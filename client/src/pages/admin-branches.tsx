@@ -14,7 +14,17 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, MapPin, Phone, User, Store, ArrowRight, Loader2, Edit2 } from 'lucide-react';
+import { Plus, MapPin, Phone, User, Store, ArrowRight, Loader2, Edit2, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useLocation } from 'wouter';
 
 interface Branch {
@@ -31,6 +41,9 @@ export default function AdminBranches() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [formData, setFormData] = useState({
     nameAr: '',
     nameEn: '',
@@ -61,6 +74,77 @@ export default function AdminBranches() {
       });
     }
   });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string; updates: any }) => 
+      apiRequest('PUT', `/api/branches/${data.id}`, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/branches'] });
+      toast({
+        title: "تم تحديث الفرع بنجاح",
+      });
+      setIsEditDialogOpen(false);
+      setSelectedBranch(null);
+      setFormData({ nameAr: '', nameEn: '', address: '', phone: '' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ في تحديث الفرع",
+        description: error?.message || "حدث خطأ عند تحديث الفرع",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/branches/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/branches'] });
+      toast({
+        title: "تم حذف الفرع بنجاح",
+      });
+      setDeleteDialogOpen(false);
+      setSelectedBranch(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ في حذف الفرع",
+        description: error?.message || "حدث خطأ عند حذف الفرع",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleEdit = (branch: Branch) => {
+    setSelectedBranch(branch);
+    setFormData({
+      nameAr: branch.nameAr || '',
+      nameEn: branch.nameEn || '',
+      address: branch.address || '',
+      phone: branch.phone || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (branch: Branch) => {
+    setSelectedBranch(branch);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBranch) return;
+    const branchId = selectedBranch.id || selectedBranch._id;
+    if (!branchId) return;
+    updateMutation.mutate({ id: branchId, updates: formData });
+  };
+
+  const confirmDelete = () => {
+    if (!selectedBranch) return;
+    const branchId = selectedBranch.id || selectedBranch._id;
+    if (!branchId) return;
+    deleteMutation.mutate(branchId);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,6 +299,28 @@ export default function AdminBranches() {
                       المدير: {branch.managerName}
                     </div>
                   )}
+                  <div className="flex gap-2 pt-2 border-t">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleEdit(branch)}
+                      className="flex-1"
+                      data-testid={`button-edit-branch-${branchId}`}
+                    >
+                      <Edit2 className="w-4 h-4 ml-1" />
+                      تعديل
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleDelete(branch)}
+                      className="flex-1 text-destructive hover:text-destructive"
+                      data-testid={`button-delete-branch-${branchId}`}
+                    >
+                      <Trash2 className="w-4 h-4 ml-1" />
+                      حذف
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -227,6 +333,127 @@ export default function AdminBranches() {
           </div>
         )}
       </div>
+
+      {/* Edit Branch Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) {
+          setSelectedBranch(null);
+          setFormData({ nameAr: '', nameEn: '', address: '', phone: '' });
+        }
+      }}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تعديل الفرع</DialogTitle>
+            <DialogDescription>
+              تعديل بيانات الفرع
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nameAr">اسم الفرع (بالعربية) *</Label>
+                <Input 
+                  id="edit-nameAr"
+                  required
+                  value={formData.nameAr}
+                  onChange={(e) => setFormData({...formData, nameAr: e.target.value})}
+                  placeholder="فرع المربع"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-nameEn">اسم الفرع (بالإنجليزي)</Label>
+                <Input 
+                  id="edit-nameEn"
+                  value={formData.nameEn}
+                  onChange={(e) => setFormData({...formData, nameEn: e.target.value})}
+                  placeholder="Al-Murabba Branch"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-address">العنوان</Label>
+                <Input 
+                  id="edit-address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  placeholder="الرياض، طريق الملك فهد"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">رقم الهاتف</Label>
+                <Input 
+                  id="edit-phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  placeholder="0501234567"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-accent hover:bg-accent"
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="w-4 h-4 ml-2" />
+                    حفظ التعديلات
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف الفرع</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف الفرع "{selectedBranch?.nameAr}"؟ 
+              هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedBranch(null)}>
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                  جاري الحذف...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 ml-2" />
+                  تأكيد الحذف
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
