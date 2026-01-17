@@ -48,6 +48,13 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Removed all direct localStorage.setItem calls from components
 - ✅ Consistent loyalty card display across payment methods, profile, and card pages
 
+### 🚀 CHECKOUT PAGE IMPROVEMENTS - COMPLETED (January 2026)
+- ✅ Added discount code input field with validation UI
+- ✅ Added confirmation dialog before order creation
+- ✅ Confirmation dialog shows accurate totals including discounts and free drinks
+- ✅ Shows secondary payment method for Qahwa-card split payments
+- ✅ Proper calculation matching backend order total
+
 ### 🚀 BUG FIXES - COMPLETED
 - ✅ Fixed drink creation silently failing - removed strict branchId requirement
 - ✅ Added fallback values for missing tenantId and branchId (demo-tenant, default-branch)
