@@ -1402,6 +1402,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Serialize and don't send password back
       const serialized = serializeDoc(customer);
       const { password: _, ...customerData } = serialized;
+
+      // Set customer in session
+      (req.session as any).customer = customerData;
+
       res.status(201).json(customerData);
     } catch (error) {
       res.status(500).json({ error: "فشل إنشاء الحساب" });
@@ -1468,6 +1472,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Serialize and don't send password back
       const serialized = serializeDoc(customer);
       const { password: _, ...customerData } = serialized;
+
+      // Set customer in session
+      (req.session as any).customer = customerData;
+      
       res.json(customerData);
     } catch (error) {
       res.status(500).json({ error: "فشل تسجيل الدخول" });
@@ -1664,7 +1672,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const customer = await storage.verifyCustomerPassword(cleanPhone, password);
         if (customer) {
           const { password: _, ...customerData } = customer;
-          return res.json(customerData);
+          const serialized = serializeDoc(customerData);
+          // Set customer in session
+          (req.session as any).customer = serialized;
+          return res.json(serialized);
         }
         return res.status(401).json({ error: "Invalid credentials" });
       }
@@ -1673,7 +1684,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let customer = await storage.getCustomerByPhone(cleanPhone);
       if (customer) {
         const { password: _, ...customerData } = customer;
-        return res.json(customerData);
+        const serialized = serializeDoc(customerData);
+        // Set customer in session
+        (req.session as any).customer = serialized;
+        return res.json(serialized);
       }
 
       // For new registrations, require password
@@ -1852,6 +1866,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { password: _, ...customerData } = customer;
       const serialized = serializeDoc(customerData);
+
+      // Set customer in session
+      (req.session as any).customer = serialized;
+
       res.status(201).json(serialized);
     } catch (error) {
       res.status(500).json({ error: "فشل تسجيل العميل" });
