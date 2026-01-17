@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useCartStore } from "@/lib/cart-store";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -415,13 +416,157 @@ export default function CheckoutPage() {
                    customerPhone={customerPhone}
                    loyaltyCard={loyaltyCard}
                  />
-                 <Button onClick={handleProceedPayment} className="w-full h-14 text-lg">تأكيد الطلب</Button>
+                 
+                 {/* قسم كود الخصم */}
+                 <div className="border rounded-lg p-4 bg-gradient-to-r from-amber-50 to-orange-50">
+                   <div className="flex items-center gap-2 mb-3">
+                     <Gift className="w-5 h-5 text-amber-600" />
+                     <Label className="font-semibold text-amber-800">هل لديك كود خصم؟</Label>
+                   </div>
+                   <div className="flex gap-2">
+                     <Input
+                       value={discountCode}
+                       onChange={(e) => setDiscountCode(e.target.value)}
+                       placeholder="أدخل كود الخصم"
+                       className="flex-1"
+                       disabled={!!appliedDiscount}
+                       data-testid="input-discount-code"
+                     />
+                     {appliedDiscount ? (
+                       <Button
+                         variant="outline"
+                         onClick={() => {
+                           setAppliedDiscount(null);
+                           setDiscountCode("");
+                         }}
+                         className="text-red-600 border-red-300"
+                         data-testid="button-remove-discount"
+                       >
+                         إزالة
+                       </Button>
+                     ) : (
+                       <Button
+                         onClick={handleValidateDiscount}
+                         disabled={!discountCode.trim() || isValidatingDiscount}
+                         className="bg-amber-600 hover:bg-amber-700"
+                         data-testid="button-apply-discount"
+                       >
+                         {isValidatingDiscount ? "جاري التحقق..." : "تطبيق"}
+                       </Button>
+                     )}
+                   </div>
+                   {appliedDiscount && (
+                     <div className="mt-3 flex items-center gap-2 text-green-700 bg-green-50 p-2 rounded-lg">
+                       <Sparkles className="w-4 h-4" />
+                       <span className="font-medium">تم تطبيق خصم {appliedDiscount.percentage}% بنجاح!</span>
+                     </div>
+                   )}
+                 </div>
+
+                 <Button onClick={handleProceedPayment} className="w-full h-14 text-lg" data-testid="button-confirm-order">تأكيد الطلب</Button>
                </div>
              </CardContent>
            </Card>
          </div>
        </div>
      </div>
+
+     {/* نافذة تأكيد الدفع */}
+     <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+       <DialogContent className="max-w-md" dir="rtl">
+         <DialogHeader>
+           <DialogTitle className="text-xl font-bold text-center">تأكيد الطلب</DialogTitle>
+           <DialogDescription className="text-center">
+             يرجى مراجعة تفاصيل طلبك قبل التأكيد
+           </DialogDescription>
+         </DialogHeader>
+         
+         <div className="space-y-4 py-4">
+           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+             <div className="flex justify-between">
+               <span className="text-muted-foreground">عدد المنتجات:</span>
+               <span className="font-medium">{cartItems.reduce((sum, i) => sum + i.quantity, 0)} منتج</span>
+             </div>
+             <div className="flex justify-between">
+               <span className="text-muted-foreground">طريقة الدفع:</span>
+               <span className="font-medium">
+                 {selectedPaymentMethod === 'cash' && 'كاش عند الاستلام'}
+                 {selectedPaymentMethod === 'qahwa-card' && 'بطاقة قهوة'}
+                 {selectedPaymentMethod === 'loyalty-card' && 'بطاقة الولاء'}
+                 {selectedPaymentMethod === 'pos' && 'نقاط البيع'}
+                 {selectedPaymentMethod === 'geidea' && 'Geidea'}
+                 {selectedPaymentMethod === 'apple-pay' && 'Apple Pay'}
+                 {selectedPaymentMethod === 'mada' && 'مدى'}
+               </span>
+             </div>
+             {selectedPaymentMethod === 'qahwa-card' && secondaryPaymentMethod && (
+               <div className="flex justify-between text-muted-foreground">
+                 <span>الدفع الإضافي:</span>
+                 <span className="font-medium">
+                   {secondaryPaymentMethod === 'cash' && 'كاش'}
+                   {secondaryPaymentMethod === 'mada' && 'مدى'}
+                   {secondaryPaymentMethod === 'apple-pay' && 'Apple Pay'}
+                 </span>
+               </div>
+             )}
+             {selectedPaymentMethod === 'qahwa-card' && Object.values(selectedFreeItems).reduce((s, v) => s + v, 0) > 0 && (
+               <div className="flex justify-between text-amber-600">
+                 <span>مشروبات مجانية:</span>
+                 <span className="font-medium">{Object.values(selectedFreeItems).reduce((s, v) => s + v, 0)} مشروب</span>
+               </div>
+             )}
+             {appliedDiscount && (
+               <div className="flex justify-between text-green-600">
+                 <span>خصم:</span>
+                 <span className="font-medium">{appliedDiscount.percentage}%</span>
+               </div>
+             )}
+             <div className="flex justify-between text-lg font-bold pt-2 border-t">
+               <span>الإجمالي:</span>
+               <span className="text-primary">
+                 {(() => {
+                   let total = getTotalPrice();
+                   if (selectedPaymentMethod === 'qahwa-card') {
+                     Object.entries(selectedFreeItems).forEach(([itemId, quantity]) => {
+                       const item = cartItems.find(ci => ci.coffeeItemId === itemId);
+                       if (item) {
+                         const price = typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0));
+                         total -= price * quantity;
+                       }
+                     });
+                   } else if (appliedDiscount) {
+                     total = total * (1 - appliedDiscount.percentage / 100);
+                   }
+                   return Math.max(0, total).toFixed(2);
+                 })()} ريال
+               </span>
+             </div>
+           </div>
+         </div>
+
+         <DialogFooter className="flex gap-2 sm:gap-0">
+           <Button
+             variant="outline"
+             onClick={() => setShowConfirmation(false)}
+             className="flex-1"
+             data-testid="button-cancel-confirmation"
+           >
+             رجوع
+           </Button>
+           <Button
+             onClick={() => {
+               setShowConfirmation(false);
+               confirmAndCreateOrder();
+             }}
+             disabled={createOrderMutation.isPending || isRegistering}
+             className="flex-1 bg-green-600 hover:bg-green-700"
+             data-testid="button-final-confirm"
+           >
+             {createOrderMutation.isPending || isRegistering ? "جاري الإرسال..." : "تأكيد ودفع"}
+           </Button>
+         </DialogFooter>
+       </DialogContent>
+     </Dialog>
    </div>
  );
 }
