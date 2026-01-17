@@ -80,73 +80,76 @@ export default function CartPage() {
           </div>
         </header>
 
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              <h2 className="font-playfair text-3xl font-bold text-foreground mb-8 flex items-center">
-                <ShoppingCart className="w-8 h-8 ml-3" />
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-32 lg:pb-8">
+          <div className="grid gap-4 sm:gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-3 sm:space-y-6">
+              <h2 className="font-playfair text-xl sm:text-3xl font-bold text-foreground mb-4 sm:mb-8 flex items-center">
+                <ShoppingCart className="w-6 h-6 sm:w-8 sm:h-8 ml-2 sm:ml-3" />
                 العناصر المختارة
               </h2>
 
               {cartItems.map((item, index) => (
                 <Card 
                   key={item.coffeeItemId} 
-                  className="bg-card/90 border-primary/20 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 animate-in fade-in-0 slide-in-from-bottom-10 duration-500"
+                  className="bg-card/90 border-primary/20 backdrop-blur-sm shadow-lg sm:shadow-xl hover:shadow-2xl transition-all duration-300 animate-in fade-in-0 slide-in-from-bottom-10 duration-500"
                   style={{animationDelay: `${index * 0.1}s`}}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 space-x-reverse">
-                        <div className="relative">
+                  <CardContent className="p-3 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="relative flex-shrink-0">
                           <img 
                             src={item.coffeeItem?.imageUrl || getCoffeeImage(item.coffeeItem?.id || '')}
                             alt={item.coffeeItem?.nameAr}
-                            className="w-20 h-20 object-cover rounded-xl shadow-lg"
+                            className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl shadow-lg"
                             loading="lazy"
                             onError={(e) => {
                               e.currentTarget.src = "/images/default-coffee.png";
                             }}
                           />
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-600 rounded-full flex items-center justify-center shadow-md">
-                            <span className="text-white text-xs font-bold">{item.quantity}</span>
+                          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-amber-600 rounded-full flex items-center justify-center shadow-md">
+                            <span className="text-white text-[10px] sm:text-xs font-bold">{item.quantity}</span>
                           </div>
                         </div>
-                        <div>
-                          <h3 className="font-amiri font-bold text-accent text-xl mb-1">{item.coffeeItem?.nameAr}</h3>
-                          <p className="text-accent font-bold text-lg">{item.coffeeItem?.price} ريال</p>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-amiri font-bold text-foreground text-base sm:text-xl mb-0.5 sm:mb-1 truncate">{item.coffeeItem?.nameAr}</h3>
+                          <p className="text-primary font-bold text-sm sm:text-lg">{item.coffeeItem?.price} ريال</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-4 space-x-reverse">
-                        <div className="flex items-center bg-background rounded-full p-1 border border-primary">
+                      <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50">
+                        <div className="flex items-center bg-background rounded-full p-0.5 sm:p-1 border border-primary">
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
                             onClick={() => updateQuantity(item.coffeeItemId, Math.max(0, item.quantity - 1))}
-                            className="h-8 w-8 p-0 text-accent hover:bg-primary rounded-full"
+                            className="h-9 w-9 sm:h-8 sm:w-8 text-foreground hover:bg-primary hover:text-primary-foreground rounded-full"
+                            data-testid={`button-decrease-${item.coffeeItemId}`}
                           >
                             <Minus className="w-4 h-4" />
                           </Button>
 
-                          <span className="text-accent font-bold text-lg w-12 text-center">
+                          <span className="text-foreground font-bold text-base sm:text-lg w-10 sm:w-12 text-center">
                             {item.quantity}
                           </span>
 
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
                             onClick={() => updateQuantity(item.coffeeItemId, item.quantity + 1)}
-                            className="h-8 w-8 p-0 text-accent hover:bg-primary rounded-full"
+                            className="h-9 w-9 sm:h-8 sm:w-8 text-foreground hover:bg-primary hover:text-primary-foreground rounded-full"
+                            data-testid={`button-increase-${item.coffeeItemId}`}
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
                         </div>
 
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="outline"
                           onClick={() => removeFromCart(item.coffeeItemId)}
-                          className="h-10 w-10 p-0 border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 rounded-full"
+                          className="h-9 w-9 sm:h-10 sm:w-10 border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 rounded-full"
+                          data-testid={`button-remove-${item.coffeeItemId}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -157,32 +160,32 @@ export default function CartPage() {
               ))}
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="hidden lg:block lg:col-span-1">
               <Card className="bg-gradient-to-br from-card/95 to-background/80 border-primary/50 backdrop-blur-sm sticky top-24 shadow-2xl">
                 <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-t-lg">
-                  <CardTitle className="font-amiri text-2xl flex items-center">
-                    <ShoppingCart className="w-6 h-6 ml-2" />
+                  <CardTitle className="font-amiri text-2xl flex items-center gap-2">
+                    <ShoppingCart className="w-6 h-6" />
                     ملخص الطلب
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
-                  <div className="flex justify-between items-center text-accent">
+                  <div className="flex justify-between items-center text-foreground gap-2">
                     <span className="text-lg">عدد العناصر:</span>
-                    <Badge className="bg-primary text-accent text-lg px-3 py-1">
+                    <Badge className="bg-primary text-primary-foreground text-lg px-3 py-1">
                       {cartItems.reduce((sum, item) => sum + item.quantity, 0)} قطعة
                     </Badge>
                   </div>
 
                   <div className="border-t border-primary pt-6">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xl font-bold text-accent">المجموع الكلي:</span>
-                      <span className="text-2xl font-black text-accent">{totalPrice.toFixed(2)} ريال</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-xl font-bold text-foreground">المجموع الكلي:</span>
+                      <span className="text-2xl font-black text-primary">{totalPrice.toFixed(2)} ريال</span>
                     </div>
                   </div>
 
                   <Button 
                     onClick={() => setLocation("/delivery")}
-                    className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-6 text-xl font-bold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 shadow-xl hover:shadow-amber-500/25 transform hover:scale-105 rounded-full"
+                    className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-6 text-xl font-bold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 shadow-xl hover:shadow-amber-500/25 rounded-full"
                     data-testid="button-checkout"
                   >
                     إتمام الطلب الآن
@@ -190,6 +193,23 @@ export default function CartPage() {
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </div>
+
+        {/* Fixed Bottom Summary for Mobile */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border shadow-2xl p-4 z-50">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">المجموع ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} قطعة)</span>
+              <span className="text-xl font-black text-primary">{totalPrice.toFixed(2)} ريال</span>
+            </div>
+            <Button 
+              onClick={() => setLocation("/delivery")}
+              className="flex-1 max-w-[200px] bg-gradient-to-r from-amber-600 to-orange-600 text-white py-5 text-lg font-bold hover:from-amber-700 hover:to-orange-700 rounded-full shadow-lg"
+              data-testid="button-checkout-mobile"
+            >
+              إتمام الطلب
+            </Button>
           </div>
         </div>
       </div>
