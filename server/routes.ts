@@ -1811,15 +1811,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { phone } = req.params;
       const { OrderModel } = await import("@shared/schema");
       
+      // Clean phone number for consistent matching
+      const cleanPhone = phone.trim().replace(/\s/g, '').replace(/^\+966/, '').replace(/^00966/, '');
+      
+      // Also try to find customer by phone to get customerId
+      let customerId: string | null = null;
+      try {
+        const customer = await storage.getCustomerByPhone(cleanPhone);
+        if (customer) {
+          customerId = (customer as any)._id?.toString() || (customer as any).id;
+        }
+      } catch (e) {
+        // Continue without customerId
+      }
+      
+      // Build query conditions - search in all possible phone fields
+      const phoneConditions = [
+        { "customerInfo.customerPhone": phone },
+        { "customerInfo.customerPhone": cleanPhone },
+        { "customerInfo.phone": phone },
+        { "customerInfo.phone": cleanPhone },
+        { "customerInfo.phoneNumber": phone },
+        { "customerInfo.phoneNumber": cleanPhone },
+        { "phone": phone },
+        { "phone": cleanPhone }
+      ];
+      
+      // Add customerId condition if found
+      if (customerId) {
+        phoneConditions.push({ customerId: customerId });
+      }
+      
       const orders = await OrderModel.find({
-        $or: [
-          { "customerInfo.customerPhone": phone },
-          { "customerInfo.phone": phone },
-          { "phone": phone }
-        ]
+        $or: phoneConditions
       }).sort({ createdAt: -1 });
 
       const serializedOrders = orders.map(order => serializeDoc(order));
+      console.log(`[GET /api/orders/customer/:phone] Found ${serializedOrders.length} orders for phone ${phone}`);
       res.json(serializedOrders);
     } catch (error) {
       console.error("[GET /api/orders/customer/:phone] Error:", error);
