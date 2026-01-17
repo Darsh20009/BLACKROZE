@@ -23,6 +23,23 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 
 ## Current Progress (December 31, 2025)
 
+### 🚀 KITCHEN DISPLAY SYSTEM (KDS) ENHANCEMENTS - COMPLETED (January 2026)
+- ✅ Added SLA status tracking with color-coded borders (on-track=normal, warning=amber, overdue=red)
+- ✅ Priority badges for rush/VIP orders when metadata available
+- ✅ Station routing badges showing kitchen station assignments
+- ✅ Allergen warning display for items with allergen metadata
+- ✅ Prep time remaining countdown for in-progress orders
+- ✅ Estimated total prep time calculations based on item count
+- ✅ Graceful fallback when backend doesn't provide prep metadata (uses elapsed time heuristics)
+
+### 🚀 LOYALTY TIER PROGRESS - COMPLETED (January 2026)
+- ✅ Tier progress visualization showing percentage to next tier
+- ✅ Defined tier thresholds: Bronze (0-499), Silver (500-1499), Gold (1500-4999), Platinum (5000+)
+- ✅ Progress bar with SAR amount remaining for upgrade
+- ✅ Platinum tier celebration display for max-level customers
+- ✅ Enhanced useLoyaltyCard hook with lastSyncedAt timestamp and offline sync infrastructure
+- ✅ Graceful degradation when tier data not available from backend
+
 ### 🚀 MENU PAGE REDESIGN - COMPLETED (January 2026)
 - ✅ Implemented modern interactive menu with group filtering
 - ✅ Restored Muted Sage color palette and system background
