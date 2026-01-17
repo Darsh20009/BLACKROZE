@@ -5,43 +5,47 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Coffee, LogOut, ShoppingBag, CreditCard, Gift, Download } from "lucide-react";
+import { useCustomer } from "@/contexts/CustomerContext";
 import { customerStorage, type CustomerProfile, type LocalOrder } from "@/lib/customer-storage";
 import { useToast } from "@/hooks/use-toast";
 import QRCode from "qrcode";
 
 export default function CustomerProfile() {
- const [, setLocation] = useLocation();
- const { toast } = useToast();
- const [profile, setProfile] = useState<CustomerProfile | null>(null);
- const [orders, setOrders] = useState<LocalOrder[]>([]);
- const [cardQrUrl, setCardQrUrl] = useState<string>("");
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const { customer, logout } = useCustomer();
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [orders, setOrders] = useState<LocalOrder[]>([]);
+  const [cardQrUrl, setCardQrUrl] = useState<string>("");
 
- useEffect(() => {
- const loadedProfile = customerStorage.getProfile();
- if (!loadedProfile) {
- setLocation("/auth");
- return;
- }
- setProfile(loadedProfile);
- setOrders(customerStorage.getOrders());
+  useEffect(() => {
+    const loadedProfile = customerStorage.getProfile();
+    if (!loadedProfile && !customer) {
+      setLocation("/auth");
+      return;
+    }
+    
+    const activeProfile = loadedProfile || (customer as unknown as CustomerProfile);
+    setProfile(activeProfile);
+    setOrders(customerStorage.getOrders());
 
- // Generate QR code for the card
- const cardData = JSON.stringify({
- cardNumber: loadedProfile.cardNumber,
- name: loadedProfile.name,
- phone: loadedProfile.phone
- });
- QRCode.toDataURL(cardData, { width: 200, margin: 1 }).then(setCardQrUrl);
- }, [setLocation]);
+    // Generate QR code for the card
+    const cardData = JSON.stringify({
+      cardNumber: activeProfile.cardNumber,
+      name: activeProfile.name,
+      phone: activeProfile.phone
+    });
+    QRCode.toDataURL(cardData, { width: 200, margin: 1 }).then(setCardQrUrl);
+  }, [setLocation, customer]);
 
- const handleLogout = () => {
- customerStorage.logout();
- toast({
- title: "تم تسجيل الخروج",
- description: "نراك قريباً!"
- });
- setLocation("/auth");
- };
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "تم تسجيل الخروج",
+      description: "نراك قريباً!"
+    });
+    setLocation("/auth");
+  };
 
  const handleDownloadCard = () => {
  if (!cardQrUrl) return;
