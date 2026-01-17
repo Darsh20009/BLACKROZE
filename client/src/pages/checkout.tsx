@@ -380,7 +380,7 @@ export default function CheckoutPage() {
  }
 
  return (
-   <div className="min-h-screen bg-[#F7F8F8] py-12" dir="rtl">
+   <div className="min-h-screen py-12 bg-[#21302f]" dir="rtl">
      <div className="max-w-6xl mx-auto px-4">
        <h1 className="text-3xl font-bold text-center mb-8">إتمام عملية الدفع</h1>
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
