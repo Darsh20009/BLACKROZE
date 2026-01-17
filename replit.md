@@ -23,6 +23,19 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 
 ## Current Progress (December 31, 2025)
 
+### 🚀 ERP ACCOUNTING SYSTEM - COMPLETED (January 2026)
+- ✅ Professional Chart of Accounts with Saudi standard structure (Assets 1xxx, Liabilities 2xxx, Equity 3xxx, Revenue 4xxx, Expenses 5xxx)
+- ✅ Double-entry bookkeeping with automatic balance validation
+- ✅ Journal entry creation and posting with fiscal period validation
+- ✅ Financial reports: Trial Balance, Income Statement, Balance Sheet
+- ✅ Expense management with approval workflow (draft → pending_approval → approved → paid)
+- ✅ Vendor management with VAT number tracking
+- ✅ Automatic order-to-journal posting for sales transactions
+- ✅ Interactive Chart of Accounts tree view with collapsible hierarchy
+- ✅ Dashboard with KPIs (revenue, expenses, net income, cash balance)
+- ✅ Guards against double posting and locked fiscal periods
+- ✅ Route: /erp/accounting
+
 ### 🚀 KITCHEN DISPLAY SYSTEM (KDS) ENHANCEMENTS - COMPLETED (January 2026)
 - ✅ Added SLA status tracking with color-coded borders (on-track=normal, warning=amber, overdue=red)
 - ✅ Priority badges for rush/VIP orders when metadata available
