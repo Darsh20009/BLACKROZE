@@ -95,6 +95,10 @@ export class DeliveryService {
     return DeliveryDriverModel.findOne({ id });
   }
 
+  async getDriverByPhone(phone: string): Promise<IDeliveryDriver | null> {
+    return DeliveryDriverModel.findOne({ phone, isActive: 1 });
+  }
+
   async createDriver(data: Partial<IDeliveryDriver>): Promise<IDeliveryDriver> {
     const driver = new DeliveryDriverModel({
       ...data,

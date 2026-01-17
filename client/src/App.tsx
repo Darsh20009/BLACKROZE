@@ -109,6 +109,9 @@ const WarehouseManagement = lazy(() => import("@/pages/warehouse-management"));
 const SupportSystem = lazy(() => import("@/pages/support-system"));
 const StockOrganizationDashboard = lazy(() => import("@/pages/stock-organization-dashboard"));
 const DeliveryServiceStatus = lazy(() => import("@/pages/delivery-service-status"));
+const DriverPortal = lazy(() => import("@/pages/driver-portal"));
+const DriverLogin = lazy(() => import("@/pages/driver-login"));
+const DeliveryTracking = lazy(() => import("@/pages/delivery-tracking"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
 const EmployeeHome = lazy(() => import("@/pages/employee-home"));
 import clunyLogo from "@assets/cluny_cafe_logo_1767095370460.png";
@@ -285,6 +288,13 @@ function AppRouter() {
  {/* ERP Accounting System */}
  <Route path="/erp/accounting"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ErpAccountingPage /></AuthGuard></Route>
 
+ 
+ {/* Driver Portal routes */}
+ <Route path="/driver/login"><DriverLogin /></Route>
+ <Route path="/driver/portal"><DriverPortal /></Route>
+
+ {/* Customer Delivery Tracking */}
+ <Route path="/delivery/track/:orderId"><DeliveryTracking /></Route>
  <Route component={MenuPage} />
  </Switch>
  </Suspense>

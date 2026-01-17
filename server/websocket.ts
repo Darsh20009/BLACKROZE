@@ -3,9 +3,11 @@ import type { Server } from "http";
 
 interface WSClient {
   ws: WebSocket;
-  type: "kitchen" | "display" | "order-tracking" | "pos" | "inventory";
+  type: "kitchen" | "display" | "order-tracking" | "pos" | "inventory" | "delivery-driver" | "delivery-tracking";
   orderId?: string;
   branchId?: string;
+  driverId?: string;
+  deliveryOrderId?: string;
   lastPing: number;
   isAlive: boolean;
 }
@@ -110,6 +112,8 @@ class OrderWebSocketManager {
           client.type = message.clientType || "display";
           client.orderId = message.orderId;
           client.branchId = message.branchId;
+          client.driverId = message.driverId;
+          client.deliveryOrderId = message.deliveryOrderId;
         }
         console.log(`[WS] Client subscribed as ${message.clientType}`);
         ws.send(JSON.stringify({ type: "subscribed", clientType: message.clientType }));
@@ -117,6 +121,12 @@ class OrderWebSocketManager {
 
       case "ping":
         ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+        break;
+
+      case "driver_location_update":
+        if (client && client.type === "delivery-driver" && client.driverId) {
+          this.broadcastDriverLocation(client.driverId, message.location, message.deliveryOrderId);
+        }
         break;
 
       default:
@@ -259,6 +269,97 @@ class OrderWebSocketManager {
 
   getConnectionCount(): number {
     return this.clients.size;
+  }
+
+  broadcastDeliveryUpdate(deliveryOrder: any) {
+    if (!this.wss) return;
+    this.cleanupStaleClients();
+
+    const orderId = String(deliveryOrder.id || deliveryOrder._id || "");
+    const driverId = String(deliveryOrder.driverId || deliveryOrder.driver?._id || "");
+
+    const message = JSON.stringify({
+      type: "delivery_updated",
+      deliveryOrder,
+      timestamp: Date.now(),
+    });
+
+    this.clients.forEach((client, ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        const isDriver = client.type === "delivery-driver" && client.driverId && driverId && client.driverId === driverId;
+        const isTracker = client.type === "delivery-tracking" && client.deliveryOrderId && orderId && client.deliveryOrderId === orderId;
+        if (isDriver || isTracker) {
+          try {
+            ws.send(message);
+          } catch (e) {
+            this.clients.delete(ws);
+          }
+        }
+      }
+    });
+  }
+
+  broadcastDriverLocation(driverId: string, location: { lat: number; lng: number }, deliveryOrderId?: string) {
+    if (!this.wss) return;
+    this.cleanupStaleClients();
+
+    const normalizedOrderId = deliveryOrderId ? String(deliveryOrderId) : "";
+    const normalizedDriverId = String(driverId);
+
+    const message = JSON.stringify({
+      type: "driver_location",
+      driverId: normalizedDriverId,
+      location,
+      deliveryOrderId: normalizedOrderId,
+      timestamp: Date.now(),
+    });
+
+    this.clients.forEach((client, ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        const matchesOrder = client.type === "delivery-tracking" && 
+          client.deliveryOrderId && normalizedOrderId && 
+          client.deliveryOrderId === normalizedOrderId;
+        const matchesDriver = client.type === "delivery-tracking" &&
+          client.driverId && normalizedDriverId &&
+          client.driverId === normalizedDriverId;
+        if (matchesOrder || matchesDriver) {
+          try {
+            ws.send(message);
+          } catch (e) {
+            this.clients.delete(ws);
+          }
+        }
+      }
+    });
+  }
+
+  broadcastNewDeliveryOrder(deliveryOrder: any, branchId?: string) {
+    if (!this.wss) return;
+    this.cleanupStaleClients();
+
+    const normalizedBranchId = branchId ? String(branchId) : "";
+
+    const message = JSON.stringify({
+      type: "new_delivery_order",
+      deliveryOrder,
+      timestamp: Date.now(),
+    });
+
+    this.clients.forEach((client, ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        if (client.type === "delivery-driver") {
+          const branchMatches = !normalizedBranchId || 
+            (client.branchId && client.branchId === normalizedBranchId);
+          if (branchMatches) {
+            try {
+              ws.send(message);
+            } catch (e) {
+              this.clients.delete(ws);
+            }
+          }
+        }
+      }
+    });
   }
 
   shutdown() {

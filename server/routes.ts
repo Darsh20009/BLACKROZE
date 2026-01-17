@@ -10637,6 +10637,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver Login (public - for driver portal)
+  // Simple rate limiting for driver login attempts
+  const driverLoginAttempts = new Map<string, { count: number; lastAttempt: number }>();
+  const MAX_LOGIN_ATTEMPTS = 5;
+  const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+  app.post("/api/delivery/drivers/login", async (req, res) => {
+    try {
+      const { phone } = req.body;
+      const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+      
+      if (!phone) {
+        return res.status(400).json({ error: "رقم الجوال مطلوب" });
+      }
+
+      // Rate limiting check
+      const attemptKey = `${clientIP}:${phone}`;
+      const attempts = driverLoginAttempts.get(attemptKey);
+      const now = Date.now();
+      
+      if (attempts) {
+        if (now - attempts.lastAttempt < LOGIN_WINDOW_MS && attempts.count >= MAX_LOGIN_ATTEMPTS) {
+          return res.status(429).json({ error: "تم تجاوز عدد المحاولات المسموحة. يرجى الانتظار 15 دقيقة." });
+        }
+        if (now - attempts.lastAttempt >= LOGIN_WINDOW_MS) {
+          driverLoginAttempts.delete(attemptKey);
+        }
+      }
+      
+      const driver = await deliveryService.getDriverByPhone(phone);
+      if (!driver) {
+        // Track failed attempt
+        const current = driverLoginAttempts.get(attemptKey) || { count: 0, lastAttempt: now };
+        driverLoginAttempts.set(attemptKey, { count: current.count + 1, lastAttempt: now });
+        return res.status(404).json({ error: "لم يتم العثور على المندوب" });
+      }
+      
+      // Clear attempts on successful login
+      driverLoginAttempts.delete(attemptKey);
+      
+      // Update driver status to available on login
+      await deliveryService.updateDriverStatus(driver._id?.toString() || driver.id, "available");
+      
+      // Store driver session
+      (req.session as any).driverId = driver._id?.toString() || driver.id;
+      
+      res.json({ 
+        success: true, 
+        driver: serializeDoc(driver),
+        message: "تم تسجيل الدخول بنجاح"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "فشل تسجيل الدخول" });
+    }
+  });
+
   // Delivery Orders
   app.get("/api/delivery/orders", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
