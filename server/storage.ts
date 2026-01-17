@@ -1495,7 +1495,15 @@ export class DBStorage implements IStorage {
   }
 
   async getBranch(id: string): Promise<IBranch | null> {
-    const branch = await BranchModel.findOne({ id }).lean();
+    // Try to find by custom id field first, then by MongoDB _id
+    let branch = await BranchModel.findOne({ id }).lean();
+    if (!branch) {
+      try {
+        branch = await BranchModel.findById(id).lean();
+      } catch (e) {
+        // Invalid ObjectId format, ignore
+      }
+    }
     return branch ? serializeDoc(branch) : null;
   }
 
