@@ -4,6 +4,7 @@
  */
 
 import { nanoid } from "nanoid";
+import { generateZatcaTLV, generateZatcaQRCode, type ZatcaInvoiceData } from "./zatca-utils";
 import {
   AccountModel,
   JournalEntryModel,
@@ -437,13 +438,14 @@ export class ErpAccountingService {
   }
 
   /**
-   * Create invoice from order
+   * Create invoice from order with ZATCA QR code
    */
   static async createInvoiceFromOrder(
     tenantId: string,
     branchId: string,
     orderId: string,
-    issuedBy: string
+    issuedBy: string,
+    sellerInfo?: { name: string; vatNumber: string }
   ): Promise<IInvoice> {
     const order = await OrderModel.findOne({ id: orderId });
     if (!order) {
@@ -451,6 +453,7 @@ export class ErpAccountingService {
     }
 
     const invoiceNumber = await this.generateInvoiceNumber(tenantId, branchId);
+    const invoiceDate = new Date();
     
     const lines = (order.items || []).map((item: any) => ({
       itemId: item.coffeeItemId || item.menuItemId,
@@ -468,12 +471,27 @@ export class ErpAccountingService {
     const totalTax = lines.reduce((sum: number, line: any) => sum + line.taxAmount, 0);
     const grandTotal = subtotal + totalTax;
 
+    let zatcaQRCode: string | undefined;
+    let zatcaTLV: string | undefined;
+
+    if (sellerInfo?.name && sellerInfo?.vatNumber) {
+      const zatcaData: ZatcaInvoiceData = {
+        sellerName: sellerInfo.name,
+        vatNumber: sellerInfo.vatNumber,
+        invoiceDate,
+        totalWithVat: grandTotal,
+        vatAmount: totalTax,
+      };
+      zatcaTLV = generateZatcaTLV(zatcaData);
+      zatcaQRCode = await generateZatcaQRCode(zatcaData);
+    }
+
     return InvoiceModel.create({
       id: nanoid(),
       tenantId,
       branchId,
       invoiceNumber,
-      invoiceDate: new Date(),
+      invoiceDate,
       invoiceType: "sales",
       status: "issued",
       customerId: order.customerId,
@@ -491,9 +509,165 @@ export class ErpAccountingService {
       exchangeRate: 1,
       paymentMethod: order.paymentMethod,
       issuedBy,
-      issuedAt: new Date(),
-      paidAt: new Date(),
+      issuedAt: invoiceDate,
+      paidAt: invoiceDate,
+      zatcaQrCode: zatcaQRCode,
+      zatcaHash: zatcaTLV,
     });
+  }
+
+  /**
+   * Create standalone invoice with ZATCA QR code
+   */
+  static async createInvoice(data: {
+    tenantId: string;
+    branchId: string;
+    customerName: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    customerTaxNumber?: string;
+    customerAddress?: string;
+    lines: Array<{
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      discountPercent?: number;
+    }>;
+    notes?: string;
+    issuedBy: string;
+    sellerName: string;
+    sellerVatNumber: string;
+  }): Promise<IInvoice> {
+    const invoiceNumber = await this.generateInvoiceNumber(data.tenantId, data.branchId);
+    const invoiceDate = new Date();
+    
+    const processedLines = data.lines.map((line) => {
+      const discountPercent = line.discountPercent || 0;
+      const baseAmount = line.unitPrice * line.quantity;
+      const discountAmount = baseAmount * (discountPercent / 100);
+      const afterDiscount = baseAmount - discountAmount;
+      const taxAmount = afterDiscount * 0.15;
+      const lineTotal = afterDiscount + taxAmount;
+      
+      return {
+        description: line.description,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        discountAmount: parseFloat(discountAmount.toFixed(2)),
+        discountPercent,
+        taxRate: 15,
+        taxAmount: parseFloat(taxAmount.toFixed(2)),
+        lineTotal: parseFloat(lineTotal.toFixed(2)),
+      };
+    });
+
+    const subtotal = processedLines.reduce((sum, line) => sum + (line.unitPrice * line.quantity), 0);
+    const totalDiscount = processedLines.reduce((sum, line) => sum + line.discountAmount, 0);
+    const totalTax = processedLines.reduce((sum, line) => sum + line.taxAmount, 0);
+    const grandTotal = processedLines.reduce((sum, line) => sum + line.lineTotal, 0);
+
+    const zatcaData: ZatcaInvoiceData = {
+      sellerName: data.sellerName,
+      vatNumber: data.sellerVatNumber,
+      invoiceDate,
+      totalWithVat: grandTotal,
+      vatAmount: totalTax,
+    };
+    
+    const zatcaTLV = generateZatcaTLV(zatcaData);
+    const zatcaQRCode = await generateZatcaQRCode(zatcaData);
+
+    return InvoiceModel.create({
+      id: nanoid(),
+      tenantId: data.tenantId,
+      branchId: data.branchId,
+      invoiceNumber,
+      invoiceDate,
+      invoiceType: "sales",
+      status: "issued",
+      customerName: data.customerName,
+      customerPhone: data.customerPhone,
+      customerEmail: data.customerEmail,
+      customerTaxNumber: data.customerTaxNumber,
+      customerAddress: data.customerAddress,
+      lines: processedLines,
+      subtotal: parseFloat(subtotal.toFixed(2)),
+      totalDiscount: parseFloat(totalDiscount.toFixed(2)),
+      totalTax: parseFloat(totalTax.toFixed(2)),
+      grandTotal: parseFloat(grandTotal.toFixed(2)),
+      amountPaid: 0,
+      amountDue: parseFloat(grandTotal.toFixed(2)),
+      currency: "SAR",
+      exchangeRate: 1,
+      notes: data.notes,
+      issuedBy: data.issuedBy,
+      issuedAt: invoiceDate,
+      zatcaQrCode: zatcaQRCode,
+      zatcaHash: zatcaTLV,
+    });
+  }
+
+  /**
+   * Get invoices with filtering
+   */
+  static async getInvoices(
+    tenantId: string,
+    options?: {
+      branchId?: string;
+      status?: string;
+      startDate?: Date;
+      endDate?: Date;
+      limit?: number;
+    }
+  ): Promise<IInvoice[]> {
+    const query: any = { tenantId };
+    
+    if (options?.branchId) query.branchId = options.branchId;
+    if (options?.status) query.status = options.status;
+    if (options?.startDate || options?.endDate) {
+      query.invoiceDate = {};
+      if (options.startDate) query.invoiceDate.$gte = options.startDate;
+      if (options.endDate) query.invoiceDate.$lte = options.endDate;
+    }
+
+    return InvoiceModel.find(query)
+      .sort({ invoiceDate: -1 })
+      .limit(options?.limit || 100);
+  }
+
+  /**
+   * Get single invoice by ID
+   */
+  static async getInvoiceById(tenantId: string, invoiceId: string): Promise<IInvoice | null> {
+    return InvoiceModel.findOne({ id: invoiceId, tenantId });
+  }
+
+  /**
+   * Update invoice status
+   */
+  static async updateInvoiceStatus(
+    tenantId: string,
+    invoiceId: string,
+    status: string,
+    amountPaid?: number
+  ): Promise<IInvoice | null> {
+    const invoice = await InvoiceModel.findOne({ id: invoiceId, tenantId });
+    if (!invoice) return null;
+
+    invoice.status = status as any;
+    if (amountPaid !== undefined) {
+      invoice.amountPaid = amountPaid;
+      invoice.amountDue = invoice.grandTotal - amountPaid;
+      if (amountPaid >= invoice.grandTotal) {
+        invoice.status = "paid";
+        invoice.paidAt = new Date();
+      } else if (amountPaid > 0) {
+        invoice.status = "partially_paid";
+      }
+    }
+    
+    await invoice.save();
+    return invoice;
   }
 
   /**

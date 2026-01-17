@@ -10240,15 +10240,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
       const branchId = req.employee?.branchId || req.body.branchId || "default-branch";
       const issuedBy = req.employee?.id || "system";
+      const sellerInfo = req.body.sellerInfo;
       const invoice = await ErpAccountingService.createInvoiceFromOrder(
         tenantId,
         branchId,
         req.params.orderId,
-        issuedBy
+        issuedBy,
+        sellerInfo
       );
       res.json({ success: true, invoice: serializeDoc(invoice) });
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to create invoice" });
+    }
+  });
+
+  // Get all invoices
+  app.get("/api/erp/invoices", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const branchId = req.query.branchId as string;
+      const status = req.query.status as string;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      
+      const invoices = await ErpAccountingService.getInvoices(tenantId, {
+        branchId,
+        status,
+        startDate,
+        endDate,
+        limit,
+      });
+      res.json({ success: true, invoices: invoices.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch invoices" });
+    }
+  });
+
+  // Get single invoice
+  app.get("/api/erp/invoices/:id", requireAuth, requireCashierAccess, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const invoice = await ErpAccountingService.getInvoiceById(tenantId, req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      res.json({ success: true, invoice: serializeDoc(invoice) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch invoice" });
+    }
+  });
+
+  // Create standalone invoice
+  app.post("/api/erp/invoices", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const branchId = req.employee?.branchId || req.body.branchId || "default-branch";
+      const issuedBy = req.employee?.id || "system";
+      
+      const invoice = await ErpAccountingService.createInvoice({
+        tenantId,
+        branchId,
+        customerName: req.body.customerName,
+        customerPhone: req.body.customerPhone,
+        customerEmail: req.body.customerEmail,
+        customerTaxNumber: req.body.customerTaxNumber,
+        customerAddress: req.body.customerAddress,
+        lines: req.body.lines,
+        notes: req.body.notes,
+        issuedBy,
+        sellerName: req.body.sellerName || "CLUNY CAFE",
+        sellerVatNumber: req.body.sellerVatNumber || "311234567890003",
+      });
+      res.json({ success: true, invoice: serializeDoc(invoice) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create invoice" });
+    }
+  });
+
+  // Update invoice status
+  app.patch("/api/erp/invoices/:id/status", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const invoice = await ErpAccountingService.updateInvoiceStatus(
+        tenantId,
+        req.params.id,
+        req.body.status,
+        req.body.amountPaid
+      );
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      res.json({ success: true, invoice: serializeDoc(invoice) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update invoice status" });
     }
   });
 

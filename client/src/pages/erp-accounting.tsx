@@ -61,8 +61,23 @@ import {
   XCircle,
   Download,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ar } from "date-fns/locale";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  LineChart,
+  Line,
+} from "recharts";
 
 interface Account {
   id: string;
@@ -105,6 +120,53 @@ interface IncomeStatement {
   grossProfit: number;
   netIncome: number;
 }
+
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  customerName: string;
+  customerPhone?: string;
+  customerTaxNumber?: string;
+  status: string;
+  subtotal: number;
+  totalDiscount: number;
+  totalTax: number;
+  grandTotal: number;
+  amountPaid: number;
+  amountDue: number;
+  zatcaQrCode?: string;
+  zatcaHash?: string;
+  lines: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    taxAmount: number;
+    lineTotal: number;
+  }>;
+}
+
+const invoiceStatusLabels: Record<string, string> = {
+  draft: "مسودة",
+  issued: "صادرة",
+  sent: "مرسلة",
+  paid: "مدفوعة",
+  partially_paid: "مدفوعة جزئياً",
+  overdue: "متأخرة",
+  cancelled: "ملغاة",
+  voided: "ملغاة",
+};
+
+const invoiceStatusColors: Record<string, string> = {
+  draft: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+  issued: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  sent: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  paid: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  partially_paid: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  overdue: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  voided: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+};
 
 const accountTypeLabels: Record<string, string> = {
   asset: "أصول",
@@ -208,6 +270,8 @@ export default function ErpAccountingPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [newAccount, setNewAccount] = useState({
     accountNumber: "",
     nameAr: "",
@@ -231,6 +295,10 @@ export default function ErpAccountingPage() {
 
   const { data: incomeStatementData, isLoading: incomeLoading } = useQuery<{ success: boolean; incomeStatement: IncomeStatement }>({
     queryKey: ["/api/erp/reports/income-statement"],
+  });
+
+  const { data: invoicesData, isLoading: invoicesLoading } = useQuery<{ success: boolean; invoices: Invoice[] }>({
+    queryKey: ["/api/erp/invoices"],
   });
 
   const initializeAccountsMutation = useMutation({
@@ -263,6 +331,7 @@ export default function ErpAccountingPage() {
   const accounts = accountsData?.tree || [];
   const trialBalance = trialBalanceData?.trialBalance || [];
   const incomeStatement = incomeStatementData?.incomeStatement;
+  const invoices = invoicesData?.invoices || [];
 
   const totalDebit = trialBalance.reduce((sum, item) => sum + item.debitBalance, 0);
   const totalCredit = trialBalance.reduce((sum, item) => sum + item.creditBalance, 0);
@@ -303,10 +372,14 @@ export default function ErpAccountingPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-4 lg:w-[600px]">
+          <TabsList className="grid grid-cols-5 lg:w-[750px]">
             <TabsTrigger value="dashboard" data-testid="tab-dashboard">
               <BarChart3 className="h-4 w-4 ml-2" />
               لوحة التحكم
+            </TabsTrigger>
+            <TabsTrigger value="invoices" data-testid="tab-invoices">
+              <Receipt className="h-4 w-4 ml-2" />
+              الفواتير
             </TabsTrigger>
             <TabsTrigger value="accounts" data-testid="tab-accounts">
               <Building2 className="h-4 w-4 ml-2" />
@@ -417,6 +490,132 @@ export default function ErpAccountingPage() {
                     </CardContent>
                   </Card>
                 </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="bg-card border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg">الإيرادات مقابل المصروفات</CardTitle>
+                      <CardDescription>مقارنة الأداء المالي</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={[
+                              {
+                                name: "الإيرادات",
+                                value: summary.totalRevenue,
+                                fill: "#22c55e",
+                              },
+                              {
+                                name: "المصروفات",
+                                value: summary.totalExpenses,
+                                fill: "#ef4444",
+                              },
+                              {
+                                name: "صافي الدخل",
+                                value: Math.abs(summary.netIncome),
+                                fill: summary.netIncome >= 0 ? "#3b82f6" : "#f97316",
+                              },
+                            ]}
+                            layout="vertical"
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} />
+                            <YAxis type="category" dataKey="name" width={80} />
+                            <Tooltip
+                              formatter={(value: number) => [`${value.toLocaleString("ar-SA")} ر.س`, ""]}
+                              contentStyle={{ direction: "rtl" }}
+                            />
+                            <Bar dataKey="value" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg">توزيع الأصول والخصوم</CardTitle>
+                      <CardDescription>المركز المالي</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: "رصيد الصندوق", value: summary.cashBalance, color: "#3b82f6" },
+                                { name: "الذمم المدينة", value: summary.accountsReceivable, color: "#22c55e" },
+                                { name: "الذمم الدائنة", value: summary.accountsPayable, color: "#ef4444" },
+                              ].filter(item => item.value > 0)}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={100}
+                              paddingAngle={5}
+                              dataKey="value"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              labelLine={false}
+                            >
+                              {[
+                                { name: "رصيد الصندوق", value: summary.cashBalance, color: "#3b82f6" },
+                                { name: "الذمم المدينة", value: summary.accountsReceivable, color: "#22c55e" },
+                                { name: "الذمم الدائنة", value: summary.accountsPayable, color: "#ef4444" },
+                              ].filter(item => item.value > 0).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value: number) => [`${value.toLocaleString("ar-SA")} ر.س`, ""]}
+                            />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {incomeStatement && (
+                  <Card className="bg-card border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg">تفاصيل قائمة الدخل</CardTitle>
+                      <CardDescription>الإيرادات والمصروفات حسب الفئة</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[350px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={[
+                              ...incomeStatement.revenue.map(r => ({
+                                name: r.accountName.substring(0, 15),
+                                amount: r.amount,
+                                type: "إيراد",
+                                fill: "#22c55e",
+                              })),
+                              ...incomeStatement.expenses.map(e => ({
+                                name: e.accountName.substring(0, 15),
+                                amount: e.amount,
+                                type: "مصروف",
+                                fill: "#ef4444",
+                              })),
+                            ]}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} fontSize={12} />
+                            <YAxis tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} />
+                            <Tooltip
+                              formatter={(value: number, name) => [`${value.toLocaleString("ar-SA")} ر.س`, name === "amount" ? "المبلغ" : name]}
+                              contentStyle={{ direction: "rtl" }}
+                            />
+                            <Bar dataKey="amount" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </>
             ) : (
               <Card className="bg-card border-border/50">
@@ -430,6 +629,90 @@ export default function ErpAccountingPage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="invoices" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">الفواتير الضريبية</h2>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  متوافق مع ZATCA
+                </Badge>
+              </div>
+            </div>
+
+            <Card className="bg-card border-border/50">
+              {invoicesLoading ? (
+                <CardContent className="p-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                </CardContent>
+              ) : invoices.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">رقم الفاتورة</TableHead>
+                      <TableHead className="text-right">التاريخ</TableHead>
+                      <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-left">الإجمالي</TableHead>
+                      <TableHead className="text-left">الضريبة</TableHead>
+                      <TableHead className="text-center">QR</TableHead>
+                      <TableHead className="text-center">إجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-mono font-medium">{invoice.invoiceNumber}</TableCell>
+                        <TableCell>
+                          {format(new Date(invoice.invoiceDate), "dd/MM/yyyy", { locale: ar })}
+                        </TableCell>
+                        <TableCell>{invoice.customerName}</TableCell>
+                        <TableCell>
+                          <Badge className={invoiceStatusColors[invoice.status] || "bg-gray-100"}>
+                            {invoiceStatusLabels[invoice.status] || invoice.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-left font-mono">
+                          {invoice.grandTotal.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س
+                        </TableCell>
+                        <TableCell className="text-left font-mono">
+                          {invoice.totalTax.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {invoice.zatcaQrCode ? (
+                            <Badge className="bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3" />
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-gray-100 text-gray-600">-</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedInvoice(invoice);
+                              setShowInvoiceDialog(true);
+                            }}
+                            data-testid={`button-view-invoice-${invoice.id}`}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <CardContent className="p-12 text-center">
+                  <Receipt className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد فواتير</h3>
+                  <p className="text-muted-foreground">سيتم عرض الفواتير الضريبية هنا</p>
+                </CardContent>
+              )}
+            </Card>
           </TabsContent>
 
           <TabsContent value="accounts" className="space-y-4">
@@ -714,6 +997,147 @@ export default function ErpAccountingPage() {
             >
               {createAccountMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : null}
               إضافة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              فاتورة ضريبية - {selectedInvoice?.invoiceNumber}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedInvoice && (
+            <div className="space-y-6 py-4">
+              <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge className={invoiceStatusColors[selectedInvoice.status] || "bg-gray-100"}>
+                      {invoiceStatusLabels[selectedInvoice.status]}
+                    </Badge>
+                    {selectedInvoice.zatcaQrCode && (
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        متوافق مع ZATCA
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    التاريخ: {format(new Date(selectedInvoice.invoiceDate), "dd/MM/yyyy HH:mm", { locale: ar })}
+                  </p>
+                </div>
+
+                {selectedInvoice.zatcaQrCode && (
+                  <div className="text-center">
+                    <img
+                      src={selectedInvoice.zatcaQrCode}
+                      alt="ZATCA QR Code"
+                      className="w-32 h-32 border rounded-lg"
+                      data-testid="img-zatca-qr"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">رمز ZATCA</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-muted/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">بيانات العميل</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm space-y-1">
+                    <p><strong>الاسم:</strong> {selectedInvoice.customerName}</p>
+                    {selectedInvoice.customerPhone && (
+                      <p><strong>الهاتف:</strong> {selectedInvoice.customerPhone}</p>
+                    )}
+                    {selectedInvoice.customerTaxNumber && (
+                      <p><strong>الرقم الضريبي:</strong> {selectedInvoice.customerTaxNumber}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-muted/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">ملخص الفاتورة</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span>المجموع الفرعي:</span>
+                      <span className="font-mono">{selectedInvoice.subtotal.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                    </div>
+                    {selectedInvoice.totalDiscount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>الخصم:</span>
+                        <span className="font-mono">-{selectedInvoice.totalDiscount.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>ضريبة القيمة المضافة (15%):</span>
+                      <span className="font-mono">{selectedInvoice.totalTax.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                    </div>
+                    <div className="flex justify-between font-bold border-t pt-1">
+                      <span>الإجمالي:</span>
+                      <span className="font-mono">{selectedInvoice.grandTotal.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">تفاصيل البنود</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">الوصف</TableHead>
+                        <TableHead className="text-center">الكمية</TableHead>
+                        <TableHead className="text-left">السعر</TableHead>
+                        <TableHead className="text-left">الضريبة</TableHead>
+                        <TableHead className="text-left">الإجمالي</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedInvoice.lines?.map((line, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{line.description}</TableCell>
+                          <TableCell className="text-center">{line.quantity}</TableCell>
+                          <TableCell className="text-left font-mono">
+                            {line.unitPrice.toLocaleString("ar-SA", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="text-left font-mono">
+                            {line.taxAmount.toLocaleString("ar-SA", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="text-left font-mono font-medium">
+                            {line.lineTotal.toLocaleString("ar-SA", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {selectedInvoice.zatcaHash && (
+                <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                  <p className="font-medium mb-1">ZATCA TLV Hash:</p>
+                  <code className="break-all">{selectedInvoice.zatcaHash}</code>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInvoiceDialog(false)}>
+              إغلاق
+            </Button>
+            <Button variant="default" data-testid="button-print-invoice">
+              <Download className="h-4 w-4 ml-2" />
+              طباعة
             </Button>
           </DialogFooter>
         </DialogContent>

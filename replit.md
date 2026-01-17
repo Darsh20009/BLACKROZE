@@ -36,6 +36,17 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Guards against double posting and locked fiscal periods
 - ✅ Route: /erp/accounting
 
+### 🚀 ZATCA PROFESSIONAL INVOICING - COMPLETED (January 2026)
+- ✅ ZATCA-compliant TLV (Tag-Length-Value) encoding for QR codes
+- ✅ Base64 QR code generation with 5 mandatory fields (seller name, VAT number, timestamp, total, VAT amount)
+- ✅ Invoice creation from orders with automatic ZATCA QR code generation
+- ✅ Standalone invoice creation with line items and VAT calculations
+- ✅ Invoice listing with status badges (draft, issued, paid, etc.)
+- ✅ Invoice detail dialog with ZATCA QR code display
+- ✅ Saudi VAT number validation (15-digit format starting and ending with 3)
+- ✅ API endpoints: GET/POST /api/erp/invoices, GET /api/erp/invoices/:id, PATCH /api/erp/invoices/:id/status
+- ✅ zatca-utils.ts utility module for TLV encoding and QR generation
+
 ### 🚀 KITCHEN DISPLAY SYSTEM (KDS) ENHANCEMENTS - COMPLETED (January 2026)
 - ✅ Added SLA status tracking with color-coded borders (on-track=normal, warning=amber, overdue=red)
 - ✅ Priority badges for rush/VIP orders when metadata available
