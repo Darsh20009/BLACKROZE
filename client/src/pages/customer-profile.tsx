@@ -18,6 +18,17 @@ export default function CustomerProfile() {
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [cardQrUrl, setCardQrUrl] = useState<string>("");
 
+  // Fetch real customer data from server
+  const { data: serverCustomer } = useQuery<any>({
+    queryKey: ["/api/customers/by-phone", customer?.phone],
+    enabled: !!customer?.phone,
+    queryFn: async () => {
+      const res = await fetch(`/api/customers/by-phone/${customer?.phone}`);
+      if (!res.ok) return null;
+      return res.json();
+    }
+  });
+
   const { data: serverOrders = [], isLoading: isLoadingOrders } = useQuery<any[]>({
     queryKey: ["/api/orders/customer", customer?.phone],
     enabled: !!customer?.phone,
@@ -35,7 +46,15 @@ export default function CustomerProfile() {
       return;
     }
     
-    const activeProfile = loadedProfile || (customer as unknown as CustomerProfile);
+    // Use server data if available, fallback to local storage
+    const baseProfile = loadedProfile || (customer as unknown as CustomerProfile);
+    const activeProfile = {
+      ...baseProfile,
+      // Override with real server data if available
+      cardNumber: serverCustomer?.cardNumber || baseProfile.cardNumber,
+      stamps: serverCustomer?.stamps ?? baseProfile.stamps ?? 0,
+      freeDrinks: serverCustomer?.freeDrinks ?? baseProfile.freeDrinks ?? 0,
+    };
     setProfile(activeProfile);
 
     // Generate QR code for the card
@@ -45,7 +64,7 @@ export default function CustomerProfile() {
       phone: activeProfile.phone
     });
     QRCode.toDataURL(cardData, { width: 200, margin: 1 }).then(setCardQrUrl);
-  }, [setLocation, customer]);
+  }, [setLocation, customer, serverCustomer]);
 
   const handleLogout = () => {
     logout();
@@ -258,11 +277,39 @@ export default function CustomerProfile() {
                     </Badge>
                   </div>
                   
-                  <div className="w-full bg-primary/30 rounded-full h-2.5 overflow-hidden border border-primary/20">
-                    <div 
-                      className="bg-gradient-to-r from-amber-500 to-amber-600 h-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(245,158,11,0.5)]"
-                      style={{ width: `${(profile.stamps / 5) * 100}%` }}
-                    />
+                  {/* Visual Stamps - Coffee Cup Icons */}
+                  <div className="flex justify-center items-center gap-3 py-4">
+                    {[1, 2, 3, 4, 5].map((stampNum) => (
+                      <div 
+                        key={stampNum}
+                        className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                          stampNum <= profile.stamps 
+                            ? 'bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/30' 
+                            : 'bg-primary/30 border-2 border-dashed border-primary/50'
+                        }`}
+                      >
+                        <Coffee 
+                          className={`w-6 h-6 ${
+                            stampNum <= profile.stamps 
+                              ? 'text-white' 
+                              : 'text-primary/50'
+                          }`} 
+                        />
+                        {stampNum <= profile.stamps && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-[10px]">✓</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {/* Free Drink Icon */}
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
+                      <Gift className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  
+                  <div className="text-center text-xs text-accent/70">
+                    اجمع 5 طوابع واحصل على مشروب مجاني
                   </div>
 
                   {profile.freeDrinks > 0 && (
