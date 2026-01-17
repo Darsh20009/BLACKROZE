@@ -200,97 +200,99 @@ export default function CustomerProfile() {
           {/* Card Tab */}
           <TabsContent value="card" className="mt-4">
             <div className="perspective-1000">
-              <Card className="relative h-64 w-full max-w-md mx-auto bg-gradient-to-br from-amber-900 via-amber-800 to-amber-950 text-white rounded-2xl shadow-2xl overflow-hidden border-0 transform transition-all duration-500 hover:rotate-y-12">
-                {/* Chip & NFC Pattern */}
-                <div className="absolute top-10 left-8 w-12 h-9 bg-gradient-to-br from-yellow-200 to-yellow-600 rounded-md opacity-80" />
-                <div className="absolute top-11 left-9 w-10 h-7 border border-black/20 rounded-sm" />
+              <Card className="relative h-64 w-full max-w-md mx-auto bg-gradient-to-br from-[#1a1a1a] via-[#2d1e12] to-[#1a1a1a] text-white rounded-2xl shadow-2xl overflow-hidden border border-white/10 transform transition-all duration-500">
+                {/* Visual Texture */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+                
+                {/* Chip & NFC */}
+                <div className="absolute top-10 left-8 w-12 h-9 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-200 rounded-md shadow-inner flex flex-col justify-around p-1 overflow-hidden">
+                   <div className="h-px bg-black/20 w-full" />
+                   <div className="h-px bg-black/20 w-full" />
+                   <div className="h-px bg-black/20 w-full" />
+                </div>
                 
                 {/* Logo & Title */}
                 <div className="absolute top-6 right-8 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Coffee className="w-8 h-8 text-amber-200/80" />
-                    <h2 className="text-xl font-bold tracking-widest text-amber-100" style={{fontFamily: 'serif'}}>CLUNY CAFE</h2>
+                    <Coffee className="w-8 h-8 text-amber-500" />
+                    <h2 className="text-xl font-bold tracking-tighter text-amber-500" style={{fontFamily: 'serif'}}>CLUNY CAFE</h2>
                   </div>
-                  <p className="text-[10px] tracking-[0.2em] text-amber-200/50 uppercase mt-1">Loyalty Member</p>
+                  <p className="text-[9px] tracking-[0.3em] text-amber-500/60 uppercase mt-0.5 font-medium">PREMIUM LOYALTY</p>
                 </div>
 
                 {/* Card Number */}
-                <div className="absolute top-1/2 left-8 transform -translate-y-1/2 w-full">
-                  <p className="text-2xl font-mono tracking-[0.25em] text-white drop-shadow-lg">
-                    {profile?.cardNumber?.match(/.{1,4}/g)?.join(' ') || profile?.cardNumber || '**** **** **** ****'}
+                <div className="absolute top-[45%] left-8 transform -translate-y-1/2 w-full">
+                  <p className="text-2xl font-mono tracking-[0.25em] text-white/90 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                    {profile?.cardNumber ? profile.cardNumber.match(/.{1,4}/g)?.join(' ') : '**** **** **** ****'}
                   </p>
                 </div>
 
-                {/* Customer Name & QR */}
+                {/* Card Holder & QR */}
                 <div className="absolute bottom-6 left-8 right-8 flex justify-between items-end">
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-amber-200/50 uppercase tracking-wider">Card Holder</p>
-                    <p className="text-lg font-bold tracking-wide uppercase">{profile.name}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] text-white/40 uppercase tracking-[0.2em]">Card Holder</p>
+                    <p className="text-base font-bold tracking-wider uppercase text-white/90">{profile?.name || 'Customer'}</p>
                   </div>
                   
                   {cardQrUrl && (
-                    <div className="bg-white/90 p-1.5 rounded-lg shadow-inner backdrop-blur-sm">
-                      <img src={cardQrUrl} alt="QR Code" className="w-20 h-20" />
+                    <div className="bg-white p-1 rounded-md shadow-lg border border-white/20">
+                      <img src={cardQrUrl} alt="QR Code" className="w-16 h-16" />
                     </div>
                   )}
                 </div>
 
-                {/* Decorative Elements */}
-                <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-amber-600/10 rounded-full blur-3xl" />
-                <div className="absolute -top-20 -left-20 w-48 h-48 bg-amber-400/5 rounded-full blur-2xl" />
+                {/* Corner Accents */}
+                <div className="absolute -top-10 -left-10 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl" />
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl" />
               </Card>
             </div>
 
-            {/* Loyalty Stats Below Card */}
-            <div className="mt-8 space-y-4">
-              <Card className="bg-primary/20 border-primary/30 backdrop-blur">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="space-y-1">
-                      <h3 className="text-accent font-bold">نقاط المكافأة</h3>
-                      <p className="text-xs text-accent/70">كل 5 طوابع تمنحك مشروباً مجانياً</p>
+            {/* Loyalty Stats - High Contrast Section */}
+            <div className="mt-6 space-y-4">
+              <div className="grid grid-cols-5 gap-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div 
+                    key={i} 
+                    className={`aspect-square rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                      i <= profile.stamps 
+                        ? 'bg-amber-500 border-amber-500 text-white shadow-lg scale-110' 
+                        : 'bg-primary/10 border-primary/20 text-accent/20'
+                    }`}
+                  >
+                    <Coffee className={`w-5 h-5 ${i <= profile.stamps ? 'opacity-100' : 'opacity-20'}`} />
+                  </div>
+                ))}
+              </div>
+
+              <Card className="bg-primary/20 border-primary/30 backdrop-blur overflow-hidden">
+                <CardContent className="p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-500/20 rounded-lg">
+                      <Gift className="w-5 h-5 text-amber-500" />
                     </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-amber-500">{profile.stamps}</span>
-                      <span className="text-accent/50 text-sm"> / 5</span>
+                    <div>
+                      <p className="text-sm font-bold text-accent">المشروبات المجانية</p>
+                      <p className="text-xs text-accent/60">يمكن استبدالها عند الدفع</p>
                     </div>
                   </div>
-                  
-                  <div className="w-full bg-primary/50 rounded-full h-3 overflow-hidden">
-                    <div 
-                      className="bg-gradient-to-r from-amber-500 to-amber-600 h-full transition-all duration-500 rounded-full"
-                      style={{ width: `${nextFreeDrinkProgress}%` }}
-                    />
-                  </div>
-                  
-                  <p className="text-xs text-accent text-center">
-                    {5 - profile.stamps} طابع متبقي للحصول على مشروب مجاني
-                  </p>
+                  <Badge className="bg-amber-500 text-white text-lg px-3 py-1 h-auto">
+                    {profile.freeDrinks}
+                  </Badge>
                 </CardContent>
               </Card>
 
-              {profile.freeDrinks > 0 && (
-                <div className="bg-green-900/30 border border-green-600/30 rounded-xl p-6 text-center animate-pulse">
-                  <div className="flex items-center justify-center gap-3 text-green-400 mb-2">
-                    <Gift className="w-6 h-6" />
-                    <span className="text-xl font-bold">لديك {profile.freeDrinks} مشروب مجاني!</span>
-                  </div>
-                  <p className="text-sm text-green-300/70">أظهر بطاقتك للكاشير لاستبدال المكافأة</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex gap-4">
                 <Button
                   onClick={handleDownloadCard}
-                  className="bg-primary hover:bg-primary/90 text-white"
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white h-11"
                   data-testid="button-download-card"
                 >
                   <Download className="ml-2 w-4 h-4" />
                   تحميل البطاقة
                 </Button>
-                <div className="flex items-center justify-center bg-primary/20 rounded-lg border border-primary/30 px-4">
-                  <span className="text-xs text-accent/70 text-center leading-tight">
-                    خصم 10% دائم للأعضاء
+                <div className="flex items-center justify-center bg-primary/20 rounded-lg border border-primary/30 px-4 h-11">
+                  <span className="text-xs text-accent/70 font-bold">
+                    خصم 10%
                   </span>
                 </div>
               </div>
