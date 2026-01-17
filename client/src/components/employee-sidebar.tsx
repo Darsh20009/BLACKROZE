@@ -2,6 +2,7 @@ import { useLocation } from 'wouter';
 import { LayoutDashboard, ShoppingCart, ClipboardList, Settings, LogOut, User, BarChart3, Warehouse, Wallet, ChefHat, Table, Eye, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Employee } from '@shared/schema';
+import clunyLogo from "@assets/cluny_cafe_logo_1767095370460.png";
 
 interface EmployeeSidebarProps {
   employee: Employee | null;
@@ -33,14 +34,19 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
   return (
     <div className="hidden lg:flex w-64 bg-background border-l border-border flex-col h-screen sticky top-0">
       {/* Logo */}
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 bg-[#B58B5A] rounded-full flex items-center justify-center">
-            <Coffee className="w-5 h-5 text-white" />
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-3 mb-2">
+          <img 
+            src={clunyLogo} 
+            alt="CLUNY CAFE" 
+            className="w-10 h-10 object-contain rounded-lg"
+          />
+          <div>
+            <h2 className="text-lg font-bold text-foreground">CLUNY SYSTEMS</h2>
+            <p className="text-xs text-muted-foreground">نظام الموظفين</p>
           </div>
-          <h2 className="text-xl font-bold text-foreground">CLUNY CAFE</h2>
         </div>
-        <p className="text-xs text-muted-foreground">الموظف: {employee?.fullName || 'جاري التحميل...'}</p>
+        <p className="text-xs text-muted-foreground mt-2">الموظف: {employee?.fullName || 'جاري التحميل...'}</p>
       </div>
 
       {/* Navigation */}

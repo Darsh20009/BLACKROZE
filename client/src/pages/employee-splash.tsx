@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
-import qiroxLogo from "@assets/QIROX_LOGO_1768660955394.png";
+import clunyLogo from "@assets/cluny_cafe_logo_1767095370460.png";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();
@@ -53,7 +53,7 @@ export default function EmployeeSplash() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        {/* QIROX Logo */}
+        {/* CLUNY CAFE Logo */}
         <motion.div
           className="relative"
           animate={{
@@ -61,11 +61,11 @@ export default function EmployeeSplash() {
           }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className="relative w-64 h-40 flex items-center justify-center">
+          <div className="relative w-48 h-48 flex items-center justify-center">
             <img
-              src={qiroxLogo}
-              alt="QIROX - Build systems. Stay human."
-              className="w-full h-full object-contain"
+              src={clunyLogo}
+              alt="CLUNY CAFE - نظام إدارة الموظفين"
+              className="w-full h-full object-contain rounded-2xl"
             />
           </div>
         </motion.div>

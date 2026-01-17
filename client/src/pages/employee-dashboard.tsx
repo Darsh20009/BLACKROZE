@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import { EmployeeSidebar } from "@/components/employee-sidebar";
 import html2canvas from "html2canvas";
-import logoImage from "@assets/QIROX_LOGO_1768660955394.png";
+import clunyLogo from "@assets/cluny_cafe_logo_1767095370460.png";
 import type { Employee } from "@shared/schema";
 
 interface LeaveRequest {
@@ -423,7 +423,7 @@ export default function EmployeeDashboard() {
                     <div className="bg-gradient-to-r from-primary via-primary to-primary/80 p-6 relative">
                       <div className="flex items-center justify-center gap-4 mb-2">
                         <div className="w-20 h-20 flex items-center justify-center shadow-lg rounded-lg">
-                          <img src={logoImage} alt="CLUNY CAFE Logo" className="w-full h-full object-contain rounded-lg" />
+                          <img src={clunyLogo} alt="CLUNY CAFE Logo" className="w-full h-full object-contain rounded-lg" />
                         </div>
                         <div className="text-white text-right">
                           <h3 className="text-2xl font-bold">CLUNY CAFE</h3>

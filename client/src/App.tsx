@@ -111,14 +111,27 @@ const StockOrganizationDashboard = lazy(() => import("@/pages/stock-organization
 const DeliveryServiceStatus = lazy(() => import("@/pages/delivery-service-status"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
 const EmployeeHome = lazy(() => import("@/pages/employee-home"));
-const PageLoader = () => (
-  <div className="w-full h-screen flex items-center justify-center bg-[#F7F8F8] dark:bg-[#1a1410]">
-    <div className="flex flex-col items-center gap-4">
-      <div className="w-12 h-12 border-4 border-[#9FB2B3]/20 border-t-[#9FB2B3] rounded-full animate-spin" />
-      <p className="text-[#9FB2B3] font-medium animate-pulse font-ibm-arabic">جاري التحميل...</p>
+import clunyLogo from "@assets/cluny_cafe_logo_1767095370460.png";
+
+const PageLoader = () => {
+  const isEmployee = window.location.pathname.startsWith('/employee') || 
+                     window.location.pathname.startsWith('/manager') ||
+                     window.location.pathname.startsWith('/admin') ||
+                     window.location.pathname === '/0';
+  
+  return (
+    <div className="w-full h-screen flex items-center justify-center bg-[#F7F8F8] dark:bg-[#1a1410]">
+      <div className="flex flex-col items-center gap-4">
+        {isEmployee ? (
+          <img src={clunyLogo} alt="CLUNY CAFE" className="w-16 h-16 object-contain rounded-xl animate-pulse" />
+        ) : (
+          <div className="w-12 h-12 border-4 border-[#9FB2B3]/20 border-t-[#9FB2B3] rounded-full animate-spin" />
+        )}
+        <p className="text-[#9FB2B3] font-medium animate-pulse font-ibm-arabic">جاري التحميل...</p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 function AppRouter() {
  return (
