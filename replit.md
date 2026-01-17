@@ -62,6 +62,24 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Added proper logging for debugging drink and table operations
 - ✅ Emergency fallback for fetching all items when tenant-specific query fails
 
+### 🚀 BRANCH GEOFENCING SYSTEM - COMPLETED (January 2026)
+- ✅ Added `geofenceRadius` field to Branch schema (default 200 meters)
+- ✅ Added `lateThresholdMinutes` field to Branch schema (default 15 minutes)
+- ✅ Added `managerId` field for linking branch to manager
+- ✅ Created ManagerNotification model for employee alerts (late check-in, leaving branch, no check-in)
+- ✅ Updated admin-branches UI to capture geofencing configuration (lat/lng, radius, late threshold)
+- ✅ Added working hours configuration to branch form
+
+### 🚀 SHIFT MANAGEMENT SYSTEM - COMPLETED (January 2026)
+- ✅ Created IShift model with start/end time, break duration, overnight shift support
+- ✅ Created IEmployeeShiftAssignment model for assigning employees to shifts by day of week
+- ✅ Proper compound indexes for efficient querying
+
+### 🚀 EMPLOYEE PERMISSIONS (RBAC) - IN PROGRESS
+- ✅ Added `permissions` and `allowedPages` arrays to Employee schema
+- 🔄 Next: Create UI for assigning page-level permissions to employees
+- 🔄 Next: Integrate with PageGuard component for enforcement
+
 ### 🚀 REBRANDING PHASE - Phase 1 Complete
 - ✅ Updated color system to Muted Sage palette
 - ✅ Splash screen redesign with new colors

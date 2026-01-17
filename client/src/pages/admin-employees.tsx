@@ -147,8 +147,8 @@ export default function AdminEmployees() {
     ]);
 
     let csv = headers.join(',') + '\n';
-    rows.forEach((row) => {
-      csv += row.map((cell) => `"${cell}"`).join(',') + '\n';
+    rows.forEach((row: string[]) => {
+      csv += row.map((cell: string) => `"${cell}"`).join(',') + '\n';
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

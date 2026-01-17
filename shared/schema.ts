@@ -588,14 +588,17 @@ export interface IBranch extends Document {
     lat: number;
     lng: number;
   };
+  geofenceRadius?: number; // نطاق حدود الفرع بالمتر
   isActive: boolean;
   managerName?: string;
+  managerId?: string;
   isMainBranch: boolean;
   printSettings?: {
     headerText?: string;
     footerText?: string;
     showVat: boolean;
   };
+  lateThresholdMinutes?: number; // عتبة التأخير بالدقائق
   createdAt: Date;
 }
 
@@ -615,7 +618,11 @@ const BranchSchema = new Schema<IBranch>({
     lat: { type: Number },
     lng: { type: Number }
   },
+  geofenceRadius: { type: Number, default: 200 }, // الافتراضي 200 متر
   isActive: { type: Schema.Types.Mixed, default: true },
+  managerName: { type: String },
+  managerId: { type: String },
+  lateThresholdMinutes: { type: Number, default: 15 }, // الافتراضي 15 دقيقة
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: false });
 
@@ -1836,11 +1843,140 @@ const EmployeeSchema = new Schema<IEmployee>({
     lng: { type: Number },
     updatedAt: { type: Date }
   },
+  permissions: [{ type: String }],
+  allowedPages: [{ type: String }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
 
 export const EmployeeModel = mongoose.model<IEmployee>("Employee", EmployeeSchema);
+
+// نظام الإشعارات للمديرين - Manager Notifications
+export interface IManagerNotification extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  managerId?: string;
+  employeeId: string;
+  employeeName: string;
+  type: 'late_checkin' | 'left_branch' | 'no_checkin' | 'early_checkout' | 'overtime';
+  title: string;
+  message: string;
+  severity: 'info' | 'warning' | 'critical';
+  isRead: boolean;
+  isResolved: boolean;
+  metadata?: {
+    shiftStartTime?: string;
+    actualCheckInTime?: string;
+    lateMinutes?: number;
+    distanceFromBranch?: number;
+    location?: { lat: number; lng: number };
+  };
+  createdAt: Date;
+}
+
+const ManagerNotificationSchema = new Schema<IManagerNotification>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  managerId: { type: String },
+  employeeId: { type: String, required: true },
+  employeeName: { type: String, required: true },
+  type: { 
+    type: String, 
+    enum: ['late_checkin', 'left_branch', 'no_checkin', 'early_checkout', 'overtime'],
+    required: true 
+  },
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  severity: { type: String, enum: ['info', 'warning', 'critical'], default: 'warning' },
+  isRead: { type: Boolean, default: false },
+  isResolved: { type: Boolean, default: false },
+  metadata: {
+    shiftStartTime: { type: String },
+    actualCheckInTime: { type: String },
+    lateMinutes: { type: Number },
+    distanceFromBranch: { type: Number },
+    location: {
+      lat: { type: Number },
+      lng: { type: Number }
+    }
+  },
+  createdAt: { type: Date, default: Date.now },
+});
+
+ManagerNotificationSchema.index({ branchId: 1, isRead: 1 });
+ManagerNotificationSchema.index({ managerId: 1, isRead: 1 });
+ManagerNotificationSchema.index({ employeeId: 1, createdAt: -1 });
+
+export const ManagerNotificationModel = mongoose.model<IManagerNotification>("ManagerNotification", ManagerNotificationSchema);
+
+// نظام الورديات - Shift Management
+export interface IShift extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  name: string;
+  nameAr: string;
+  startTime: string; // HH:mm format
+  endTime: string;
+  breakDurationMinutes: number;
+  isOvernight: boolean; // للورديات التي تمتد لليوم التالي
+  isActive: boolean;
+  color?: string;
+  createdAt: Date;
+}
+
+const ShiftSchema = new Schema<IShift>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  startTime: { type: String, required: true },
+  endTime: { type: String, required: true },
+  breakDurationMinutes: { type: Number, default: 60 },
+  isOvernight: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: true },
+  color: { type: String, default: '#9FB2B3' },
+  createdAt: { type: Date, default: Date.now },
+});
+
+ShiftSchema.index({ branchId: 1, isActive: 1 });
+
+export const ShiftModel = mongoose.model<IShift>("Shift", ShiftSchema);
+
+// جدول الموظفين في الورديات - Employee Shift Assignments
+export interface IEmployeeShiftAssignment extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  employeeId: string;
+  shiftId: string;
+  dayOfWeek: number; // 0-6 (الأحد-السبت)
+  effectiveFrom: Date;
+  effectiveTo?: Date;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+const EmployeeShiftAssignmentSchema = new Schema<IEmployeeShiftAssignment>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  employeeId: { type: String, required: true },
+  shiftId: { type: String, required: true },
+  dayOfWeek: { type: Number, required: true, min: 0, max: 6 },
+  effectiveFrom: { type: Date, required: true },
+  effectiveTo: { type: Date },
+  isActive: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+EmployeeShiftAssignmentSchema.index({ employeeId: 1, dayOfWeek: 1, isActive: 1 });
+EmployeeShiftAssignmentSchema.index({ branchId: 1, shiftId: 1 });
+
+export const EmployeeShiftAssignmentModel = mongoose.model<IEmployeeShiftAssignment>("EmployeeShiftAssignment", EmployeeShiftAssignmentSchema);
 
 export const insertOrderSchema = z.object({
   items: z.any(),

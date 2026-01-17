@@ -35,6 +35,10 @@ interface Branch {
   address?: string;
   phone?: string;
   managerName?: string;
+  location?: { lat: number; lng: number };
+  geofenceRadius?: number;
+  lateThresholdMinutes?: number;
+  workingHours?: { open: string; close: string };
 }
 
 export default function AdminBranches() {
@@ -49,6 +53,12 @@ export default function AdminBranches() {
     nameEn: '',
     address: '',
     phone: '',
+    locationLat: '',
+    locationLng: '',
+    geofenceRadius: '200',
+    lateThresholdMinutes: '15',
+    workingHoursOpen: '08:00',
+    workingHoursClose: '23:00',
   });
 
   const { data: branches = [], isLoading } = useQuery<Branch[]>({
@@ -64,7 +74,7 @@ export default function AdminBranches() {
         description: "تم إنشاء الفرع وتعيين المدير.",
       });
       setIsAddDialogOpen(false);
-      setFormData({ nameAr: '', nameEn: '', address: '', phone: '' });
+      resetFormData();
     },
     onError: (error: any) => {
       toast({
@@ -85,7 +95,7 @@ export default function AdminBranches() {
       });
       setIsEditDialogOpen(false);
       setSelectedBranch(null);
-      setFormData({ nameAr: '', nameEn: '', address: '', phone: '' });
+      resetFormData();
     },
     onError: (error: any) => {
       toast({
@@ -122,6 +132,12 @@ export default function AdminBranches() {
       nameEn: branch.nameEn || '',
       address: branch.address || '',
       phone: branch.phone || '',
+      locationLat: branch.location?.lat?.toString() || '',
+      locationLng: branch.location?.lng?.toString() || '',
+      geofenceRadius: branch.geofenceRadius?.toString() || '200',
+      lateThresholdMinutes: branch.lateThresholdMinutes?.toString() || '15',
+      workingHoursOpen: branch.workingHours?.open || '08:00',
+      workingHoursClose: branch.workingHours?.close || '23:00',
     });
     setIsEditDialogOpen(true);
   };
@@ -136,7 +152,7 @@ export default function AdminBranches() {
     if (!selectedBranch) return;
     const branchId = selectedBranch.id || selectedBranch._id;
     if (!branchId) return;
-    updateMutation.mutate({ id: branchId, updates: formData });
+    updateMutation.mutate({ id: branchId, updates: prepareSubmitData() });
   };
 
   const confirmDelete = () => {
@@ -144,6 +160,40 @@ export default function AdminBranches() {
     const branchId = selectedBranch.id || selectedBranch._id;
     if (!branchId) return;
     deleteMutation.mutate(branchId);
+  };
+
+  const resetFormData = () => {
+    setFormData({
+      nameAr: '',
+      nameEn: '',
+      address: '',
+      phone: '',
+      locationLat: '',
+      locationLng: '',
+      geofenceRadius: '200',
+      lateThresholdMinutes: '15',
+      workingHoursOpen: '08:00',
+      workingHoursClose: '23:00',
+    });
+  };
+
+  const prepareSubmitData = () => {
+    return {
+      nameAr: formData.nameAr,
+      nameEn: formData.nameEn,
+      address: formData.address,
+      phone: formData.phone,
+      location: formData.locationLat && formData.locationLng ? {
+        lat: parseFloat(formData.locationLat),
+        lng: parseFloat(formData.locationLng),
+      } : undefined,
+      geofenceRadius: parseInt(formData.geofenceRadius) || 200,
+      lateThresholdMinutes: parseInt(formData.lateThresholdMinutes) || 15,
+      workingHours: {
+        open: formData.workingHoursOpen,
+        close: formData.workingHoursClose,
+      },
+    };
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -156,7 +206,7 @@ export default function AdminBranches() {
       });
       return;
     }
-    createMutation.mutate(formData);
+    createMutation.mutate(prepareSubmitData());
   };
 
   return (
@@ -228,6 +278,78 @@ export default function AdminBranches() {
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   placeholder="0501234567"
                 />
+              </div>
+            </div>
+
+            {/* إعدادات الموقع والحدود الجغرافية */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                إعدادات الموقع والحدود الجغرافية
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="locationLat">خط العرض (Latitude)</Label>
+                  <Input 
+                    id="locationLat"
+                    type="number"
+                    step="any"
+                    value={formData.locationLat}
+                    onChange={(e) => setFormData({...formData, locationLat: e.target.value})}
+                    placeholder="24.7136"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="locationLng">خط الطول (Longitude)</Label>
+                  <Input 
+                    id="locationLng"
+                    type="number"
+                    step="any"
+                    value={formData.locationLng}
+                    onChange={(e) => setFormData({...formData, locationLng: e.target.value})}
+                    placeholder="46.6753"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="geofenceRadius">نطاق حدود الفرع (بالمتر)</Label>
+                  <Input 
+                    id="geofenceRadius"
+                    type="number"
+                    value={formData.geofenceRadius}
+                    onChange={(e) => setFormData({...formData, geofenceRadius: e.target.value})}
+                    placeholder="200"
+                  />
+                  <p className="text-xs text-muted-foreground">المسافة القصوى التي يمكن للموظف التواجد فيها داخل الفرع</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lateThresholdMinutes">عتبة التأخير (بالدقائق)</Label>
+                  <Input 
+                    id="lateThresholdMinutes"
+                    type="number"
+                    value={formData.lateThresholdMinutes}
+                    onChange={(e) => setFormData({...formData, lateThresholdMinutes: e.target.value})}
+                    placeholder="15"
+                  />
+                  <p className="text-xs text-muted-foreground">بعد كم دقيقة يُعتبر الموظف متأخراً</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="workingHoursOpen">وقت الافتتاح</Label>
+                  <Input 
+                    id="workingHoursOpen"
+                    type="time"
+                    value={formData.workingHoursOpen}
+                    onChange={(e) => setFormData({...formData, workingHoursOpen: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="workingHoursClose">وقت الإغلاق</Label>
+                  <Input 
+                    id="workingHoursClose"
+                    type="time"
+                    value={formData.workingHoursClose}
+                    onChange={(e) => setFormData({...formData, workingHoursClose: e.target.value})}
+                  />
+                </div>
               </div>
             </div>
 
@@ -339,7 +461,7 @@ export default function AdminBranches() {
         setIsEditDialogOpen(open);
         if (!open) {
           setSelectedBranch(null);
-          setFormData({ nameAr: '', nameEn: '', address: '', phone: '' });
+          resetFormData();
         }
       }}>
         <DialogContent className="max-w-2xl" dir="rtl">
