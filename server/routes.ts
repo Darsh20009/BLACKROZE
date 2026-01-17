@@ -7,6 +7,7 @@ import { RecipeEngine } from "./recipe-engine";
 import { UnitsEngine } from "./units-engine";
 import { InventoryEngine } from "./inventory-engine";
 import { AccountingEngine } from "./accounting-engine";
+import { ErpAccountingService } from "./erp-accounting-service";
 import { requireAuth, requireManager, requireAdmin, filterByBranch, requireKitchenAccess, requireCashierAccess, requireDeliveryAccess, requirePermission, type AuthRequest } from "./middleware/auth";
 import { PermissionsEngine, PERMISSIONS } from "./permissions-engine";
 import { requireTenant, getTenantIdFromRequest } from "./middleware/tenant";
@@ -10145,6 +10146,232 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, snapshot });
     } catch (error) {
       res.status(500).json({ error: "Failed to save snapshot" });
+    }
+  });
+
+  // ============================================
+  // ERP Accounting System Routes
+  // نظام المحاسبة المتقدم ERP
+  // ============================================
+
+  // Initialize Chart of Accounts
+  app.post("/api/erp/accounts/initialize", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const accounts = await ErpAccountingService.initializeChartOfAccounts(tenantId);
+      res.json({ success: true, accounts: accounts.map(serializeDoc), count: accounts.length });
+    } catch (error: any) {
+      console.error("Error initializing chart of accounts:", error);
+      res.status(500).json({ error: error.message || "Failed to initialize chart of accounts" });
+    }
+  });
+
+  // Get all accounts
+  app.get("/api/erp/accounts", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const accounts = await ErpAccountingService.getAccounts(tenantId, {
+        accountType: req.query.accountType as string,
+        isActive: req.query.isActive ? parseInt(req.query.isActive as string) : undefined,
+        parentAccountId: req.query.parentAccountId as string,
+      });
+      res.json({ success: true, accounts: accounts.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch accounts" });
+    }
+  });
+
+  // Get account tree
+  app.get("/api/erp/accounts/tree", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const tree = await ErpAccountingService.getAccountTree(tenantId);
+      res.json({ success: true, tree });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch account tree" });
+    }
+  });
+
+  // Create new account
+  app.post("/api/erp/accounts", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const account = await ErpAccountingService.createAccount({
+        tenantId,
+        ...req.body,
+      });
+      res.json({ success: true, account: serializeDoc(account) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create account" });
+    }
+  });
+
+  // Create journal entry
+  app.post("/api/erp/journal-entries", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const createdBy = req.employee?.id || "system";
+      const entry = await ErpAccountingService.createJournalEntry({
+        tenantId,
+        ...req.body,
+        createdBy,
+      });
+      res.json({ success: true, entry: serializeDoc(entry) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create journal entry" });
+    }
+  });
+
+  // Post journal entry
+  app.patch("/api/erp/journal-entries/:id/post", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const postedBy = req.employee?.id || "system";
+      const entry = await ErpAccountingService.postJournalEntry(tenantId, req.params.id, postedBy);
+      res.json({ success: true, entry: serializeDoc(entry) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to post journal entry" });
+    }
+  });
+
+  // Create invoice from order
+  app.post("/api/erp/invoices/from-order/:orderId", requireAuth, requireCashierAccess, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const branchId = req.employee?.branchId || req.body.branchId || "default-branch";
+      const issuedBy = req.employee?.id || "system";
+      const invoice = await ErpAccountingService.createInvoiceFromOrder(
+        tenantId,
+        branchId,
+        req.params.orderId,
+        issuedBy
+      );
+      res.json({ success: true, invoice: serializeDoc(invoice) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create invoice" });
+    }
+  });
+
+  // Get trial balance
+  app.get("/api/erp/reports/trial-balance", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+      const trialBalance = await ErpAccountingService.getTrialBalance(tenantId, endDate);
+      res.json({ success: true, trialBalance });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch trial balance" });
+    }
+  });
+
+  // Get income statement
+  app.get("/api/erp/reports/income-statement", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date(new Date().getFullYear(), 0, 1);
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+      const branchId = req.query.branchId as string;
+      const incomeStatement = await ErpAccountingService.getIncomeStatement(tenantId, startDate, endDate, branchId);
+      res.json({ success: true, incomeStatement });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch income statement" });
+    }
+  });
+
+  // Get balance sheet
+  app.get("/api/erp/reports/balance-sheet", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const asOfDate = req.query.asOfDate ? new Date(req.query.asOfDate as string) : new Date();
+      const balanceSheet = await ErpAccountingService.getBalanceSheet(tenantId, asOfDate);
+      res.json({ success: true, balanceSheet });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch balance sheet" });
+    }
+  });
+
+  // Create ERP expense
+  app.post("/api/erp/expenses", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const branchId = req.employee?.branchId || req.body.branchId || "default-branch";
+      const requestedBy = req.employee?.id || "system";
+      const expense = await ErpAccountingService.createExpense({
+        tenantId,
+        branchId,
+        requestedBy,
+        ...req.body,
+      });
+      res.json({ success: true, expense: serializeDoc(expense) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create expense" });
+    }
+  });
+
+  // Approve expense
+  app.patch("/api/erp/expenses/:id/approve", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const approvedBy = req.employee?.id || "system";
+      const expense = await ErpAccountingService.approveExpense(tenantId, req.params.id, approvedBy);
+      res.json({ success: true, expense: serializeDoc(expense) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to approve expense" });
+    }
+  });
+
+  // Get vendors
+  app.get("/api/erp/vendors", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const vendors = await ErpAccountingService.getVendors(tenantId);
+      res.json({ success: true, vendors: vendors.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch vendors" });
+    }
+  });
+
+  // Create vendor
+  app.post("/api/erp/vendors", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const vendor = await ErpAccountingService.createVendor({
+        tenantId,
+        ...req.body,
+      });
+      res.json({ success: true, vendor: serializeDoc(vendor) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create vendor" });
+    }
+  });
+
+  // Get ERP dashboard summary
+  app.get("/api/erp/dashboard", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const branchId = req.query.branchId as string;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const summary = await ErpAccountingService.getDashboardSummary(tenantId, branchId, startDate, endDate);
+      res.json({ success: true, summary });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch dashboard summary" });
+    }
+  });
+
+  // Post order to journal (auto-post sales entry)
+  app.post("/api/erp/orders/:orderId/post-journal", requireAuth, requireCashierAccess, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
+      const createdBy = req.employee?.id || "system";
+      const entry = await ErpAccountingService.postOrderJournal(tenantId, req.params.orderId, createdBy);
+      if (entry) {
+        res.json({ success: true, entry: serializeDoc(entry) });
+      } else {
+        res.status(404).json({ error: "Order not found or missing accounts" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to post order journal" });
     }
   });
 

@@ -99,6 +99,7 @@ const OSRolesManagement = lazy(() => import("@/pages/os-roles-management"));
 const ExecutiveDashboard = lazy(() => import("@/pages/executive-dashboard"));
 const UnifiedInventoryRecipes = lazy(() => import("@/pages/unified-inventory-recipes"));
 const ZATCAInvoices = lazy(() => import("@/pages/zatca-invoices"));
+const ErpAccountingPage = lazy(() => import("@/pages/erp-accounting"));
 const UserGuide = lazy(() => import("@/pages/user-guide"));
 const AdvancedAnalytics = lazy(() => import("@/pages/advanced-analytics"));
 const SupplierManagement = lazy(() => import("@/pages/supplier-management"));
@@ -268,6 +269,9 @@ function AppRouter() {
  <Route path="/reports"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ReportsPage /></AuthGuard></Route>
  <Route path="/stock-movements"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><StockMovementsPage /></AuthGuard></Route>
  
+ {/* ERP Accounting System */}
+ <Route path="/erp/accounting"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ErpAccountingPage /></AuthGuard></Route>
+
  <Route component={MenuPage} />
  </Switch>
  </Suspense>

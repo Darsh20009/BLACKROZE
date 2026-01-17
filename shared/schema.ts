@@ -3232,3 +3232,851 @@ export const insertAccountingSnapshotSchema = z.object({
 
 export type InsertAccountingSnapshot = z.infer<typeof insertAccountingSnapshotSchema>;
 export type AccountingSnapshot = IAccountingSnapshot;
+
+// ============================================
+// نظام المحاسبة المتقدم - Professional ERP Accounting System
+// ============================================
+
+// أنواع الحسابات - Account Types
+export const AccountTypes = {
+  ASSET: 'asset',
+  LIABILITY: 'liability',
+  EQUITY: 'equity',
+  REVENUE: 'revenue',
+  EXPENSE: 'expense',
+  CONTRA: 'contra',
+} as const;
+
+export type AccountType = typeof AccountTypes[keyof typeof AccountTypes];
+
+// الفترات المالية - Fiscal Period
+export interface IFiscalPeriod extends Document {
+  tenantId: string;
+  name: string;
+  nameAr: string;
+  startDate: Date;
+  endDate: Date;
+  status: 'open' | 'closed' | 'locked';
+  closedBy?: string;
+  closedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const FiscalPeriodSchema = new Schema<IFiscalPeriod>({
+  tenantId: { type: String, required: true },
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  status: { type: String, enum: ['open', 'closed', 'locked'], default: 'open' },
+  closedBy: { type: String },
+  closedAt: { type: Date },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+FiscalPeriodSchema.index({ tenantId: 1, startDate: 1 });
+FiscalPeriodSchema.index({ tenantId: 1, status: 1 });
+
+export const FiscalPeriodModel = mongoose.model<IFiscalPeriod>("FiscalPeriod", FiscalPeriodSchema);
+
+// مراكز التكلفة - Cost Centers
+export interface ICostCenter extends Document {
+  id: string;
+  tenantId: string;
+  code: string;
+  nameAr: string;
+  nameEn?: string;
+  parentId?: string;
+  branchId?: string;
+  isActive: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const CostCenterSchema = new Schema<ICostCenter>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  code: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String },
+  parentId: { type: String },
+  branchId: { type: String },
+  isActive: { type: Number, default: 1 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+CostCenterSchema.index({ tenantId: 1, code: 1 }, { unique: true });
+CostCenterSchema.index({ tenantId: 1, branchId: 1 });
+
+export const CostCenterModel = mongoose.model<ICostCenter>("CostCenter", CostCenterSchema);
+
+// دليل الحسابات - Chart of Accounts
+export interface IAccount extends Document {
+  id: string;
+  tenantId: string;
+  accountNumber: string;
+  nameAr: string;
+  nameEn?: string;
+  accountType: AccountType;
+  parentAccountId?: string;
+  normalBalance: 'debit' | 'credit';
+  currency: string;
+  isActive: number;
+  isSystemAccount: number;
+  isBankAccount: number;
+  bankName?: string;
+  bankAccountNumber?: string;
+  iban?: string;
+  openingBalance: number;
+  currentBalance: number;
+  branchId?: string;
+  costCenterId?: string;
+  description?: string;
+  level: number;
+  path: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const AccountSchema = new Schema<IAccount>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  accountNumber: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String },
+  accountType: { type: String, enum: ['asset', 'liability', 'equity', 'revenue', 'expense', 'contra'], required: true },
+  parentAccountId: { type: String },
+  normalBalance: { type: String, enum: ['debit', 'credit'], required: true },
+  currency: { type: String, default: 'SAR' },
+  isActive: { type: Number, default: 1 },
+  isSystemAccount: { type: Number, default: 0 },
+  isBankAccount: { type: Number, default: 0 },
+  bankName: { type: String },
+  bankAccountNumber: { type: String },
+  iban: { type: String },
+  openingBalance: { type: Number, default: 0 },
+  currentBalance: { type: Number, default: 0 },
+  branchId: { type: String },
+  costCenterId: { type: String },
+  description: { type: String },
+  level: { type: Number, default: 1 },
+  path: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+AccountSchema.index({ tenantId: 1, accountNumber: 1 }, { unique: true });
+AccountSchema.index({ tenantId: 1, accountType: 1 });
+AccountSchema.index({ tenantId: 1, parentAccountId: 1 });
+AccountSchema.index({ tenantId: 1, isActive: 1 });
+AccountSchema.index({ tenantId: 1, isBankAccount: 1 });
+
+export const AccountModel = mongoose.model<IAccount>("Account", AccountSchema);
+
+// قيود اليومية - Journal Entries
+export interface IJournalLine {
+  accountId: string;
+  accountNumber: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  description?: string;
+  costCenterId?: string;
+  branchId?: string;
+}
+
+export interface IJournalEntry extends Document {
+  id: string;
+  tenantId: string;
+  entryNumber: string;
+  entryDate: Date;
+  fiscalPeriodId?: string;
+  referenceType?: 'order' | 'invoice' | 'expense' | 'adjustment' | 'opening' | 'closing' | 'manual';
+  referenceId?: string;
+  description: string;
+  lines: IJournalLine[];
+  totalDebit: number;
+  totalCredit: number;
+  isBalanced: number;
+  status: 'draft' | 'posted' | 'reversed' | 'voided';
+  reversedEntryId?: string;
+  isAutoPosted: number;
+  postedBy?: string;
+  postedAt?: Date;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const JournalEntrySchema = new Schema<IJournalEntry>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  entryNumber: { type: String, required: true },
+  entryDate: { type: Date, required: true },
+  fiscalPeriodId: { type: String },
+  referenceType: { type: String, enum: ['order', 'invoice', 'expense', 'adjustment', 'opening', 'closing', 'manual'] },
+  referenceId: { type: String },
+  description: { type: String, required: true },
+  lines: [{
+    accountId: { type: String, required: true },
+    accountNumber: { type: String, required: true },
+    accountName: { type: String, required: true },
+    debit: { type: Number, default: 0 },
+    credit: { type: Number, default: 0 },
+    description: { type: String },
+    costCenterId: { type: String },
+    branchId: { type: String },
+  }],
+  totalDebit: { type: Number, default: 0 },
+  totalCredit: { type: Number, default: 0 },
+  isBalanced: { type: Number, default: 1 },
+  status: { type: String, enum: ['draft', 'posted', 'reversed', 'voided'], default: 'draft' },
+  reversedEntryId: { type: String },
+  isAutoPosted: { type: Number, default: 0 },
+  postedBy: { type: String },
+  postedAt: { type: Date },
+  createdBy: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+JournalEntrySchema.index({ tenantId: 1, entryNumber: 1 }, { unique: true });
+JournalEntrySchema.index({ tenantId: 1, entryDate: -1 });
+JournalEntrySchema.index({ tenantId: 1, status: 1 });
+JournalEntrySchema.index({ tenantId: 1, referenceType: 1, referenceId: 1 });
+JournalEntrySchema.index({ 'lines.accountId': 1 });
+
+export const JournalEntryModel = mongoose.model<IJournalEntry>("JournalEntry", JournalEntrySchema);
+
+// معدلات الضريبة - Tax Rates
+export interface ITaxRate extends Document {
+  id: string;
+  tenantId: string;
+  code: string;
+  nameAr: string;
+  nameEn?: string;
+  rate: number;
+  taxType: 'vat' | 'service' | 'excise' | 'withholding' | 'other';
+  isDefault: number;
+  isActive: number;
+  accountId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const TaxRateSchema = new Schema<ITaxRate>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  code: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String },
+  rate: { type: Number, required: true },
+  taxType: { type: String, enum: ['vat', 'service', 'excise', 'withholding', 'other'], default: 'vat' },
+  isDefault: { type: Number, default: 0 },
+  isActive: { type: Number, default: 1 },
+  accountId: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+TaxRateSchema.index({ tenantId: 1, code: 1 }, { unique: true });
+TaxRateSchema.index({ tenantId: 1, isActive: 1 });
+
+export const TaxRateModel = mongoose.model<ITaxRate>("TaxRate", TaxRateSchema);
+
+// الفواتير الإلكترونية - Professional Invoices
+export interface IInvoiceLine {
+  itemId?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number;
+  discountPercent: number;
+  taxRate: number;
+  taxAmount: number;
+  lineTotal: number;
+  costCenterId?: string;
+}
+
+export interface IInvoice extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  dueDate?: Date;
+  invoiceType: 'sales' | 'purchase' | 'credit_note' | 'debit_note';
+  status: 'draft' | 'issued' | 'sent' | 'paid' | 'partially_paid' | 'overdue' | 'cancelled' | 'voided';
+  customerId?: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerTaxNumber?: string;
+  customerAddress?: string;
+  vendorId?: string;
+  vendorName?: string;
+  vendorTaxNumber?: string;
+  orderId?: string;
+  lines: IInvoiceLine[];
+  subtotal: number;
+  totalDiscount: number;
+  totalTax: number;
+  grandTotal: number;
+  amountPaid: number;
+  amountDue: number;
+  currency: string;
+  exchangeRate: number;
+  paymentTerms?: string;
+  paymentMethod?: string;
+  notes?: string;
+  internalNotes?: string;
+  zatcaUuid?: string;
+  zatcaHash?: string;
+  zatcaQrCode?: string;
+  zatcaInvoiceXml?: string;
+  zatcaStatus?: 'pending' | 'submitted' | 'accepted' | 'rejected' | 'cleared';
+  zatcaSubmittedAt?: Date;
+  zatcaResponseCode?: string;
+  zatcaResponseMessage?: string;
+  issuedBy?: string;
+  issuedAt?: Date;
+  paidAt?: Date;
+  cancelledBy?: string;
+  cancelledAt?: Date;
+  cancellationReason?: string;
+  linkedInvoiceId?: string;
+  journalEntryId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const InvoiceSchema = new Schema<IInvoice>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  invoiceNumber: { type: String, required: true },
+  invoiceDate: { type: Date, required: true },
+  dueDate: { type: Date },
+  invoiceType: { type: String, enum: ['sales', 'purchase', 'credit_note', 'debit_note'], default: 'sales' },
+  status: { type: String, enum: ['draft', 'issued', 'sent', 'paid', 'partially_paid', 'overdue', 'cancelled', 'voided'], default: 'draft' },
+  customerId: { type: String },
+  customerName: { type: String, required: true },
+  customerPhone: { type: String },
+  customerEmail: { type: String },
+  customerTaxNumber: { type: String },
+  customerAddress: { type: String },
+  vendorId: { type: String },
+  vendorName: { type: String },
+  vendorTaxNumber: { type: String },
+  orderId: { type: String },
+  lines: [{
+    itemId: { type: String },
+    description: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    unitPrice: { type: Number, required: true },
+    discountAmount: { type: Number, default: 0 },
+    discountPercent: { type: Number, default: 0 },
+    taxRate: { type: Number, default: 15 },
+    taxAmount: { type: Number, default: 0 },
+    lineTotal: { type: Number, required: true },
+    costCenterId: { type: String },
+  }],
+  subtotal: { type: Number, required: true },
+  totalDiscount: { type: Number, default: 0 },
+  totalTax: { type: Number, default: 0 },
+  grandTotal: { type: Number, required: true },
+  amountPaid: { type: Number, default: 0 },
+  amountDue: { type: Number, required: true },
+  currency: { type: String, default: 'SAR' },
+  exchangeRate: { type: Number, default: 1 },
+  paymentTerms: { type: String },
+  paymentMethod: { type: String },
+  notes: { type: String },
+  internalNotes: { type: String },
+  zatcaUuid: { type: String },
+  zatcaHash: { type: String },
+  zatcaQrCode: { type: String },
+  zatcaInvoiceXml: { type: String },
+  zatcaStatus: { type: String, enum: ['pending', 'submitted', 'accepted', 'rejected', 'cleared'] },
+  zatcaSubmittedAt: { type: Date },
+  zatcaResponseCode: { type: String },
+  zatcaResponseMessage: { type: String },
+  issuedBy: { type: String },
+  issuedAt: { type: Date },
+  paidAt: { type: Date },
+  cancelledBy: { type: String },
+  cancelledAt: { type: Date },
+  cancellationReason: { type: String },
+  linkedInvoiceId: { type: String },
+  journalEntryId: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+InvoiceSchema.index({ tenantId: 1, invoiceNumber: 1 }, { unique: true });
+InvoiceSchema.index({ tenantId: 1, branchId: 1, invoiceDate: -1 });
+InvoiceSchema.index({ tenantId: 1, status: 1 });
+InvoiceSchema.index({ tenantId: 1, customerId: 1 });
+InvoiceSchema.index({ tenantId: 1, orderId: 1 });
+InvoiceSchema.index({ tenantId: 1, zatcaStatus: 1 });
+InvoiceSchema.index({ zatcaUuid: 1 });
+
+export const InvoiceModel = mongoose.model<IInvoice>("Invoice", InvoiceSchema);
+
+// المصروفات المتقدمة - ERP Expenses (Advanced Expense Management)
+export interface IExpenseErp extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  expenseNumber: string;
+  expenseDate: Date;
+  category: 'inventory' | 'salaries' | 'rent' | 'utilities' | 'marketing' | 'maintenance' | 'supplies' | 'other';
+  subcategory?: string;
+  description: string;
+  amount: number;
+  taxAmount: number;
+  totalAmount: number;
+  paymentMethod: 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'other';
+  paymentReference?: string;
+  vendorId?: string;
+  vendorName?: string;
+  invoiceNumber?: string;
+  invoiceDate?: Date;
+  attachmentUrls?: string[];
+  accountId?: string;
+  costCenterId?: string;
+  status: 'draft' | 'pending_approval' | 'approved' | 'rejected' | 'paid' | 'cancelled';
+  requestedBy: string;
+  approvedBy?: string;
+  approvedAt?: Date;
+  rejectedBy?: string;
+  rejectedAt?: Date;
+  rejectionReason?: string;
+  paidBy?: string;
+  paidAt?: Date;
+  journalEntryId?: string;
+  notes?: string;
+  isRecurring: number;
+  recurringFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  nextRecurringDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ExpenseErpSchema = new Schema<IExpenseErp>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  expenseNumber: { type: String, required: true },
+  expenseDate: { type: Date, required: true },
+  category: { type: String, enum: ['inventory', 'salaries', 'rent', 'utilities', 'marketing', 'maintenance', 'supplies', 'other'], required: true },
+  subcategory: { type: String },
+  description: { type: String, required: true },
+  amount: { type: Number, required: true },
+  taxAmount: { type: Number, default: 0 },
+  totalAmount: { type: Number, required: true },
+  paymentMethod: { type: String, enum: ['cash', 'bank_transfer', 'check', 'credit_card', 'other'], default: 'cash' },
+  paymentReference: { type: String },
+  vendorId: { type: String },
+  vendorName: { type: String },
+  invoiceNumber: { type: String },
+  invoiceDate: { type: Date },
+  attachmentUrls: [{ type: String }],
+  accountId: { type: String },
+  costCenterId: { type: String },
+  status: { type: String, enum: ['draft', 'pending_approval', 'approved', 'rejected', 'paid', 'cancelled'], default: 'draft' },
+  requestedBy: { type: String, required: true },
+  approvedBy: { type: String },
+  approvedAt: { type: Date },
+  rejectedBy: { type: String },
+  rejectedAt: { type: Date },
+  rejectionReason: { type: String },
+  paidBy: { type: String },
+  paidAt: { type: Date },
+  journalEntryId: { type: String },
+  notes: { type: String },
+  isRecurring: { type: Number, default: 0 },
+  recurringFrequency: { type: String, enum: ['weekly', 'monthly', 'quarterly', 'yearly'] },
+  nextRecurringDate: { type: Date },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+ExpenseErpSchema.index({ tenantId: 1, expenseNumber: 1 }, { unique: true });
+ExpenseErpSchema.index({ tenantId: 1, branchId: 1, expenseDate: -1 });
+ExpenseErpSchema.index({ tenantId: 1, status: 1 });
+ExpenseErpSchema.index({ tenantId: 1, category: 1 });
+ExpenseErpSchema.index({ tenantId: 1, requestedBy: 1 });
+
+export const ExpenseErpModel = mongoose.model<IExpenseErp>("ExpenseErp", ExpenseErpSchema);
+
+// الموردين - Vendors
+export interface IVendor extends Document {
+  id: string;
+  tenantId: string;
+  code: string;
+  nameAr: string;
+  nameEn?: string;
+  taxNumber?: string;
+  commercialRegistration?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  country: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  iban?: string;
+  paymentTerms?: string;
+  creditLimit: number;
+  currentBalance: number;
+  contactPerson?: string;
+  contactPhone?: string;
+  notes?: string;
+  isActive: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const VendorSchema = new Schema<IVendor>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  code: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String },
+  taxNumber: { type: String },
+  commercialRegistration: { type: String },
+  phone: { type: String },
+  email: { type: String },
+  address: { type: String },
+  city: { type: String },
+  country: { type: String, default: 'SA' },
+  bankName: { type: String },
+  bankAccountNumber: { type: String },
+  iban: { type: String },
+  paymentTerms: { type: String },
+  creditLimit: { type: Number, default: 0 },
+  currentBalance: { type: Number, default: 0 },
+  contactPerson: { type: String },
+  contactPhone: { type: String },
+  notes: { type: String },
+  isActive: { type: Number, default: 1 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+VendorSchema.index({ tenantId: 1, code: 1 }, { unique: true });
+VendorSchema.index({ tenantId: 1, nameAr: 1 });
+VendorSchema.index({ tenantId: 1, isActive: 1 });
+
+export const VendorModel = mongoose.model<IVendor>("Vendor", VendorSchema);
+
+// سجل المدفوعات - Payment Records
+export interface IPaymentRecord extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  paymentNumber: string;
+  paymentDate: Date;
+  paymentType: 'receipt' | 'payment';
+  referenceType: 'invoice' | 'expense' | 'order' | 'advance' | 'refund';
+  referenceId: string;
+  customerId?: string;
+  vendorId?: string;
+  amount: number;
+  paymentMethod: 'cash' | 'bank_transfer' | 'check' | 'credit_card' | 'pos' | 'wallet' | 'other';
+  bankAccountId?: string;
+  checkNumber?: string;
+  transactionReference?: string;
+  description?: string;
+  status: 'pending' | 'completed' | 'bounced' | 'cancelled';
+  journalEntryId?: string;
+  processedBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const PaymentRecordSchema = new Schema<IPaymentRecord>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  paymentNumber: { type: String, required: true },
+  paymentDate: { type: Date, required: true },
+  paymentType: { type: String, enum: ['receipt', 'payment'], required: true },
+  referenceType: { type: String, enum: ['invoice', 'expense', 'order', 'advance', 'refund'], required: true },
+  referenceId: { type: String, required: true },
+  customerId: { type: String },
+  vendorId: { type: String },
+  amount: { type: Number, required: true },
+  paymentMethod: { type: String, enum: ['cash', 'bank_transfer', 'check', 'credit_card', 'pos', 'wallet', 'other'], required: true },
+  bankAccountId: { type: String },
+  checkNumber: { type: String },
+  transactionReference: { type: String },
+  description: { type: String },
+  status: { type: String, enum: ['pending', 'completed', 'bounced', 'cancelled'], default: 'completed' },
+  journalEntryId: { type: String },
+  processedBy: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+PaymentRecordSchema.index({ tenantId: 1, paymentNumber: 1 }, { unique: true });
+PaymentRecordSchema.index({ tenantId: 1, branchId: 1, paymentDate: -1 });
+PaymentRecordSchema.index({ tenantId: 1, referenceType: 1, referenceId: 1 });
+PaymentRecordSchema.index({ tenantId: 1, customerId: 1 });
+PaymentRecordSchema.index({ tenantId: 1, vendorId: 1 });
+
+export const PaymentRecordModel = mongoose.model<IPaymentRecord>("PaymentRecord", PaymentRecordSchema);
+
+// كشف حساب البنك - Bank Statements
+export interface IBankStatement extends Document {
+  id: string;
+  tenantId: string;
+  bankAccountId: string;
+  statementDate: Date;
+  startDate: Date;
+  endDate: Date;
+  openingBalance: number;
+  closingBalance: number;
+  totalCredits: number;
+  totalDebits: number;
+  transactionCount: number;
+  status: 'uploaded' | 'in_progress' | 'reconciled';
+  reconciledBy?: string;
+  reconciledAt?: Date;
+  uploadedBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const BankStatementSchema = new Schema<IBankStatement>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  bankAccountId: { type: String, required: true },
+  statementDate: { type: Date, required: true },
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  openingBalance: { type: Number, required: true },
+  closingBalance: { type: Number, required: true },
+  totalCredits: { type: Number, default: 0 },
+  totalDebits: { type: Number, default: 0 },
+  transactionCount: { type: Number, default: 0 },
+  status: { type: String, enum: ['uploaded', 'in_progress', 'reconciled'], default: 'uploaded' },
+  reconciledBy: { type: String },
+  reconciledAt: { type: Date },
+  uploadedBy: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+BankStatementSchema.index({ tenantId: 1, bankAccountId: 1, statementDate: -1 });
+BankStatementSchema.index({ tenantId: 1, status: 1 });
+
+export const BankStatementModel = mongoose.model<IBankStatement>("BankStatement", BankStatementSchema);
+
+// معاملات البنك - Bank Transactions
+export interface IBankTransaction extends Document {
+  id: string;
+  tenantId: string;
+  bankStatementId: string;
+  bankAccountId: string;
+  transactionDate: Date;
+  valueDate?: Date;
+  description: string;
+  reference?: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  transactionType?: string;
+  isReconciled: number;
+  matchedPaymentId?: string;
+  matchedJournalEntryId?: string;
+  matchConfidence?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const BankTransactionSchema = new Schema<IBankTransaction>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  bankStatementId: { type: String, required: true },
+  bankAccountId: { type: String, required: true },
+  transactionDate: { type: Date, required: true },
+  valueDate: { type: Date },
+  description: { type: String, required: true },
+  reference: { type: String },
+  debit: { type: Number, default: 0 },
+  credit: { type: Number, default: 0 },
+  balance: { type: Number, required: true },
+  transactionType: { type: String },
+  isReconciled: { type: Number, default: 0 },
+  matchedPaymentId: { type: String },
+  matchedJournalEntryId: { type: String },
+  matchConfidence: { type: Number },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+BankTransactionSchema.index({ tenantId: 1, bankStatementId: 1 });
+BankTransactionSchema.index({ tenantId: 1, bankAccountId: 1, transactionDate: -1 });
+BankTransactionSchema.index({ tenantId: 1, isReconciled: 1 });
+
+export const BankTransactionModel = mongoose.model<IBankTransaction>("BankTransaction", BankTransactionSchema);
+
+// Zod Schemas for ERP Accounting
+
+export const insertAccountSchema = z.object({
+  tenantId: z.string(),
+  accountNumber: z.string(),
+  nameAr: z.string(),
+  nameEn: z.string().optional(),
+  accountType: z.enum(['asset', 'liability', 'equity', 'revenue', 'expense', 'contra']),
+  parentAccountId: z.string().optional(),
+  normalBalance: z.enum(['debit', 'credit']),
+  currency: z.string().default('SAR'),
+  isActive: z.number().default(1),
+  isSystemAccount: z.number().default(0),
+  isBankAccount: z.number().default(0),
+  bankName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  iban: z.string().optional(),
+  openingBalance: z.number().default(0),
+  branchId: z.string().optional(),
+  costCenterId: z.string().optional(),
+  description: z.string().optional(),
+});
+
+export const insertJournalEntrySchema = z.object({
+  tenantId: z.string(),
+  entryDate: z.date(),
+  fiscalPeriodId: z.string().optional(),
+  referenceType: z.enum(['order', 'invoice', 'expense', 'adjustment', 'opening', 'closing', 'manual']).optional(),
+  referenceId: z.string().optional(),
+  description: z.string(),
+  lines: z.array(z.object({
+    accountId: z.string(),
+    accountNumber: z.string(),
+    accountName: z.string(),
+    debit: z.number().default(0),
+    credit: z.number().default(0),
+    description: z.string().optional(),
+    costCenterId: z.string().optional(),
+    branchId: z.string().optional(),
+  })),
+  createdBy: z.string(),
+});
+
+export const insertInvoiceSchema = z.object({
+  tenantId: z.string(),
+  branchId: z.string(),
+  invoiceDate: z.date(),
+  dueDate: z.date().optional(),
+  invoiceType: z.enum(['sales', 'purchase', 'credit_note', 'debit_note']).default('sales'),
+  customerId: z.string().optional(),
+  customerName: z.string(),
+  customerPhone: z.string().optional(),
+  customerEmail: z.string().optional(),
+  customerTaxNumber: z.string().optional(),
+  customerAddress: z.string().optional(),
+  vendorId: z.string().optional(),
+  vendorName: z.string().optional(),
+  vendorTaxNumber: z.string().optional(),
+  orderId: z.string().optional(),
+  lines: z.array(z.object({
+    itemId: z.string().optional(),
+    description: z.string(),
+    quantity: z.number(),
+    unitPrice: z.number(),
+    discountAmount: z.number().default(0),
+    discountPercent: z.number().default(0),
+    taxRate: z.number().default(15),
+  })),
+  paymentTerms: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  notes: z.string().optional(),
+  internalNotes: z.string().optional(),
+});
+
+export const insertExpenseErpSchema = z.object({
+  tenantId: z.string(),
+  branchId: z.string(),
+  expenseDate: z.date(),
+  category: z.enum(['inventory', 'salaries', 'rent', 'utilities', 'marketing', 'maintenance', 'supplies', 'other']),
+  subcategory: z.string().optional(),
+  description: z.string(),
+  amount: z.number(),
+  taxAmount: z.number().default(0),
+  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'credit_card', 'other']).default('cash'),
+  paymentReference: z.string().optional(),
+  vendorId: z.string().optional(),
+  vendorName: z.string().optional(),
+  invoiceNumber: z.string().optional(),
+  invoiceDate: z.date().optional(),
+  accountId: z.string().optional(),
+  costCenterId: z.string().optional(),
+  requestedBy: z.string(),
+  notes: z.string().optional(),
+  isRecurring: z.number().default(0),
+  recurringFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+});
+
+export const insertVendorSchema = z.object({
+  tenantId: z.string(),
+  code: z.string(),
+  nameAr: z.string(),
+  nameEn: z.string().optional(),
+  taxNumber: z.string().optional(),
+  commercialRegistration: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  country: z.string().default('SA'),
+  bankName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  iban: z.string().optional(),
+  paymentTerms: z.string().optional(),
+  creditLimit: z.number().default(0),
+  contactPerson: z.string().optional(),
+  contactPhone: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const insertPaymentRecordSchema = z.object({
+  tenantId: z.string(),
+  branchId: z.string(),
+  paymentDate: z.date(),
+  paymentType: z.enum(['receipt', 'payment']),
+  referenceType: z.enum(['invoice', 'expense', 'order', 'advance', 'refund']),
+  referenceId: z.string(),
+  customerId: z.string().optional(),
+  vendorId: z.string().optional(),
+  amount: z.number(),
+  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'credit_card', 'pos', 'wallet', 'other']),
+  bankAccountId: z.string().optional(),
+  checkNumber: z.string().optional(),
+  transactionReference: z.string().optional(),
+  description: z.string().optional(),
+  processedBy: z.string(),
+});
+
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+export type Account = IAccount;
+export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
+export type JournalEntry = IJournalEntry;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type Invoice = IInvoice;
+export type InsertExpenseErp = z.infer<typeof insertExpenseErpSchema>;
+export type ExpenseErp = IExpenseErp;
+export type InsertVendor = z.infer<typeof insertVendorSchema>;
+export type Vendor = IVendor;
+export type InsertPaymentRecord = z.infer<typeof insertPaymentRecordSchema>;
+export type PaymentRecord = IPaymentRecord;
+export type FiscalPeriod = IFiscalPeriod;
+export type CostCenter = ICostCenter;
+export type TaxRate = ITaxRate;
+export type BankStatement = IBankStatement;
+export type BankTransaction = IBankTransaction;
