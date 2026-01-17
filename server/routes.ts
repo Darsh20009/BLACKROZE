@@ -6716,23 +6716,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "لا يوجد موقع للفرع" });
       }
 
-      // Check if employee is within 500 meters of the branch
       const branchLat = branch.location.lat;
       const branchLng = branch.location.lng;
-      const distance = calculateDistance(location.lat, location.lng, branchLat, branchLng);
+      let isWithinBoundary = false;
+      let distance = 0;
 
-      if (distance > 500) {
-        // Create Google Maps link showing user location and branch location
-        const mapsUrl = `https://www.google.com/maps/dir/${location.lat},${location.lng}/${branchLat},${branchLng}`;
+      // Check if branch has polygon boundary (more accurate)
+      if (branch.geofenceBoundary && Array.isArray(branch.geofenceBoundary) && branch.geofenceBoundary.length >= 3) {
+        // Use point-in-polygon check with turf.js
+        const turf = await import('@turf/turf');
+        const employeePoint = turf.point([location.lng, location.lat]);
+        const polygonCoords = branch.geofenceBoundary.map((p: any) => [p.lng, p.lat]);
+        // Close the polygon
+        polygonCoords.push(polygonCoords[0]);
+        const branchPolygon = turf.polygon([polygonCoords]);
+        isWithinBoundary = turf.booleanPointInPolygon(employeePoint, branchPolygon);
         
-        return res.status(400).json({ 
-          error: `أنت بعيد جداً عن الفرع (${Math.round(distance)} متر). يرجى التوجه للفرع للتحضير.`,
-          distance: Math.round(distance),
-          userLocation: { lat: location.lat, lng: location.lng },
-          branchLocation: { lat: branchLat, lng: branchLng },
-          mapsUrl: mapsUrl,
-          showMap: true
-        });
+        // Calculate distance for logging purposes
+        distance = calculateDistance(location.lat, location.lng, branchLat, branchLng);
+        
+        if (!isWithinBoundary) {
+          const mapsUrl = `https://www.google.com/maps/dir/${location.lat},${location.lng}/${branchLat},${branchLng}`;
+          return res.status(400).json({ 
+            error: `أنت خارج حدود الفرع المحددة. يرجى التوجه للفرع للتحضير.`,
+            distance: Math.round(distance),
+            userLocation: { lat: location.lat, lng: location.lng },
+            branchLocation: { lat: branchLat, lng: branchLng },
+            mapsUrl: mapsUrl,
+            showMap: true,
+            boundaryType: 'polygon'
+          });
+        }
+      } else {
+        // Fallback to radius-based check
+        const maxDistance = branch.geofenceRadius || 500;
+        distance = calculateDistance(location.lat, location.lng, branchLat, branchLng);
+        isWithinBoundary = distance <= maxDistance;
+
+        if (!isWithinBoundary) {
+          const mapsUrl = `https://www.google.com/maps/dir/${location.lat},${location.lng}/${branchLat},${branchLng}`;
+          return res.status(400).json({ 
+            error: `أنت بعيد جداً عن الفرع (${Math.round(distance)} متر). يرجى التوجه للفرع للتحضير.`,
+            distance: Math.round(distance),
+            userLocation: { lat: location.lat, lng: location.lng },
+            branchLocation: { lat: branchLat, lng: branchLng },
+            mapsUrl: mapsUrl,
+            showMap: true,
+            boundaryType: 'radius'
+          });
+        }
       }
 
       // Check if already checked in today
@@ -6761,7 +6793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lateMinutes = isLate ? Math.floor((now.getTime() - shiftStart.getTime()) / 60000) : 0;
 
       // Create attendance record with location verification
-      const isAtBranch = distance <= 500 ? 1 : 0;
+      const isAtBranch = isWithinBoundary ? 1 : 0;
       const attendance = new AttendanceModel({
         employeeId: employeeId,
         branchId: employee.branchId,

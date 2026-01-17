@@ -588,7 +588,8 @@ export interface IBranch extends Document {
     lat: number;
     lng: number;
   };
-  geofenceRadius?: number; // نطاق حدود الفرع بالمتر
+  geofenceRadius?: number; // نطاق حدود الفرع بالمتر (للدائرة البسيطة)
+  geofenceBoundary?: Array<{ lat: number; lng: number }>; // حدود الفرع متعددة النقاط (Polygon)
   isActive: boolean;
   managerName?: string;
   managerId?: string;
@@ -619,6 +620,7 @@ const BranchSchema = new Schema<IBranch>({
     lng: { type: Number }
   },
   geofenceRadius: { type: Number, default: 200 }, // الافتراضي 200 متر
+  geofenceBoundary: [{ lat: { type: Number }, lng: { type: Number } }], // حدود متعددة النقاط
   isActive: { type: Schema.Types.Mixed, default: true },
   managerName: { type: String },
   managerId: { type: String },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,7 +14,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, MapPin, Phone, User, Store, ArrowRight, Loader2, Edit2, Trash2 } from 'lucide-react';
+import { Plus, MapPin, Phone, User, Store, ArrowRight, Loader2, Edit2, Trash2, Pentagon } from 'lucide-react';
+import BranchPolygonPicker from '@/components/branch-polygon-picker';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +38,7 @@ interface Branch {
   managerName?: string;
   location?: { lat: number; lng: number };
   geofenceRadius?: number;
+  geofenceBoundary?: Array<{ lat: number; lng: number }>;
   lateThresholdMinutes?: number;
   workingHours?: { open: string; close: string };
 }
@@ -60,6 +62,11 @@ export default function AdminBranches() {
     workingHoursOpen: '08:00',
     workingHoursClose: '23:00',
   });
+  const [geofenceBoundary, setGeofenceBoundary] = useState<Array<{ lat: number; lng: number }>>([]);
+
+  const handleBoundaryChange = useCallback((points: Array<{ lat: number; lng: number }>) => {
+    setGeofenceBoundary(points);
+  }, []);
 
   const { data: branches = [], isLoading } = useQuery<Branch[]>({
     queryKey: ['/api/branches'],
@@ -139,6 +146,7 @@ export default function AdminBranches() {
       workingHoursOpen: branch.workingHours?.open || '08:00',
       workingHoursClose: branch.workingHours?.close || '23:00',
     });
+    setGeofenceBoundary(branch.geofenceBoundary || []);
     setIsEditDialogOpen(true);
   };
 
@@ -175,6 +183,7 @@ export default function AdminBranches() {
       workingHoursOpen: '08:00',
       workingHoursClose: '23:00',
     });
+    setGeofenceBoundary([]);
   };
 
   const prepareSubmitData = () => {
@@ -188,6 +197,7 @@ export default function AdminBranches() {
         lng: parseFloat(formData.locationLng),
       } : undefined,
       geofenceRadius: parseInt(formData.geofenceRadius) || 200,
+      geofenceBoundary: geofenceBoundary.length >= 3 ? geofenceBoundary : undefined,
       lateThresholdMinutes: parseInt(formData.lateThresholdMinutes) || 15,
       workingHours: {
         open: formData.workingHoursOpen,
@@ -311,7 +321,7 @@ export default function AdminBranches() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="geofenceRadius">نطاق حدود الفرع (بالمتر)</Label>
+                  <Label htmlFor="geofenceRadius">نطاق حدود الفرع الدائري (بالمتر) - اختياري</Label>
                   <Input 
                     id="geofenceRadius"
                     type="number"
@@ -319,7 +329,7 @@ export default function AdminBranches() {
                     onChange={(e) => setFormData({...formData, geofenceRadius: e.target.value})}
                     placeholder="200"
                   />
-                  <p className="text-xs text-muted-foreground">المسافة القصوى التي يمكن للموظف التواجد فيها داخل الفرع</p>
+                  <p className="text-xs text-muted-foreground">يُستخدم فقط إذا لم ترسم حدود متعددة النقاط</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lateThresholdMinutes">عتبة التأخير (بالدقائق)</Label>
@@ -351,6 +361,20 @@ export default function AdminBranches() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* رسم حدود الفرع متعددة النقاط */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Pentagon className="w-4 h-4" />
+                رسم حدود الفرع (اختياري - أدق من الدائرة)
+              </h4>
+              <BranchPolygonPicker
+                initialPoints={geofenceBoundary}
+                centerLat={formData.locationLat ? parseFloat(formData.locationLat) : undefined}
+                centerLng={formData.locationLng ? parseFloat(formData.locationLng) : undefined}
+                onBoundaryChange={handleBoundaryChange}
+              />
             </div>
 
             <DialogFooter>
@@ -511,6 +535,20 @@ export default function AdminBranches() {
                   placeholder="0501234567"
                 />
               </div>
+            </div>
+
+            {/* رسم حدود الفرع متعددة النقاط - التعديل */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Pentagon className="w-4 h-4" />
+                تعديل حدود الفرع
+              </h4>
+              <BranchPolygonPicker
+                initialPoints={geofenceBoundary}
+                centerLat={formData.locationLat ? parseFloat(formData.locationLat) : undefined}
+                centerLng={formData.locationLng ? parseFloat(formData.locationLng) : undefined}
+                onBoundaryChange={handleBoundaryChange}
+              />
             </div>
 
             <DialogFooter>
