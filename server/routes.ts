@@ -5048,6 +5048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const tables = await storage.getTables(branchId as string);
+      const now = new Date();
       
       // Return all active tables with their simple availability status
       const tablesWithStatus = tables
@@ -5063,21 +5064,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
             obj._id = id.toString();
           }
 
-          // Check if table is occupied from database (isOccupied = 1)
-          const dbIsOccupied = obj.isOccupied === 1 || obj.isOccupied === '1' || obj.isOccupied === true;
+          // Check if table has an active order (currentOrderId exists)
+          const hasActiveOrder = !!obj.currentOrderId;
           
-          // Also check for active reservations
-          const hasActiveReservation = obj.reservedFor && 
-            obj.reservedFor.status && 
-            (obj.reservedFor.status === 'pending' || obj.reservedFor.status === 'confirmed');
+          // Check for active reservations with time-based logic
+          let isReservationActive = false;
+          let reservationInfo = null;
           
-          // A table is occupied if EITHER it has isOccupied=1 in DB OR it has active reservation
-          const isOccupied = dbIsOccupied || hasActiveReservation;
+          if (obj.reservedFor && obj.reservedFor.status && 
+              (obj.reservedFor.status === 'pending' || obj.reservedFor.status === 'confirmed')) {
+            
+            // Parse reservation date and time
+            const resDate = new Date(obj.reservedFor.reservationDate);
+            const resTime = obj.reservedFor.reservationTime || '12:00';
+            const [hours, minutes] = resTime.split(':').map(Number);
+            
+            // Create full reservation datetime
+            const reservationDateTime = new Date(resDate);
+            reservationDateTime.setHours(hours || 12, minutes || 0, 0, 0);
+            
+            // Reservation activates 30 minutes BEFORE the scheduled time
+            const activationTime = new Date(reservationDateTime.getTime() - 30 * 60 * 1000);
+            
+            // Reservation expires 5 minutes AFTER the scheduled time if customer hasn't arrived
+            const expiryTime = new Date(reservationDateTime.getTime() + 5 * 60 * 1000);
+            
+            // Check if we're within the active window (30 min before to 5 min after)
+            if (now >= activationTime && now <= expiryTime) {
+              isReservationActive = true;
+              reservationInfo = {
+                ...obj.reservedFor,
+                reservationDateTime: reservationDateTime.toISOString(),
+                activationTime: activationTime.toISOString(),
+                expiryTime: expiryTime.toISOString(),
+                isWithinWindow: true
+              };
+            }
+          }
+          
+          // A table is occupied ONLY if it has an active order OR an active reservation within time window
+          const isOccupied = hasActiveOrder || isReservationActive;
           
           return {
             ...obj,
             isAvailable: !isOccupied,
-            isOccupied: isOccupied ? 1 : 0
+            isOccupied: isOccupied ? 1 : 0,
+            reservationInfo: reservationInfo
           };
         });
 
@@ -5395,8 +5427,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const resDate = reservationDate ? new Date(reservationDate) : new Date();
       const resTime = reservationTime || new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
 
+      // NOTE: Do NOT set isOccupied=1 here - table becomes occupied only when:
+      // 1. Customer arrives and scans QR code within the reservation window (30 min before to 5 min after)
+      // 2. An active order is placed for the table
       const table = await storage.updateTable(req.params.id, {
-        isOccupied: 1,
         reservedFor: {
           customerName,
           customerPhone,
@@ -5659,21 +5693,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // فحص انتهاء الحجوزات (تنظيف)
+  // فحص انتهاء الحجوزات (تنظيف) - يلغي الحجز بعد 5 دقائق من الموعد إذا لم يحضر العميل
   app.post("/api/tables/check-expirations", async (req, res) => {
     try {
       const now = new Date();
       const tables = await TableModel.find({
-        'reservedFor.status': { $in: ['pending', 'confirmed'] },
-        'reservedFor.autoExpiryTime': { $lt: now }
+        'reservedFor.status': { $in: ['pending', 'confirmed'] }
       });
 
       let expiredCount = 0;
       for (const table of tables) {
-        if (table.reservedFor) {
-          table.reservedFor.status = 'expired';
-          await table.save();
-          expiredCount++;
+        if (table.reservedFor && table.reservedFor.reservationDate && table.reservedFor.reservationTime) {
+          // Check if staff extended the reservation (autoExpiryTime takes precedence)
+          let expiryTime: Date;
+          
+          if (table.reservedFor.autoExpiryTime) {
+            // Use staff-extended expiry time
+            expiryTime = new Date(table.reservedFor.autoExpiryTime);
+          } else {
+            // Calculate default expiry: 5 minutes after scheduled time
+            const resDate = new Date(table.reservedFor.reservationDate);
+            const resTime = table.reservedFor.reservationTime || '12:00';
+            const [hours, minutes] = resTime.split(':').map(Number);
+            
+            const reservationDateTime = new Date(resDate);
+            reservationDateTime.setHours(hours || 12, minutes || 0, 0, 0);
+            
+            expiryTime = new Date(reservationDateTime.getTime() + 5 * 60 * 1000);
+          }
+          
+          // If current time is past expiry and table has no active order (customer didn't arrive)
+          if (now > expiryTime && !table.currentOrderId) {
+            table.reservedFor.status = 'expired';
+            table.isOccupied = 0;
+            await table.save();
+            expiredCount++;
+            console.log(`[check-expirations] Expired reservation for table ${table.tableNumber}`);
+          }
         }
       }
 
@@ -5682,6 +5738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         count: expiredCount
       });
     } catch (error) {
+      console.error('[check-expirations] Error:', error);
       res.status(500).json({ error: "فشل في فحص الحجوزات" });
     }
   });
