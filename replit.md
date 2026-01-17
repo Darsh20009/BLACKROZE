@@ -47,6 +47,13 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ API endpoints: GET/POST /api/erp/invoices, GET /api/erp/invoices/:id, PATCH /api/erp/invoices/:id/status
 - ✅ zatca-utils.ts utility module for TLV encoding and QR generation
 
+### 🚀 FINANCIAL REPORTS DASHBOARD - COMPLETED (January 2026)
+- ✅ Interactive bar chart for Revenue vs Expenses comparison
+- ✅ Pie chart visualization for Assets/Liabilities distribution (Cash, Receivables, Payables)
+- ✅ Income statement breakdown chart showing revenue and expenses by category
+- ✅ Charts built with recharts library with Arabic labels and RTL support
+- ✅ Responsive design adapting to different screen sizes
+
 ### 🚀 KITCHEN DISPLAY SYSTEM (KDS) ENHANCEMENTS - COMPLETED (January 2026)
 - ✅ Added SLA status tracking with color-coded borders (on-track=normal, warning=amber, overdue=red)
 - ✅ Priority badges for rush/VIP orders when metadata available
