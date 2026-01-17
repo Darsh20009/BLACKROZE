@@ -8,6 +8,7 @@ import { UnitsEngine } from "./units-engine";
 import { InventoryEngine } from "./inventory-engine";
 import { AccountingEngine } from "./accounting-engine";
 import { ErpAccountingService } from "./erp-accounting-service";
+import { deliveryService } from "./delivery-service";
 import { requireAuth, requireManager, requireAdmin, filterByBranch, requireKitchenAccess, requireCashierAccess, requireDeliveryAccess, requirePermission, type AuthRequest } from "./middleware/auth";
 import { PermissionsEngine, PERMISSIONS } from "./permissions-engine";
 import { requireTenant, getTenantIdFromRequest } from "./middleware/tenant";
@@ -4949,9 +4950,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { getDeliveryZoneForPoint } = await import("./utils/geo");
       
       const mappedZones = zones.map(z => ({
-        coordinates: z.coordinates,
+        coordinates: z.boundary || [],
         nameAr: z.nameAr,
-        deliveryFee: z.deliveryFee,
+        deliveryFee: z.baseFee || 10,
         _id: z._id?.toString() || z.id || ''
       }));
       
@@ -10457,6 +10458,320 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to post order journal" });
+    }
+  });
+
+  // =====================================================
+  // نظام التوصيل المتكامل - Integrated Delivery System
+  // =====================================================
+
+  // Delivery Integrations (External Providers)
+  app.get("/api/delivery/integrations", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const integrations = await deliveryService.getAllIntegrations(tenantId);
+      res.json({ success: true, integrations: integrations.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch integrations" });
+    }
+  });
+
+  app.post("/api/delivery/integrations", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const integration = await deliveryService.createIntegration({ ...req.body, tenantId });
+      res.json({ success: true, integration: serializeDoc(integration) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create integration" });
+    }
+  });
+
+  app.patch("/api/delivery/integrations/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const integration = await deliveryService.updateIntegration(req.params.id, req.body);
+      if (integration) {
+        res.json({ success: true, integration: serializeDoc(integration) });
+      } else {
+        res.status(404).json({ error: "Integration not found" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update integration" });
+    }
+  });
+
+  app.delete("/api/delivery/integrations/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const deleted = await deliveryService.deleteIntegration(req.params.id);
+      res.json({ success: deleted });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to delete integration" });
+    }
+  });
+
+  // Delivery Zones
+  app.get("/api/delivery/zones", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const branchId = req.query.branchId as string;
+      const zones = await deliveryService.getAllZones(tenantId, branchId);
+      res.json({ success: true, zones: zones.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch zones" });
+    }
+  });
+
+  app.post("/api/delivery/zones", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const zone = await deliveryService.createZone({ ...req.body, tenantId });
+      res.json({ success: true, zone: serializeDoc(zone) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create zone" });
+    }
+  });
+
+  app.patch("/api/delivery/zones/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const zone = await deliveryService.updateZone(req.params.id, req.body);
+      if (zone) {
+        res.json({ success: true, zone: serializeDoc(zone) });
+      } else {
+        res.status(404).json({ error: "Zone not found" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update zone" });
+    }
+  });
+
+  app.delete("/api/delivery/zones/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const deleted = await deliveryService.deleteZone(req.params.id);
+      res.json({ success: deleted });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to delete zone" });
+    }
+  });
+
+  // Delivery Drivers
+  app.get("/api/delivery/drivers", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const branchId = req.query.branchId as string;
+      const drivers = await deliveryService.getAllDrivers(tenantId, branchId);
+      res.json({ success: true, drivers: drivers.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch drivers" });
+    }
+  });
+
+  app.get("/api/delivery/drivers/available", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const branchId = req.query.branchId as string;
+      const drivers = await deliveryService.getAvailableDrivers(tenantId, branchId);
+      res.json({ success: true, drivers: drivers.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch available drivers" });
+    }
+  });
+
+  app.post("/api/delivery/drivers", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const driver = await deliveryService.createDriver({ ...req.body, tenantId });
+      res.json({ success: true, driver: serializeDoc(driver) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create driver" });
+    }
+  });
+
+  app.patch("/api/delivery/drivers/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const driver = await deliveryService.updateDriver(req.params.id, req.body);
+      if (driver) {
+        res.json({ success: true, driver: serializeDoc(driver) });
+      } else {
+        res.status(404).json({ error: "Driver not found" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update driver" });
+    }
+  });
+
+  app.patch("/api/delivery/drivers/:id/location", requireAuth, requireDeliveryAccess, async (req: AuthRequest, res) => {
+    try {
+      const { lat, lng } = req.body;
+      const driver = await deliveryService.updateDriverLocation(req.params.id, lat, lng);
+      if (driver) {
+        res.json({ success: true, driver: serializeDoc(driver) });
+      } else {
+        res.status(404).json({ error: "Driver not found" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update location" });
+    }
+  });
+
+  app.patch("/api/delivery/drivers/:id/status", requireAuth, requireDeliveryAccess, async (req: AuthRequest, res) => {
+    try {
+      const { status } = req.body;
+      const driver = await deliveryService.updateDriverStatus(req.params.id, status);
+      if (driver) {
+        res.json({ success: true, driver: serializeDoc(driver) });
+      } else {
+        res.status(404).json({ error: "Driver not found" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update status" });
+    }
+  });
+
+  app.delete("/api/delivery/drivers/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const deleted = await deliveryService.deleteDriver(req.params.id);
+      res.json({ success: deleted });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to delete driver" });
+    }
+  });
+
+  // Delivery Orders
+  app.get("/api/delivery/orders", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const filters = {
+        branchId: req.query.branchId as string,
+        status: req.query.status as string,
+        driverId: req.query.driverId as string,
+        fromDate: req.query.fromDate ? new Date(req.query.fromDate as string) : undefined,
+        toDate: req.query.toDate ? new Date(req.query.toDate as string) : undefined,
+      };
+      const orders = await deliveryService.getAllDeliveryOrders(tenantId, filters);
+      res.json({ success: true, orders: orders.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch delivery orders" });
+    }
+  });
+
+  app.get("/api/delivery/orders/pending", requireAuth, requireDeliveryAccess, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const branchId = req.query.branchId as string;
+      const orders = await deliveryService.getPendingOrdersForDriver(tenantId, branchId);
+      res.json({ success: true, orders: orders.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch pending orders" });
+    }
+  });
+
+  app.get("/api/delivery/orders/driver/:driverId", requireAuth, requireDeliveryAccess, async (req: AuthRequest, res) => {
+    try {
+      const orders = await deliveryService.getDriverActiveOrders(req.params.driverId);
+      res.json({ success: true, orders: orders.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch driver orders" });
+    }
+  });
+
+  app.get("/api/delivery/orders/:id", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const order = await deliveryService.getDeliveryOrder(req.params.id);
+      if (order) {
+        res.json({ success: true, order: serializeDoc(order) });
+      } else {
+        res.status(404).json({ error: "Order not found" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch order" });
+    }
+  });
+
+  app.get("/api/delivery/orders/by-order/:orderId", async (req, res) => {
+    try {
+      const order = await deliveryService.getDeliveryOrderByOrderId(req.params.orderId);
+      if (order) {
+        res.json({ success: true, order: serializeDoc(order) });
+      } else {
+        res.status(404).json({ error: "Delivery order not found" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch delivery order" });
+    }
+  });
+
+  app.post("/api/delivery/orders", requireAuth, requireCashierAccess, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const order = await deliveryService.createDeliveryOrder({ ...req.body, tenantId });
+      res.json({ success: true, order: serializeDoc(order) });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create delivery order" });
+    }
+  });
+
+  app.patch("/api/delivery/orders/:id/assign", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { driverId } = req.body;
+      const order = await deliveryService.assignDriverToOrder(req.params.id, driverId);
+      if (order) {
+        res.json({ success: true, order: serializeDoc(order) });
+      } else {
+        res.status(404).json({ error: "Order or driver not found" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to assign driver" });
+    }
+  });
+
+  app.patch("/api/delivery/orders/:id/status", requireAuth, requireDeliveryAccess, async (req: AuthRequest, res) => {
+    try {
+      const { status, ...additionalData } = req.body;
+      const order = await deliveryService.updateOrderStatus(req.params.id, status, additionalData);
+      if (order) {
+        res.json({ success: true, order: serializeDoc(order) });
+      } else {
+        res.status(404).json({ error: "Order not found" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update order status" });
+    }
+  });
+
+  app.patch("/api/delivery/orders/:id/location", requireAuth, requireDeliveryAccess, async (req: AuthRequest, res) => {
+    try {
+      const { lat, lng } = req.body;
+      const order = await deliveryService.updateOrderDriverLocation(req.params.id, lat, lng);
+      if (order) {
+        res.json({ success: true, order: serializeDoc(order) });
+      } else {
+        res.status(404).json({ error: "Order not found" });
+      }
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update order location" });
+    }
+  });
+
+  // Calculate delivery fee and check zone
+  app.post("/api/delivery/calculate-fee", async (req, res) => {
+    try {
+      const { lat, lng, tenantId, branchId, orderAmount } = req.body;
+      const result = await deliveryService.calculateDeliveryFee(
+        lat, lng, tenantId || "demo-tenant", branchId, orderAmount || 0
+      );
+      res.json({ success: true, ...result, zone: result.zone ? serializeDoc(result.zone) : null });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to calculate delivery fee" });
+    }
+  });
+
+  // Calculate ETA
+  app.post("/api/delivery/calculate-eta", async (req, res) => {
+    try {
+      const { distanceKm, drinkCount } = req.body;
+      const eta = deliveryService.calculateETA(distanceKm || 0, drinkCount || 1);
+      res.json({ success: true, ...eta });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to calculate ETA" });
     }
   });
 

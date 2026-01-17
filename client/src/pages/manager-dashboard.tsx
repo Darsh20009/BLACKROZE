@@ -14,6 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import BranchLocationPicker from "@/components/branch-location-picker";
 import CouponManagement from "@/components/coupon-management";
+import { DeliveryManagement } from "@/components/delivery-management";
 import { 
  Coffee, Users, ShoppingBag, TrendingUp, DollarSign, 
  Package, MapPin, Layers, ArrowLeft, Calendar, Warehouse,
@@ -861,13 +862,14 @@ export default function ManagerDashboard() {
  </div>
 
  <Tabs defaultValue="orders" className="space-y-4">
- <TabsList className="grid w-full grid-cols-7 h-14">
+ <TabsList className="grid w-full grid-cols-8 h-14">
  <TabsTrigger value="orders" className="rounded-lg">الطلبات</TabsTrigger>
  <TabsTrigger value="analytics" className="rounded-lg">التحليلات</TabsTrigger>
  <TabsTrigger value="top-items" className="rounded-lg">الأكثر مبيعاً</TabsTrigger>
  <TabsTrigger value="employees" className="rounded-lg">أداء الموظفين</TabsTrigger>
  <TabsTrigger value="branches" className="rounded-lg">الفروع</TabsTrigger>
  <TabsTrigger value="coupons" className="rounded-lg">الكوبونات</TabsTrigger>
+ <TabsTrigger value="delivery" className="rounded-lg">التوصيل</TabsTrigger>
  <TabsTrigger value="erp" className="rounded-lg">المحاسبة</TabsTrigger>
  </TabsList>
 
@@ -1511,6 +1513,22 @@ export default function ManagerDashboard() {
  </CardHeader>
  <CardContent>
  <CouponManagement employeeId={manager?._id || manager?.id || ''} />
+ </CardContent>
+ </Card>
+ </TabsContent>
+
+ <TabsContent value="delivery" className="space-y-4">
+ <Card>
+ <CardHeader>
+ <div className="flex items-center justify-between">
+ <div>
+ <CardTitle>إدارة التوصيل</CardTitle>
+ <CardDescription>إدارة مناديب التوصيل ومناطق الخدمة والربط مع المنصات الخارجية</CardDescription>
+ </div>
+ </div>
+ </CardHeader>
+ <CardContent>
+ <DeliveryManagement />
  </CardContent>
  </Card>
  </TabsContent>

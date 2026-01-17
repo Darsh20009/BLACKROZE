@@ -549,28 +549,7 @@ const WarehouseStockSchema = new Schema<IWarehouseStock>({
 WarehouseStockSchema.index({ tenantId: 1, warehouseId: 1, ingredientId: 1 }, { unique: true });
 export const WarehouseStockModel = mongoose.model<IWarehouseStock>("WarehouseStock", WarehouseStockSchema);
 
-// 7. Delivery App Integration Model
-export interface IDeliveryIntegration extends Document {
-  tenantId: string;
-  provider: 'hungerstation' | 'jahez' | 'toyou' | 'other';
-  apiKey: string;
-  webhookSecret?: string;
-  isActive: boolean;
-  settings: Schema.Types.Mixed;
-  createdAt: Date;
-}
-
-const DeliveryIntegrationSchema = new Schema<IDeliveryIntegration>({
-  tenantId: { type: String, required: true },
-  provider: { type: String, enum: ['hungerstation', 'jahez', 'toyou', 'other'], required: true },
-  apiKey: { type: String, required: true },
-  webhookSecret: { type: String },
-  isActive: { type: Boolean, default: false },
-  settings: { type: Schema.Types.Mixed, default: {} },
-  createdAt: { type: Date, default: Date.now },
-});
-
-export const DeliveryIntegrationModel = mongoose.model<IDeliveryIntegration>("DeliveryIntegration", DeliveryIntegrationSchema);
+// 7. Delivery App Integration Model - تعريفه في نهاية الملف بشكل شامل
 
 export interface IBranch extends Document {
   id: string;
@@ -1107,30 +1086,7 @@ const UserSchema = new Schema<IUser>({
 
 export const UserModel = mongoose.model<IUser>("User", UserSchema);
 
-export interface IDeliveryZone extends Document {
-  nameAr: string;
-  nameEn?: string;
-  coordinates: Array<{lat: number; lng: number}>;
-  deliveryFee: number;
-  isActive: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const DeliveryZoneSchema = new Schema<IDeliveryZone>({
-  nameAr: { type: String, required: true },
-  nameEn: { type: String },
-  coordinates: [{
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true }
-  }],
-  deliveryFee: { type: Number, required: true, default: 10 },
-  isActive: { type: Number, default: 1, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
-
-export const DeliveryZoneModel = mongoose.model<IDeliveryZone>("DeliveryZone", DeliveryZoneSchema);
+// مناطق التوصيل - تعريفها في نهاية الملف بشكل شامل
 
 export interface ITable extends Document {
   tableNumber: string;
@@ -2163,16 +2119,7 @@ export const insertCategorySchema = z.object({
   isActive: z.number().optional(),
 });
 
-export const insertDeliveryZoneSchema = z.object({
-  nameAr: z.string().min(2, "اسم المنطقة مطلوب"),
-  nameEn: z.string().optional(),
-  coordinates: z.array(z.object({
-    lat: z.number(),
-    lng: z.number()
-  })).min(3, "يجب تحديد على الأقل 3 نقاط لرسم المنطقة"),
-  deliveryFee: z.number().default(10),
-  isActive: z.number().optional(),
-});
+// insertDeliveryZoneSchema تعريفه في نهاية الملف
 
 export const insertTableSchema = z.object({
   tableNumber: z.string().min(1, "رقم الطاولة مطلوب"),
@@ -2224,7 +2171,7 @@ export type InsertCoffeeItem = z.infer<typeof insertCoffeeItemSchema>;
 export type CoffeeItem = ICoffeeItem;
 export type Category = ICategory;
 export type Branch = IBranch;
-export type DeliveryZone = IDeliveryZone;
+// DeliveryZone type تعريفه في نهاية الملف
 export type Table = ITable;
 
 export type Customer = ICustomer;
@@ -2271,7 +2218,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type InsertBranch = z.infer<typeof insertBranchSchema>;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
-export type InsertDeliveryZone = z.infer<typeof insertDeliveryZoneSchema>;
+// InsertDeliveryZone تعريفه في نهاية الملف
 export type InsertTable = z.infer<typeof insertTableSchema>;
 
 export type Attendance = IAttendance;
@@ -4080,3 +4027,434 @@ export type CostCenter = ICostCenter;
 export type TaxRate = ITaxRate;
 export type BankStatement = IBankStatement;
 export type BankTransaction = IBankTransaction;
+
+// =====================================================
+// نظام التوصيل المتكامل - Integrated Delivery System
+// =====================================================
+
+// شركات التوصيل الخارجية - External Delivery Integrations
+export interface IDeliveryIntegration extends Document {
+  id: string;
+  tenantId: string;
+  branchId?: string;
+  providerName: 'noon_food' | 'hunger_station' | 'keeta' | 'jahez' | 'toyou' | 'mrsool' | 'careem' | 'custom';
+  providerNameAr: string;
+  providerLogo?: string;
+  apiKey?: string;
+  apiSecret?: string;
+  merchantId?: string;
+  webhookUrl?: string;
+  webhookSecret?: string;
+  baseUrl?: string;
+  isActive: number;
+  isTestMode: number;
+  autoAcceptOrders: number;
+  autoAssignDriver: number;
+  commissionPercent: number;
+  fixedFee: number;
+  settings?: Record<string, any>;
+  lastSyncAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const DeliveryIntegrationSchema = new Schema<IDeliveryIntegration>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String },
+  providerName: { 
+    type: String, 
+    enum: ['noon_food', 'hunger_station', 'keeta', 'jahez', 'toyou', 'mrsool', 'careem', 'custom'],
+    required: true 
+  },
+  providerNameAr: { type: String, required: true },
+  providerLogo: { type: String },
+  apiKey: { type: String },
+  apiSecret: { type: String },
+  merchantId: { type: String },
+  webhookUrl: { type: String },
+  webhookSecret: { type: String },
+  baseUrl: { type: String },
+  isActive: { type: Number, default: 0 },
+  isTestMode: { type: Number, default: 1 },
+  autoAcceptOrders: { type: Number, default: 0 },
+  autoAssignDriver: { type: Number, default: 0 },
+  commissionPercent: { type: Number, default: 0 },
+  fixedFee: { type: Number, default: 0 },
+  settings: { type: Schema.Types.Mixed },
+  lastSyncAt: { type: Date },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+DeliveryIntegrationSchema.index({ tenantId: 1 });
+DeliveryIntegrationSchema.index({ tenantId: 1, providerName: 1 });
+DeliveryIntegrationSchema.index({ tenantId: 1, isActive: 1 });
+
+export const DeliveryIntegrationModel = mongoose.model<IDeliveryIntegration>("DeliveryIntegration", DeliveryIntegrationSchema);
+
+// مناطق التوصيل - Delivery Zones
+export interface IDeliveryZone extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  nameAr: string;
+  nameEn?: string;
+  description?: string;
+  zoneType: 'polygon' | 'radius' | 'city' | 'district';
+  boundary?: Array<{ lat: number; lng: number }>;
+  centerLat?: number;
+  centerLng?: number;
+  radiusKm?: number;
+  city?: string;
+  district?: string;
+  baseFee: number;
+  feePerKm: number;
+  minOrderAmount: number;
+  maxOrderAmount?: number;
+  freeDeliveryThreshold?: number;
+  estimatedMinMinutes: number;
+  estimatedMaxMinutes: number;
+  isActive: number;
+  priority: number;
+  workingHours?: {
+    dayOfWeek: number;
+    openTime: string;
+    closeTime: string;
+  }[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const DeliveryZoneSchema = new Schema<IDeliveryZone>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String },
+  description: { type: String },
+  zoneType: { type: String, enum: ['polygon', 'radius', 'city', 'district'], default: 'radius' },
+  boundary: [{
+    lat: { type: Number },
+    lng: { type: Number }
+  }],
+  centerLat: { type: Number },
+  centerLng: { type: Number },
+  radiusKm: { type: Number, default: 5 },
+  city: { type: String },
+  district: { type: String },
+  baseFee: { type: Number, default: 10 },
+  feePerKm: { type: Number, default: 2 },
+  minOrderAmount: { type: Number, default: 0 },
+  maxOrderAmount: { type: Number },
+  freeDeliveryThreshold: { type: Number },
+  estimatedMinMinutes: { type: Number, default: 20 },
+  estimatedMaxMinutes: { type: Number, default: 45 },
+  isActive: { type: Number, default: 1 },
+  priority: { type: Number, default: 0 },
+  workingHours: [{
+    dayOfWeek: { type: Number },
+    openTime: { type: String },
+    closeTime: { type: String }
+  }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+DeliveryZoneSchema.index({ tenantId: 1, branchId: 1 });
+DeliveryZoneSchema.index({ tenantId: 1, isActive: 1 });
+DeliveryZoneSchema.index({ branchId: 1, isActive: 1 });
+
+export const DeliveryZoneModel = mongoose.model<IDeliveryZone>("DeliveryZone", DeliveryZoneSchema);
+
+// مناديب التوصيل الداخلي - Internal Delivery Drivers
+export interface IDeliveryDriver extends Document {
+  id: string;
+  tenantId: string;
+  branchId?: string;
+  employeeId?: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  nationalId?: string;
+  licenseNumber?: string;
+  licenseExpiry?: Date;
+  vehicleType: 'motorcycle' | 'car' | 'bicycle' | 'scooter';
+  vehiclePlate?: string;
+  vehicleModel?: string;
+  vehicleColor?: string;
+  photoUrl?: string;
+  status: 'available' | 'busy' | 'offline' | 'on_break';
+  currentLat?: number;
+  currentLng?: number;
+  lastLocationUpdate?: Date;
+  currentOrderId?: string;
+  totalDeliveries: number;
+  totalEarnings: number;
+  rating: number;
+  ratingCount: number;
+  isActive: number;
+  maxConcurrentOrders: number;
+  workingZoneIds?: string[];
+  shiftStart?: string;
+  shiftEnd?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const DeliveryDriverSchema = new Schema<IDeliveryDriver>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String },
+  employeeId: { type: String },
+  fullName: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String },
+  nationalId: { type: String },
+  licenseNumber: { type: String },
+  licenseExpiry: { type: Date },
+  vehicleType: { type: String, enum: ['motorcycle', 'car', 'bicycle', 'scooter'], default: 'motorcycle' },
+  vehiclePlate: { type: String },
+  vehicleModel: { type: String },
+  vehicleColor: { type: String },
+  photoUrl: { type: String },
+  status: { type: String, enum: ['available', 'busy', 'offline', 'on_break'], default: 'offline' },
+  currentLat: { type: Number },
+  currentLng: { type: Number },
+  lastLocationUpdate: { type: Date },
+  currentOrderId: { type: String },
+  totalDeliveries: { type: Number, default: 0 },
+  totalEarnings: { type: Number, default: 0 },
+  rating: { type: Number, default: 5 },
+  ratingCount: { type: Number, default: 0 },
+  isActive: { type: Number, default: 1 },
+  maxConcurrentOrders: { type: Number, default: 3 },
+  workingZoneIds: [{ type: String }],
+  shiftStart: { type: String },
+  shiftEnd: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+DeliveryDriverSchema.index({ tenantId: 1 });
+DeliveryDriverSchema.index({ tenantId: 1, status: 1, isActive: 1 });
+DeliveryDriverSchema.index({ tenantId: 1, branchId: 1 });
+DeliveryDriverSchema.index({ phone: 1 });
+
+export const DeliveryDriverModel = mongoose.model<IDeliveryDriver>("DeliveryDriver", DeliveryDriverSchema);
+
+// طلبات التوصيل - Delivery Orders
+export interface IDeliveryOrder extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  orderId: string;
+  orderNumber?: string;
+  deliveryType: 'internal' | 'external';
+  externalProvider?: string;
+  externalOrderId?: string;
+  driverId?: string;
+  driverName?: string;
+  driverPhone?: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  customerAddressDetails?: string;
+  customerLat: number;
+  customerLng: number;
+  branchLat?: number;
+  branchLng?: number;
+  distanceKm: number;
+  deliveryFee: number;
+  driverEarnings?: number;
+  status: 'pending' | 'accepted' | 'assigned' | 'picking_up' | 'on_the_way' | 'arrived' | 'delivered' | 'cancelled' | 'returned';
+  estimatedPickupTime?: Date;
+  estimatedDeliveryTime?: Date;
+  actualPickupTime?: Date;
+  actualDeliveryTime?: Date;
+  preparationMinutes: number;
+  travelMinutes: number;
+  totalEstimatedMinutes: number;
+  driverCurrentLat?: number;
+  driverCurrentLng?: number;
+  driverLastUpdate?: Date;
+  trackingHistory?: Array<{
+    lat: number;
+    lng: number;
+    timestamp: Date;
+    status: string;
+  }>;
+  notes?: string;
+  customerNotes?: string;
+  cancellationReason?: string;
+  customerRating?: number;
+  customerFeedback?: string;
+  proofOfDelivery?: string;
+  signatureUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const DeliveryOrderSchema = new Schema<IDeliveryOrder>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  orderId: { type: String, required: true },
+  orderNumber: { type: String },
+  deliveryType: { type: String, enum: ['internal', 'external'], default: 'internal' },
+  externalProvider: { type: String },
+  externalOrderId: { type: String },
+  driverId: { type: String },
+  driverName: { type: String },
+  driverPhone: { type: String },
+  customerName: { type: String, required: true },
+  customerPhone: { type: String, required: true },
+  customerAddress: { type: String, required: true },
+  customerAddressDetails: { type: String },
+  customerLat: { type: Number, required: true },
+  customerLng: { type: Number, required: true },
+  branchLat: { type: Number },
+  branchLng: { type: Number },
+  distanceKm: { type: Number, default: 0 },
+  deliveryFee: { type: Number, default: 0 },
+  driverEarnings: { type: Number },
+  status: { 
+    type: String, 
+    enum: ['pending', 'accepted', 'assigned', 'picking_up', 'on_the_way', 'arrived', 'delivered', 'cancelled', 'returned'],
+    default: 'pending'
+  },
+  estimatedPickupTime: { type: Date },
+  estimatedDeliveryTime: { type: Date },
+  actualPickupTime: { type: Date },
+  actualDeliveryTime: { type: Date },
+  preparationMinutes: { type: Number, default: 0 },
+  travelMinutes: { type: Number, default: 0 },
+  totalEstimatedMinutes: { type: Number, default: 0 },
+  driverCurrentLat: { type: Number },
+  driverCurrentLng: { type: Number },
+  driverLastUpdate: { type: Date },
+  trackingHistory: [{
+    lat: { type: Number },
+    lng: { type: Number },
+    timestamp: { type: Date },
+    status: { type: String }
+  }],
+  notes: { type: String },
+  customerNotes: { type: String },
+  cancellationReason: { type: String },
+  customerRating: { type: Number },
+  customerFeedback: { type: String },
+  proofOfDelivery: { type: String },
+  signatureUrl: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+DeliveryOrderSchema.index({ tenantId: 1, status: 1 });
+DeliveryOrderSchema.index({ tenantId: 1, branchId: 1, status: 1 });
+DeliveryOrderSchema.index({ tenantId: 1, driverId: 1, status: 1 });
+DeliveryOrderSchema.index({ orderId: 1 });
+DeliveryOrderSchema.index({ externalOrderId: 1 });
+
+export const DeliveryOrderModel = mongoose.model<IDeliveryOrder>("DeliveryOrder", DeliveryOrderSchema);
+
+// Zod Schemas for Delivery System
+export const insertDeliveryIntegrationSchema = z.object({
+  tenantId: z.string(),
+  branchId: z.string().optional(),
+  providerName: z.enum(['noon_food', 'hunger_station', 'keeta', 'jahez', 'toyou', 'mrsool', 'careem', 'custom']),
+  providerNameAr: z.string(),
+  providerLogo: z.string().optional(),
+  apiKey: z.string().optional(),
+  apiSecret: z.string().optional(),
+  merchantId: z.string().optional(),
+  webhookUrl: z.string().optional(),
+  webhookSecret: z.string().optional(),
+  baseUrl: z.string().optional(),
+  isActive: z.number().default(0),
+  isTestMode: z.number().default(1),
+  autoAcceptOrders: z.number().default(0),
+  autoAssignDriver: z.number().default(0),
+  commissionPercent: z.number().default(0),
+  fixedFee: z.number().default(0),
+  settings: z.record(z.any()).optional(),
+});
+
+export const insertDeliveryZoneSchema = z.object({
+  tenantId: z.string(),
+  branchId: z.string(),
+  nameAr: z.string(),
+  nameEn: z.string().optional(),
+  description: z.string().optional(),
+  zoneType: z.enum(['polygon', 'radius', 'city', 'district']).default('radius'),
+  boundary: z.array(z.object({ lat: z.number(), lng: z.number() })).optional(),
+  centerLat: z.number().optional(),
+  centerLng: z.number().optional(),
+  radiusKm: z.number().default(5),
+  city: z.string().optional(),
+  district: z.string().optional(),
+  baseFee: z.number().default(10),
+  feePerKm: z.number().default(2),
+  minOrderAmount: z.number().default(0),
+  maxOrderAmount: z.number().optional(),
+  freeDeliveryThreshold: z.number().optional(),
+  estimatedMinMinutes: z.number().default(20),
+  estimatedMaxMinutes: z.number().default(45),
+  isActive: z.number().default(1),
+  priority: z.number().default(0),
+});
+
+export const insertDeliveryDriverSchema = z.object({
+  tenantId: z.string(),
+  branchId: z.string().optional(),
+  employeeId: z.string().optional(),
+  fullName: z.string(),
+  phone: z.string(),
+  email: z.string().optional(),
+  nationalId: z.string().optional(),
+  licenseNumber: z.string().optional(),
+  licenseExpiry: z.date().optional(),
+  vehicleType: z.enum(['motorcycle', 'car', 'bicycle', 'scooter']).default('motorcycle'),
+  vehiclePlate: z.string().optional(),
+  vehicleModel: z.string().optional(),
+  vehicleColor: z.string().optional(),
+  photoUrl: z.string().optional(),
+  maxConcurrentOrders: z.number().default(3),
+  workingZoneIds: z.array(z.string()).optional(),
+  shiftStart: z.string().optional(),
+  shiftEnd: z.string().optional(),
+});
+
+export const insertDeliveryOrderSchema = z.object({
+  tenantId: z.string(),
+  branchId: z.string(),
+  orderId: z.string(),
+  orderNumber: z.string().optional(),
+  deliveryType: z.enum(['internal', 'external']).default('internal'),
+  externalProvider: z.string().optional(),
+  externalOrderId: z.string().optional(),
+  driverId: z.string().optional(),
+  customerName: z.string(),
+  customerPhone: z.string(),
+  customerAddress: z.string(),
+  customerAddressDetails: z.string().optional(),
+  customerLat: z.number(),
+  customerLng: z.number(),
+  branchLat: z.number().optional(),
+  branchLng: z.number().optional(),
+  distanceKm: z.number().default(0),
+  deliveryFee: z.number().default(0),
+  preparationMinutes: z.number().default(0),
+  travelMinutes: z.number().default(0),
+  notes: z.string().optional(),
+  customerNotes: z.string().optional(),
+});
+
+export type InsertDeliveryIntegration = z.infer<typeof insertDeliveryIntegrationSchema>;
+export type DeliveryIntegration = IDeliveryIntegration;
+export type InsertDeliveryZone = z.infer<typeof insertDeliveryZoneSchema>;
+export type DeliveryZone = IDeliveryZone;
+export type InsertDeliveryDriver = z.infer<typeof insertDeliveryDriverSchema>;
+export type DeliveryDriver = IDeliveryDriver;
+export type InsertDeliveryOrder = z.infer<typeof insertDeliveryOrderSchema>;
+export type DeliveryOrder = IDeliveryOrder;
