@@ -40,6 +40,14 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Staff can extend reservations (autoExpiryTime) and expiry respects extensions
 - ✅ OrderCard component displays table number and order time for employees
 
+### 🚀 LOYALTY CARD DATA UNIFICATION - COMPLETED (January 2026)
+- ✅ Created unified `useLoyaltyCard` hook as single source of truth for loyalty card data
+- ✅ Hook uses React Query with setQueryData for immediate cache updates (no stale UI)
+- ✅ Centralized syncAllStorages function manages localStorage and profile storage synchronization
+- ✅ Manual card lookups update query cache via updateCardInCache
+- ✅ Removed all direct localStorage.setItem calls from components
+- ✅ Consistent loyalty card display across payment methods, profile, and card pages
+
 ### 🚀 BUG FIXES - COMPLETED
 - ✅ Fixed drink creation silently failing - removed strict branchId requirement
 - ✅ Added fallback values for missing tenantId and branchId (demo-tenant, default-branch)
