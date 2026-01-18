@@ -759,7 +759,10 @@ export class DBStorage implements IStorage {
   }
 
   async updateTable(id: string, updates: Partial<Table>): Promise<Table | undefined> {
-    const table = await TableModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    let table = await TableModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    if (!table && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
+      table = await TableModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
+    }
     return table ? serializeDoc(table) : undefined;
   }
 

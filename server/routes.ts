@@ -5157,12 +5157,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/tables/book", async (req, res) => {
     try {
       const { tableId, arrivalTime } = req.body;
+      console.log(`[TABLES] Booking request: tableId=${tableId}, arrivalTime=${arrivalTime}`);
       
       if (!tableId || !arrivalTime) {
         return res.status(400).json({ error: "Table ID and arrival time required" });
       }
 
       const table = await storage.getTable(tableId);
+      console.log(`[TABLES] Found table:`, table ? { id: table.id, tableNumber: table.tableNumber } : 'NOT FOUND');
       
       if (!table) {
         return res.status(404).json({ error: "Table not found" });
@@ -5219,7 +5221,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         arrivalTime: arrivalTime,
         message: `تم حجز الطاولة ${table.tableNumber} بنجاح`
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error(`[TABLES] Booking error:`, error?.message || error);
       res.status(500).json({ error: "فشل في حجز الطاولة" });
     }
   });
