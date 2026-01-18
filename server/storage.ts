@@ -1065,7 +1065,15 @@ export class DBStorage implements IStorage {
   }
 
   async deleteBranch(id: string): Promise<boolean> {
-    const result = await BranchModel.deleteOne({ id });
+    // Try custom id first, then MongoDB _id
+    let result = await BranchModel.deleteOne({ id });
+    if (result.deletedCount === 0) {
+      try {
+        result = await BranchModel.deleteOne({ _id: id });
+      } catch (e) {
+        // Invalid ObjectId format, ignore
+      }
+    }
     return result.deletedCount > 0;
   }
 
@@ -1516,7 +1524,15 @@ export class DBStorage implements IStorage {
   }
 
   async updateBranch(id: string, branch: Partial<IBranch>): Promise<IBranch | null> {
-    const updated = await BranchModel.findOneAndUpdate({ id }, { $set: branch }, { new: true }).lean();
+    // Try custom id first, then MongoDB _id
+    let updated = await BranchModel.findOneAndUpdate({ id }, { $set: branch }, { new: true }).lean();
+    if (!updated) {
+      try {
+        updated = await BranchModel.findByIdAndUpdate(id, { $set: branch }, { new: true }).lean();
+      } catch (e) {
+        // Invalid ObjectId format, ignore
+      }
+    }
     return updated ? serializeDoc(updated) : null;
   }
 
