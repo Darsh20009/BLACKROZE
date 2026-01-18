@@ -1248,6 +1248,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // SECURITY: Reject 100% discount codes from customer validation
+      // These codes require manager approval at checkout
+      if (discountCode.discountPercentage >= 100) {
+        return res.status(400).json({ 
+          valid: false,
+          error: "كود الخصم 100% يتطلب موافقة المدير. يرجى التواصل مع الموظف المسؤول.",
+          requiresApproval: true
+        });
+      }
+
       res.json({
         valid: true,
         code: discountCode.code,
@@ -3061,16 +3071,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate and increment discount code usage if provided
+      let validatedDiscountPercentage = 0;
       if (discountCode && discountPercentage) {
         try {
           const discountCodeDoc = await storage.getDiscountCodeByCode(discountCode);
-          if (discountCodeDoc && discountCodeDoc.isActive === 1 && discountCodeDoc.discountPercentage === discountPercentage) {
-            // Increment usage counter
-            await storage.incrementDiscountCodeUsage(discountCodeDoc.id);
+          if (!discountCodeDoc) {
+            return res.status(400).json({ error: "كود الخصم غير صالح" });
           }
+          if (discountCodeDoc.isActive !== 1) {
+            return res.status(400).json({ error: "كود الخصم غير فعال" });
+          }
+          if (discountCodeDoc.discountPercentage !== discountPercentage) {
+            return res.status(400).json({ error: "نسبة الخصم غير صحيحة" });
+          }
+          
+          // SECURITY: Reject 100% discount codes - they must go through manager approval
+          if (discountCodeDoc.discountPercentage >= 100) {
+            return res.status(400).json({ 
+              error: "خصم 100% يتطلب موافقة المدير. يرجى التواصل مع الموظف المسؤول.",
+              requiresApproval: true
+            });
+          }
+          
+          validatedDiscountPercentage = discountCodeDoc.discountPercentage;
+          // Increment usage counter
+          await storage.incrementDiscountCodeUsage(discountCodeDoc.id);
         } catch (error) {
-          // Continue with order creation even if discount tracking fails
+          console.error("Discount code validation error:", error);
+          return res.status(400).json({ error: "فشل التحقق من كود الخصم" });
         }
+      }
+      
+      // SECURITY: Validate that totalAmount is positive (prevents zero-total bypass)
+      const parsedTotalAmount = parseFloat(String(totalAmount));
+      if (parsedTotalAmount <= 0 && !validatedUsedFreeDrinks && paymentMethod !== 'qahwa-card') {
+        return res.status(400).json({ error: "قيمة الطلب يجب أن تكون أكبر من صفر" });
       }
 
       // Create order

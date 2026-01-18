@@ -109,6 +109,9 @@ CLUNY CAFE is a comprehensive coffee shop management system designed to streamli
 - ✅ Fixed table status API - now correctly reflects database occupancy
 - ✅ Added proper logging for debugging drink and table operations
 - ✅ Emergency fallback for fetching all items when tenant-specific query fails
+- ✅ **SECURITY FIX**: 100% discount codes now blocked - require manager approval (prevents payment bypass)
+- ✅ Server-side validation prevents zero-total orders without proper authorization
+- ✅ Removed QIROX logo from employee gateway, login, and manager login pages (now uses CLUNY CAFE)
 
 ### 🚀 DELIVERY SYSTEM - COMPLETED (January 2026)
 - ✅ DeliveryIntegration model for external platforms (Noon Food, Hunger Station, Keeta, Marsool, Careem, HungerStation)
