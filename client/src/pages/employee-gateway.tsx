@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, Eye, EyeOff } from "lucide-react";
-import qiroxLogo from "@assets/QIROX_LOGO_1768660955394.png";
+import clunyCafeLogo from "@assets/cluny_cafe_logo_1767095370460.png";
 
 export default function EmployeeGateway() {
   const [, setLocation] = useLocation();
@@ -35,7 +35,7 @@ export default function EmployeeGateway() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-40 h-28 mb-4">
-            <img src={qiroxLogo} alt="QIROX" className="w-full h-full object-contain" />
+            <img src={clunyCafeLogo} alt="CLUNY CAFE" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">CLUNY SYSTEMS</h1>
           <p className="text-muted-foreground font-cairo">بوابة الموظفين</p>
