@@ -422,6 +422,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(updated);
   });
 
+  // Order Suspension System - Global order pause for all branches
+  const orderSuspensionStore: Record<string, { suspended: boolean; suspendedAt?: Date; suspendedBy?: string; reason?: string }> = {};
+
+  app.get("/api/settings/order-suspension", async (req, res) => {
+    const tenantId = (req as any).employee?.tenantId || 'demo-tenant';
+    const status = orderSuspensionStore[tenantId] || { suspended: false };
+    res.json(status);
+  });
+
+  app.post("/api/settings/order-suspension", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    const tenantId = req.employee?.tenantId || 'demo-tenant';
+    const { suspended, reason } = req.body;
+    
+    orderSuspensionStore[tenantId] = {
+      suspended: !!suspended,
+      suspendedAt: suspended ? new Date() : undefined,
+      suspendedBy: req.employee?.fullName || req.employee?.username,
+      reason: reason || undefined
+    };
+    
+    console.log(`[ORDER SUSPENSION] ${suspended ? 'SUSPENDED' : 'RESUMED'} by ${req.employee?.fullName} for tenant ${tenantId}`);
+    res.json(orderSuspensionStore[tenantId]);
+  });
+
   // Ingredient Management
   app.get("/api/ingredients", requireAuth, async (req: AuthRequest, res) => {
     const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';

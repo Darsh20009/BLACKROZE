@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,8 +22,18 @@ import {
   Calculator, Grid3X3, ChevronLeft, ChevronRight,
   Loader2, CheckCircle, Zap, Building, Users, Edit3,
   Receipt, Wallet, QrCode, SplitSquareVertical, AlertTriangle,
-  RefreshCw, Archive, MoreVertical, MessageSquare, ScanLine, Camera, Gift
+  RefreshCw, Archive, MoreVertical, MessageSquare, ScanLine, Camera, Gift,
+  Table2, Lock, Unlock
 } from "lucide-react";
+
+interface TableData {
+  id: string;
+  _id?: string;
+  tableNumber: string;
+  seats: number;
+  isOccupied: boolean | number;
+  isActive: boolean | number;
+}
 import BarcodeScanner from "@/components/barcode-scanner";
 import DrinkCustomizationDialog, { DrinkCustomization, SelectedAddon } from "@/components/drink-customization-dialog";
 import { printTaxInvoice, printSimpleReceipt } from "@/lib/print-utils";
@@ -450,6 +461,38 @@ export default function POSSystem() {
     },
     enabled: isOnline === false // Use isOnline instead of isOffline which might be shadowed
   });
+
+  // Fetch available tables for selection
+  const { data: tablesData = [] } = useQuery<TableData[]>({
+    queryKey: ["/api/tables"],
+    queryFn: async () => {
+      const res = await fetch("/api/tables");
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.filter((t: TableData) => 
+        (t.isActive === true || t.isActive === 1) && 
+        (t.isOccupied === false || t.isOccupied === 0)
+      );
+    },
+    staleTime: 1000 * 30, // Refresh every 30 seconds
+  });
+
+  // Check if orders are suspended globally
+  const { data: orderSuspensionStatus } = useQuery<{ suspended: boolean }>({
+    queryKey: ["/api/settings/order-suspension"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/settings/order-suspension");
+        if (!res.ok) return { suspended: false };
+        return res.json();
+      } catch {
+        return { suspended: false };
+      }
+    },
+    staleTime: 1000 * 10, // Check every 10 seconds
+  });
+
+  const isOrdersSuspended = orderSuspensionStatus?.suspended || false;
 
   const coffeeItems = useMemo(() => {
     try {
@@ -1219,6 +1262,16 @@ export default function POSSystem() {
             </div>
           </header>
 
+          {/* Order Suspension Banner */}
+          {isOrdersSuspended && (
+            <div className="bg-destructive/10 border-b border-destructive/30 px-4 py-3 flex items-center justify-center gap-3">
+              <Lock className="w-5 h-5 text-destructive" />
+              <span className="text-destructive font-bold text-lg">
+                الطلبات معلقة مؤقتاً - لا يمكن إنشاء طلبات جديدة
+              </span>
+            </div>
+          )}
+
           <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-0">
             {/* Products Section */}
             <div className="flex-1 flex flex-col p-3 sm:p-6 overflow-hidden min-w-0">
@@ -1409,13 +1462,23 @@ export default function POSSystem() {
                         data-testid="input-customer-name"
                       />
                     </div>
-                    <Input
-                      placeholder="رقم الطاولة"
-                      value={tableNumber}
-                      onChange={(e) => setTableNumber(e.target.value)}
-                      className="rounded-lg"
-                      data-testid="input-table"
-                    />
+                    <Select value={tableNumber} onValueChange={setTableNumber}>
+                      <SelectTrigger className="rounded-lg" data-testid="select-table">
+                        <Table2 className="w-4 h-4 ml-2 text-muted-foreground" />
+                        <SelectValue placeholder="اختر طاولة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون طاولة</SelectItem>
+                        {tablesData.map((table) => (
+                          <SelectItem 
+                            key={table.id || table._id} 
+                            value={table.tableNumber}
+                          >
+                            طاولة {table.tableNumber} ({table.seats} مقاعد)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   {loyaltyCard && (
@@ -1832,16 +1895,25 @@ export default function POSSystem() {
                         className="w-full h-14 text-lg rounded-xl shadow-lg transition-all mt-4"
                         size="lg"
                         onClick={handleSubmitOrder}
-                        disabled={orderItems.length === 0 || createOrderMutation.isPending || (showSplitPayment && getRemainingAmount() > 0.01)}
+                        disabled={orderItems.length === 0 || createOrderMutation.isPending || (showSplitPayment && getRemainingAmount() > 0.01) || isOrdersSuspended}
                         data-testid="button-submit-order"
                       >
-                        {createOrderMutation.isPending ? (
+                        {isOrdersSuspended ? (
+                          <>
+                            <Lock className="w-5 h-5 ml-2" />
+                            <span>الطلبات معلقة</span>
+                          </>
+                        ) : createOrderMutation.isPending ? (
                           <Loader2 className="w-5 h-5 animate-spin ml-2" />
                         ) : (
                           <CheckCircle className="w-5 h-5 ml-2" />
                         )}
-                        <span className="hidden sm:inline">تأكيد الطلب - {calculateTotal()} ر.س</span>
-                        <span className="sm:hidden">تأكيد - {calculateTotal()} ر.س</span>
+                        {!isOrdersSuspended && (
+                          <>
+                            <span className="hidden sm:inline">تأكيد الطلب - {calculateTotal()} ر.س</span>
+                            <span className="sm:hidden">تأكيد - {calculateTotal()} ر.س</span>
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
