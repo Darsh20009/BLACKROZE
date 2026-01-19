@@ -121,6 +121,7 @@ export default function CheckoutPage() {
       setCustomerPhone(customer.phone);
       if (customer?.email) setCustomerEmail(customer.email);
       setIsRegisteredCustomer(true);
+      console.log("Customer data set from context:", customer.name);
     } else {
       const profile = customerStorage.getProfile();
       if (profile && !customerStorage.isGuestMode()) {
@@ -128,6 +129,7 @@ export default function CheckoutPage() {
         setCustomerPhone(profile.phone);
         if (profile.email) setCustomerEmail(profile.email);
         setIsRegisteredCustomer(true);
+        console.log("Customer data set from storage:", profile.name);
       }
     }
   }, [customer]);
@@ -208,17 +210,35 @@ export default function CheckoutPage() {
    }
  };
 
- const handleProceedPayment = () => {
-   if (!selectedPaymentMethod) {
-     toast({ variant: "destructive", title: "يرجى اختيار طريقة الدفع" });
-     return;
-   }
-   if (!customerName.trim()) {
-     toast({ variant: "destructive", title: "يرجى إدخال اسم العميل" });
-     return;
-   }
-   setShowConfirmation(true);
- };
+  const handleProceedPayment = () => {
+    console.log("Proceeding to payment debug:", { 
+      customerName, 
+      selectedPaymentMethod,
+      isRegisteredCustomer,
+      customer: !!customer 
+    });
+    
+    if (!selectedPaymentMethod) {
+      toast({ variant: "destructive", title: "يرجى اختيار طريقة الدفع" });
+      return;
+    }
+
+    // Force name from context/storage if it's missing but we're "registered"
+    let finalName = customerName;
+    if (!finalName || !finalName.trim()) {
+      const profile = customerStorage.getProfile();
+      finalName = customer?.name || profile?.name || "";
+      if (finalName) {
+        setCustomerName(finalName);
+      }
+    }
+
+    if (!finalName || !finalName.trim()) {
+      toast({ variant: "destructive", title: "يرجى إدخال اسم العميل" });
+      return;
+    }
+    setShowConfirmation(true);
+  };
 
  const confirmAndCreateOrder = async () => {
    let customerLocation = null;
@@ -331,12 +351,12 @@ export default function CheckoutPage() {
      } finally { setIsRegistering(false); }
    }
 
-   const orderData = {
-     customerId: activeCustomerId,
-     customerName: customerName.trim(),
-     customerPhone: customerPhone.trim(),
-     customerEmail: customerEmail.trim(),
-     items: cartItems.map(i => ({
+    const orderData = {
+      customerId: activeCustomerId,
+      customerName: customerName.trim() || customer?.name || customerStorage.getProfile()?.name || "عميل",
+      customerPhone: customerPhone.trim() || customer?.phone || customerStorage.getProfile()?.phone || "",
+      customerEmail: customerEmail.trim() || customer?.email || customerStorage.getProfile()?.email || "",
+      items: cartItems.map(i => ({
        coffeeItemId: i.coffeeItemId,
        quantity: i.quantity,
        price: typeof i.coffeeItem?.price === 'number' ? i.coffeeItem.price : parseFloat(String(i.coffeeItem?.price || 0)),
