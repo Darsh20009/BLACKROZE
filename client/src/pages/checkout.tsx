@@ -115,21 +115,22 @@ export default function CheckoutPage() {
    }
  }, [deliveryInfo, setLocation, showSuccessPage, cartItems.length]);
 
- useEffect(() => {
-   if (customer?.name && customer?.phone) {
-     setCustomerName(customer.name);
-     setCustomerPhone(customer.phone);
-     if (customer?.email) setCustomerEmail(customer.email);
-     setIsRegisteredCustomer(true);
-   } else {
-     const profile = customerStorage.getProfile();
-     if (profile && !customerStorage.isGuestMode()) {
-       setCustomerName(profile.name);
-       setCustomerPhone(profile.phone);
-       setIsRegisteredCustomer(true);
-     }
-   }
- }, [customer]);
+  useEffect(() => {
+    if (customer?.name && customer?.phone) {
+      setCustomerName(customer.name);
+      setCustomerPhone(customer.phone);
+      if (customer?.email) setCustomerEmail(customer.email);
+      setIsRegisteredCustomer(true);
+    } else {
+      const profile = customerStorage.getProfile();
+      if (profile && !customerStorage.isGuestMode()) {
+        setCustomerName(profile.name);
+        setCustomerPhone(profile.phone);
+        if (profile.email) setCustomerEmail(profile.email);
+        setIsRegisteredCustomer(true);
+      }
+    }
+  }, [customer]);
 
  const { data: paymentMethods = [] } = useQuery<PaymentMethodInfo[]>({
    queryKey: ["/api/payment-methods"],
