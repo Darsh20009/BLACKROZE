@@ -19,6 +19,7 @@ export interface CustomerProfile {
  id: string;
  name: string;
  phone: string;
+ email?: string;
  createdAt: string;
  cardNumber?: string;
  stamps: number;
@@ -135,11 +136,12 @@ export const customerStorage = {
   },
 
   // Register or login customer
-  registerCustomer(name: string, phone: string): CustomerProfile {
+  registerCustomer(name: string, phone: string, email?: string): CustomerProfile {
     const profile: CustomerProfile = {
       id: nanoid(),
       name,
       phone,
+      email,
       cardNumber: assignCardNumber(),
       stamps: 0,
       freeDrinks: 0,

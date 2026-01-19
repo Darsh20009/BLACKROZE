@@ -405,10 +405,21 @@ export default function CheckoutPage() {
            <Card>
              <CardContent className="pt-6">
                <div className="space-y-4">
-                 <div className="space-y-2">
-                   <Label>الاسم الكامل</Label>
-                   <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="أدخل اسمك" />
-                 </div>
+                 {!isRegisteredCustomer && (
+                   <div className="space-y-2">
+                     <Label>الاسم الكامل</Label>
+                     <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="أدخل اسمك" />
+                   </div>
+                 )}
+                 {isRegisteredCustomer && (
+                   <div className="bg-muted/30 p-4 rounded-lg flex items-center gap-3">
+                     <User className="w-5 h-5 text-accent" />
+                     <div>
+                       <p className="font-semibold text-foreground">{customerName}</p>
+                       <p className="text-sm text-muted-foreground">{customerPhone}</p>
+                     </div>
+                   </div>
+                 )}
                  <PaymentMethods
                    paymentMethods={paymentMethods}
                    selectedMethod={selectedPaymentMethod}
