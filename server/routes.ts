@@ -3069,7 +3069,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // ... rest of the logic ...
+      // Create order
+      // For non-admin/owner roles, ALWAYS use the employee's branchId (ignore provided branchId)
+      // This prevents cross-branch order creation
+      let finalBranchId: string | undefined;
+      
+      if (req.employee) {
+        if (req.employee.role === "admin" || req.employee.role === "owner") {
+          // Admin/owner can specify any branch or use their own
+          finalBranchId = branchId || req.employee.branchId;
+        } else {
+          // All other employee roles MUST use their assigned branch
+          finalBranchId = req.employee.branchId;
+          if (branchId && branchId !== finalBranchId) {
+          }
+        }
+      } else {
+        // For customer orders, use provided branchId or fall back to a default branch if none provided
+        finalBranchId = branchId;
+        
+        if (!finalBranchId) {
+          const branches = await storage.getBranches();
+          if (branches.length > 0) {
+            finalBranchId = branches[0].id;
+          }
+        }
+      }
+
+      // Require branchId for all orders
+      if (!finalBranchId) {
+        return res.status(400).json({ error: "Branch ID is required for creating orders" });
+      }
 
       const orderData: any = {
         customerId: finalCustomerId || null,
