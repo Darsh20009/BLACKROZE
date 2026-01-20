@@ -351,45 +351,49 @@ export default function CheckoutPage() {
      } finally { setIsRegistering(false); }
    }
 
-   const orderData = {
-     customerId: activeCustomerId,
-     customerName: (customerName || "").trim() || (customer?.name || "").trim() || customerStorage.getProfile()?.name || "عميل",
-     customerPhone: (customerPhone || "").trim() || (customer?.phone || "").trim() || customerStorage.getProfile()?.phone || "",
-     customerEmail: (customerEmail || "").trim() || (customer?.email || "").trim() || customerStorage.getProfile()?.email || "",
-     customerInfo: {
-       customerName: (customerName || "").trim() || (customer?.name || "").trim() || customerStorage.getProfile()?.name || "عميل",
-       phoneNumber: (customerPhone || "").trim() || (customer?.phone || "").trim() || customerStorage.getProfile()?.phone || "",
-       customerEmail: (customerEmail || "").trim() || (customer?.email || "").trim() || customerStorage.getProfile()?.email || "",
-     },
-     items: cartItems.map(i => ({
-      coffeeItemId: i.coffeeItemId,
-      quantity: i.quantity,
-      price: typeof i.coffeeItem?.price === 'number' ? i.coffeeItem.price : parseFloat(String(i.coffeeItem?.price || 0)),
-      name: i.coffeeItem?.nameAr || ""
-    })),
-    totalAmount,
-    paymentMethod: selectedPaymentMethod,
-    secondaryPaymentMethod: isQahwaCardPayment ? secondaryPaymentMethod : null,
-    paymentReceiptUrl,
-    secondaryPaymentReceiptUrl,
-    status: "pending",
-    branchId: deliveryInfo?.branchId || "default-branch",
-    tenantId: (customer as any)?.tenantId || "demo-tenant",
-    orderType: deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn ? 'dine-in' : 'regular',
-    notes: customerNotes,
-    discountCode: appliedDiscount?.code,
-    discountPercentage: appliedDiscount?.percentage,
-    usedFreeDrink: useFreeDrink || isQahwaCardPayment,
-    freeDrinksUsed: usedFreeDrinksCount,
-    deliveryAddress: {
-     fullAddress: typeof deliveryInfo?.address === 'string' ? deliveryInfo.address : (deliveryInfo?.address as any)?.fullAddress || "",
-     lat: customerLocation?.lat || (deliveryInfo as any)?.latitude || (deliveryInfo?.address as any)?.lat || 0,
-     lng: customerLocation?.lng || (deliveryInfo as any)?.longitude || (deliveryInfo?.address as any)?.lng || 0,
-   },
-    transferOwnerName: (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer) ? transferOwnerName : null,
-  };
+    const finalCustomerName = (customerName || "").trim() || (customer?.name || "").trim() || customerStorage.getProfile()?.name || "عميل";
+    const finalCustomerPhone = (customerPhone || "").trim() || (customer?.phone || "").trim() || customerStorage.getProfile()?.phone || "";
+    const finalCustomerEmail = (customerEmail || "").trim() || (customer?.email || "").trim() || customerStorage.getProfile()?.email || "";
 
-  createOrderMutation.mutate(orderData);
+    const orderData = {
+      customerId: activeCustomerId,
+      customerName: finalCustomerName,
+      customerPhone: finalCustomerPhone,
+      customerEmail: finalCustomerEmail,
+      customerInfo: {
+        customerName: finalCustomerName,
+        phoneNumber: finalCustomerPhone,
+        customerEmail: finalCustomerEmail,
+      },
+      items: cartItems.map(i => ({
+       coffeeItemId: i.coffeeItemId,
+       quantity: i.quantity,
+       price: typeof i.coffeeItem?.price === 'number' ? i.coffeeItem.price : parseFloat(String(i.coffeeItem?.price || 0)),
+       name: i.coffeeItem?.nameAr || ""
+     })),
+     totalAmount,
+     paymentMethod: selectedPaymentMethod,
+     secondaryPaymentMethod: isQahwaCardPayment ? secondaryPaymentMethod : null,
+     paymentReceiptUrl,
+     secondaryPaymentReceiptUrl,
+     status: "pending",
+     branchId: deliveryInfo?.branchId || "default-branch",
+     tenantId: (customer as any)?.tenantId || "demo-tenant",
+     orderType: deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn ? 'dine-in' : 'regular',
+     notes: customerNotes,
+     discountCode: appliedDiscount?.code,
+     discountPercentage: appliedDiscount?.percentage,
+     usedFreeDrink: useFreeDrink || isQahwaCardPayment,
+     freeDrinksUsed: usedFreeDrinksCount,
+     deliveryAddress: {
+      fullAddress: typeof deliveryInfo?.address === 'string' ? deliveryInfo.address : (deliveryInfo?.address as any)?.fullAddress || "",
+      lat: customerLocation?.lat || (deliveryInfo as any)?.latitude || (deliveryInfo?.address as any)?.lat || 0,
+      lng: customerLocation?.lng || (deliveryInfo as any)?.longitude || (deliveryInfo?.address as any)?.lng || 0,
+    },
+     transferOwnerName: (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer) ? transferOwnerName : null,
+   };
+
+   createOrderMutation.mutate(orderData);
  };
 
  if (showSuccessPage) {
