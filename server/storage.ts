@@ -859,10 +859,24 @@ export class DBStorage implements IStorage {
     return (addons as any[]).map(serializeDoc);
   }
 
-  async createOrder(order: InsertOrder): Promise<Order> {
-    const orderNumber = `ORD-${Date.now()}-${this.orderCounter++}`;
-    const newOrder = await OrderModel.create({ ...order, orderNumber });
-    return serializeDoc(newOrder);
+  async createOrder(order: any): Promise<Order> {
+    try {
+      const orderNumber = `ORD-${Date.now()}-${this.orderCounter++}`;
+      // Ensure all fields are handled correctly for MongoDB
+      const orderData = { ...order, orderNumber };
+      
+      // Basic validation for required fields at storage level to catch issues early
+      if (!orderData.items) throw new Error("Order items are missing in storage");
+      if (!orderData.totalAmount && orderData.totalAmount !== 0) throw new Error("Order total amount is missing in storage");
+
+      console.log("[STORAGE] Creating order in DB:", JSON.stringify(orderData));
+      const newOrder = new OrderModel(orderData);
+      await newOrder.save();
+      return serializeDoc(newOrder);
+    } catch (error) {
+      console.error("[STORAGE] Database error creating order:", error);
+      throw error;
+    }
   }
 
   async getOrder(id: string): Promise<Order | undefined> {

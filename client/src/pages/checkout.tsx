@@ -356,7 +356,7 @@ export default function CheckoutPage() {
     const finalCustomerEmail = (customerEmail || "").trim() || (customer?.email || "").trim() || customerStorage.getProfile()?.email || "";
 
     const orderData = {
-      customerId: activeCustomerId,
+      customerId: activeCustomerId || null,
       customerName: finalCustomerName,
       customerPhone: finalCustomerPhone,
       customerEmail: finalCustomerEmail,
@@ -364,36 +364,40 @@ export default function CheckoutPage() {
         customerName: finalCustomerName,
         phoneNumber: finalCustomerPhone,
         customerEmail: finalCustomerEmail,
+        carType: "",
+        carColor: "",
+        saveCarInfo: 0
       },
       items: cartItems.map(i => ({
-       coffeeItemId: i.coffeeItemId,
-       quantity: i.quantity,
-       price: typeof i.coffeeItem?.price === 'number' ? i.coffeeItem.price : parseFloat(String(i.coffeeItem?.price || 0)),
-       name: i.coffeeItem?.nameAr || ""
-     })),
-     totalAmount,
-     paymentMethod: selectedPaymentMethod,
-     secondaryPaymentMethod: isQahwaCardPayment ? secondaryPaymentMethod : null,
-     paymentReceiptUrl,
-     secondaryPaymentReceiptUrl,
-     status: "pending",
-     branchId: deliveryInfo?.branchId || "default-branch",
-     tenantId: (customer as any)?.tenantId || "demo-tenant",
-     orderType: deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn ? 'dine-in' : 'regular',
-     notes: customerNotes,
-     discountCode: appliedDiscount?.code,
-     discountPercentage: appliedDiscount?.percentage,
-     usedFreeDrink: useFreeDrink || isQahwaCardPayment,
-     freeDrinksUsed: usedFreeDrinksCount,
-     deliveryAddress: {
-      fullAddress: typeof deliveryInfo?.address === 'string' ? deliveryInfo.address : (deliveryInfo?.address as any)?.fullAddress || "",
-      lat: customerLocation?.lat || (deliveryInfo as any)?.latitude || (deliveryInfo?.address as any)?.lat || 0,
-      lng: customerLocation?.lng || (deliveryInfo as any)?.longitude || (deliveryInfo?.address as any)?.lng || 0,
-    },
-     transferOwnerName: (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer) ? transferOwnerName : null,
-   };
+        coffeeItemId: i.coffeeItemId,
+        quantity: Number(i.quantity),
+        price: typeof i.coffeeItem?.price === 'number' ? i.coffeeItem.price : parseFloat(String(i.coffeeItem?.price || 0)),
+        nameAr: i.coffeeItem?.nameAr || ""
+      })),
+      totalAmount: Number(totalAmount),
+      paymentMethod: selectedPaymentMethod,
+      secondaryPaymentMethod: isQahwaCardPayment ? secondaryPaymentMethod : null,
+      paymentReceiptUrl: paymentReceiptUrl || null,
+      secondaryPaymentReceiptUrl: secondaryPaymentReceiptUrl || null,
+      status: "pending",
+      branchId: String(deliveryInfo?.branchId || "default-branch"),
+      tenantId: String((customer as any)?.tenantId || "demo-tenant"),
+      orderType: deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn ? 'dine-in' : 'regular',
+      customerNotes: customerNotes || "",
+      discountCode: appliedDiscount?.code || null,
+      discountPercentage: appliedDiscount ? Number(appliedDiscount.percentage) : null,
+      usedFreeDrink: !!(useFreeDrink || isQahwaCardPayment),
+      freeDrinksUsed: Number(usedFreeDrinksCount || 0),
+      deliveryAddress: {
+        fullAddress: typeof deliveryInfo?.address === 'string' ? deliveryInfo.address : (deliveryInfo?.address as any)?.fullAddress || "",
+        lat: Number(customerLocation?.lat || (deliveryInfo as any)?.latitude || (deliveryInfo?.address as any)?.lat || 0),
+        lng: Number(customerLocation?.lng || (deliveryInfo as any)?.longitude || (deliveryInfo?.address as any)?.lng || 0),
+      },
+      transferOwnerName: (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer) ? (transferOwnerName || "") : null,
+    };
 
-   createOrderMutation.mutate(orderData);
+    console.log("Submitting order data final deep check:", JSON.stringify(orderData, null, 2));
+    createOrderMutation.mutate(orderData);
  };
 
  if (showSuccessPage) {
