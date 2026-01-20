@@ -3021,7 +3021,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Payment method is required" });
       }
 
-      if (!customerInfo?.customerName) {
+      if (!customerInfo || !customerInfo.customerName) {
+        console.error("Missing customer name in request. customerInfo:", JSON.stringify(customerInfo), "req.body:", JSON.stringify(req.body));
         return res.status(400).json({ error: "Customer name is required" });
       }
 
