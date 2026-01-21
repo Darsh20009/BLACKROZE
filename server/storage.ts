@@ -684,7 +684,13 @@ export class DBStorage implements IStorage {
   async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
     const normalizedCode = code.trim().toLowerCase();
     const result = await DiscountCodeModel.findOne({ code: normalizedCode }).lean();
-    return result ? (result as any) : undefined;
+    if (result) {
+      return {
+        ...result,
+        id: result._id.toString(),
+      } as any;
+    }
+    return undefined;
   }
 
   async incrementDiscountCodeUsage(code: string): Promise<void> {
