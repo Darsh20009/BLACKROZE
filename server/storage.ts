@@ -1551,8 +1551,22 @@ export class DBStorage implements IStorage {
   }
 
   async getCustomer(id: string): Promise<Customer | undefined> {
-    const customer = await CustomerModel.findById(id);
-    return customer || undefined;
+    try {
+      if (!id || id === 'null' || id === 'undefined') return undefined;
+      
+      // If the ID is a valid MongoDB ObjectId hex string (24 characters)
+      if (typeof id === 'string' && id.match(/^[0-9a-fA-F]{24}$/)) {
+        const customer = await CustomerModel.findById(id);
+        return customer || undefined;
+      }
+      
+      // Otherwise, it might be a custom ID (like the nanoID "jSsjS_CSQ5VcafLeTKorM")
+      const customer = await CustomerModel.findOne({ id });
+      return customer || undefined;
+    } catch (error) {
+      console.error(`[STORAGE] Error fetching customer ${id}:`, error);
+      return undefined;
+    }
   }
 
   async getCustomerByPhone(phone: string): Promise<Customer | undefined> {
