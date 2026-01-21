@@ -1259,13 +1259,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const discountCode = await storage.getDiscountCodeByCode(code.trim());
 
       if (!discountCode) {
+        console.log(`[DISCOUNT] Code not found: ${code.trim()}`);
         return res.status(404).json({ 
           valid: false,
           error: "كود الخصم غير موجود"
         });
       }
 
-      if (discountCode.isActive === 0) {
+      console.log(`[DISCOUNT] Found code:`, JSON.stringify(discountCode));
+      
+      const isActive = Number(discountCode.isActive);
+      if (isActive === 0) {
+        console.log(`[DISCOUNT] Code inactive: ${discountCode.code}`);
         return res.status(400).json({ 
           valid: false,
           error: "كود الخصم غير فعال"
