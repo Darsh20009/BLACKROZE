@@ -6294,15 +6294,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates: any = { paymentStatus };
       if (paymentDetails) updates.paymentDetails = paymentDetails;
 
-      const updatedOrder = await OrderModel.findByIdAndUpdate(
-        id,
+      let updatedOrder = await OrderModel.findOneAndUpdate(
+        { id },
         { $set: updates },
         { new: true }
       );
 
+      if (!updatedOrder && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
+        updatedOrder = await OrderModel.findByIdAndUpdate(
+          id,
+          { $set: updates },
+          { new: true }
+        );
+      }
+
       if (!updatedOrder) return res.status(404).json({ error: "الطلب غير موجود" });
       res.json(serializeDoc(updatedOrder));
     } catch (error) {
+      console.error("[PAYMENT-STATUS] Error:", error);
       res.status(500).json({ error: "فشل تحديث حالة الدفع" });
     }
   });
