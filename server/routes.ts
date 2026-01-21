@@ -3119,7 +3119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         customerNotes: customerNotes || req.body.notes || "",
         discountCode: discountCode || null,
-        discountPercentage: discountPercentage ? Number(discountPercentage) : null,
+        discountPercentage: discountPercentage ? Number(discountPercentage) : 0,
         deliveryType: deliveryType || null,
         deliveryAddress: deliveryAddress || null,
         deliveryFee: deliveryFee ? Number(deliveryFee) : 0,
