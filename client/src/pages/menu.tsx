@@ -23,6 +23,59 @@ export default function MenuPage() {
   const [selectedItem, setSelectedItem] = useState<CoffeeItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isScrollingFromNav, setIsScrollingFromNav] = useState(false);
+
+  // Scroll spy logic
+  useEffect(() => {
+    if (isScrollingFromNav) return;
+
+    const handleScroll = () => {
+      const sections = categories.filter(c => c.id !== "all").map(cat => ({
+        id: cat.id,
+        element: document.getElementById(`category-${cat.id}`)
+      }));
+
+      const scrollPosition = window.scrollY + 150;
+
+      for (const section of sections) {
+        if (section.element) {
+          const offsetTop = section.element.offsetTop;
+          const height = section.element.offsetHeight;
+
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + height) {
+            setSelectedCategory(section.id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isScrollingFromNav]);
+
+  const scrollToCategory = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    if (categoryId === "all") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const element = document.getElementById(`category-${categoryId}`);
+    if (element) {
+      setIsScrollingFromNav(true);
+      const headerOffset = 140;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+
+      setTimeout(() => setIsScrollingFromNav(false), 1000);
+    }
+  };
 
   const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
@@ -173,24 +226,26 @@ export default function MenuPage() {
         </div>
 
         {/* Categories - Compact Chips */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4">
-          {categories.map((cat, idx) => (
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
-                selectedCategory === cat.id 
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
-                  : "bg-card text-muted-foreground border-border hover:border-primary/30"
-              }`}
-            >
-              <cat.icon className={`w-3.5 h-3.5 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
-              {cat.nameAr}
-            </motion.button>
-          ))}
+        <div className="sticky top-16 z-40 bg-background/80 backdrop-blur-xl border-b border-border -mx-4 px-4 py-3">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {categories.map((cat, idx) => (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                key={cat.id}
+                onClick={() => scrollToCategory(cat.id)}
+                className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                  selectedCategory === cat.id 
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
+                    : "bg-card text-muted-foreground border-border hover:border-primary/30"
+                }`}
+              >
+                <cat.icon className={`w-3.5 h-3.5 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
+                {cat.nameAr}
+              </motion.button>
+            ))}
+          </div>
         </div>
 
         {/* Featured Section */}
@@ -248,45 +303,56 @@ export default function MenuPage() {
         </section>
 
         {/* Full Menu */}
-        <section className="space-y-4">
+        <section className="space-y-8">
           <h2 className="font-amiri text-2xl font-black px-1">قائمة المشروبات</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <AnimatePresence mode="popLayout">
-              {filteredItems.map((item, idx) => (
-                <motion.div 
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                  key={item.id} 
-                  className="bg-card rounded-3xl border border-border p-2.5 flex gap-4 items-center shadow-sm hover:shadow-md active:scale-98 transition-all group cursor-pointer"
-                  onClick={() => handleAddToCartDirect(item)}
-                >
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted flex-shrink-0 border border-border">
-                    <img 
-                      src={item.imageUrl} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                      alt={item.nameAr} 
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
-                      }}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-black truncate text-foreground leading-tight mb-1">{item.nameAr}</h3>
-                    <p className="text-[10px] text-muted-foreground line-clamp-1 mb-2">تجربة غنية ومميزة</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-black text-primary">{item.price} <small className="text-[9px] font-normal">ر.س</small></p>
-                      <div className="bg-primary/10 p-1.5 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        <Plus className="w-4 h-4 text-primary" />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+          
+          {categories.filter(c => c.id !== "all").map((category) => (
+            <div key={category.id} id={`category-${category.id}`} className="space-y-4 scroll-mt-40">
+              <h3 className="font-amiri text-xl font-bold px-1 flex items-center gap-2">
+                <category.icon className="w-5 h-5 text-primary" />
+                {category.nameAr}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <AnimatePresence mode="popLayout">
+                  {representativeItems
+                    .filter(item => item.category === category.id)
+                    .map((item) => (
+                      <motion.div 
+                        layout
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.3 }}
+                        key={item.id} 
+                        className="bg-card rounded-3xl border border-border p-2.5 flex gap-4 items-center shadow-sm hover:shadow-md active:scale-98 transition-all group cursor-pointer"
+                        onClick={() => handleAddToCartDirect(item)}
+                      >
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted flex-shrink-0 border border-border">
+                          <img 
+                            src={item.imageUrl} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                            alt={item.nameAr} 
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-black truncate text-foreground leading-tight mb-1">{item.nameAr}</h3>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1 mb-2">تجربة غنية ومميزة</p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-black text-primary">{item.price} <small className="text-[9px] font-normal">ر.س</small></p>
+                            <div className="bg-primary/10 p-1.5 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                              <Plus className="w-4 h-4 text-primary" />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          ))}
         </section>
       </main>
 
