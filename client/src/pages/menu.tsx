@@ -197,7 +197,7 @@ export default function MenuPage() {
         <section className="space-y-4 overflow-hidden">
           <div className="flex items-center justify-between px-1">
             <h2 className="font-amiri text-2xl font-black flex items-center gap-2">
-              المختارات الأكثر مبيعاً <Flame className="w-5 h-5 text-orange-500 animate-pulse" />
+              الأكثر مبيعاً <Flame className="w-5 h-5 text-orange-500 animate-pulse" />
             </h2>
           </div>
           
