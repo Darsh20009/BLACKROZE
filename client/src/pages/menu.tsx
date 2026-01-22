@@ -194,38 +194,56 @@ export default function MenuPage() {
         </div>
 
         {/* Featured Section */}
-        <section className="space-y-4">
+        <section className="space-y-4 overflow-hidden">
           <div className="flex items-center justify-between px-1">
-            <h2 className="font-amiri text-2xl font-black">المختارات ✨</h2>
+            <h2 className="font-amiri text-2xl font-black flex items-center gap-2">
+              المختارات الأكثر مبيعاً <Flame className="w-5 h-5 text-orange-500 animate-pulse" />
+            </h2>
           </div>
-          <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-4">
-            {representativeItems.slice(0, 6).map((item, idx) => (
-              <motion.div 
-                key={item.id} 
-                whileTap={{ scale: 0.95 }}
-                className="flex-shrink-0 w-[160px] snap-start bg-card rounded-[2rem] border border-border p-3 space-y-3 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
-                onClick={() => handleAddToCartDirect(item)}
-              >
-                <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-muted">
-                  <motion.img 
-                    whileHover={{ scale: 1.1 }}
-                    src={item.imageUrl} 
-                    className="w-full h-full object-cover transition-transform duration-700" 
-                    alt={item.nameAr} 
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
-                    }}
-                  />
-                </div>
-                <div className="space-y-1 text-center">
-                  <h3 className="text-xs font-black truncate">{item.nameAr}</h3>
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-sm font-black text-primary">{item.price} <small className="text-[10px] font-normal">ر.س</small></span>
+          
+          <div className="relative flex overflow-x-hidden">
+            <motion.div 
+              className="flex gap-4 py-4 whitespace-nowrap"
+              animate={{
+                x: [0, -1000],
+              }}
+              transition={{
+                x: {
+                  repeat: Infinity,
+                  repeatType: "loop",
+                  duration: 30,
+                  ease: "linear",
+                },
+              }}
+            >
+              {[...representativeItems, ...representativeItems].map((item, idx) => (
+                <motion.div 
+                  key={`${item.id}-${idx}`} 
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-shrink-0 w-[160px] bg-card rounded-[2rem] border border-border p-3 space-y-3 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden cursor-pointer"
+                  onClick={() => handleAddToCartDirect(item)}
+                >
+                  <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-muted">
+                    <motion.img 
+                      whileHover={{ scale: 1.1 }}
+                      src={item.imageUrl} 
+                      className="w-full h-full object-cover transition-transform duration-700" 
+                      alt={item.nameAr} 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
+                      }}
+                    />
                   </div>
-                </div>
-                <div className="absolute bottom-0 inset-x-0 h-1 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-right" />
-              </motion.div>
-            ))}
+                  <div className="space-y-1 text-center">
+                    <h3 className="text-xs font-black truncate">{item.nameAr}</h3>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-sm font-black text-primary">{item.price} <small className="text-[10px] font-normal">ر.س</small></span>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 inset-x-0 h-1 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-right" />
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         </section>
 
