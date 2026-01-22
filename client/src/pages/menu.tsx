@@ -254,9 +254,9 @@ export default function MenuPage() {
             </h2>
           </div>
           
-          <div className="relative flex overflow-x-hidden group no-scrollbar">
+          <div className="relative flex overflow-x-hidden group">
             <motion.div 
-              className="flex gap-4 py-4 whitespace-nowrap no-scrollbar"
+              className="flex gap-4 py-4 whitespace-nowrap"
               animate={{
                 x: ["0%", "-50%"],
               }}
