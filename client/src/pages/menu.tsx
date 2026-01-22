@@ -103,11 +103,7 @@ export default function MenuPage() {
     <div dir="rtl" className="min-h-screen bg-background pb-24 font-sans overflow-x-hidden text-foreground">
       {/* Dynamic Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border px-4 h-16 flex items-center justify-between shadow-sm">
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-3"
-        >
+        <div className="flex items-center gap-3">
           <div className="relative">
             <img src={clunyLogo} className="w-10 h-10 rounded-2xl shadow-md border-2 border-background" alt="Logo" />
           </div>
@@ -115,7 +111,7 @@ export default function MenuPage() {
             <h1 className="font-amiri text-xl font-black leading-none text-primary">CLUNY</h1>
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Premium Coffee</span>
           </div>
-        </motion.div>
+        </div>
         
         <div className="flex items-center gap-2">
           <PWAInstallButton />
@@ -128,14 +124,9 @@ export default function MenuPage() {
             <ShoppingCart className="w-5 h-5 text-primary" />
             <AnimatePresence>
               {totalItems > 0 && (
-                <motion.span 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-primary rounded-full border-2 border-background"
-                >
+                <span className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-primary rounded-full border-2 border-background">
                   {totalItems}
-                </motion.span>
+                </span>
               )}
             </AnimatePresence>
           </Button>
@@ -174,10 +165,7 @@ export default function MenuPage() {
         {/* Categories - Compact Chips */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4">
           {categories.map((cat, idx) => (
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
+            <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
@@ -188,7 +176,7 @@ export default function MenuPage() {
             >
               <cat.icon className={`w-3.5 h-3.5 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
               {cat.nameAr}
-            </motion.button>
+            </button>
           ))}
         </div>
 
@@ -199,17 +187,15 @@ export default function MenuPage() {
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-4">
             {representativeItems.slice(0, 6).map((item, idx) => (
-              <motion.div 
+              <div 
                 key={item.id} 
-                whileTap={{ scale: 0.95 }}
                 className="flex-shrink-0 w-[160px] snap-start bg-card rounded-[2rem] border border-border p-3 space-y-3 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
                 onClick={() => handleAddToCartDirect(item)}
               >
                 <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-muted">
-                  <motion.img 
-                    whileHover={{ scale: 1.1 }}
+                  <img 
                     src={item.imageUrl} 
-                    className="w-full h-full object-cover transition-transform duration-700" 
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" 
                     alt={item.nameAr} 
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
@@ -223,7 +209,7 @@ export default function MenuPage() {
                   </div>
                 </div>
                 <div className="absolute bottom-0 inset-x-0 h-1 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-right" />
-              </motion.div>
+              </div>
             ))}
           </div>
         </section>
@@ -234,14 +220,9 @@ export default function MenuPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <AnimatePresence mode="popLayout">
               {filteredItems.map((item, idx) => (
-                <motion.div 
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
+                <div 
                   key={item.id} 
-                  className="bg-card rounded-3xl border border-border p-2.5 flex gap-4 items-center shadow-sm hover:shadow-md active:scale-98 transition-all group cursor-pointer"
+                  className="bg-card rounded-3xl border border-border p-2.5 flex gap-4 items-center shadow-sm hover:shadow-md active:scale-95 transition-all group cursor-pointer"
                   onClick={() => handleAddToCartDirect(item)}
                 >
                   <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted flex-shrink-0 border border-border">
@@ -262,7 +243,7 @@ export default function MenuPage() {
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </AnimatePresence>
           </div>
@@ -285,11 +266,7 @@ export default function MenuPage() {
       />
       {/* Floating Cart Summary */}
       {totalItems > 0 && (
-        <motion.div 
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          className="fixed bottom-6 inset-x-4 z-50"
-        >
+        <div className="fixed bottom-6 inset-x-4 z-50">
           <Button 
             onClick={() => setLocation("/cart")}
             className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-2xl shadow-primary/20 flex items-center justify-between px-6"
@@ -312,7 +289,7 @@ export default function MenuPage() {
               </span>
             </div>
           </Button>
-        </motion.div>
+        </div>
       )}
     </div>
   );
