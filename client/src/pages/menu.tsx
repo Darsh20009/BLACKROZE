@@ -258,9 +258,7 @@ export default function MenuPage() {
           
           <div className="relative flex overflow-x-hidden group">
             <motion.div 
-              className="flex gap-4 py-4 cursor-grab active:cursor-grabbing"
-              drag="x"
-              dragConstraints={{ left: -2000, right: 0 }}
+              className="flex gap-4 py-4 whitespace-nowrap"
               animate={{
                 x: ["0%", "-50%"],
               }}
@@ -268,17 +266,17 @@ export default function MenuPage() {
                 x: {
                   repeat: Infinity,
                   repeatType: "loop",
-                  duration: 25,
+                  duration: 20,
                   ease: "linear",
                 },
               }}
-              whileHover={{ transition: { duration: 0.5 }, opacity: 0.95 }}
+              whileHover={{ transition: { duration: 0.5 }, opacity: 0.9 }}
             >
               {[...representativeItems, ...representativeItems, ...representativeItems, ...representativeItems].map((item, idx) => (
                 <motion.div 
                   key={`${item.id}-${idx}`} 
                   whileTap={{ scale: 0.95 }}
-                  className="flex-shrink-0 w-[160px] bg-card rounded-[2rem] border border-border p-3 space-y-3 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
+                  className="flex-shrink-0 w-[160px] bg-card rounded-[2rem] border border-border p-3 space-y-3 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden cursor-pointer"
                   onClick={() => handleAddToCartDirect(item)}
                 >
                   <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-muted">
