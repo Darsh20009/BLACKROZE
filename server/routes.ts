@@ -3261,11 +3261,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Add stamps automatically if customer has phone number (works for guests and registered users)
-      let phoneForStamps = customerInfo.phoneNumber;
+      let phoneForStamps = customerInfo?.phoneNumber || req.body.customerPhone;
       if (finalCustomerId) {
-        const customer = await storage.getCustomer(finalCustomerId);
-        phoneForStamps = customer?.phone || phoneForStamps;
+        try {
+          const customer = await storage.getCustomer(finalCustomerId);
+          phoneForStamps = customer?.phone || phoneForStamps;
+        } catch (e) {}
       }
+
+      console.log(`[LOYALTY] Attempting to add stamps for phone: ${phoneForStamps}`);
 
       if (phoneForStamps) {
         try {
@@ -3273,24 +3277,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Create loyalty card if doesn't exist
           if (!loyaltyCard) {
+            console.log(`[LOYALTY] Creating new card for ${phoneForStamps}`);
             loyaltyCard = await storage.createLoyaltyCard({
-              customerName: customerInfo.customerName,
-              phoneNumber: phoneForStamps
+              customerName: finalCustomerName,
+              phoneNumber: phoneForStamps,
+              isActive: 1,
+              stamps: 0,
+              freeCupsEarned: 0,
+              totalSpent: 0
             });
           }
 
-          // Calculate stamps (1 stamp per drink, including free drinks used)
-          const totalDrinks = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
-          const stampsToAdd = totalDrinks;
+          // Calculate stamps (1 stamp per drink)
+          // Filter items that are actually drinks (using category or metadata if possible)
+          const itemsToProcess = Array.isArray(processedItems) ? processedItems : [];
+          const stampsToAdd = itemsToProcess.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
+
+          console.log(`[LOYALTY] Stamps to add: ${stampsToAdd}, Current stamps: ${loyaltyCard.stamps}`);
 
           if (stampsToAdd > 0) {
-            const currentStamps = loyaltyCard.stamps || 0;
-            const currentFreeCups = loyaltyCard.freeCupsEarned || 0;
+            const currentStamps = Number(loyaltyCard.stamps) || 0;
+            const currentFreeCups = Number(loyaltyCard.freeCupsEarned) || 0;
             const currentTotalSpent = parseFloat(loyaltyCard.totalSpent?.toString() || "0");
             
-            const newStamps = currentStamps + stampsToAdd;
-            const freeCupsToEarn = Math.floor(newStamps / 6);
-            const remainingStamps = newStamps % 6;
+            const totalStamps = currentStamps + stampsToAdd;
+            const freeCupsToEarn = Math.floor(totalStamps / 6);
+            const remainingStamps = totalStamps % 6;
+
+            console.log(`[LOYALTY] New totals - Stamps: ${remainingStamps}, Free Cups: ${currentFreeCups + freeCupsToEarn}`);
 
             await storage.updateLoyaltyCard(loyaltyCard.id, {
               stamps: remainingStamps,
@@ -3305,8 +3319,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'stamps_earned',
               pointsChange: stampsToAdd,
               discountAmount: 0,
-              orderAmount: totalAmount,
-              description: `اكتسبت ${stampsToAdd} ختم من الطلب`,
+              orderAmount: Number(totalAmount),
+              description: `اكتسبت ${stampsToAdd} ختم من الطلب رقم ${order.orderNumber}`,
             });
 
             // Create transaction for free cups earned
@@ -3316,12 +3330,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 type: 'free_cup_earned',
                 pointsChange: 0,
                 discountAmount: 0,
-                orderAmount: totalAmount,
-                description: `اكتسبت ${freeCupsToEarn} قهوة مجانية!`,
+                orderAmount: Number(totalAmount),
+                description: `مبروك! لقد حصلت على ${freeCupsToEarn} قهوة مجانية من الطلب رقم ${order.orderNumber}`,
               });
             }
           }
         } catch (error) {
+          console.error("[LOYALTY] Error processing stamps:", error);
           // Don't fail the order if stamp addition fails
         }
       }
