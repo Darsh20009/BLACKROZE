@@ -257,9 +257,7 @@ export default function MenuPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-black truncate text-foreground leading-tight mb-1">{item.nameAr}</h3>
-                    <p className="text-[10px] text-muted-foreground line-clamp-1 mb-2">تجربة غنية ومميزة</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-black text-primary">{item.price} <small className="text-[9px] font-normal">ر.س</small></p>
+                    <div className="flex items-center justify-end">
                       <div className="bg-primary/10 p-1.5 rounded-xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                         <Plus className="w-4 h-4 text-primary" />
                       </div>
