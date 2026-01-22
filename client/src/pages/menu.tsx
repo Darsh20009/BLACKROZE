@@ -158,7 +158,6 @@ export default function MenuPage() {
           </Button>
         </div>
       </header>
-
       <main className="p-4 space-y-8">
         {/* Search Bar */}
         <div className="relative group">
@@ -196,7 +195,7 @@ export default function MenuPage() {
         {/* Featured Section */}
         <section className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="font-amiri text-2xl font-black">المختارات ✨</h2>
+            <h2 className="font-amiri text-2xl font-black">الأكثر مبيعاً</h2>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-4">
             {representativeItems.slice(0, 6).map((item, idx) => (
@@ -269,7 +268,6 @@ export default function MenuPage() {
           </div>
         </section>
       </main>
-
       <AddToCartModal
         item={selectedItem}
         isOpen={isModalOpen}
@@ -285,7 +283,6 @@ export default function MenuPage() {
           });
         }}
       />
-
       {/* Floating Cart Summary */}
       {totalItems > 0 && (
         <motion.div 
