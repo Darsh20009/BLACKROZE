@@ -24,34 +24,18 @@ export default function MenuPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrollingFromNav, setIsScrollingFromNav] = useState(false);
-  const [showHeader, setShowHeader] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
 
-  // Scroll spy and Header hide logic
+  // Scroll spy logic
   useEffect(() => {
+    if (isScrollingFromNav) return;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Header visibility logic
-      if (currentScrollY > 100) {
-        if (currentScrollY > lastScrollY) {
-          setShowHeader(false); // Scrolling down
-        } else {
-          setShowHeader(true); // Scrolling up
-        }
-      } else {
-        setShowHeader(true);
-      }
-      setLastScrollY(currentScrollY);
-
-      if (isScrollingFromNav) return;
-
       const sections = categories.filter(c => c.id !== "all").map(cat => ({
         id: cat.id,
         element: document.getElementById(`category-${cat.id}`)
       }));
 
-      const scrollPosition = currentScrollY + 150;
+      const scrollPosition = window.scrollY + 150;
 
       for (const section of sections) {
         if (section.element) {
@@ -66,9 +50,9 @@ export default function MenuPage() {
       }
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [isScrollingFromNav, lastScrollY]);
+  }, [isScrollingFromNav]);
 
   const scrollToCategory = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -80,7 +64,7 @@ export default function MenuPage() {
     const element = document.getElementById(`category-${categoryId}`);
     if (element) {
       setIsScrollingFromNav(true);
-      const headerOffset = 60; // Reduced offset since main header is hidden
+      const headerOffset = 140;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -171,12 +155,7 @@ export default function MenuPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-background pb-24 font-sans overflow-x-hidden text-foreground">
       {/* Dynamic Header */}
-      <motion.header 
-        initial={false}
-        animate={{ y: showHeader ? 0 : -100 }}
-        transition={{ duration: 0.3 }}
-        className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border px-4 h-16 flex items-center justify-between shadow-sm"
-      >
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border px-4 h-16 flex items-center justify-between shadow-sm">
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -231,7 +210,7 @@ export default function MenuPage() {
             <User className="w-5 h-5 text-muted-foreground" />
           </Button>
         </div>
-      </motion.header>
+      </header>
 
       <main className="p-4 space-y-8">
         {/* Search Bar */}
@@ -244,6 +223,29 @@ export default function MenuPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-12 pr-10 pl-4 bg-card border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
           />
+        </div>
+
+        {/* Categories - Compact Chips */}
+        <div className="sticky top-16 z-40 bg-background/80 backdrop-blur-xl border-b border-border -mx-4 px-4 py-3">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {categories.map((cat, idx) => (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                key={cat.id}
+                onClick={() => scrollToCategory(cat.id)}
+                className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                  selectedCategory === cat.id 
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
+                    : "bg-card text-muted-foreground border-border hover:border-primary/30"
+                }`}
+              >
+                <cat.icon className={`w-3.5 h-3.5 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
+                {cat.nameAr}
+              </motion.button>
+            ))}
+          </div>
         </div>
 
         {/* Featured Section */}
@@ -304,29 +306,6 @@ export default function MenuPage() {
             <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
           </div>
         </section>
-
-        {/* Categories - Compact Chips */}
-        <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border -mx-4 px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {categories.map((cat, idx) => (
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                key={cat.id}
-                onClick={() => scrollToCategory(cat.id)}
-                className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
-                  selectedCategory === cat.id 
-                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
-                    : "bg-card text-muted-foreground border-border hover:border-primary/30"
-                }`}
-              >
-                <cat.icon className={`w-3.5 h-3.5 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
-                {cat.nameAr}
-              </motion.button>
-            ))}
-          </div>
-        </div>
 
         {/* Full Menu */}
         <section className="space-y-8">
