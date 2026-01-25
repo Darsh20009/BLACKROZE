@@ -426,43 +426,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const orderSuspensionStore: Record<string, { suspended: boolean; suspendedAt?: Date; suspendedBy?: string; reason?: string }> = {};
 
   app.get("/api/settings/order-suspension", async (req, res) => {
-    const tenantId = (req as any).employee?.tenantId || 'demo-tenant';
-    const status = orderSuspensionStore[tenantId] || { suspended: false };
-    
-    // Check branch-specific maintenance mode as well
-    const branchId = (req as any).employee?.branchId;
-    if (branchId) {
-      const branch = await storage.getBranch(branchId);
-      if (branch?.isMaintenanceMode) {
-        return res.json({ suspended: true, reason: 'صيانة الفرع' });
+    try {
+      const tenantId = (req as any).employee?.tenantId || 'demo-tenant';
+      const branchId = (req as any).query?.branchId || (req as any).employee?.branchId;
+      
+      const status = orderSuspensionStore[tenantId] || { suspended: false };
+      
+      // If global suspension is off, check branch-specific maintenance mode
+      if (!status.suspended && branchId) {
+        const branch = await storage.getBranch(branchId);
+        if (branch?.isMaintenanceMode) {
+          return res.json({ suspended: true, reason: 'صيانة الفرع' });
+        }
       }
+      
+      res.json(status);
+    } catch (error) {
+      res.json({ suspended: false });
     }
-    
-    res.json(status);
   });
 
   app.post("/api/settings/branch-maintenance", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    const branchId = req.employee?.branchId;
-    if (!branchId) return res.status(400).json({ error: "Branch ID required" });
-    
-    const { suspended } = req.body;
-    const updated = await storage.updateBranchMaintenance(branchId, !!suspended);
-    res.json(updated);
+    try {
+      const branchId = req.employee?.branchId;
+      if (!branchId) return res.status(400).json({ error: "Branch ID required" });
+      
+      const { suspended } = req.body;
+      const updated = await storage.updateBranchMaintenance(branchId, !!suspended);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   app.post("/api/settings/order-suspension", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    const tenantId = req.employee?.tenantId || 'demo-tenant';
-    const { suspended, reason } = req.body;
-    
-    orderSuspensionStore[tenantId] = {
-      suspended: !!suspended,
-      suspendedAt: suspended ? new Date() : undefined,
-      suspendedBy: req.employee?.fullName || req.employee?.username,
-      reason: reason || undefined
-    };
-    
-    console.log(`[ORDER SUSPENSION] ${suspended ? 'SUSPENDED' : 'RESUMED'} by ${req.employee?.fullName} for tenant ${tenantId}`);
-    res.json(orderSuspensionStore[tenantId]);
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { suspended, reason } = req.body;
+      
+      orderSuspensionStore[tenantId] = {
+        suspended: !!suspended,
+        suspendedAt: suspended ? new Date() : undefined,
+        suspendedBy: req.employee?.fullName || req.employee?.username,
+        reason: reason || undefined
+      };
+      
+      console.log(`[ORDER SUSPENSION] ${suspended ? 'SUSPENDED' : 'RESUMED'} by ${req.employee?.fullName} for tenant ${tenantId}`);
+      res.json(orderSuspensionStore[tenantId]);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   // Ingredient Management
