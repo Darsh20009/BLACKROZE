@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lock, Loader2, Eye, EyeOff, QrCode } from "lucide-react";
+import { User, Lock, Loader2, Eye, EyeOff, QrCode, Download } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
@@ -278,6 +278,30 @@ export default function EmployeeLogin() {
                   >
                     تفعيل حساب جديد
                   </Button>
+
+                  <div className="py-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        const manifestTag = document.getElementById('main-manifest') as HTMLLinkElement;
+                        if (manifestTag) manifestTag.href = '/employee-manifest.json';
+                        
+                        window.dispatchEvent(new Event('beforeinstallprompt'));
+                        
+                        const ua = navigator.userAgent.toLowerCase();
+                        if (/iphone|ipad|ipod/.test(ua)) {
+                          alert("لتثبيت النظام على iPhone: اضغط على زر 'مشاركة' ثم 'إضافة إلى الشاشة الرئيسية'");
+                        } else {
+                          alert("لتثبيت النظام: اضغط على القائمة (⋮) ثم 'تثبيت التطبيق'");
+                        }
+                      }}
+                      className="w-full text-primary font-bold hover:bg-primary/5"
+                    >
+                      <Download className="ml-2 h-4 w-4" />
+                      تحميل نظام الموظفين
+                    </Button>
+                  </div>
                 </div>
               </form>
             </CardContent>
