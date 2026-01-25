@@ -135,11 +135,22 @@ export default function POSSystem() {
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
   const [posConnected, setPosConnected] = useState(true);
   const [parkedOrders, setParkedOrders] = useState<ParkedOrder[]>([]);
+  const [showParkedOrders, setShowParkedOrders] = useState(false);
   const [invoiceDiscount, setInvoiceDiscount] = useState(0);
   const [invoiceDiscountType, setInvoiceDiscountType] = useState<'fixed' | 'percentage'>('percentage');
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentage: number; reason: string } | null>(null);
   const [showSplitPayment, setShowSplitPayment] = useState(false);
   const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
+  const [showParkDialog, setShowParkDialog] = useState(false);
+  const [parkOrderNote, setParkOrderNote] = useState("");
+  const [showDiscountDialog, setShowDiscountDialog] = useState(false);
+  const [itemDiscountId, setItemDiscountId] = useState<string | null>(null);
+  const [itemDiscountAmount, setItemDiscountAmount] = useState(0);
+  const [itemDiscountType, setItemDiscountType] = useState<'fixed' | 'percentage'>('percentage');
+  const [discountCode, setDiscountCode] = useState("");
+  const [cashDrawerOpen, setCashDrawerOpen] = useState(false);
+  const [currentSplitAmount, setCurrentSplitAmount] = useState(0);
+  const [currentSplitMethod, setCurrentSplitMethod] = useState<PaymentMethod>("cash");
 
   // Background sync logic
 
@@ -1055,6 +1066,7 @@ export default function POSSystem() {
     }
 
     const orderStatus = typeof statusArg === 'string' ? statusArg : "in_progress";
+    const tableId = selectedTable?.id || selectedTable?._id;
     const isTableOpen = (tableId || tableNumber) && orderStatus === "pending";
 
     const orderData = {
