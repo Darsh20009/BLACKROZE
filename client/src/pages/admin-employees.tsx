@@ -38,7 +38,27 @@ export default function AdminEmployees() {
     phone: '',
     jobTitle: '',
     role: 'cashier',
+    allowedPages: [] as string[],
+    permissions: [] as string[],
   });
+
+  const AVAILABLE_PAGES = [
+    { id: 'pos', name: 'نقاط البيع' },
+    { id: 'orders', name: 'الطلبات' },
+    { id: 'inventory', name: 'المخزون' },
+    { id: 'accounting', name: 'المحاسبة' },
+    { id: 'settings', name: 'الإعدادات' },
+    { id: 'delivery', name: 'التوصيل' },
+    { id: 'reports', name: 'التقارير' },
+  ];
+
+  const PERMISSIONS = [
+    { id: 'void_order', name: 'إلغاء الطلبات' },
+    { id: 'give_discount', name: 'منح خصومات' },
+    { id: 'open_drawer', name: 'فتح درج النقود' },
+    { id: 'edit_inventory', name: 'تعديل المخزون' },
+    { id: 'view_reports', name: 'عرض التقارير المالية' },
+  ];
 
   const { data: employees = [], refetch } = useQuery({
     queryKey: ['/api/employees'],
@@ -62,7 +82,15 @@ export default function AdminEmployees() {
     onSuccess: () => {
       refetch();
       setShowAddForm(false);
-      setFormData({ fullName: '', username: '', phone: '', jobTitle: '', role: 'cashier' });
+      setFormData({ 
+        fullName: '', 
+        username: '', 
+        phone: '', 
+        jobTitle: '', 
+        role: 'cashier',
+        allowedPages: [],
+        permissions: []
+      });
     },
   });
 
@@ -79,7 +107,15 @@ export default function AdminEmployees() {
     onSuccess: () => {
       refetch();
       setEditingId(null);
-      setFormData({ fullName: '', username: '', phone: '', jobTitle: '', role: 'cashier' });
+      setFormData({ 
+        fullName: '', 
+        username: '', 
+        phone: '', 
+        jobTitle: '', 
+        role: 'cashier',
+        allowedPages: [],
+        permissions: []
+      });
     },
   });
 
@@ -170,7 +206,15 @@ export default function AdminEmployees() {
           onClick={() => {
             setShowAddForm(!showAddForm);
             setEditingId(null);
-            setFormData({ fullName: '', username: '', phone: '', jobTitle: '', role: 'cashier' });
+            setFormData({ 
+              fullName: '', 
+              username: '', 
+              phone: '', 
+              jobTitle: '', 
+              role: 'cashier',
+              allowedPages: [],
+              permissions: []
+            });
           }}
           className="bg-accent hover:bg-accent"
           data-testid="button-add-employee"
@@ -241,6 +285,66 @@ export default function AdminEmployees() {
                   </Select>
                 </div>
               </div>
+
+              {/* Advanced Permissions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-muted/30 rounded-lg border border-border">
+                <div>
+                  <label className="block text-sm font-bold mb-3 flex items-center gap-2">
+                    <ChevronDown className="w-4 h-4" />
+                    الصفحات المسموحة
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {AVAILABLE_PAGES.map(page => (
+                      <label key={page.id} className="flex items-center gap-2 p-2 hover:bg-background rounded cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={formData.allowedPages?.includes(page.id)}
+                          onChange={(e) => {
+                            const pages = formData.allowedPages || [];
+                            setFormData({
+                              ...formData,
+                              allowedPages: e.target.checked 
+                                ? [...pages, page.id] 
+                                : pages.filter(p => p !== page.id)
+                            });
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
+                        />
+                        <span className="text-sm">{page.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold mb-3 flex items-center gap-2">
+                    <ChevronDown className="w-4 h-4" />
+                    صلاحيات خاصة
+                  </label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {PERMISSIONS.map(perm => (
+                      <label key={perm.id} className="flex items-center gap-2 p-2 hover:bg-background rounded cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions?.includes(perm.id)}
+                          onChange={(e) => {
+                            const perms = formData.permissions || [];
+                            setFormData({
+                              ...formData,
+                              permissions: e.target.checked 
+                                ? [...perms, perm.id] 
+                                : perms.filter(p => p !== perm.id)
+                            });
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
+                        />
+                        <span className="text-sm">{perm.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <Button type="submit" className="bg-accent hover:bg-accent" data-testid="button-save-employee">
                   {editingId ? 'تحديث' : 'إضافة'}
@@ -393,6 +497,8 @@ export default function AdminEmployees() {
                                 phone: emp.phone,
                                 jobTitle: emp.jobTitle,
                                 role: emp.role,
+                                allowedPages: (emp as any).allowedPages || [],
+                                permissions: (emp as any).permissions || [],
                               });
                               setShowAddForm(false);
                             }}
