@@ -340,7 +340,7 @@ function App() {
   }, []);
 
   return (
-    <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} dark min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir="rtl">
+    <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir="rtl">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <CustomerProvider>
