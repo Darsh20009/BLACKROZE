@@ -8,7 +8,7 @@ import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
 import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import clunyLogo from "@/assets/cluny-logo.png";
+import clunyLogo from "@assets/cluny-logo-customer.png";
 import type { CoffeeItem, IProductAddon } from "@shared/schema";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
 import { motion, AnimatePresence } from "framer-motion";
