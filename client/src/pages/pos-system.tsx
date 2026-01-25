@@ -207,6 +207,8 @@ export default function POSSystem() {
   }, [isOnline, syncing, queryClient]);
   const [syncingOffline, setSyncingOffline] = useState(false);
   
+  const [lastOrder, setLastOrder] = useState<any>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
   const [notificationAudio] = useState(new Audio("/notification.mp3"));
   const [showLiveOrders, setShowLiveOrders] = useState(false);
 
@@ -1137,13 +1139,17 @@ export default function POSSystem() {
     const draftData = {
       orderNumber: "DRAFT-" + Date.now().toString().slice(-6),
       customerName: customerName || "عميل",
+      customerPhone: customerPhone || "",
       items: orderItems,
       total: calculateTotal(),
+      subtotal: calculateSubtotal(),
       tableNumber: tableNumber,
       date: new Date().toISOString(),
-      isDraft: true
+      isDraft: true,
+      paymentMethod: paymentMethod,
+      employeeName: employee?.fullName || ""
     };
-    printSimpleReceipt(draftData);
+    printSimpleReceipt(draftData as any);
     toast({ title: "فاتورة مبدئية", description: "تم إرسال الفاتورة المبدئية للطباعة" });
   };
 
@@ -1216,6 +1222,26 @@ export default function POSSystem() {
                   </Button>
                 )}
                 
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowLiveOrders(true)} 
+                  className="text-xs sm:text-sm"
+                >
+                  <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
+                  <span className="hidden sm:inline">الطلبات</span>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.open(window.location.href, '_blank')} 
+                  className="text-xs sm:text-sm"
+                >
+                  <SplitSquareVertical className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
+                  <span className="hidden sm:inline">فصل</span>
+                </Button>
+
                 <Badge 
                   variant={posConnected ? "default" : "secondary"} 
                   className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
@@ -2136,6 +2162,72 @@ export default function POSSystem() {
               تطبيق الخصم
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLiveOrders} onOpenChange={setShowLiveOrders}>
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-6 h-6 text-primary" />
+              إدارة الطلبات المباشرة
+            </DialogTitle>
+            <DialogDescription>
+              متابعة وتحكم في الطلبات النشطة في النظام
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1 mt-4">
+            <div className="space-y-4 pr-4">
+              {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').map((order: any) => (
+                <Card key={order.id || order._id} className="overflow-hidden border-primary/10">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="text-lg font-bold px-3 py-1">
+                          #{order.orderNumber}
+                        </Badge>
+                        <div>
+                          <p className="font-bold text-foreground">{order.customerInfo?.customerName || "عميل"}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleTimeString('ar-SA')}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={order.status === 'pending' ? 'destructive' : 'default'}>
+                          {order.status === 'pending' ? 'في الانتظار' : order.status}
+                        </Badge>
+                        <p className="font-bold text-primary">{Number(order.totalAmount).toFixed(2)} ر.س</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Button size="sm" variant="outline" onClick={async () => {
+                        await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "in_progress" });
+                        queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+                      }}>
+                        تجهيز
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={async () => {
+                        await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "ready" });
+                        queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+                      }}>
+                        جاهز
+                      </Button>
+                      <Button size="sm" onClick={async () => {
+                        await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "completed" });
+                        queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+                      }}>
+                        إكمال
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length === 0 && (
+                <EmptyState title="لا توجد طلبات نشطة" description="ستظهر الطلبات الجديدة هنا تلقائياً" />
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
