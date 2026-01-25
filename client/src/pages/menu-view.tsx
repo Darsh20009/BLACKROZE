@@ -373,7 +373,7 @@ export default function MenuView() {
  {/* QR Code Section */}
  <div className="flex flex-col justify-center space-y-6">
  <QRCodeComponent 
- url="https://qahwa.ma3k.online"
+ url="https://www.cluny.cafe"
  size="lg"
  title="امسح للطلب"
  className="w-full"
@@ -440,7 +440,7 @@ export default function MenuView() {
  </div>
  
  <QRCodeComponent 
- url="https://qahwa.ma3k.online"
+ url="https://www.cluny.cafe"
  size="lg"
  title="امسح للطلب"
  className="w-full"
@@ -514,7 +514,7 @@ export default function MenuView() {
  {/* Sidebar with QR Code */}
  <div className="lg:col-span-1 flex flex-col justify-center space-y-8">
  <QRCodeComponent 
- url="https://qahwa.ma3k.online"
+ url="https://www.cluny.cafe"
  size="lg"
  title="امسح للطلب الآن"
  className="w-full"
@@ -568,7 +568,7 @@ export default function MenuView() {
  <div className="text-center space-y-3 md:space-y-6 p-2 md:p-4">
  <div className="bg-white rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-xl">
  <QRCodeComponent 
- url="https://qahwa.ma3k.online"
+ url="https://www.cluny.cafe"
  size="lg"
  title="امسح للطلب"
  showURL={false}
