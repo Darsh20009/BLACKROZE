@@ -123,6 +123,37 @@ export default function POSSystem() {
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerPoints, setCustomerPoints] = useState(0);
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
+  const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
+  const [showTableSelect, setShowTableSelect] = useState(false);
+  const [isSplitView, setIsSplitView] = useState(false);
+
+  // Use subtotal calculated from orderItems
+  const calculateSubtotal = useCallback(() => {
+    return orderItems.reduce((sum, item) => {
+      const basePrice = Number(item.coffeeItem?.price || 0);
+      const addonsPrice = item.customization?.totalAddonsPrice || 0;
+      return sum + ((basePrice + addonsPrice) * item.quantity);
+    }, 0);
+  }, [orderItems]);
+
+  const calculateCodeDiscount = useCallback(() => {
+    if (!appliedDiscount) return 0;
+    return calculateSubtotal() * (appliedDiscount.percentage / 100);
+  }, [calculateSubtotal, appliedDiscount]);
+
+  const calculateInvoiceDiscount = useCallback(() => {
+    const subtotal = calculateSubtotal();
+    if (invoiceDiscountType === 'fixed') return invoiceDiscount;
+    return subtotal * (invoiceDiscount / 100);
+  }, [calculateSubtotal, invoiceDiscount, invoiceDiscountType]);
+
+  const calculateTotal = useCallback(() => {
+    const subtotal = calculateSubtotal();
+    const codeDiscount = calculateCodeDiscount();
+    const invDiscount = calculateInvoiceDiscount();
+    return (subtotal - codeDiscount - invDiscount).toFixed(2);
+  }, [calculateSubtotal, calculateCodeDiscount, calculateInvoiceDiscount]);
+
   const [tableNumber, setTableNumber] = useState("");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
