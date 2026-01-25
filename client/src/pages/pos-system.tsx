@@ -167,37 +167,10 @@ export default function POSSystem() {
     }
   }, [isOnline]);
   
-  const [orderType, setOrderType] = useState<OrderType>("dine_in");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  const [parkedOrders, setParkedOrders] = useState<ParkedOrder[]>([]);
-  const [showParkedOrders, setShowParkedOrders] = useState(false);
-  const [parkOrderNote, setParkOrderNote] = useState("");
-  const [showParkDialog, setShowParkDialog] = useState(false);
-  const [editingParkedOrder, setEditingParkedOrder] = useState<ParkedOrder | null>(null);
-  
-  const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<{code: string, percentage: number, reason: string} | null>(null);
-  const [invoiceDiscount, setInvoiceDiscount] = useState(0);
-  const [invoiceDiscountType, setInvoiceDiscountType] = useState<'fixed' | 'percentage'>('fixed');
-  const [showDiscountDialog, setShowDiscountDialog] = useState(false);
-  const [itemDiscountId, setItemDiscountId] = useState<string | null>(null);
-  const [itemDiscountAmount, setItemDiscountAmount] = useState(0);
-  const [itemDiscountType, setItemDiscountType] = useState<'fixed' | 'percentage'>('fixed');
-  
-  const [showSplitPayment, setShowSplitPayment] = useState(false);
-  const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
-  const [currentSplitAmount, setCurrentSplitAmount] = useState(0);
-  const [currentSplitMethod, setCurrentSplitMethod] = useState<PaymentMethod>("cash");
-  
-  const [posConnected, setPosConnected] = useState(false);
-  const [cashDrawerOpen, setCashDrawerOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<number>(() => {
-    const saved = localStorage.getItem('lastSyncTime');
-    return saved ? parseInt(saved) : Date.now();
-  });
+  const [showTableSelect, setShowTableSelect] = useState(false);
+  const [isSplitView, setIsSplitView] = useState(false);
+
+  // Background sync logic
 
   // Background Sync Logic (Outbox Pattern)
   useEffect(() => {
@@ -470,8 +443,7 @@ export default function POSSystem() {
       if (!res.ok) return [];
       const data = await res.json();
       return data.filter((t: TableData) => 
-        (t.isActive === true || t.isActive === 1) && 
-        (t.isOccupied === false || t.isOccupied === 0)
+        (t.isActive === true || t.isActive === 1)
       );
     },
     staleTime: 1000 * 30, // Refresh every 30 seconds

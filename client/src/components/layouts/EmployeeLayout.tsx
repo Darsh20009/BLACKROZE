@@ -58,6 +58,8 @@ export function EmployeeLayout({
     }
   }, []);
 
+  const [isSplitView, setIsSplitView] = useState(false);
+
   const handleLogout = () => {
     localStorage.removeItem("currentEmployee");
     setLocation("/employee/gateway");
@@ -156,6 +158,16 @@ export function EmployeeLayout({
         <div className="flex flex-col flex-1 min-w-0">
           <header className="sticky top-0 z-50 flex h-14 items-center justify-between gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSplitView(!isSplitView)}
+                className="hidden lg:flex gap-2"
+                data-testid="button-toggle-split"
+              >
+                <SplitSquareVertical className="h-4 w-4" />
+                {isSplitView ? "عرض كامل" : "شاشة مقسمة"}
+              </Button>
               {showBack ? (
                 <Button 
                   asChild 
@@ -186,8 +198,27 @@ export function EmployeeLayout({
             )}
           </header>
 
-          <main className="flex-1 overflow-auto">
-            {children}
+          <main className="flex-1 overflow-hidden">
+            {isSplitView ? (
+              <div className="flex h-full w-full divide-x divide-x-reverse">
+                <div className="w-1/2 overflow-auto">
+                  {children}
+                </div>
+                <div className="w-1/2 overflow-auto bg-muted/30">
+                  <div className="p-4">
+                    <iframe 
+                      src="/employee/orders" 
+                      className="w-full h-[calc(100vh-8rem)] border-none rounded-lg shadow-sm bg-background"
+                      title="Order Management"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full overflow-auto">
+                {children}
+              </div>
+            )}
           </main>
         </div>
       </div>

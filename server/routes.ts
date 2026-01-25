@@ -428,7 +428,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/settings/order-suspension", async (req, res) => {
     const tenantId = (req as any).employee?.tenantId || 'demo-tenant';
     const status = orderSuspensionStore[tenantId] || { suspended: false };
+    
+    // Check branch-specific maintenance mode as well
+    const branchId = (req as any).employee?.branchId;
+    if (branchId) {
+      const branch = await storage.getBranch(branchId);
+      if (branch?.isMaintenanceMode) {
+        return res.json({ suspended: true, reason: 'صيانة الفرع' });
+      }
+    }
+    
     res.json(status);
+  });
+
+  app.post("/api/settings/branch-maintenance", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    const branchId = req.employee?.branchId;
+    if (!branchId) return res.status(400).json({ error: "Branch ID required" });
+    
+    const { suspended } = req.body;
+    const updated = await storage.updateBranchMaintenance(branchId, !!suspended);
+    res.json(updated);
   });
 
   app.post("/api/settings/order-suspension", requireAuth, requireManager, async (req: AuthRequest, res) => {

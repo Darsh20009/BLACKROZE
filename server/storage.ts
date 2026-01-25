@@ -171,6 +171,7 @@ export interface IStorage {
   getBranch(id: string): Promise<IBranch | null>;
   createBranch(branch: Partial<IBranch>): Promise<IBranch>;
   updateBranch(id: string, branch: Partial<IBranch>): Promise<IBranch | null>;
+  updateBranchMaintenance(branchId: string, isMaintenance: boolean): Promise<IBranch | null>;
 
   getCustomer(id: string): Promise<Customer | undefined>;
   getCustomerByPhone(phone: string): Promise<Customer | undefined>;

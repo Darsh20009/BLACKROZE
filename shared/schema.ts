@@ -573,6 +573,7 @@ export interface IBranch extends Document {
   managerName?: string;
   managerId?: string;
   isMainBranch: boolean;
+  isMaintenanceMode: boolean;
   printSettings?: {
     headerText?: string;
     footerText?: string;
@@ -603,6 +604,7 @@ const BranchSchema = new Schema<IBranch>({
   isActive: { type: Schema.Types.Mixed, default: true },
   managerName: { type: String },
   managerId: { type: String },
+  isMaintenanceMode: { type: Boolean, default: false },
   lateThresholdMinutes: { type: Number, default: 15 }, // الافتراضي 15 دقيقة
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: false });
