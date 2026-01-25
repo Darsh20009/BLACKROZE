@@ -126,81 +126,17 @@ export default function POSSystem() {
   const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
   const [showTableSelect, setShowTableSelect] = useState(false);
   const [isSplitView, setIsSplitView] = useState(false);
-
-  // Use subtotal calculated from orderItems
-  const calculateSubtotal = useCallback(() => {
-    return orderItems.reduce((sum, item) => {
-      const basePrice = Number(item.coffeeItem?.price || 0);
-      const addonsPrice = item.customization?.totalAddonsPrice || 0;
-      return sum + ((basePrice + addonsPrice) * item.quantity);
-    }, 0);
-  }, [orderItems]);
-
-  const calculateCodeDiscount = useCallback(() => {
-    if (!appliedDiscount) return 0;
-    return calculateSubtotal() * (appliedDiscount.percentage / 100);
-  }, [calculateSubtotal, appliedDiscount]);
-
-  const calculateInvoiceDiscount = useCallback(() => {
-    const subtotal = calculateSubtotal();
-    if (invoiceDiscountType === 'fixed') return invoiceDiscount;
-    return subtotal * (invoiceDiscount / 100);
-  }, [calculateSubtotal, invoiceDiscount, invoiceDiscountType]);
-
-  const calculateTotal = useCallback(() => {
-    const subtotal = calculateSubtotal();
-    const codeDiscount = calculateCodeDiscount();
-    const invDiscount = calculateInvoiceDiscount();
-    return (subtotal - codeDiscount - invDiscount).toFixed(2);
-  }, [calculateSubtotal, calculateCodeDiscount, calculateInvoiceDiscount]);
-
-  const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
-  const [showTableSelect, setShowTableSelect] = useState(false);
-  const [isSplitView, setIsSplitView] = useState(false);
-
-  // Background sync logic
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Removed duplicate useEffect block
-
-      const syncQueue = async () => {
-        const pendingItems = await db.syncQueue.where('status').equals('pending').toArray();
-        for (const item of pendingItems) {
-          try {
-            await db.syncQueue.update(item.id!, { status: 'processing' });
-            if (item.type === 'CREATE_ORDER') {
-              const res = await apiRequest("POST", "/api/orders", item.payload);
-              if (res.ok) {
-                await db.syncQueue.delete(item.id!);
-              } else {
-                await db.syncQueue.update(item.id!, { status: 'failed' });
-              }
-            }
-          } catch (err) {
-            await db.syncQueue.update(item.id!, { 
-              status: 'pending', 
-              retryCount: (item.retryCount || 0) + 1 
-            });
-          }
-        }
-      };
-      const interval = setInterval(syncQueue, 30000);
-      syncQueue();
-      return () => clearInterval(interval);
-    }
-  }, [isOnline]);
-  
-  const [showTableSelect, setShowTableSelect] = useState(false);
-  const [isSplitView, setIsSplitView] = useState(false);
+  const [tableNumber, setTableNumber] = useState("");
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+  const [posConnected, setPosConnected] = useState(true);
+  const [parkedOrders, setParkedOrders] = useState<ParkedOrder[]>([]);
+  const [invoiceDiscount, setInvoiceDiscount] = useState(0);
+  const [invoiceDiscountType, setInvoiceDiscountType] = useState<'fixed' | 'percentage'>('percentage');
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentage: number; reason: string } | null>(null);
+  const [showSplitPayment, setShowSplitPayment] = useState(false);
+  const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
 
   // Background sync logic
 
@@ -1466,23 +1402,27 @@ export default function POSSystem() {
                         data-testid="input-customer-name"
                       />
                     </div>
-                    <Select value={tableNumber} onValueChange={setTableNumber}>
-                      <SelectTrigger className="rounded-lg" data-testid="select-table">
-                        <Table2 className="w-4 h-4 ml-2 text-muted-foreground" />
-                        <SelectValue placeholder="اختر طاولة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">بدون طاولة</SelectItem>
-                        {tablesData.map((table) => (
-                          <SelectItem 
-                            key={table.id || table._id} 
-                            value={table.tableNumber}
-                          >
-                            طاولة {table.tableNumber} ({table.capacity} مقاعد)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Select value={tableNumber} onValueChange={(val) => {
+                        setTableNumber(val);
+                        const table = tablesData.find(t => t.tableNumber === val);
+                        if (table) setSelectedTable(table);
+                      }}>
+                        <SelectTrigger className="rounded-lg" data-testid="select-table">
+                          <Table2 className="w-4 h-4 ml-2 text-muted-foreground" />
+                          <SelectValue placeholder="اختر طاولة" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">بدون طاولة</SelectItem>
+                          {tablesData.map((table) => (
+                            <SelectItem 
+                              key={table.id || table._id} 
+                              value={table.tableNumber}
+                            >
+                              طاولة {table.tableNumber} ({table.capacity || table.seats} مقاعد)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                   </div>
                   
                   {loyaltyCard && (
