@@ -1052,6 +1052,7 @@ export default function POSSystem() {
     }
 
     const orderStatus = typeof statusArg === 'string' ? statusArg : "in_progress";
+    const isTableOpen = (tableId || tableNumber) && orderStatus === "pending";
 
     const orderData = {
       items: orderItems.map(item => ({
@@ -1066,8 +1067,8 @@ export default function POSSystem() {
         } : undefined
       })),
       totalAmount: calculateTotal(),
-      paymentMethod: orderStatus === "active_tab" ? "on_account" : (showSplitPayment ? "split" : paymentMethod),
-      splitPayments: (orderStatus !== "active_tab" && showSplitPayment) ? splitPayments : undefined,
+      paymentMethod: isTableOpen ? "cash" : (showSplitPayment ? "split" : paymentMethod),
+      splitPayments: (!isTableOpen && showSplitPayment) ? splitPayments : undefined,
       customerInfo: {
         customerName: customerName || "عميل",
         phoneNumber: customerPhone || undefined,
@@ -1076,14 +1077,15 @@ export default function POSSystem() {
       customerId: customerId || undefined,
       employeeId: employee?.id,
       branchId: employee.branchId,
-      orderType: orderType,
+      orderType: (tableId || tableNumber) ? 'dine-in' : orderType,
       tableNumber: tableNumber || undefined,
+      tableId: selectedTable?.id || selectedTable?._id || undefined,
       discountCode: appliedDiscount?.code,
       invoiceDiscount: calculateInvoiceDiscount() > 0 ? calculateInvoiceDiscount() : undefined,
-      usedFreeDrinks: (orderStatus !== "active_tab" && (paymentMethod === 'qahwa-card' || (showSplitPayment && splitPayments.some(p => p.method === 'qahwa-card')))) ? usedFreeDrinks : 0,
-      status: orderStatus === "active_tab" ? "pending" : "in_progress",
-      tableStatus: orderStatus === "active_tab" ? "active_tab" : "pending",
-      isOpenTab: orderStatus === "active_tab"
+      usedFreeDrinks: (!isTableOpen && (paymentMethod === 'qahwa-card' || (showSplitPayment && splitPayments.some(p => p.method === 'qahwa-card')))) ? usedFreeDrinks : 0,
+      status: isTableOpen ? "open" : "in_progress",
+      tableStatus: isTableOpen ? "open" : "pending",
+      isOpenTab: isTableOpen
     };
 
     createOrderMutation.mutate(orderData);

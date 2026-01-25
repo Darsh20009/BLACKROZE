@@ -3107,65 +3107,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create order
-      // For non-admin/owner roles, ALWAYS use the employee's branchId (ignore provided branchId)
-      // This prevents cross-branch order creation
-      let finalBranchId: string | undefined;
-      
-      if (req.employee) {
-        if (req.employee.role === "admin" || req.employee.role === "owner") {
-          // Admin/owner can specify any branch or use their own
-          finalBranchId = branchId || req.employee.branchId;
+      // Update or create order
+      let order;
+      if (tableId && (orderType === 'table' || orderType === 'dine-in')) {
+        // Look for an existing 'open' order for this table
+        const existingOrder = await OrderModel.findOne({ 
+          tableId, 
+          status: 'open',
+          branchId: finalBranchId 
+        });
+
+        if (existingOrder) {
+          // Add new items to existing order
+          existingOrder.items = [...(existingOrder.items || []), ...processedItems];
+          existingOrder.totalAmount += Number(totalAmount);
+          existingOrder.updatedAt = new Date();
+          order = await existingOrder.save();
         } else {
-          // All other employee roles MUST use their assigned branch
-          finalBranchId = req.employee.branchId;
-          if (branchId && branchId !== finalBranchId) {
-          }
+          const orderData: any = {
+            orderNumber: `T-${nanoid(6).toUpperCase()}`,
+            items: processedItems,
+            totalAmount: Number(totalAmount),
+            paymentMethod: paymentMethod || 'cash',
+            status: 'open',
+            tableStatus: 'open',
+            orderType: 'table',
+            tableId,
+            tableNumber,
+            branchId: finalBranchId,
+            employeeId: req.employee?.id || null,
+            customerInfo: customerInfo || { 
+              customerName: finalCustomerName, 
+              phoneNumber: req.body.customerPhone || "", 
+              customerEmail: req.body.customerEmail || "" 
+            },
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          order = await storage.createOrder(orderData);
+          
+          // Update table status
+          await storage.updateTableOccupancy(tableId, true, order.id);
         }
       } else {
-        // For customer orders, use provided branchId or fall back to a default branch if none provided
-        finalBranchId = branchId;
-        
-        if (!finalBranchId) {
-          const branches = await storage.getBranches();
-          if (branches.length > 0) {
-            finalBranchId = branches[0].id;
+        const orderData: any = {
+          customerId: finalCustomerId || null,
+          totalAmount: Number(totalAmount),
+          paymentMethod,
+          paymentDetails: paymentDetails || "",
+          paymentReceiptUrl: paymentReceiptUrl || null,
+          customerInfo: customerInfo || { 
+            customerName: finalCustomerName, 
+            phoneNumber: req.body.customerPhone || "", 
+            customerEmail: req.body.customerEmail || "" 
+          },
+          customerNotes: customerNotes || req.body.notes || "",
+          discountCode: discountCode || null,
+          discountPercentage: discountPercentage ? Number(discountPercentage) : 0,
+          deliveryType: deliveryType || null,
+          deliveryAddress: deliveryAddress || null,
+          deliveryFee: deliveryFee ? Number(deliveryFee) : 0,
+          branchId: finalBranchId,
+          employeeId: req.employee?.id || null,
+          createdBy: req.employee?.username || 'system',
+          tableNumber: tableNumber || null,
+          tableId: tableId || null,
+          orderType: orderType || (tableNumber || tableId ? 'dine-in' : 'regular'),
+          items: processedItems
+        };
+        order = await storage.createOrder(orderData);
+      }
+
+      // Finalize (Pay) Open Table Order
+      app.post("/api/orders/:id/finalize", requireAuth, async (req: AuthRequest, res) => {
+        try {
+          const { paymentMethod, paymentDetails } = req.body;
+          const order = await OrderModel.findById(req.params.id);
+          
+          if (!order) return res.status(404).json({ error: "Order not found" });
+          if (order.status !== 'open') return res.status(400).json({ error: "Order is not open" });
+
+          order.status = 'payment_confirmed';
+          order.tableStatus = 'payment_confirmed';
+          order.paymentMethod = paymentMethod;
+          order.paymentDetails = paymentDetails;
+          order.updatedAt = new Date();
+          await order.save();
+
+          // Free up the table
+          if (order.tableId) {
+            await storage.updateTableOccupancy(order.tableId, false, null);
           }
+
+          res.json(serializeDoc(order));
+        } catch (error) {
+          res.status(500).json({ error: "Failed to finalize order" });
         }
-      }
-
-      // Require branchId for all orders
-      if (!finalBranchId) {
-        return res.status(400).json({ error: "Branch ID is required for creating orders" });
-      }
-
-      const orderData: any = {
-        customerId: finalCustomerId || null,
-        totalAmount: Number(totalAmount),
-        paymentMethod,
-        paymentDetails: paymentDetails || "",
-        paymentReceiptUrl: paymentReceiptUrl || null,
-        customerInfo: customerInfo || { 
-          customerName: finalCustomerName, 
-          phoneNumber: req.body.customerPhone || "", 
-          customerEmail: req.body.customerEmail || "" 
-        },
-        customerNotes: customerNotes || req.body.notes || "",
-        discountCode: discountCode || null,
-        discountPercentage: discountPercentage ? Number(discountPercentage) : 0,
-        deliveryType: deliveryType || null,
-        deliveryAddress: deliveryAddress || null,
-        deliveryFee: deliveryFee ? Number(deliveryFee) : 0,
-        branchId: finalBranchId,
-        employeeId: req.employee?.id || null,
-        createdBy: req.employee?.username || 'system',
-        tableNumber: tableNumber || null,
-        tableId: tableId || null,
-        orderType: orderType || (tableNumber || tableId ? 'dine-in' : 'regular'),
-        items: processedItems
-      };
-
-      console.log("[ORDERS] Final order data for storage:", JSON.stringify(orderData));
-      const order = await storage.createOrder(orderData);
+      });
 
       // Send initial order email notification
       const initialCustomerInfo = typeof order.customerInfo === 'string' ? JSON.parse(order.customerInfo) : order.customerInfo;

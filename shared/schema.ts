@@ -640,8 +640,8 @@ export interface IOrder extends Document {
   paymentMethod: string;
   paymentDetails?: string;
   paymentReceiptUrl?: string;
-  status: string;
-  tableStatus?: 'pending' | 'payment_confirmed' | 'preparing' | 'delivering_to_table' | 'delivered' | 'cancelled';
+  status: string; // 'pending', 'payment_confirmed', 'completed', 'cancelled', 'open'
+  tableStatus?: 'pending' | 'payment_confirmed' | 'preparing' | 'delivering_to_table' | 'delivered' | 'cancelled' | 'open';
   orderType?: 'regular' | 'table' | 'dine_in' | 'dine-in';
   customerInfo?: any;
   customerId?: string;
