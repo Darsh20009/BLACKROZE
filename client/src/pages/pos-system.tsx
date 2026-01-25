@@ -118,6 +118,7 @@ export default function POSSystem() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [orderType, setOrderType] = useState<OrderType>("dine_in");
+  const [employee, setEmployee] = useState<Employee | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
