@@ -322,7 +322,7 @@ function App() {
   const [isEmployee, setIsEmployee] = useState(false);
 
   useEffect(() => {
-    const employeePaths = ['/employee', '/manager', '/kitchen', '/pos', '/cashier', '/admin', '/owner', '/executive'];
+    const employeePaths = ['/employee', '/manager', '/kitchen', '/pos', '/cashier', '/admin', '/owner', '/executive', '/0'];
     const currentPath = window.location.pathname;
     const isEmployeePath = employeePaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
     setIsEmployee(isEmployeePath);
@@ -331,6 +331,11 @@ function App() {
     const manifestTag = document.getElementById('manifest-tag') as HTMLLinkElement;
     if (manifestTag) {
       manifestTag.href = isEmployeePath ? '/employee-manifest.json' : '/manifest.json';
+    }
+
+    // Redirect employee from customer root if they are on employee system
+    if (isEmployeePath && currentPath === '/') {
+      window.location.href = '/employee';
     }
   }, []);
 
