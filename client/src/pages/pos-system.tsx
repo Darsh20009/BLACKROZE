@@ -1868,12 +1868,12 @@ export default function POSSystem() {
                   </Button>
                   <Button 
                     className="h-14 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                    onClick={() => handleSubmitOrder(tableNumber && tableNumber !== "none" ? "active_tab" : "in_progress")}
+                    onClick={() => handleSubmitOrder("pending")}
                     disabled={orderItems.length === 0 || isOrdersSuspended}
                     data-testid="button-submit-order"
                   >
                     <CheckCircle className="w-5 h-5" />
-                    {tableNumber && tableNumber !== "none" ? "فتح طاولة" : "إرسال للمطبخ"}
+                    {(tableNumber && tableNumber !== "none") ? "إرسال للمطبخ" : "إرسال للمطبخ"}
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 gap-3 mt-3">
