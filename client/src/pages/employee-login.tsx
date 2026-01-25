@@ -21,8 +21,18 @@ export default function EmployeeLogin() {
 
   const [rememberMe, setRememberMe] = useState(true);
 
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
   useEffect(() => {
     document.title = "تسجيل دخول الموظفين - CLUNY SYSTEMS";
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
     // Auto-login if session exists
     const stored = localStorage.getItem("currentEmployee");
     if (stored) {
@@ -34,6 +44,10 @@ export default function EmployeeLogin() {
         }
       } catch (e) {}
     }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   const loginMutation = useMutation({
@@ -283,7 +297,7 @@ export default function EmployeeLogin() {
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => {
+                      onClick={async () => {
                         const manifestTag = document.getElementById('main-manifest') as HTMLLinkElement;
                         if (manifestTag) manifestTag.href = '/employee-manifest.json';
                         
@@ -292,13 +306,19 @@ export default function EmployeeLogin() {
                         newManifest.href = '/employee-manifest.json?v=' + Date.now();
                         manifestTag.parentNode?.replaceChild(newManifest, manifestTag);
 
-                        window.dispatchEvent(new Event('beforeinstallprompt'));
-                        
-                        const ua = navigator.userAgent.toLowerCase();
-                        if (/iphone|ipad|ipod/.test(ua)) {
-                          alert("لتثبيت النظام على iPhone: اضغط على زر 'مشاركة' ثم 'إضافة إلى الشاشة الرئيسية'");
+                        if (deferredPrompt) {
+                          deferredPrompt.prompt();
+                          const { outcome } = await deferredPrompt.userChoice;
+                          if (outcome === 'accepted') {
+                            setDeferredPrompt(null);
+                          }
                         } else {
-                          alert("لتثبيت النظام: اضغط على القائمة (⋮) ثم 'تثبيت التطبيق'");
+                          const ua = navigator.userAgent.toLowerCase();
+                          if (/iphone|ipad|ipod/.test(ua)) {
+                            alert("لتثبيت النظام على iPhone: اضغط على زر 'مشاركة' ثم 'إضافة إلى الشاشة الرئيسية'");
+                          } else {
+                            alert("لتثبيت النظام: اضغط على القائمة (⋮) ثم 'تثبيت التطبيق'");
+                          }
                         }
                       }}
                       className="w-full text-primary font-bold hover:bg-primary/5"

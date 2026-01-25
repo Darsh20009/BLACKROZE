@@ -9,17 +9,29 @@ export default function EmployeeSplash() {
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(true);
 
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
   useEffect(() => {
     // Set metadata for employee splash
     document.title = "نظام الموظفين - CLUNY SYSTEMS | نظام إدارة متكامل";
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', 'نظام إدارة الموظفين والعمليات في CLUNY SYSTEMS - نظام متكامل لإدارة الطلبات والمبيعات');
 
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   return (
@@ -98,7 +110,7 @@ export default function EmployeeSplash() {
             <Button 
               variant="outline"
               size="lg"
-              onClick={() => {
+              onClick={async () => {
                 const manifestTag = document.getElementById('main-manifest') as HTMLLinkElement;
                 if (manifestTag) manifestTag.href = '/employee-manifest.json';
                 
@@ -107,14 +119,19 @@ export default function EmployeeSplash() {
                 newManifest.href = '/employee-manifest.json?v=' + Date.now();
                 manifestTag.parentNode?.replaceChild(newManifest, manifestTag);
 
-                // Trigger PWA prompt instructions if automatic prompt doesn't show
-                window.dispatchEvent(new Event('beforeinstallprompt'));
-                
-                const ua = navigator.userAgent.toLowerCase();
-                if (/iphone|ipad|ipod/.test(ua)) {
-                  alert("لتثبيت النظام على iPhone: اضغط على زر 'مشاركة' ثم 'إضافة إلى الشاشة الرئيسية'");
+                if (deferredPrompt) {
+                  deferredPrompt.prompt();
+                  const { outcome } = await deferredPrompt.userChoice;
+                  if (outcome === 'accepted') {
+                    setDeferredPrompt(null);
+                  }
                 } else {
-                  alert("لتثبيت النظام: اضغط على القائمة (⋮) ثم 'تثبيت التطبيق'");
+                  const ua = navigator.userAgent.toLowerCase();
+                  if (/iphone|ipad|ipod/.test(ua)) {
+                    alert("لتثبيت النظام على iPhone: اضغط على زر 'مشاركة' ثم 'إضافة إلى الشاشة الرئيسية'");
+                  } else {
+                    alert("لتثبيت النظام: اضغط على القائمة (⋮) ثم 'تثبيت التطبيق'");
+                  }
                 }
               }}
               className="border-primary/20 text-primary font-bold h-14 rounded-2xl hover-elevate"
