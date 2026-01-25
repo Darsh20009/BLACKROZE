@@ -154,9 +154,11 @@ export default function POSSystem() {
     return (subtotal - codeDiscount - invDiscount).toFixed(2);
   }, [calculateSubtotal, calculateCodeDiscount, calculateInvoiceDiscount]);
 
-  const [tableNumber, setTableNumber] = useState("");
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
+  const [showTableSelect, setShowTableSelect] = useState(false);
+  const [isSplitView, setIsSplitView] = useState(false);
 
+  // Background sync logic
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -168,9 +170,8 @@ export default function POSSystem() {
     };
   }, []);
 
-  // Background sync logic
-  useEffect(() => {
-    if (isOnline) {
+  // Removed duplicate useEffect block
+
       const syncQueue = async () => {
         const pendingItems = await db.syncQueue.where('status').equals('pending').toArray();
         for (const item of pendingItems) {
@@ -1477,7 +1478,7 @@ export default function POSSystem() {
                             key={table.id || table._id} 
                             value={table.tableNumber}
                           >
-                            طاولة {table.tableNumber} ({table.seats} مقاعد)
+                            طاولة {table.tableNumber} ({table.capacity} مقاعد)
                           </SelectItem>
                         ))}
                       </SelectContent>

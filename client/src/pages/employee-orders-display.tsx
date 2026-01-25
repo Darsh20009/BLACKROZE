@@ -136,6 +136,14 @@ export default function EmployeeOrdersDisplay() {
   const OrderCard = ({ order, statusSection }: { order: Order; statusSection: string }) => (
     <div className={`p-3 rounded-lg shadow-sm ${getOrderCardBg(statusSection)} hover:shadow-md transition-shadow min-w-0`}>
       <div className="text-center flex flex-col items-center justify-center overflow-hidden">
+        <div className="flex justify-between items-start w-full mb-1">
+          {order.tableNumber && (
+            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+              طاولة {order.tableNumber}
+            </Badge>
+          )}
+          <span className="text-[10px] text-muted-foreground">{new Date(order.createdAt || "").toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
         <p className="text-3xl sm:text-4xl font-bold text-gray-900 font-mono mb-1 truncate w-full">
           {getLastThreeDigits(order.orderNumber)}
         </p>
