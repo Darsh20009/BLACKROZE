@@ -3,11 +3,14 @@
 
 ---
 
-## 🎨 Rebranding Info (December 31, 2025)
+## 🎨 Rebranding Info (January 2026)
 - **Brand Name:** CLUNY CAFE (Customer) / CLUNY SYSTEMS (Employee)
-- **Primary Color:** #9FB2B3 (Muted Sage/Dusty Blue-Green)
+- **Primary Color:** #2D9B6E (Vibrant Teal Green) - Noon Food Style
+- **Accent Color:** #2196F3 (Ocean Blue)
+- **Background:** Pure White (#FFFFFF)
 - **Database:** MongoDB Atlas - CLUNY-CAFE Project
 - **Typography:** Playfair Display (headings) + Inter (body)
+- **Design Style:** Modern clean design inspired by Noon Food with rotating banner carousel
 
 ---
 
