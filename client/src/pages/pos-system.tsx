@@ -1035,7 +1035,7 @@ export default function POSSystem() {
     },
   });
 
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = (statusArg?: any) => {
     if (orderItems.length === 0) {
       toast({ title: "خطأ", description: "يرجى إضافة عناصر للطلب", variant: "destructive" });
       return;
@@ -1051,6 +1051,8 @@ export default function POSSystem() {
       return;
     }
 
+    const orderStatus = typeof statusArg === 'string' ? statusArg : "in_progress";
+
     const orderData = {
       items: orderItems.map(item => ({
         coffeeItemId: item.coffeeItem.id,
@@ -1064,8 +1066,8 @@ export default function POSSystem() {
         } : undefined
       })),
       totalAmount: calculateTotal(),
-      paymentMethod: showSplitPayment ? "split" : paymentMethod,
-      splitPayments: showSplitPayment ? splitPayments : undefined,
+      paymentMethod: orderStatus === "active_tab" ? "on_account" : (showSplitPayment ? "split" : paymentMethod),
+      splitPayments: (orderStatus !== "active_tab" && showSplitPayment) ? splitPayments : undefined,
       customerInfo: {
         customerName: customerName || "عميل",
         phoneNumber: customerPhone || undefined,
@@ -1078,11 +1080,28 @@ export default function POSSystem() {
       tableNumber: tableNumber || undefined,
       discountCode: appliedDiscount?.code,
       invoiceDiscount: calculateInvoiceDiscount() > 0 ? calculateInvoiceDiscount() : undefined,
-      usedFreeDrinks: (paymentMethod === 'qahwa-card' || (showSplitPayment && splitPayments.some(p => p.method === 'qahwa-card'))) ? usedFreeDrinks : 0,
-      status: "in_progress"
+      usedFreeDrinks: (orderStatus !== "active_tab" && (paymentMethod === 'qahwa-card' || (showSplitPayment && splitPayments.some(p => p.method === 'qahwa-card')))) ? usedFreeDrinks : 0,
+      status: orderStatus === "active_tab" ? "pending" : "in_progress",
+      tableStatus: orderStatus === "active_tab" ? "active_tab" : "pending",
+      isOpenTab: orderStatus === "active_tab"
     };
 
     createOrderMutation.mutate(orderData);
+  };
+
+  const handlePrintDraft = () => {
+    if (orderItems.length === 0) return;
+    const draftData = {
+      orderNumber: "DRAFT-" + Date.now().toString().slice(-6),
+      customerName: customerName || "عميل",
+      items: orderItems,
+      total: calculateTotal(),
+      tableNumber: tableNumber,
+      date: new Date().toISOString(),
+      isDraft: true
+    };
+    printSimpleReceipt(draftData);
+    toast({ title: "فاتورة مبدئية", description: "تم إرسال الفاتورة المبدئية للطباعة" });
   };
 
   if (!employee) {
@@ -1835,30 +1854,37 @@ export default function POSSystem() {
                         )}
                       </div>
 
-                      <Button
-                        className="w-full h-14 text-lg rounded-xl shadow-lg transition-all mt-4"
-                        size="lg"
-                        onClick={handleSubmitOrder}
-                        disabled={orderItems.length === 0 || createOrderMutation.isPending || (showSplitPayment && getRemainingAmount() > 0.01) || isOrdersSuspended}
-                        data-testid="button-submit-order"
-                      >
-                        {isOrdersSuspended ? (
-                          <>
-                            <Lock className="w-5 h-5 ml-2" />
-                            <span>الطلبات معلقة</span>
-                          </>
-                        ) : createOrderMutation.isPending ? (
-                          <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                        ) : (
-                          <CheckCircle className="w-5 h-5 ml-2" />
-                        )}
-                        {!isOrdersSuspended && (
-                          <>
-                            <span className="hidden sm:inline">تأكيد الطلب - {calculateTotal()} ر.س</span>
-                            <span className="sm:hidden">تأكيد - {calculateTotal()} ر.س</span>
-                          </>
-                        )}
-                      </Button>
+                <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-border">
+                  <Button 
+                    variant="outline" 
+                    className="h-14 text-lg font-bold rounded-xl flex items-center justify-center gap-2"
+                    onClick={handlePrintDraft}
+                    disabled={orderItems.length === 0 || isOrdersSuspended}
+                  >
+                    <Printer className="w-5 h-5" />
+                    فاتورة مبدئية
+                  </Button>
+                  <Button 
+                    className="h-14 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                    onClick={() => handleSubmitOrder(tableNumber && tableNumber !== "none" ? "active_tab" : "in_progress")}
+                    disabled={orderItems.length === 0 || isOrdersSuspended}
+                    data-testid="button-submit-order"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    {tableNumber && tableNumber !== "none" ? "فتح طاولة" : "إرسال للمطبخ"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 gap-3 mt-3">
+                  <Button 
+                    className="h-16 text-xl font-bold bg-accent hover:bg-accent/90 text-white rounded-xl flex items-center justify-center gap-3 shadow-xl shadow-accent/20 transition-all active:scale-[0.98]"
+                    onClick={() => handleSubmitOrder("in_progress")}
+                    disabled={orderItems.length === 0 || isOrdersSuspended}
+                    data-testid="button-checkout"
+                  >
+                    <CreditCard className="w-6 h-6" />
+                    دفع وإغلاق الفاتورة
+                  </Button>
+                </div>
                     </div>
                   </div>
                 )}
