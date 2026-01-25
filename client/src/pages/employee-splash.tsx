@@ -102,6 +102,11 @@ export default function EmployeeSplash() {
                 const manifestTag = document.getElementById('main-manifest') as HTMLLinkElement;
                 if (manifestTag) manifestTag.href = '/employee-manifest.json';
                 
+                // Force update for some browsers
+                const newManifest = manifestTag.cloneNode(true) as HTMLLinkElement;
+                newManifest.href = '/employee-manifest.json?v=' + Date.now();
+                manifestTag.parentNode?.replaceChild(newManifest, manifestTag);
+
                 // Trigger PWA prompt instructions if automatic prompt doesn't show
                 window.dispatchEvent(new Event('beforeinstallprompt'));
                 
