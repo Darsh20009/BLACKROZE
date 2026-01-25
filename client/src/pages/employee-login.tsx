@@ -8,7 +8,7 @@ import { User, Lock, Loader2, Eye, EyeOff, QrCode } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import clunyCafeLogo from "@assets/cluny_cafe_logo_1767095370460.png";
+import clunyLogoStaff from "@assets/cluny-logo-staff.png";
 
 export default function EmployeeLogin() {
   const [location, setLocation] = useLocation();
@@ -129,7 +129,7 @@ export default function EmployeeLogin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-40 h-28 mb-4">
-            <img src={clunyCafeLogo} alt="CLUNY CAFE" className="w-full h-full object-contain" />
+            <img src={clunyLogoStaff} alt="CLUNY SYSTEMS" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">CLUNY SYSTEMS</h1>
           <p className="text-muted-foreground font-cairo">تسجيل دخول الموظف</p>

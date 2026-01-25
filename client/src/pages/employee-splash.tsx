@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
-import clunyLogo from "@assets/cluny_cafe_logo_1767095370460.png";
+import clunyLogoStaff from "@assets/cluny-logo-staff.png";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();
@@ -10,9 +10,9 @@ export default function EmployeeSplash() {
 
   useEffect(() => {
     // Set metadata for employee splash
-    document.title = "نظام الموظفين - CLUNY CAFE | نظام إدارة متكامل";
+    document.title = "نظام الموظفين - CLUNY SYSTEMS | نظام إدارة متكامل";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'نظام إدارة الموظفين والعمليات في كافيه CLUNY - نظام متكامل لإدارة الطلبات والمبيعات');
+    if (metaDesc) metaDesc.setAttribute('content', 'نظام إدارة الموظفين والعمليات في CLUNY SYSTEMS - نظام متكامل لإدارة الطلبات والمبيعات');
 
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -63,8 +63,8 @@ export default function EmployeeSplash() {
         >
           <div className="relative w-48 h-48 flex items-center justify-center">
             <img
-              src={clunyLogo}
-              alt="CLUNY CAFE - نظام إدارة الموظفين"
+              src={clunyLogoStaff}
+              alt="CLUNY SYSTEMS - نظام إدارة الموظفين"
               className="w-full h-full object-contain rounded-2xl"
             />
           </div>

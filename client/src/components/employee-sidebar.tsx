@@ -2,7 +2,7 @@ import { useLocation } from 'wouter';
 import { LayoutDashboard, ShoppingCart, ClipboardList, Settings, LogOut, User, BarChart3, Warehouse, Wallet, ChefHat, Table, Eye, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Employee } from '@shared/schema';
-import clunyLogo from "@assets/cluny_cafe_logo_1767095370460.png";
+import clunyLogoStaff from "@assets/cluny-logo-staff.png";
 
 interface EmployeeSidebarProps {
   employee: Employee | null;
@@ -37,8 +37,8 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3 mb-2">
           <img 
-            src={clunyLogo} 
-            alt="CLUNY CAFE" 
+            src={clunyLogoStaff} 
+            alt="CLUNY SYSTEMS" 
             className="w-10 h-10 object-contain rounded-lg"
           />
           <div>

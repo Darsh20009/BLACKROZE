@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import { EmployeeSidebar } from "@/components/employee-sidebar";
 import html2canvas from "html2canvas";
-import clunyLogo from "@assets/cluny_cafe_logo_1767095370460.png";
+import clunyLogoStaff from "@assets/cluny-logo-staff.png";
 import type { Employee } from "@shared/schema";
 
 interface LeaveRequest {
@@ -51,9 +51,9 @@ export default function EmployeeDashboard() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = "لوحة تحكم الموظف - CLUNY CAFE | إدارة الطلبات";
+    document.title = "لوحة تحكم الموظف - CLUNY SYSTEMS | إدارة الطلبات";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الموظفين في CLUNY CAFE - تتبع الطلبات والإجازات والإشعارات');
+    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الموظفين في CLUNY SYSTEMS - تتبع الطلبات والإجازات والإشعارات');
   }, []);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
@@ -423,11 +423,11 @@ export default function EmployeeDashboard() {
                     <div className="bg-gradient-to-r from-primary via-primary to-primary/80 p-6 relative">
                       <div className="flex items-center justify-center gap-4 mb-2">
                         <div className="w-20 h-20 flex items-center justify-center shadow-lg rounded-lg">
-                          <img src={clunyLogo} alt="CLUNY CAFE Logo" className="w-full h-full object-contain rounded-lg" />
+                          <img src={clunyLogoStaff} alt="CLUNY SYSTEMS Logo" className="w-full h-full object-contain rounded-lg" />
                         </div>
                         <div className="text-white text-right">
-                          <h3 className="text-2xl font-bold">CLUNY CAFE</h3>
-                          <p className="text-white/80 text-xs">Qahwa Crib</p>
+                          <h3 className="text-2xl font-bold">CLUNY SYSTEMS</h3>
+                          <p className="text-white/80 text-xs">Staff Portal</p>
                         </div>
                       </div>
                       <div className="absolute top-2 left-4 text-white/20">
