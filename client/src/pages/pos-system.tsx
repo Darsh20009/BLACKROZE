@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { 
+  ClipboardList,
   Coffee, ShoppingBag, User, Phone, Trash2, Plus, Minus, ArrowRight, 
   Check, Search, X, Printer, MonitorSmartphone, 
   Wifi, WifiOff, FileText, CreditCard, Banknote, Smartphone,
@@ -206,8 +207,33 @@ export default function POSSystem() {
   }, [isOnline, syncing, queryClient]);
   const [syncingOffline, setSyncingOffline] = useState(false);
   
-  const [lastOrder, setLastOrder] = useState<any>(null);
-  const [showReceipt, setShowReceipt] = useState(false);
+  const [notificationAudio] = useState(new Audio("/notification.mp3"));
+  const [showLiveOrders, setShowLiveOrders] = useState(false);
+
+  // Fetch live orders for POS notification and control
+  const { data: liveOrders = [] } = useQuery<any[]>({
+    queryKey: ["/api/orders/live"],
+    queryFn: async () => {
+      const res = await fetch("/api/orders");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    refetchInterval: 5000,
+  });
+
+  // Track previous order count to play sound
+  const [prevOrderCount, setPrevOrderCount] = useState(0);
+  useEffect(() => {
+    if (liveOrders.length > prevOrderCount && prevOrderCount > 0) {
+      notificationAudio.play().catch(() => {});
+      toast({
+        title: "طلب جديد!",
+        description: "وصل طلب جديد إلى النظام",
+        className: "bg-primary text-primary-foreground",
+      });
+    }
+    setPrevOrderCount(liveOrders.length);
+  }, [liveOrders.length, prevOrderCount, notificationAudio, toast]);
   
   const [isCheckingCustomer, setIsCheckingCustomer] = useState(false);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
