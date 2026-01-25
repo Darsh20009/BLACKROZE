@@ -125,33 +125,33 @@ export default function MenuPage() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-background pb-24 font-sans overflow-x-hidden text-foreground">
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border px-4 h-14 flex items-center justify-between shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <img src={clunyLogo} className="w-9 h-9 rounded-xl border border-border" alt="Logo" />
+            <img src={clunyLogo} className="w-10 h-10 rounded-xl border-2 border-white/30 shadow-lg" alt="Logo" />
           </div>
           <div>
-            <h1 className="text-lg font-bold leading-none text-primary">CLUNY</h1>
-            <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">Premium Coffee</span>
+            <h1 className="text-lg font-bold leading-none text-white drop-shadow-md">CLUNY</h1>
+            <span className="text-[9px] text-white/80 font-medium uppercase tracking-wider">Premium Coffee</span>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
           <PWAInstallButton />
           {isAuthenticated && (
-            <Button variant="ghost" size="icon" onClick={() => setLocation("/my-card")} className="h-9 w-9 rounded-xl bg-primary/5">
-              <QrCode className="w-4 h-4 text-primary" />
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/my-card")} className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20">
+              <QrCode className="w-4 h-4 text-white" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/cart")} className="relative h-9 w-9 rounded-xl bg-primary/10">
-            <ShoppingCart className="w-4 h-4 text-primary" />
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/cart")} className="relative h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20">
+            <ShoppingCart className="w-4 h-4 text-white" />
             <AnimatePresence>
               {totalItems > 0 && (
                 <motion.span 
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-primary rounded-full"
+                  className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-primary rounded-full border-2 border-white/50"
                 >
                   {totalItems}
                 </motion.span>
@@ -169,17 +169,17 @@ export default function MenuPage() {
                 setLocation("/auth");
               }
             }} 
-            className="h-9 w-9 rounded-xl bg-secondary"
+            className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20"
             data-testid="button-user-profile"
           >
-            <User className="w-4 h-4 text-muted-foreground" />
+            <User className="w-4 h-4 text-white" />
           </Button>
         </div>
       </header>
 
       <main className="space-y-6">
         <div ref={bannerRef} className="relative w-full overflow-hidden">
-          <div className="relative h-[220px] sm:h-[260px] md:h-[300px]">
+          <div className="relative h-[280px] sm:h-[320px] md:h-[380px]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentBannerIndex}
