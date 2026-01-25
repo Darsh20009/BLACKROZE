@@ -26,11 +26,6 @@ export default function MenuPage() {
 
   const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
-    queryFn: async () => {
-      const res = await fetch("/api/coffee-items");
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    },
   });
 
   const { data: allAddons = [] } = useQuery<IProductAddon[]>({

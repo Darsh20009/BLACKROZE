@@ -1,22 +1,19 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Bell, Info } from "lucide-react";
+import { Download, Bell, Info, Share2, PlusSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent } from "@/components/ui/card";
+import clunyLogo from "@assets/cluny-logo-customer.png";
 
 export function PWAInstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const [showPrompt, setShowPrompt] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set initial notification permission
-    if ("Notification" in window) {
-      setNotificationPermission(Notification.permission);
-    }
-
     // Check if app is already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone) {
       setIsInstalled(true);
     }
 
@@ -24,137 +21,79 @@ export function PWAInstallButton() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-    };
-
-    // Listen for app installed event
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-      toast({
-        title: "تم التثبيت بنجاح",
-        description: "يمكنك فتح التطبيق من قائمة تطبيقاتك",
-      });
+      // Auto-show prompt after 3 seconds for new users
+      const timer = setTimeout(() => {
+        if (!isInstalled) setShowPrompt(true);
+      }, 3000);
+      return () => clearTimeout(timer);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, [toast]);
-
-  const getDeviceType = () => {
-    const ua = navigator.userAgent.toLowerCase();
-    if (/iphone|ipad|ipod/.test(ua)) return "ios";
-    if (/android/.test(ua)) return "android";
-    if (/mac os/.test(ua)) return "macos";
-    return "windows";
-  };
-
-  const requestAllPermissions = async () => {
-    try {
-      // Request notifications
-      if ("Notification" in window && Notification.permission === "default") {
-        const perm = await Notification.requestPermission();
-        setNotificationPermission(perm);
-        if (perm === "granted") {
-          toast({
-            title: "تم تفعيل الإشعارات",
-            description: "ستصلك إشعارات بحالة طلباتك",
-          });
-        }
-      }
-
-      // Request geolocation
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          () => {},
-          () => {},
-          { timeout: 3000 }
-        );
-      }
-    } catch (error) {
-      // Continue anyway
-    }
-  };
+  }, [isInstalled]);
 
   const handleInstall = async () => {
-    const deviceType = getDeviceType();
-
     if (deferredPrompt) {
-      try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === "accepted") {
-          setDeferredPrompt(null);
-          setIsInstalled(true);
-        }
-      } catch (error) {
-        console.error("PWA Installation failed:", error);
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setDeferredPrompt(null);
+        setShowPrompt(false);
+        setIsInstalled(true);
       }
     } else {
-      // Fallback for when deferredPrompt is not available (e.g., manually triggered or already shown)
-      if (deviceType === "ios" || deviceType === "macos") {
+      // Manual instructions based on UA
+      const ua = navigator.userAgent.toLowerCase();
+      if (/iphone|ipad|ipod/.test(ua)) {
         toast({
-          title: "تثبيت التطبيق على iPhone/iPad",
-          description: "اضغط على زر المشاركة (Share) في الأسفل ثم اختر 'إضافة إلى الشاشة الرئيسية' (Add to Home Screen)",
-        });
-      } else if (deviceType === "android") {
-        toast({
-          title: "تثبيت تطبيق أندرويد",
-          description: "اضغط على قائمة المتصفح (⋮) في الأعلى ثم اختر 'تثبيت التطبيق' (Install App)",
+          title: "تثبيت على iPhone",
+          description: "اضغط على أيقونة المشاركة (Share) ثم اختر 'إضافة إلى الشاشة الرئيسية'",
         });
       } else {
         toast({
           title: "تثبيت التطبيق",
-          description: deviceType === "windows" 
-            ? "اضغط على أيقونة التثبيت في شريط العنوان (Address Bar) لتثبيت نسخة EXE."
-            : "يرجى استخدام متصفح Chrome أو Safari لتثبيت التطبيق.",
+          description: "يمكنك تثبيت التطبيق من إعدادات المتصفح",
         });
       }
     }
   };
 
-  const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
-      toast({
-        title: "غير مدعوم",
-        description: "متصفحك لا يدعم الإشعارات",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (isInstalled || !showPrompt) return null;
 
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-    if (permission === "granted") {
-      toast({
-        title: "تم تفعيل الإشعارات",
-        description: "ستصلك تحديثات حول طلباتك",
-      });
-    } else {
-      toast({
-        title: "تم رفض الإشعارات",
-        description: "يمكنك تفعيلها من إعدادات المتصفح لاحقاً",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Only show install button if not already installed
-  if (isInstalled) {
-    return null;
-  }
-
-  const getButtonText = () => {
-    const deviceType = getDeviceType();
-    if (deviceType === "windows") return "تحميل نسخة اللابتوب (EXE)";
-    if (deviceType === "android") return "تثبيت تطبيق أندرويد";
-    if (deviceType === "ios") return "تثبيت على iPhone";
-    return "تثبيت التطبيق";
-  };
-
-  return null;
+  return (
+    <div className="fixed top-20 left-4 right-4 z-[100] animate-in fade-in slide-in-from-top-10 duration-700">
+      <Card className="border-primary/20 bg-background/95 backdrop-blur-md shadow-2xl overflow-hidden rounded-[2rem]">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-inner border border-primary/10 bg-white p-1">
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-black text-primary leading-tight">ثبت تطبيق كلووني</h3>
+              <p className="text-xs text-muted-foreground font-medium">استمتع بتجربة أسرع ووصول فوري</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button 
+                onClick={handleInstall}
+                className="rounded-xl h-10 px-6 font-bold bg-primary text-primary-foreground hover-elevate shadow-lg shadow-primary/20"
+              >
+                تثبيت الآن
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowPrompt(false)}
+                className="text-[10px] h-6 text-muted-foreground hover:bg-transparent"
+              >
+                ليس الآن
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
