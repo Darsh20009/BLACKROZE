@@ -301,11 +301,12 @@ export default function AdminEmployees() {
                           checked={formData.allowedPages?.includes(page.id)}
                           onChange={(e) => {
                             const pages = formData.allowedPages || [];
+                            const newPages = e.target.checked 
+                              ? [...pages, page.id] 
+                              : pages.filter(p => p !== page.id);
                             setFormData({
                               ...formData,
-                              allowedPages: e.target.checked 
-                                ? [...pages, page.id] 
-                                : pages.filter(p => p !== page.id)
+                              allowedPages: newPages
                             });
                           }}
                           className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
@@ -329,11 +330,12 @@ export default function AdminEmployees() {
                           checked={formData.permissions?.includes(perm.id)}
                           onChange={(e) => {
                             const perms = formData.permissions || [];
+                            const newPerms = e.target.checked 
+                              ? [...perms, perm.id] 
+                              : perms.filter(p => p !== perm.id);
                             setFormData({
                               ...formData,
-                              permissions: e.target.checked 
-                                ? [...perms, perm.id] 
-                                : perms.filter(p => p !== perm.id)
+                              permissions: newPerms
                             });
                           }}
                           className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
