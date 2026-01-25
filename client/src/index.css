@@ -34,54 +34,54 @@
   --elevate-2: rgba(0,0,0, .08);
 
   /* ═══════════════════════════════════════════════════════════════
-     🎨 CLUNY SAGE - Luxury Minimal Café Design System
-     Muted Sage / Dusty Blue-Green with Coffee Brown Accents
+     🎨 CLUNY CAFE - Modern Clean Design System
+     White Background with Green & Blue Accents (Noon Food Style)
      ═══════════════════════════════════════════════════════════════ */
   
-  /* Base Colors - Light Sage & Deep Charcoal */
-  --background: 165 15% 97%; /* Soft light background */
-  --foreground: 185 15% 25%; /* Deep text color */
-  --border: 165 12% 88%; /* Subtle sage border */
+  /* Base Colors - Pure White & Clean */
+  --background: 0 0% 100%; /* Pure white background */
+  --foreground: 220 20% 20%; /* Dark charcoal text */
+  --border: 220 10% 90%; /* Light gray border */
   --card: 0 0% 100%; /* Pure white cards */
-  --card-foreground: 185 15% 20%; /* Rich text */
-  --card-border: 165 10% 92%; /* Elegant border */
+  --card-foreground: 220 20% 15%; /* Rich dark text */
+  --card-border: 220 10% 92%; /* Subtle border */
 
-  /* Sidebar - Premium Sage Theme */
-  --sidebar: 175 18% 25%; /* Deep sage-charcoal */
-  --sidebar-foreground: 165 15% 95%; /* Light text */
-  --sidebar-border: 175 15% 30%; /* Subtle border */
-  --sidebar-primary: 165 22% 62%; /* Muted sage primary */
-  --sidebar-primary-foreground: 185 15% 15%; /* Dark text */
-  --sidebar-accent: 175 15% 35%; /* Elevated sage */
-  --sidebar-accent-foreground: 165 15% 92%; /* Light text */
-  --sidebar-ring: 165 22% 62%; /* Sage ring */
+  /* Sidebar - Deep Teal Theme */
+  --sidebar: 180 45% 20%; /* Deep teal */
+  --sidebar-foreground: 0 0% 98%; /* Light text */
+  --sidebar-border: 180 40% 25%; /* Subtle border */
+  --sidebar-primary: 160 55% 45%; /* Bright green primary */
+  --sidebar-primary-foreground: 0 0% 100%; /* White text */
+  --sidebar-accent: 180 35% 28%; /* Elevated teal */
+  --sidebar-accent-foreground: 0 0% 95%; /* Light text */
+  --sidebar-ring: 160 55% 45%; /* Green ring */
 
   /* Popover */
   --popover: 0 0% 100%; /* Pure white */
-  --popover-foreground: 185 15% 20%; /* Text */
-  --popover-border: 165 12% 88%; /* Subtle border */
+  --popover-foreground: 220 20% 15%; /* Text */
+  --popover-border: 220 10% 90%; /* Subtle border */
 
-  /* Primary - Muted Sage */
-  --primary: 165 22% 62%; /* #9FB2B3 Muted Sage */
-  --primary-foreground: 185 15% 15%; /* Dark text */
+  /* Primary - Vibrant Teal Green */
+  --primary: 160 55% 42%; /* #2D9B6E Vibrant Teal Green */
+  --primary-foreground: 0 0% 100%; /* White text */
 
-  /* Secondary - Light Sage */
-  --secondary: 165 15% 92%; /* Light background */
-  --secondary-foreground: 185 15% 30%; /* Text */
+  /* Secondary - Light Gray */
+  --secondary: 220 15% 96%; /* Light background */
+  --secondary-foreground: 220 20% 30%; /* Text */
 
-  /* Muted - Sage Gray */
-  --muted: 165 12% 50%; /* Professional muted */
-  --muted-foreground: 0 0% 100%; /* White text */
+  /* Muted - Gray */
+  --muted: 220 10% 50%; /* Professional muted */
+  --muted-foreground: 220 15% 45%; /* Gray text */
 
-  /* Accent - Coffee Brown */
-  --accent: 30 40% 52%; /* #B58B5A Coffee brown accent */
+  /* Accent - Ocean Blue */
+  --accent: 200 70% 50%; /* #2196F3 Ocean Blue accent */
   --accent-foreground: 0 0% 100%; /* Light text */
 
   /* Destructive - Premium Red */
   --destructive: 0 75% 55%; /* Elegant red */
   --destructive-foreground: 0 0% 100%; /* White text */
 
-  /* Success - Emerald */
+  /* Success - Emerald Green */
   --success: 160 70% 40%; /* Elegant emerald */
   --success-foreground: 0 0% 100%; /* White text */
 
@@ -90,12 +90,12 @@
   --warning-foreground: 38 100% 15%; /* Dark text */
 
   /* Input & Focus */
-  --input: 40 15% 96%; /* Light ivory input */
-  --ring: 43 80% 50%; /* Gold focus ring */
+  --input: 220 15% 97%; /* Light gray input */
+  --ring: 160 55% 42%; /* Green focus ring */
 
   /* Charts - Premium Palette */
-  --chart-1: 43 80% 50%; /* Gold */
-  --chart-2: 220 15% 45%; /* Charcoal */
+  --chart-1: 160 55% 42%; /* Teal Green */
+  --chart-2: 200 70% 50%; /* Ocean Blue */
   --chart-3: 160 70% 40%; /* Emerald */
   --chart-4: 0 75% 55%; /* Ruby */
   --chart-5: 270 60% 55%; /* Amethyst */
@@ -157,39 +157,39 @@
   --elevate-2: rgba(255,255,255, .09);
 
   /* ═══════════════════════════════════════════════════════════════
-     🌙 CLUNY SAGE DARK MODE - Luxury Night Theme
+     🌙 CLUNY CAFE DARK MODE - Modern Night Theme
      ═══════════════════════════════════════════════════════════════ */
   
-  --background: 175 20% 12%; /* Deep sage-navy */
-  --foreground: 165 15% 92%; /* Light text */
-  --border: 175 18% 20%; /* Subtle dark border */
-  --card: 175 18% 16%; /* Elevated card surface */
-  --card-foreground: 165 15% 90%; /* Light text */
-  --card-border: 175 15% 22%; /* Card border */
+  --background: 220 25% 10%; /* Deep navy */
+  --foreground: 0 0% 95%; /* Light text */
+  --border: 220 20% 18%; /* Subtle dark border */
+  --card: 220 22% 14%; /* Elevated card surface */
+  --card-foreground: 0 0% 92%; /* Light text */
+  --card-border: 220 18% 20%; /* Card border */
 
-  --sidebar: 175 22% 10%; /* Deep sage sidebar */
-  --sidebar-foreground: 165 15% 90%; /* Light text */
-  --sidebar-border: 175 18% 16%; /* Dark border */
-  --sidebar-primary: 165 22% 60%; /* Muted sage */
-  --sidebar-primary-foreground: 185 15% 12%; /* Dark text */
-  --sidebar-accent: 175 18% 22%; /* Elevated accent */
-  --sidebar-accent-foreground: 165 15% 88%; /* Light text */
-  --sidebar-ring: 165 22% 60%; /* Sage ring */
+  --sidebar: 180 40% 12%; /* Deep teal sidebar */
+  --sidebar-foreground: 0 0% 92%; /* Light text */
+  --sidebar-border: 180 35% 16%; /* Dark border */
+  --sidebar-primary: 160 55% 50%; /* Bright green */
+  --sidebar-primary-foreground: 0 0% 100%; /* White text */
+  --sidebar-accent: 180 30% 20%; /* Elevated accent */
+  --sidebar-accent-foreground: 0 0% 90%; /* Light text */
+  --sidebar-ring: 160 55% 50%; /* Green ring */
 
-  --popover: 175 18% 16%; /* Card surface */
-  --popover-foreground: 165 15% 90%; /* Light text */
-  --popover-border: 175 15% 22%; /* Border */
+  --popover: 220 22% 14%; /* Card surface */
+  --popover-foreground: 0 0% 92%; /* Light text */
+  --popover-border: 220 18% 20%; /* Border */
 
-  --primary: 165 22% 62%; /* Muted sage */
-  --primary-foreground: 185 15% 12%; /* Dark text */
+  --primary: 160 55% 48%; /* Bright teal green */
+  --primary-foreground: 0 0% 100%; /* White text */
 
-  --secondary: 175 15% 22%; /* Dark secondary */
-  --secondary-foreground: 165 15% 88%; /* Light text */
+  --secondary: 220 18% 20%; /* Dark secondary */
+  --secondary-foreground: 0 0% 88%; /* Light text */
 
-  --muted: 175 12% 40%; /* Muted gray */
-  --muted-foreground: 0 0% 100%; /* White text */
+  --muted: 220 12% 35%; /* Muted gray */
+  --muted-foreground: 220 10% 60%; /* Gray text */
 
-  --accent: 30 40% 55%; /* Coffee brown bright */
+  --accent: 200 70% 55%; /* Bright blue accent */
   --accent-foreground: 0 0% 100%; /* Light text */
 
   --destructive: 0 70% 55%;
@@ -201,11 +201,11 @@
   --warning: 38 95% 55%;
   --warning-foreground: 38 100% 12%;
 
-  --input: 225 20% 15%;
-  --ring: 43 80% 55%;
+  --input: 220 20% 16%;
+  --ring: 160 55% 48%;
 
-  --chart-1: 43 80% 55%;
-  --chart-2: 40 20% 75%;
+  --chart-1: 160 55% 48%;
+  --chart-2: 200 70% 55%;
   --chart-3: 160 70% 45%;
   --chart-4: 0 70% 55%;
   --chart-5: 270 60% 60%;
