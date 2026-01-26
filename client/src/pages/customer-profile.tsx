@@ -38,22 +38,10 @@ export default function CustomerProfilePage() {
       return;
     }
     
-    const baseProfile = loadedProfile || (customer as unknown as CustomerProfile);
-    const activeProfile = {
-      ...baseProfile,
-      cardNumber: loyaltyCard?.cardNumber || baseProfile.cardNumber,
-      stamps: loyaltyCard?.stamps ?? baseProfile.stamps ?? 0,
-      freeDrinks: loyaltyCard ? Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)) : (baseProfile.freeDrinks ?? 0),
-    };
-    setProfile(activeProfile);
-
-    const cardData = loyaltyCard?.qrToken || JSON.stringify({
-      cardNumber: activeProfile.cardNumber,
-      name: activeProfile.name,
-      phone: activeProfile.phone
-    });
-    QRCode.toDataURL(cardData, { width: 200, margin: 1 }).then(setCardQrUrl);
-  }, [setLocation, customer, loyaltyCard]);
+    // Redirect to /my-card as per unified interface request
+    setLocation("/my-card");
+    return;
+  }, [setLocation, customer]);
 
   const handleLogout = () => {
     logout();

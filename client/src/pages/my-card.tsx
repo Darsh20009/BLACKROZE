@@ -1,732 +1,366 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Coffee, LogOut, ShoppingBag, CreditCard, Gift, Download, Loader2, ArrowRight } from "lucide-react";
+import { useCustomer } from "@/contexts/CustomerContext";
+import { customerStorage, type CustomerProfile } from "@/lib/customer-storage";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, Download, Coffee, Check, Gift, Sparkles, Star, Loader2 } from "lucide-react";
 import QRCode from "qrcode";
-import html2canvas from "html2canvas";
-import { queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLoyaltyCard, type LoyaltyCard } from "@/hooks/useLoyaltyCard";
+import { useTranslation } from "react-i18next";
 
-export default function MyCard() {
- const [, setLocation] = useLocation();
- const { toast } = useToast();
- 
- const { 
-   card, 
-   isLoading: isAutoLoading, 
-   hasCard, 
-   createCard, 
-   isCreating,
-   redeemCode: redeemCodeMutate,
-   isRedeeming,
-   refetch 
- } = useLoyaltyCard();
+export default function MyCardPage() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const { customer, logout } = useCustomer();
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [cardQrUrl, setCardQrUrl] = useState<string>("");
+  const { t, i18n } = useTranslation();
 
- useEffect(() => {
-   document.title = "بطاقة الولاء - CLUNY CAFE | اكسب المكافآت";
-   const metaDesc = document.querySelector('meta[name="description"]');
-   if (metaDesc) metaDesc.setAttribute('content', 'بطاقة الولاء CLUNY CAFE - اجمع الطوابع واحصل على قهوة مجانية وعروض حصرية');
- }, []);
- 
- const [qrDataUrl, setQrDataUrl] = useState("");
- const [redeemCode, setRedeemCode] = useState("");
- const [showConfetti, setShowConfetti] = useState(false);
- const cardRef = useRef<HTMLDivElement>(null);
+  const { card: loyaltyCard, isLoading: isLoadingCard } = useLoyaltyCard();
 
- const [customerName, setCustomerName] = useState("");
- const [phoneNumber, setPhoneNumber] = useState("");
- const [isLoading, setIsLoading] = useState(false);
+  const { data: serverOrders = [], isLoading: isLoadingOrders } = useQuery<any[]>({
+    queryKey: ["/api/orders/customer", customer?.phone],
+    enabled: !!customer?.phone,
+    queryFn: async () => {
+      const res = await fetch(`/api/orders/customer/${customer?.phone}`);
+      if (!res.ok) return [];
+      return res.json();
+    }
+  });
 
- const totalStamps = 6;
+  useEffect(() => {
+    const loadedProfile = customerStorage.getProfile();
+    if (!loadedProfile && !customer) {
+      setLocation("/auth");
+      return;
+    }
+    
+    const baseProfile = loadedProfile || (customer as unknown as CustomerProfile);
+    const activeProfile = {
+      ...baseProfile,
+      cardNumber: loyaltyCard?.cardNumber || baseProfile.cardNumber,
+      stamps: loyaltyCard?.stamps ?? baseProfile.stamps ?? 0,
+      freeDrinks: loyaltyCard ? Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)) : (baseProfile.freeDrinks ?? 0),
+    };
+    setProfile(activeProfile);
 
- useEffect(() => {
-   if (card) {
-     generateQRCode(card);
-   }
- }, [card]);
+    const cardData = loyaltyCard?.qrToken || JSON.stringify({
+      cardNumber: activeProfile.cardNumber,
+      name: activeProfile.name,
+      phone: activeProfile.phone
+    });
+    QRCode.toDataURL(cardData, { 
+      width: 200, 
+      margin: 1,
+      color: {
+        dark: "#2D9B6E",
+        light: "#FFFFFF",
+      }
+    }).then(setCardQrUrl);
+  }, [setLocation, customer, loyaltyCard]);
 
- const generateQRCode = async (cardData: LoyaltyCard) => {
- try {
- const qrData = cardData.qrToken || btoa(JSON.stringify(cardData));
- const qrUrl = await QRCode.toDataURL(qrData, {
- width: 200,
- margin: 1,
- color: {
- dark: "#92400E",
- light: "#FFFBEB",
- },
- });
- setQrDataUrl(qrUrl);
- } catch (error) {
- console.error("Error generating QR:", error);
- }
- };
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: t("auth.logged_out"),
+      description: t("auth.see_you_soon")
+    });
+    setLocation("/auth");
+  };
 
- const handleRedeemCode = () => {
- if (!redeemCode.trim()) {
- toast({
- title: "خطأ",
- description: "الرجاء إدخال الكود",
- variant: "destructive",
- });
- return;
- }
- if (!card) {
-   toast({
-     title: "خطأ",
-     description: "لم يتم العثور على بطاقة",
-     variant: "destructive",
-   });
-   return;
- }
- redeemCodeMutate(
-   { code: redeemCode.trim(), cardId: card.id },
-   {
-     onSuccess: (data: any) => {
-       const updatedCard = data.card;
-       if (updatedCard?.stamps === 6) {
-         setShowConfetti(true);
-         setTimeout(() => setShowConfetti(false), 3000);
-         toast({
-           title: "مبروك! قهوة مجانية!",
-           description: "لقد حصلت على 6 أختام! استخدم قهوتك المجانية في طلبك القادم",
-           duration: 5000,
-         });
-       } else if (updatedCard?.stamps === 5) {
-         toast({
-           title: "تم فتح خصم 10%!",
-           description: "ختم واحد فقط لقهوة مجانية!",
-           duration: 5000,
-         });
-       } else {
-         toast({
-           title: "تم إضافة الختم بنجاح!",
-           description: `لديك الآن ${updatedCard?.stamps || 0} أختام من ${totalStamps}`,
-         });
-       }
-       setRedeemCode("");
-     },
-     onError: (error: any) => {
-       toast({
-         title: "خطأ في استخدام الكود",
-         description: error.message || "الكود غير صالح أو مستخدم مسبقاً",
-         variant: "destructive",
-       });
-     }
-   }
- );
- };
+  const handleDownloadCard = () => {
+    if (!cardQrUrl) return;
+    const link = document.createElement('a');
+    link.download = `qahwa-card-${profile?.cardNumber}.png`;
+    link.href = cardQrUrl;
+    link.click();
+    toast({
+      title: t("card.downloaded"),
+      description: t("card.download_success")
+    });
+  };
 
- const createOrRetrieveCard = async () => {
- if (!customerName.trim() || !phoneNumber.trim()) {
- toast({
- title: "خطأ",
- description: "الرجاء إدخال الاسم ورقم الهاتف",
- variant: "destructive",
- });
- return;
- }
+  if (!profile) return null;
 
- setIsLoading(true);
+  const localOrders = customerStorage.getOrders();
+  const allOrders = [...serverOrders];
+  localOrders.forEach(local => {
+    if (!allOrders.find(s => s.orderNumber === local.orderNumber)) {
+      allOrders.push(local);
+    }
+  });
+  allOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
- try {
- const response = await fetch(`/api/loyalty/cards/phone/${phoneNumber.trim()}`);
- 
- if (response.ok) {
- const existingCard = await response.json();
- await refetch();
- toast({
- title: "تم استرجاع بطاقتك!",
- description: `مرحباً مجدداً ${existingCard.customerName}! لديك ${existingCard.stamps} ختم`,
- });
- } else {
- createCard(
-   { customerName: customerName.trim(), phoneNumber: phoneNumber.trim() },
-   {
-     onSuccess: (newCard: any) => {
-       toast({
-         title: "تم إصدار البطاقة بنجاح!",
-         description: "احفظ بطاقتك كصورة أو استخدم QR للوصول إليها",
-       });
-     },
-     onError: (error: any) => {
-       toast({
-         title: "خطأ",
-         description: "حدث خطأ في إصدار البطاقة",
-         variant: "destructive",
-       });
-     }
-   }
- );
- }
- } catch (error) {
- console.error("Error creating/retrieving card:", error);
- toast({
- title: "خطأ",
- description: "حدث خطأ في إصدار أو استرجاع البطاقة",
- variant: "destructive",
- });
- }
+  const isRtl = i18n.language === 'ar';
 
- setIsLoading(false);
- };
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-20" dir={isRtl ? "rtl" : "ltr"}>
+      {/* Header */}
+      <div className="bg-primary p-4 shadow-lg">
+        <div className="container mx-auto flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLocation("/menu")}
+              className="text-white hover:bg-white/20"
+            >
+              <ArrowRight className={`h-5 w-5 ${isRtl ? "" : "rotate-180"}`} />
+            </Button>
+            <h1 className="text-xl font-bold text-white flex items-center gap-2">
+              <Coffee className="w-5 h-5" />
+              {t("app.name")}
+            </h1>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/20"
+          >
+            <LogOut className={`${isRtl ? "ml-2" : "mr-2"} w-4 h-4`} />
+            {t("nav.logout") || "تسجيل خروج"}
+          </Button>
+        </div>
+      </div>
 
- const downloadCardImage = async () => {
- if (!cardRef.current || !card) return;
+      <div className="container mx-auto p-4 max-w-4xl">
+        {/* Profile Card Summary */}
+        <Card className="mb-6 bg-white border-border shadow-sm">
+          <CardHeader className="py-4">
+            <CardTitle className="text-lg text-foreground">{t("profile.welcome", { name: profile.name }) || `مرحباً، ${profile.name}`}</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">{profile.phone}</CardDescription>
+          </CardHeader>
+        </Card>
 
- try {
- const canvas = await html2canvas(cardRef.current, {
- backgroundColor: "#FFFFFF",
- scale: 2,
- });
- 
- const link = document.createElement("a");
- link.download = `بطاقة -ولاء-قهوة -كوب-${card.customerName}.png`;
- link.href = canvas.toDataURL();
- link.click();
+        {/* Unified Interface Tabs */}
+        <Tabs defaultValue="card" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-secondary border border-border p-1 h-12">
+            <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white h-full">
+              <ShoppingBag className={`${isRtl ? "ml-2" : "mr-2"} w-4 h-4`} />
+              {t("profile.my_orders") || "طلباتي"}
+            </TabsTrigger>
+            <TabsTrigger value="card" className="data-[state=active]:bg-primary data-[state=active]:text-white h-full">
+              <CreditCard className={`${isRtl ? "ml-2" : "mr-2"} w-4 h-4`} />
+              {t("nav.my_card") || "بطاقاتي"}
+            </TabsTrigger>
+          </TabsList>
 
- toast({
- title: "تم تحميل البطاقةبنجاح! ",
- description: "تم حفظ البطاقةفي جهازك",
- });
- } catch (error) {
- console.error("Error downloading card:", error);
- toast({
- title: "خطأ في التحميل",
- description: "حدث خطأ أثناء تحميل البطاقة",
- variant: "destructive",
- });
- }
- };
+          {/* Orders Tab Content */}
+          <TabsContent value="orders" className="mt-4 space-y-4">
+            {isLoadingOrders ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : allOrders.length === 0 ? (
+              <Card className="bg-white border-border shadow-sm">
+                <CardContent className="p-12 text-center text-muted-foreground">
+                  <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p>{t("profile.no_orders") || "لا توجد طلبات سابقة"}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              allOrders.map((order) => (
+                <Card key={order.id || order.orderNumber} className="bg-white border-border shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                    <div>
+                      <CardTitle className="text-base text-foreground">
+                        {t("order.number", { id: order.orderNumber }) || `طلب #${order.orderNumber}`}
+                      </CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground">
+                        {new Date(order.createdAt).toLocaleString(isRtl ? 'ar-SA' : 'en-US')}
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge className="bg-primary text-white">
+                        {order.totalAmount} {t("currency")}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] py-0 h-5">
+                        {order.status === 'completed' ? (t("status.completed") || 'مكتمل') : 
+                         order.status === 'pending' ? (t("status.pending") || 'قيد الانتظار') :
+                         (t(`status.${order.status}`) || order.status)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-1">
+                      {(Array.isArray(order.items) ? order.items : []).map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between text-xs text-foreground">
+                          <span>{item.nameAr || item.coffeeItem?.nameAr} × {item.quantity}</span>
+                          <span className="text-muted-foreground">{(item.price * item.quantity).toFixed(2)} {t("currency")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
 
- const resetCard = () => {
- localStorage.removeItem("qahwa-loyalty-card");
- setCustomerName("");
- setPhoneNumber("");
- setQrDataUrl("");
- queryClient.invalidateQueries({ queryKey: ["/api/loyalty/cards/phone"] });
- };
+          {/* Card Tab Content - The Professional Loyalty Card UI */}
+          <TabsContent value="card" className="mt-4 space-y-6">
+            <div className="perspective-1000">
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="relative h-56 w-full max-w-sm mx-auto rounded-2xl shadow-2xl overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, #2D9B6E 0%, #1e6b4c 100%)'
+                }}
+              >
+                {/* Card Pattern Overlay */}
+                <div className="absolute inset-0 opacity-10">
+                  <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                        <circle cx="15" cy="15" r="1" fill="white"/>
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                  </svg>
+                </div>
+                
+                {/* EMV Chip */}
+                <div className="absolute top-8 left-6">
+                  <div className="w-12 h-9 bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-500 rounded-md shadow-lg border border-yellow-600/30" />
+                </div>
+                
+                {/* Brand Logo */}
+                <div className="absolute top-6 right-6">
+                  <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm p-1.5 border border-white/30">
+                    <Coffee className="w-full h-full text-white" />
+                  </div>
+                </div>
 
- const filledStamps = card?.stamps || 0;
- const availableFreeCups = (card?.freeCupsEarned || 0) - (card?.freeCupsRedeemed || 0);
+                {/* Card Number */}
+                <div className="absolute top-[55%] left-6 right-6">
+                  <p className="text-[20px] font-mono tracking-[0.2em] text-white text-center">
+                    {profile?.cardNumber ? profile.cardNumber.match(/.{1,4}/g)?.join(' ') : '•••• •••• •••• ••••'}
+                  </p>
+                </div>
 
- return (
- <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100 overflow-hidden relative" data-testid="page-my-card">
- {/* خلفية فاخرة مع عناصر متحركة*/}
- <div className="absolute inset-0 pointer-events-none">
- <div className="absolute top-20 left-20 w-40 h-40 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
- <div className="absolute bottom-32 right-16 w-32 h-32 bg-accent/15 rounded-full blur-2xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
- <div className="absolute top-1/2 left-10 w-28 h-28 bg-primary/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '3s'}}></div>
- <div className="absolute top-32 right-32 w-24 h-24 bg-accent/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '0.5s'}}></div>
- </div>
+                {/* Card Details */}
+                <div className="absolute bottom-5 left-6 right-6 flex justify-between items-end">
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] text-white/50 uppercase tracking-widest">{t("card.holder") || "CARD HOLDER"}</p>
+                    <p className="text-sm font-semibold text-white uppercase">{profile?.name || 'Customer'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[8px] text-white/50 uppercase tracking-widest">{t("card.member_since") || "MEMBER SINCE"}</p>
+                    <p className="text-sm font-semibold text-white">2026</p>
+                  </div>
+                </div>
 
- {/* تأثير Confetti */}
- <AnimatePresence>
- {showConfetti && (
- <motion.div
- initial={{ opacity: 0 }}
- animate={{ opacity: 1 }}
- exit={{ opacity: 0 }}
- className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"
- >
- {[...Array(50)].map((_, i) => (
- <motion.div
- key={i}
- initial={{ 
- x: 0, 
- y: 0, 
- opacity: 1,
- scale: 0 
- }}
- animate={{
- x: (Math.random() - 0.5) * 1000,
- y: Math.random() * 1000,
- opacity: 0,
- scale: 1,
- rotate: Math.random() * 360
- }}
- transition={{
- duration: 2,
- ease: "easeOut",
- delay: Math.random() * 0.3
- }}
- className="absolute w-3 h-3 rounded-full"
- style={{
- backgroundColor: ['#D4AF37', '#F59E0B', '#EAB308', '#FCD34D'][Math.floor(Math.random() * 4)]
- }}
- />
- ))}
- </motion.div>
- )}
- </AnimatePresence>
+                {/* Brand Name Center Bottom */}
+                <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
+                  <p className="text-[10px] text-white/70 font-bold tracking-[0.3em]">{t("app.name").toUpperCase()}</p>
+                </div>
+              </motion.div>
+            </div>
+            
+            {/* QR Code Section */}
+            {cardQrUrl && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center gap-2"
+              >
+                <div className="bg-white p-3 rounded-2xl shadow-md border border-border">
+                  <img src={cardQrUrl} alt="QR Code" className="w-32 h-32" />
+                </div>
+                <p className="text-xs text-muted-foreground">{t("card.scan_message") || "امسح الكود للحصول على نقاطك"}</p>
+              </motion.div>
+            )}
 
- <div className="max-w-2xl mx-auto p-4 relative z-10">
- {/* شريط التنقل */}
- <motion.div 
- initial={{ opacity: 0, y: -20 }}
- animate={{ opacity: 1, y: 0 }}
- className="flex items-center justify-between mb-6"
- >
- <Button
- variant="ghost"
- onClick={() => setLocation("/menu")}
- className="text-accent hover:text-accent hover:bg-primary/50 backdrop-blur-sm"
- data-testid="button-back"
- >
- <ArrowRight className="ml-2 h-5 w-5" />
- العودةللقائمة 
- </Button>
- 
- {hasCard && (
- <Button
- variant="ghost"
- onClick={resetCard}
- className="text-red-600 hover:text-red-700 hover:bg-red-50/50 backdrop-blur-sm"
- data-testid="button-reset"
- >
- إصدار بطاقة جديدة
- </Button>
- )}
- </motion.div>
+            {/* Loyalty Progress */}
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{t("card.loyalty_status") || "حالة الولاء"}</CardTitle>
+                <Coffee className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1">
+                    <p className="text-3xl font-bold text-primary">{profile.stamps} / 5</p>
+                    <p className="text-xs text-muted-foreground">{t("card.current_stamps") || "عدد الطوابع الحالية"}</p>
+                  </div>
+                  <Badge variant="secondary" className="bg-primary/10 text-primary">
+                    {t("card.stamps_remaining", { count: 5 - profile.stamps }) || `${5 - profile.stamps} طوابع متبقية`}
+                  </Badge>
+                </div>
+                
+                {/* Stamp Visualization */}
+                <div className="flex justify-center items-center gap-3">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <div 
+                      key={s}
+                      className={`w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all ${
+                        s <= profile.stamps 
+                          ? 'bg-primary border-primary text-white shadow-md' 
+                          : 'bg-secondary border-dashed border-border text-muted-foreground'
+                      }`}
+                    >
+                      <Coffee className="w-5 h-5" />
+                    </div>
+                  ))}
+                  <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-white shadow-md">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                </div>
+                
+                <p className="text-center text-xs text-muted-foreground">
+                  {t("card.loyalty_goal") || "اجمع 5 طوابع واحصل على مشروب مجاني"}
+                </p>
 
- {isAutoLoading ? (
- <div className="flex flex-col items-center justify-center py-16">
-   <Loader2 className="w-12 h-12 text-amber-600 animate-spin mb-4" />
-   <p className="text-accent font-cairo text-lg">جاري تحميل بطاقتك...</p>
- </div>
- ) : !hasCard ? (
- <motion.div
- initial={{ opacity: 0, scale: 0.95 }}
- animate={{ opacity: 1, scale: 1 }}
- transition={{ duration: 0.5 }}
- >
- <Card className="p-8 bg-white/90 backdrop-blur-lg shadow-2xl border-2 border-primary/50" data-testid="card-form">
- <div className="text-center mb-6">
- <motion.div
- initial={{ scale: 0 }}
- animate={{ scale: 1 }}
- transition={{ type: "spring", delay: 0.2 }}
- className="inline-block mb-4"
- >
- <div className="relative">
- <Coffee className="h-20 w-20 text-accent mx-auto" />
- <motion.div
- animate={{ rotate: 360 }}
- transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
- className="absolute -top-2 -right-2"
- >
- <Sparkles className="h-8 w-8 text-accent" />
- </motion.div>
- </div>
- </motion.div>
- 
- <h2 className="text-3xl font-amiri font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent mb-3">
- بطاقة الولاء الذهبية
- </h2>
- <p className="text-accent font-cairo text-lg">
- أدخل اسمك ورقم جوالك لإصدار بطاقة جديدة أو استرجاع بطاقتك الحالية 
- </p>
- </div>
+                {profile.freeDrinks > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
+                    <div className="bg-green-100 p-2 rounded-lg">
+                      <Gift className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-green-600">
+                        {t("card.free_drinks_count", { count: profile.freeDrinks }) || `لديك ${profile.freeDrinks} مشروب مجاني!`}
+                      </p>
+                      <p className="text-[10px] text-green-600/70">
+                        {t("card.use_next_order") || "استخدمه عند طلبك القادم"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
- <div className="space-y-5 mb-6">
- <div>
- <label className="block text-sm font-cairo font-semibold text-accent mb-2">
- الاسم الكامل
- </label>
- <Input
- type="text"
- value={customerName}
- onChange={(e) => setCustomerName(e.target.value)}
- placeholder="أدخل اسمك الكامل"
- className="text-right border-primary focus:border-primary bg-background/50 focus:bg-white transition-all"
- data-testid="input-customer-name"
- />
- </div>
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                onClick={handleDownloadCard}
+                className="bg-accent hover:bg-accent/90 text-white h-12 rounded-xl shadow-md"
+              >
+                <Download className={`${isRtl ? "ml-2" : "mr-2"} w-4 h-4`} />
+                {t("card.download") || "تحميل البطاقة"}
+              </Button>
+              <div className="flex items-center justify-center bg-primary/5 rounded-xl border border-primary/20 px-3 text-center">
+                <span className="text-[10px] text-primary font-bold leading-tight">
+                  {t("card.perks_discount") || "خصم 10% دائم لكافة الطلبات"}
+                </span>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
 
- <div>
- <label className="block text-sm font-cairo font-semibold text-accent mb-2">
- رقم الجوال (9 أرقام تبدأ بـ 5)
- </label>
- <Input
- type="tel"
- value={phoneNumber}
- onChange={(e) => setPhoneNumber(e.target.value)}
- placeholder="5xxxxxxxx"
- className="text-right border-primary focus:border-primary bg-background/50 focus:bg-white transition-all"
- data-testid="input-phone-number"
- />
- </div>
-
- <Button
- onClick={createOrRetrieveCard}
- disabled={isLoading}
- className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-cairo text-lg py-6 shadow-lg hover:shadow-xl transition-all duration-300"
- data-testid="button-create-card"
- >
- {isLoading ? "جاري البحث..." : "إصدار أو استرجاع البطاقة"}
- </Button>
- </div>
-
- <div className="p-5 bg-gradient-to-br from-amber-50 to-background rounded-xl border-2 border-primary shadow-inner">
- <h3 className="font-cairo font-bold text-accent mb-3 flex items-center justify-center gap-2 text-lg">
- <Star className="h-6 w-6 text-accent" />
- مميزات البطاقةالذهبية
- </h3>
- <ul className="space-y-3 text-accent font-cairo">
- <li className="flex items-center gap-3 bg-white/60 p-3 rounded-lg">
- <Coffee className="h-5 w-5 text-accent flex-shrink-0" />
- <span>احصل على ختم مع كل عمليةشراء</span>
- </li>
- <li className="flex items-center gap-3 bg-white/60 p-3 rounded-lg">
- <Sparkles className="h-5 w-5 text-accent flex-shrink-0" />
- <span className="font-bold">6 أختام = قهوة مجانية! </span>
- </li>
- <li className="flex items-center gap-3 bg-white/60 p-3 rounded-lg">
- <Gift className="h-5 w-5 text-accent flex-shrink-0" />
- <span>خصم 10% عند 5 أختام</span>
- </li>
- </ul>
- </div>
- </Card>
- </motion.div>
- ) : (
- <div className="space-y-6">
- {/* بانر الخصم 10% */}
- {filledStamps === 5 && (
- <motion.div
- initial={{ opacity: 0, y: -20, scale: 0.9 }}
- animate={{ opacity: 1, y: 0, scale: 1 }}
- transition={{ type: "spring", stiffness: 200 }}
- className="relative overflow-hidden bg-gradient-to-r from-amber-500 via-primary/50 to-background0 text-white p-5 rounded-2xl text-center font-cairo font-bold text-xl shadow-2xl"
- data-testid="banner-discount"
- >
- <motion.div
- animate={{ x: ["0%", "100%"] }}
- transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
- className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
- />
- <span className="relative z-10"> تم فتح خصم 10%! ختم واحد للقهوة المجانية !</span>
- </motion.div>
- )}
-
- {/* بانر القهوة المجانية */}
- {filledStamps === 6 && (
- <motion.div
- initial={{ opacity: 0, y: -20, scale: 0.9 }}
- animate={{ opacity: 1, y: 0, scale: 1 }}
- transition={{ type: "spring", stiffness: 200 }}
- className="relative overflow-hidden bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white p-5 rounded-2xl text-center font-cairo font-bold text-xl shadow-2xl"
- data-testid="banner-free-coffee"
- >
- <motion.div
- animate={{ rotate: 360 }}
- transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
- className="absolute top-2 left-2"
- >
- <Sparkles className="h-6 w-6" />
- </motion.div>
- <motion.div
- animate={{ rotate: -360 }}
- transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
- className="absolute bottom-2 right-2"
- >
- <Star className="h-6 w-6" />
- </motion.div>
- <span className="relative z-10"> قهوة مجانية! استخدمها في طلبك القادم</span>
- </motion.div>
- )}
-
- {/* قسم استرداد الكود */}
- <motion.div
- initial={{ opacity: 0, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: 0.1 }}
- >
- <Card className="p-6 bg-white/90 backdrop-blur-lg shadow-xl border-2 border-primary/50" data-testid="card-redeem-section">
- <h3 className="text-2xl font-amiri font-bold text-accent mb-4 text-center flex items-center justify-center gap-2">
- <Gift className="h-7 w-7 text-accent" />
- أضف ختم جديد 
- </h3>
- <div className="flex gap-2">
- <Input
- type="text"
- value={redeemCode}
- onChange={(e) => setRedeemCode(e.target.value)}
- placeholder="أدخل الكود هنا"
- className="text-right border-primary focus:border-primary bg-background/50 focus:bg-white text-lg"
- data-testid="input-redeem-code"
- onKeyDown={(e) => {
- if (e.key === 'Enter') {
- handleRedeemCode();
- }
- }}
- />
- <Button
- onClick={handleRedeemCode}
- disabled={isRedeeming}
- className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-cairo whitespace-nowrap px-6 shadow-lg"
- data-testid="button-redeem-code"
- >
- {isRedeeming ? "..." : "استخدام"}
- </Button>
- </div>
- </Card>
- </motion.div>
-
- {/* البطاقةالرئيسية*/}
- <motion.div
- ref={cardRef}
- initial={{ opacity: 0, scale: 0.95 }}
- animate={{ opacity: 1, scale: 1 }}
- transition={{ delay: 0.2 }}
- className="relative"
- data-testid="loyalty-card-display"
- >
- {/* Background Gradient */}
- <div className="absolute -inset-2 bg-gradient-to-br from-amber-400 via-orange-400 to-amber-600 rounded-3xl opacity-20 blur-xl"></div>
- 
- <div className="relative bg-gradient-to-br from-background via-primary/5 to-background rounded-3xl shadow-2xl overflow-hidden border-4 border-[#8B5A3C]/30 backdrop-blur-sm">
- {/* Decorative Elements */}
- <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-amber-300/20 via-transparent to-transparent rounded-full -translate-y-1/2 translate-x-1/2"></div>
- <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-orange-300/20 via-transparent to-transparent rounded-full translate-y-1/2 -translate-x-1/2"></div>
- 
- {/* رأس البطاقة */}
- <div className="relative p-6 sm:p-8 text-center overflow-hidden">
- <motion.div
- animate={{ y: [0, -5, 0] }}
- transition={{ duration: 3, repeat: Infinity }}
- >
- <img 
- src="/logo.png" 
- alt="CLUNY CAFE" 
- className="w-24 h-24 sm:w-32 sm:h-32 object-contain mx-auto"
- />
- </motion.div>
- 
- <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-background via-primary/5 to-background bg-clip-text text-transparent mb-2 relative z-10" data-testid="text-card-header" style={{fontFamily: 'Cairo, sans-serif'}}>
- CLUNY CAFE
- </h1>
- <p className="text-lg sm:text-2xl font-semibold text-[#8B5A3C] mb-1 relative z-10" style={{fontFamily: 'Arial, sans-serif'}}>
- CLUNY CAFE Loyalty
- </p>
- <div className="flex items-center justify-center gap-2 text-sm text-[#8B5A3C] relative z-10 font-cairo mt-2">
- <span className="w-8 h-0.5 bg-gradient-to-r from-amber-600 to-background0"></span>
- <span>بطاقة الولاء الذهبية</span>
- <span className="w-8 h-0.5 bg-gradient-to-r from-orange-500 to-amber-600"></span>
- </div>
- </div>
-
- {/* محتوى البطاقة */}
- <div className="p-6 sm:p-8 space-y-6">
- {/* عداد الأختام */}
- <div className="text-center">
- <motion.div
- initial={{ scale: 0 }}
- animate={{ scale: 1 }}
- transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
- className="inline-block"
- >
- <div className="relative inline-flex items-center justify-center">
- <svg className="absolute w-24 h-24 sm:w-32 sm:h-32 -rotate-90" viewBox="0 0 100 100">
- <circle cx="50" cy="50" r="45" fill="none" stroke="#E5D4C1" strokeWidth="8" />
- <circle 
- cx="50" 
- cy="50" 
- r="45" 
- fill="none" 
- stroke="url(#gradient)" 
- strokeWidth="8"
- strokeDasharray={`${(filledStamps / totalStamps) * 283} 283`}
- strokeLinecap="round"
- className="transition-all duration-700"
- />
- <defs>
- <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
- <stop offset="0%" stopColor="#D4A574" />
- <stop offset="100%" stopColor="#A0522D" />
- </linearGradient>
- </defs>
- </svg>
- <div className="relative text-center">
- <div className="text-2xl sm:text-4xl font-bold text-[#6B4423]" data-testid="text-stamps-progress" style={{fontFamily: 'Cairo, sans-serif'}}>
- {filledStamps}
- </div>
- <div className="text-xs sm:text-sm text-[#8B5A3C] font-cairo">من {totalStamps}</div>
- </div>
- </div>
- </motion.div>
- 
- {availableFreeCups > 0 && (
- <motion.div
- initial={{ opacity: 0, y: 10 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: 0.2 }}
- className="mt-4 text-sm sm:text-lg font-cairo text-green-600 flex items-center justify-center gap-2"
- data-testid="text-available-cups"
- >
- <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>
- <Gift className="h-5 w-5 sm:h-6 sm:w-6" />
- </motion.div>
- <span className="font-bold">لديك {availableFreeCups} مشروب مجاني متاح!</span>
- </motion.div>
- )}
- </div>
-
- {/* معلومات العميل */}
- <div className="grid grid-cols-2 gap-3 sm:gap-4 p-4 sm:p-5 bg-gradient-to-br from-amber-50 via-primary/5 to-background rounded-2xl border-2 border-primary/60 shadow-inner">
- <div className="text-right">
- <div className="text-xs sm:text-sm text-accent font-cairo font-semibold mb-1">الاسم الكامل</div>
- <div className="text-sm sm:text-lg font-bold text-accent font-cairo truncate" data-testid="text-card-name">
- {card?.customerName}
- </div>
- </div>
- <div className="text-right">
- <div className="text-xs sm:text-sm text-accent font-cairo font-semibold mb-1">رقم الجوال</div>
- <div className="text-sm sm:text-lg font-bold text-accent font-cairo" data-testid="text-phone-number">
- {card?.phoneNumber}
- </div>
- </div>
- </div>
-
- {/* شبكة الأختام */}
- <div className="grid grid-cols-6 gap-2 sm:gap-3">
- {[...Array(totalStamps)].map((_, index) => {
- const isFilled = index < filledStamps;
- return (
- <motion.div
- key={index}
- initial={{ scale: 0.8, opacity: 0 }}
- animate={{ scale: 1, opacity: 1 }}
- transition={{ delay: index * 0.08, type: "spring" }}
- whileHover={isFilled ? { scale: 1.15 } : undefined}
- className={`aspect-square rounded-xl flex items-center justify-center relative transform transition-all duration-300 cursor-pointer ${
- isFilled
- ? "bg-gradient-to-br from-amber-500 via-primary/50 to-amber-600 border-2 border-primary shadow-lg"
- : "bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-dashed border-gray-300 hover:border-gray-400"
- }`}
- data-testid={`stamp-slot-${index}`}
- >
- {isFilled ? (
- <motion.div
- initial={{ scale: 0, rotate: -180 }}
- animate={{ scale: 1, rotate: 0 }}
- transition={{ delay: 0.1, type: "spring" }}
- className="relative"
- >
- <Coffee className="h-4 w-4 sm:h-5 sm:w-5 text-white drop-shadow-lg" />
- <motion.div
- animate={{ scale: [1, 1.3, 1] }}
- transition={{ duration: 2, repeat: Infinity, delay: index * 0.1 }}
- className="absolute -top-1 -right-1 bg-gradient-to-br from-green-400 to-green-600 rounded-full p-0.5 shadow-md"
- >
- <Check className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
- </motion.div>
- </motion.div>
- ) : (
- <Coffee className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 opacity-50" />
- )}
- </motion.div>
- );
- })}
- </div>
-
- {/* كود QR */}
- {qrDataUrl && (
- <motion.div
- initial={{ opacity: 0, y: 10 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: 0.3 }}
- className="flex flex-col items-center p-4 sm:p-6 bg-gradient-to-br from-card to-background rounded-2xl border-2 border-primary shadow-lg"
- >
- <motion.div
- whileHover={{ scale: 1.05 }}
- className="cursor-pointer"
- >
- <motion.img
- initial={{ scale: 0, rotate: -180 }}
- animate={{ scale: 1, rotate: 0 }}
- transition={{ type: "spring", delay: 0.1 }}
- src={qrDataUrl}
- alt="QR Code"
- className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-primary rounded-2xl shadow-lg"
- data-testid="img-qr-code"
- />
- </motion.div>
- <div className="text-center mt-3 text-xs sm:text-sm text-accent font-cairo font-semibold px-2">
- اعرض هذا الكود للكاشير لاستخدام المشروب المجاني
- </div>
- </motion.div>
- )}
-
- {/* رقم البطاقة */}
- <div className="text-center p-3 bg-gray-100 rounded-lg border border-gray-300">
- <div className="text-xs text-muted-foreground font-cairo mb-1">رقم البطاقة</div>
- <div className="text-lg sm:text-xl font-bold text-gray-800 font-mono" data-testid="text-card-number">
- {card?.cardNumber}
- </div>
- </div>
- </div>
- </div>
- </motion.div>
-
- {/* زر التحميل */}
- <motion.div
- initial={{ opacity: 0, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: 0.3 }}
- >
- <Button
- onClick={downloadCardImage}
- className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-cairo text-lg py-6 shadow-xl"
- data-testid="button-download"
- >
- <Download className="ml-2 h-6 w-6" />
- تحميل البطاقةكصورة 
- </Button>
- </motion.div>
-
- {/* التعليمات */}
- <motion.div
- initial={{ opacity: 0, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: 0.4 }}
- >
- <Card className="p-5 bg-gradient-to-br from-amber-50/90 to-background/90 backdrop-blur-sm border-2 border-primary/50 shadow-lg">
- <h3 className="font-cairo font-bold text-accent mb-3 text-lg flex items-center gap-2">
- <Sparkles className="h-5 w-5 text-accent" />
- كيف تستخدم بطاقتك:
- </h3>
- <ul className="space-y-2.5 text-sm text-accent font-cairo">
- <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-accent font-bold flex-shrink-0">1.</span>
- <span>احصل على كود مع كل عمليةشراء من الكاشير</span>
- </li>
- <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-accent font-bold flex-shrink-0">2.</span>
- <span>أدخل الكود في الحقل أعلاه للحصول على ختم</span>
- </li>
- <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-accent font-bold flex-shrink-0">3.</span>
- <span className="font-semibold">عند 5 أختام، احصل على خصم 10%</span>
- </li>
- <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-green-600 font-bold flex-shrink-0">4.</span>
- <span className="font-bold">عند 6 أختام، احصل على قهوة مجانية!</span>
- </li>
- <li className="flex items-start gap-2 bg-white/60 p-2 rounded-lg">
- <span className="text-accent font-bold flex-shrink-0">5.</span>
- <span>اعرض QR للكاشير لاستخدام قهوتك المجانية </span>
- </li>
- </ul>
- </Card>
- </motion.div>
- </div>
- )}
- </div>
- </div>
- );
+        <Button
+          onClick={() => setLocation("/menu")}
+          variant="outline"
+          className="w-full mt-8 h-12 border-primary text-primary hover:bg-primary/5 rounded-xl font-bold"
+        >
+          {t("menu.back") || "العودة للقائمة"}
+        </Button>
+      </div>
+    </div>
+  );
 }
