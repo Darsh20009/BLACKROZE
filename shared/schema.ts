@@ -338,7 +338,9 @@ export interface IBusinessConfig extends Document {
   tenantId: string;
   tradeNameAr: string;
   tradeNameEn?: string;
-  activityType: 'cafe' | 'restaurant' | 'other';
+  activityType: 'cafe' | 'restaurant' | 'both';
+  isFoodEnabled: boolean;
+  isDrinksEnabled: boolean;
   vatNumber?: string;
   vatPercentage: number;
   currency: string;
@@ -353,7 +355,9 @@ const BusinessConfigSchema = new Schema<IBusinessConfig>({
   tenantId: { type: String, required: true, unique: true },
   tradeNameAr: { type: String, required: true },
   tradeNameEn: { type: String },
-  activityType: { type: String, enum: ['cafe', 'restaurant', 'other'], default: 'cafe' },
+  activityType: { type: String, enum: ['cafe', 'restaurant', 'both'], default: 'cafe' },
+  isFoodEnabled: { type: Boolean, default: false },
+  isDrinksEnabled: { type: Boolean, default: true },
   vatNumber: { type: String },
   vatPercentage: { type: Number, default: 15 },
   currency: { type: String, default: 'SAR' },

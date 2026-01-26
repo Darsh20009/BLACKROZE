@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { PWAInstallButton } from "@/components/pwa-install";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
-import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search, QrCode, ChevronLeft, ChevronRight, MapPin, Clock } from "lucide-react";
+import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search, QrCode, ChevronLeft, ChevronRight, MapPin, Clock, Utensils } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import clunyLogo from "@assets/cluny-logo-customer.png";
 import bannerImage1 from "@assets/banner-coffee-1.png";
@@ -79,12 +79,20 @@ export default function MenuPage() {
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  const { data: businessConfig } = useQuery<any>({
+    queryKey: ["/api/business-config"],
+  });
+
+  const isBothModes = businessConfig?.activityType === "both";
+  const [activeMode, setActiveMode] = useState<"drinks" | "food">("drinks");
+
   const categories = [
     { id: "all", name: t("menu.categories.all"), icon: Coffee },
     { id: "hot", name: t("menu.categories.hot"), icon: Flame },
     { id: "cold", name: t("menu.categories.cold"), icon: Snowflake },
     { id: "specialty", name: t("menu.categories.specialty"), icon: Star },
     { id: "desserts", name: t("menu.categories.desserts"), icon: Cake },
+    ...(isBothModes ? [{ id: "food", name: t("menu.categories.food") || "المأكولات", icon: Utensils }] : []),
   ];
 
   const groupedItems = coffeeItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
@@ -279,6 +287,29 @@ export default function MenuPage() {
         </div>
 
         <div className="px-4 space-y-6">
+          {isBothModes && (
+            <div className="flex p-1 bg-secondary/30 rounded-2xl">
+              <button
+                onClick={() => setActiveMode("drinks")}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                  activeMode === "drinks" ? "bg-primary text-white shadow-lg" : "text-muted-foreground"
+                }`}
+              >
+                <Coffee className="w-4 h-4" />
+                <span>{t("menu.mode.drinks") || "المشروبات"}</span>
+              </button>
+              <button
+                onClick={() => setActiveMode("food")}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                  activeMode === "food" ? "bg-primary text-white shadow-lg" : "text-muted-foreground"
+                }`}
+              >
+                <Utensils className="w-4 h-4" />
+                <span>{t("menu.mode.food") || "المأكولات"}</span>
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center gap-4 bg-secondary/50 rounded-xl p-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <MapPin className="w-4 h-4 text-primary" />
