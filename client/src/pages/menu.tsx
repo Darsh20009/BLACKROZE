@@ -392,7 +392,7 @@ export default function MenuPage() {
                     </div>
                     <div className="flex-1 min-w-0 py-1">
                       <h3 className="text-base font-semibold truncate text-foreground mb-1">{i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}</h3>
-                      <p className="text-xs text-muted-foreground truncate mb-2">{i18n.language === 'ar' ? item.descriptionAr || item.description : item.descriptionEn || item.description || t("menu.default_desc")}</p>
+                      <p className="text-xs text-muted-foreground truncate mb-2">{item.description || t("menu.default_desc")}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-primary font-bold text-lg">{item.price} <small className="text-xs font-normal text-muted-foreground">{t("currency")}</small></span>
                         <Button 
