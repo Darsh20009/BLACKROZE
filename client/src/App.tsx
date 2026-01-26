@@ -318,8 +318,12 @@ function AppContent() {
   );
 }
 
+import "@/lib/i18n";
+import { useTranslation } from "react-i18next";
+
 function App() {
   const [isEmployee, setIsEmployee] = useState(false);
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     const employeePaths = ['/employee', '/manager', '/kitchen', '/pos', '/cashier', '/admin', '/owner', '/executive', '/0'];
@@ -340,7 +344,7 @@ function App() {
   }, []);
 
   return (
-    <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir="rtl">
+    <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <CustomerProvider>

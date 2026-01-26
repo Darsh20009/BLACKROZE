@@ -30,11 +30,15 @@ const bannerSlides = [
   }
 ];
 
+import { useTranslation } from "react-i18next";
+import { Languages } from "lucide-react";
+
 export default function MenuPage() {
   const { cartItems, addToCart } = useCartStore();
   const { isAuthenticated, customer } = useCustomer();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { t, i18n } = useTranslation();
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<CoffeeItem | null>(null);
@@ -43,12 +47,27 @@ export default function MenuPage() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const bannerRef = useRef<HTMLDivElement>(null);
 
+  const bannerSlides = [
+    {
+      image: bannerImage1,
+      title: t("banner.1.title"),
+      subtitle: t("banner.1.subtitle"),
+      badge: t("banner.1.badge")
+    },
+    {
+      image: bannerImage2,
+      title: t("banner.2.title"),
+      subtitle: t("banner.2.subtitle"),
+      badge: t("banner.2.badge")
+    }
+  ];
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentBannerIndex((prev) => (prev + 1) % bannerSlides.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [bannerSlides.length]);
 
   const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
@@ -61,15 +80,16 @@ export default function MenuPage() {
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const categories = [
-    { id: "all", nameAr: "الكل", icon: Coffee },
-    { id: "hot", nameAr: "ساخن", icon: Flame },
-    { id: "cold", nameAr: "بارد", icon: Snowflake },
-    { id: "specialty", nameAr: "مميز", icon: Star },
-    { id: "desserts", nameAr: "حلويات", icon: Cake },
+    { id: "all", name: t("menu.categories.all"), icon: Coffee },
+    { id: "hot", name: t("menu.categories.hot"), icon: Flame },
+    { id: "cold", name: t("menu.categories.cold"), icon: Snowflake },
+    { id: "specialty", name: t("menu.categories.specialty"), icon: Star },
+    { id: "desserts", name: t("menu.categories.desserts"), icon: Cake },
   ];
 
   const groupedItems = coffeeItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    const baseName = item.nameAr.trim().split(/\s+/)[0];
+    const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
+    const baseName = name.trim().split(/\s+/)[0];
     if (!acc[baseName]) acc[baseName] = [];
     acc[baseName].push(item);
     return acc;
@@ -79,12 +99,14 @@ export default function MenuPage() {
 
   const filteredItems = representativeItems.filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
-    const matchesSearch = item.nameAr.toLowerCase().includes(searchQuery.toLowerCase());
+    const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   const handleAddToCartDirect = (item: CoffeeItem) => {
-    const baseName = item.nameAr.trim().split(/\s+/)[0];
+    const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
+    const baseName = name.trim().split(/\s+/)[0];
     const group = groupedItems[baseName] || [item];
     const hasMultipleVariants = group.length > 1;
     const hasSizes = item.availableSizes && item.availableSizes.length > 0;
@@ -96,8 +118,8 @@ export default function MenuPage() {
     } else {
       addToCart((item as any).id || (item as any)._id, 1, "default", []);
       toast({
-        title: "تمت الإضافة",
-        description: `تم إضافة ${item.nameAr} إلى السلة`,
+        title: t("menu.added_to_cart"),
+        description: t("menu.added_to_cart_desc", { name }),
       });
     }
   };
@@ -110,9 +132,16 @@ export default function MenuPage() {
     setCurrentBannerIndex((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
   };
 
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'ar' ? 'en' : 'ar';
+    i18n.changeLanguage(newLang);
+    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = newLang;
+  };
+
   if (isLoading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center">
+      <div dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} className="min-h-screen bg-background flex items-center justify-center">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -124,20 +153,28 @@ export default function MenuPage() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background pb-24 font-sans overflow-x-hidden text-foreground">
+    <div dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} className="min-h-screen bg-background pb-24 font-sans overflow-x-hidden text-foreground">
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
             <img src={clunyLogo} className="w-10 h-10 rounded-xl border-2 border-white/30 shadow-lg" alt="Logo" />
           </div>
           <div>
-            <h1 className="text-lg font-bold leading-none text-white drop-shadow-md">CLUNY</h1>
-            <span className="text-[9px] text-white/80 font-medium uppercase tracking-wider">Premium Coffee</span>
+            <h1 className="text-lg font-bold leading-none text-white drop-shadow-md">{t("app.name")}</h1>
+            <span className="text-[9px] text-white/80 font-medium uppercase tracking-wider">{t("app.tagline")}</span>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
           <PWAInstallButton />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleLanguage} 
+            className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20"
+          >
+            <Languages className="w-4 h-4 text-white" />
+          </Button>
           {isAuthenticated && (
             <Button variant="ghost" size="icon" onClick={() => setLocation("/my-card")} className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20">
               <QrCode className="w-4 h-4 text-white" />
@@ -183,9 +220,9 @@ export default function MenuPage() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentBannerIndex}
-                initial={{ opacity: 0, x: 100 }}
+                initial={{ opacity: 0, x: i18n.language === 'ar' ? 100 : -100 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -100 }}
+                exit={{ opacity: 0, x: i18n.language === 'ar' ? -100 : 100 }}
                 transition={{ duration: 0.5 }}
                 className="absolute inset-0"
               >
@@ -197,7 +234,7 @@ export default function MenuPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                   
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                  <div className={`absolute bottom-0 ${i18n.language === 'ar' ? 'right-0' : 'left-0'} left-0 right-0 p-6 text-white`}>
                     <Badge className="mb-3 bg-accent text-white border-0 px-3 py-1">
                       {bannerSlides[currentBannerIndex].badge}
                     </Badge>
@@ -214,17 +251,17 @@ export default function MenuPage() {
 
             <button 
               onClick={prevBanner}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+              className={`absolute ${i18n.language === 'ar' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors`}
               data-testid="button-prev-banner"
             >
-              <ChevronLeft className="w-5 h-5" />
+              {i18n.language === 'ar' ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
             </button>
             <button 
               onClick={nextBanner}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+              className={`absolute ${i18n.language === 'ar' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors`}
               data-testid="button-next-banner"
             >
-              <ChevronRight className="w-5 h-5" />
+              {i18n.language === 'ar' ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
             </button>
 
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
@@ -246,23 +283,23 @@ export default function MenuPage() {
           <div className="flex items-center gap-4 bg-secondary/50 rounded-xl p-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <MapPin className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">الرياض</span>
+              <span className="text-sm font-medium">{t("location.riyadh")}</span>
             </div>
             <div className="h-4 w-px bg-border" />
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="w-4 h-4 text-accent" />
-              <span className="text-sm font-medium">مفتوح الآن</span>
+              <span className="text-sm font-medium">{t("status.open")}</span>
             </div>
           </div>
 
           <div className="relative group">
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Search className={`absolute ${i18n.language === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors`} />
             <input 
               type="text"
-              placeholder="ابحث عن مشروبك المفضل..."
+              placeholder={t("menu.search_placeholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pr-12 pl-4 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+              className={`w-full h-12 ${i18n.language === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'} bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm`}
               data-testid="input-search"
             />
           </div>
@@ -280,16 +317,16 @@ export default function MenuPage() {
                 data-testid={`button-category-${cat.id}`}
               >
                 <cat.icon className={`w-4 h-4 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
-                {cat.nameAr}
+                {cat.name}
               </button>
             ))}
           </div>
 
           <section className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">الأكثر مبيعاً</h2>
+              <h2 className="text-xl font-bold text-foreground">{t("menu.featured")}</h2>
               <Button variant="ghost" size="sm" className="text-primary text-sm">
-                عرض الكل
+                {t("menu.view_all")}
               </Button>
             </div>
             <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-2">
@@ -306,16 +343,16 @@ export default function MenuPage() {
                     <img 
                       src={item.imageUrl} 
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                      alt={item.nameAr} 
+                      alt={i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr} 
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
                       }}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <h3 className="text-sm font-semibold truncate text-foreground">{item.nameAr}</h3>
+                    <h3 className="text-sm font-semibold truncate text-foreground">{i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}</h3>
                     <div className="flex items-center justify-between">
-                      <span className="text-primary font-bold">{item.price} <small className="text-xs font-normal text-muted-foreground">ر.س</small></span>
+                      <span className="text-primary font-bold">{item.price} <small className="text-xs font-normal text-muted-foreground">{t("currency")}</small></span>
                       <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
                         <Plus className="w-4 h-4 text-primary group-hover:text-white transition-colors" />
                       </div>
@@ -327,7 +364,7 @@ export default function MenuPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-bold text-foreground">قائمة المشروبات</h2>
+            <h2 className="text-xl font-bold text-foreground">{t("menu.all_items")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <AnimatePresence mode="popLayout">
                 {filteredItems.map((item) => (
@@ -347,17 +384,17 @@ export default function MenuPage() {
                       <img 
                         src={item.imageUrl} 
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                        alt={item.nameAr} 
+                        alt={i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr} 
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
                         }}
                       />
                     </div>
                     <div className="flex-1 min-w-0 py-1">
-                      <h3 className="text-base font-semibold truncate text-foreground mb-1">{item.nameAr}</h3>
-                      <p className="text-xs text-muted-foreground truncate mb-2">{item.description || "قهوة مميزة"}</p>
+                      <h3 className="text-base font-semibold truncate text-foreground mb-1">{i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}</h3>
+                      <p className="text-xs text-muted-foreground truncate mb-2">{i18n.language === 'ar' ? item.descriptionAr || item.description : item.descriptionEn || item.description || t("menu.default_desc")}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-primary font-bold text-lg">{item.price} <small className="text-xs font-normal text-muted-foreground">ر.س</small></span>
+                        <span className="text-primary font-bold text-lg">{item.price} <small className="text-xs font-normal text-muted-foreground">{t("currency")}</small></span>
                         <Button 
                           size="sm" 
                           className="h-8 w-8 p-0 rounded-lg bg-primary hover:bg-primary/90"
@@ -383,13 +420,13 @@ export default function MenuPage() {
         item={selectedItem}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        variants={selectedItem ? (groupedItems[selectedItem.nameAr.trim().split(/\s+/)[0]] || [selectedItem]) : []}
+        variants={selectedItem ? (groupedItems[(i18n.language === 'ar' ? selectedItem.nameAr : selectedItem.nameEn || selectedItem.nameAr).trim().split(/\s+/)[0]] || [selectedItem]) : []}
         onAddToCart={(data) => {
           (addToCart as any)(data);
           setIsModalOpen(false);
           toast({ 
-            title: "تمت الإضافة", 
-            description: `تم إضافة ${selectedItem?.nameAr} إلى سلتك بنجاح`,
+            title: t("menu.added_to_cart"), 
+            description: t("menu.added_to_cart_desc", { name: i18n.language === 'ar' ? selectedItem?.nameAr : selectedItem?.nameEn || selectedItem?.nameAr }),
             className: "bg-card border-primary/20 text-foreground font-medium"
           });
         }}
@@ -411,8 +448,8 @@ export default function MenuPage() {
                 <ShoppingCart className="w-5 h-5" />
               </div>
               <div className="text-right">
-                <p className="text-xs font-medium opacity-80">عرض السلة</p>
-                <p className="text-sm font-bold">{totalItems} منتجات</p>
+                <p className="text-xs font-medium opacity-80">{t("menu.view_cart")}</p>
+                <p className="text-sm font-bold">{t("menu.items_count", { count: totalItems })}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -420,7 +457,7 @@ export default function MenuPage() {
                 {cartItems.reduce((sum, i) => {
                   const price = (i as any).price || (i as any).coffeeItem?.price || 0;
                   return sum + price * i.quantity;
-                }, 0)} ر.س
+                }, 0)} {t("currency")}
               </span>
             </div>
           </Button>
