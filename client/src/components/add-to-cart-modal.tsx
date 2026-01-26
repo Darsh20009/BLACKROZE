@@ -71,10 +71,7 @@ export function AddToCartModal({
       coffeeItemId: activeItem.id,
       quantity,
       selectedSize: selectedSize || "default",
-      selectedAddons: selectedAddons.map((addonId) => {
-        const addon = allAddons.find((a) => a.id === addonId);
-        return addon?.nameAr;
-      }).filter(Boolean),
+      selectedAddons: selectedAddons,
     };
 
     onAddToCart(cartItem);

@@ -422,7 +422,7 @@ export default function MenuPage() {
         onClose={() => setIsModalOpen(false)}
         variants={selectedItem ? (groupedItems[(i18n.language === 'ar' ? selectedItem.nameAr : selectedItem.nameEn || selectedItem.nameAr).trim().split(/\s+/)[0]] || [selectedItem]) : []}
         onAddToCart={(data) => {
-          (addToCart as any)(data);
+          addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons);
           setIsModalOpen(false);
           toast({ 
             title: t("menu.added_to_cart"), 
