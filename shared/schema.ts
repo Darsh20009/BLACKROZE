@@ -660,6 +660,7 @@ export interface IOrder extends Document {
   carPickup?: any;
   discountCode?: string;
   discountPercentage?: number;
+  isOpenTab?: boolean;
   deliveryType?: 'pickup' | 'delivery' | 'dine-in';
   deliveryAddress?: {
     fullAddress?: string;
