@@ -1,9 +1,10 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
-import { Coffee, Star, MapPin, ChevronLeft, LogOut } from "lucide-react";
+import { motion } from "framer-motion";
+import { Coffee, Star, MapPin, ChevronLeft, LogOut, Sparkles } from "lucide-react";
 import clunyLogo from "@/assets/cluny-logo.png";
-import CoffeeAnimation from "@/components/coffee-animation";
+import bannerImage1 from "@assets/banner-coffee-1.png";
+import bannerImage2 from "@assets/banner-coffee-2.png";
 import { useCustomer } from "@/contexts/CustomerContext";
 
 export default function WelcomePage() {
@@ -11,153 +12,219 @@ export default function WelcomePage() {
   const { customer, isAuthenticated, logout } = useCustomer();
 
   const features = [
-    { icon: Coffee, title: "قهوة مختصة", desc: "أجود أنواع الحبوب المحمصة بعناية" },
-    { icon: Star, title: "تجربة فخمة", desc: "أجواء تجمع بين الرقي والراحة" },
-    { icon: MapPin, title: "مواقعنا", desc: "متواجدون في أرقى أحياء الرياض" },
+    { icon: Coffee, title: "قهوة مختصة", desc: "أجود أنواع الحبوب المحمصة بعناية", color: "from-primary to-primary/70" },
+    { icon: Star, title: "تجربة فخمة", desc: "أجواء تجمع بين الرقي والراحة", color: "from-accent to-accent/70" },
+    { icon: MapPin, title: "مواقعنا", desc: "متواجدون في أرقى أحياء الرياض", color: "from-primary to-accent" },
   ];
 
   return (
-    <div className="min-h-screen bg-[#233230] text-white overflow-hidden font-ibm-arabic">
-      {/* Hero Section */}
-      <div className="relative h-[100dvh] flex flex-col justify-center px-6">
-        {/* Background Decorative Elements - Matching Brand */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary/5 text-foreground overflow-hidden font-ibm-arabic">
+      {/* Hero Section with Background Image */}
+      <div className="relative min-h-[100dvh] flex flex-col">
+        {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#B58B5A]/15 rounded-full blur-[120px]" />
+          <img 
+            src={bannerImage1} 
+            alt="Coffee Background" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
         </div>
 
-        <div className="relative z-20 max-w-lg mx-auto w-full text-center">
+        {/* Floating decorative elements */}
+        <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 right-10 w-20 h-20 bg-primary/20 rounded-full blur-2xl animate-pulse" />
+          <div className="absolute bottom-40 left-10 w-32 h-32 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+
+        {/* Header */}
+        <header className="relative z-20 flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md p-1 border border-white/30">
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-lg" />
+            </div>
+            <span className="text-white font-bold text-lg tracking-wide">CLUNY</span>
+          </div>
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => logout()}
+              className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          )}
+        </header>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-20">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
+            className="text-center max-w-lg"
           >
-            <div className="w-24 h-24 mx-auto mb-8 p-1 rounded-full border border-[#9FB2B3]/20 bg-white shadow-xl">
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-full" />
-            </div>
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="w-28 h-28 mx-auto mb-8 p-2 rounded-2xl bg-white shadow-2xl"
+            >
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
+            </motion.div>
 
-            <h1 className="text-5xl md:text-6xl font-playfair mb-4 tracking-tight leading-tight text-white">
-              CLUNY CAFE
-            </h1>
-            
-            <AnimatePresence mode="wait">
-              {isAuthenticated ? (
-                <motion.div
-                  key="welcome-user"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mb-12"
-                >
-                  <p className="text-white text-2xl md:text-3xl mb-2 font-playfair font-semibold">
-                    مرحباً، {customer?.name}
-                  </p>
-                  <p className="text-white/80 text-lg font-light">
-                    اشتقنا لرائحة قهوتك المفضلة
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.p
-                  key="tagline"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="text-white/80 text-lg md:text-xl mb-12 font-light tracking-wide"
-                >
-                  حيث تبدأ حكايات القهوة الفاخرة
-                </motion.p>
-              )}
-            </AnimatePresence>
-
-            <div className="space-y-4">
-              <div className="relative group">
-                <Button
-                  onClick={() => setLocation("/menu")}
-                  className="w-full h-14 bg-transparent text-white border-white/20 hover:bg-white/10 rounded-xl text-xl font-medium shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group border relative z-10 overflow-hidden"
-                >
-                  <span className="relative z-20 flex items-center justify-center">
-                    {isAuthenticated ? "اطلب الآن" : "استكشف القائمة"}
-                    <ChevronLeft className="mr-2 w-6 h-6 transition-transform group-hover:-translate-x-1" />
-                  </span>
-                  
-                  {/* Embedded Coffee Animation in Button */}
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity">
-                    <CoffeeAnimation size="sm" className="w-12 h-12" />
-                  </div>
-                </Button>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <h1 className="text-5xl md:text-6xl font-bold mb-3 text-white drop-shadow-lg">
+                CLUNY CAFE
+              </h1>
+              <div className="flex items-center justify-center gap-2 mb-8">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-white/80 text-lg tracking-wider">Premium Coffee Experience</span>
+                <Sparkles className="w-4 h-4 text-primary" />
               </div>
+            </motion.div>
+
+            {isAuthenticated ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mb-10"
+              >
+                <p className="text-white text-2xl mb-2 font-semibold">
+                  مرحباً، {customer?.name} 👋
+                </p>
+                <p className="text-white/70 text-base">
+                  اشتقنا لرائحة قهوتك المفضلة
+                </p>
+              </motion.div>
+            ) : (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="text-white/80 text-xl mb-10"
+              >
+                حيث تبدأ حكايات القهوة الفاخرة
+              </motion.p>
+            )}
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="space-y-3"
+            >
+              <Button
+                onClick={() => setLocation("/menu")}
+                className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-xl shadow-primary/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {isAuthenticated ? "اطلب الآن" : "استكشف القائمة"}
+                <ChevronLeft className="mr-2 w-5 h-5" />
+              </Button>
               
               {!isAuthenticated ? (
                 <Button
                   variant="outline"
                   onClick={() => setLocation("/auth")}
-                  className="w-full h-14 border-white/30 bg-white/10 text-white rounded-xl text-lg hover:bg-white/20"
+                  className="w-full h-14 bg-white/10 backdrop-blur-md border-white/30 text-white rounded-2xl text-lg hover:bg-white/20"
                 >
                   تسجيل الدخول
                 </Button>
               ) : (
-                <div className="flex gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setLocation("/my-orders")}
-                    className="flex-1 h-14 border-white/20 bg-white/10 text-white rounded-xl text-lg hover:bg-white/20"
-                  >
-                    طلباتي
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => logout()}
-                    className="h-14 w-14 rounded-xl border border-red-400/20 bg-red-400/10 text-red-200 hover:text-white hover:bg-red-500"
-                  >
-                    <LogOut className="w-6 h-6" />
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/profile")}
+                  className="w-full h-14 bg-white/10 backdrop-blur-md border-white/30 text-white rounded-2xl text-lg hover:bg-white/20"
+                >
+                  حسابي وطلباتي
+                </Button>
               )}
-            </div>
+            </motion.div>
           </motion.div>
         </div>
 
-        {/* Scroll Indicator */}
+        {/* Scroll hint */}
         <motion.div 
-          animate={{ y: [0, 10, 0] }}
+          animate={{ y: [0, 8, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20"
+          className="relative z-20 pb-8 text-center"
         >
-          <div className="w-[1px] h-12 bg-gradient-to-b from-[#9FB2B3]/40 to-transparent" />
+          <div className="w-6 h-10 mx-auto border-2 border-white/30 rounded-full flex justify-center pt-2">
+            <div className="w-1.5 h-3 bg-white/50 rounded-full" />
+          </div>
         </motion.div>
       </div>
 
-      {/* Features Grid */}
-      <section className="py-24 px-6 relative z-10 bg-white/5 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
-          {features.map((f, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.2 }}
-              viewport={{ once: true }}
-              className="text-center group"
-            >
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-2xl bg-white/10 border border-white/20 transition-all group-hover:border-white/50 group-hover:bg-white/20">
-                <f.icon className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-2xl mb-3 font-semibold text-white">{f.title}</h3>
-              <p className="text-white/70 leading-relaxed">
-                {f.desc}
-              </p>
-            </motion.div>
-          ))}
+      {/* Features Section */}
+      <section className="py-20 px-6 bg-gradient-to-b from-white to-slate-50">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold text-foreground mb-3">لماذا كلوني؟</h2>
+            <p className="text-muted-foreground">تجربة قهوة لا تُنسى</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {features.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.15 }}
+                viewport={{ once: true }}
+                className="bg-white rounded-2xl p-6 shadow-lg border border-border hover:shadow-xl transition-shadow"
+              >
+                <div className={`w-14 h-14 mb-4 flex items-center justify-center rounded-xl bg-gradient-to-br ${f.color}`}>
+                  <f.icon className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-2">{f.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Elegant Footer */}
-      <footer className="py-12 border-t border-white/10 px-6 bg-[#233230]">
-        <div className="max-w-7xl mx-auto flex flex-col items-center">
-          <img src={clunyLogo} alt="Logo" className="w-12 h-12 opacity-50 mb-6 brightness-0 invert" />
-          <p className="text-white/50 text-sm font-light uppercase tracking-widest">
-            © 2026 CLUNY CAFE. ALL RIGHTS RESERVED.
+      {/* Gallery Section */}
+      <section className="py-16 px-6 bg-slate-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 gap-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl overflow-hidden shadow-lg"
+            >
+              <img src={bannerImage1} alt="Coffee" className="w-full h-48 object-cover" />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl overflow-hidden shadow-lg"
+            >
+              <img src={bannerImage2} alt="Coffee" className="w-full h-48 object-cover" />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-10 px-6 bg-white border-t border-border">
+        <div className="max-w-4xl mx-auto flex flex-col items-center">
+          <img src={clunyLogo} alt="Logo" className="w-12 h-12 mb-4" />
+          <p className="text-muted-foreground text-sm">
+            © 2026 CLUNY CAFE. All Rights Reserved.
           </p>
         </div>
       </footer>
