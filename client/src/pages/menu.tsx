@@ -135,8 +135,7 @@ export default function MenuPage() {
   const toggleLanguage = () => {
     const newLang = i18n.language === 'ar' ? 'en' : 'ar';
     i18n.changeLanguage(newLang);
-    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = newLang;
+    // document.documentElement updates are now handled globally in App.tsx
   };
 
   if (isLoading) {

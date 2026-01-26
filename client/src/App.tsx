@@ -332,16 +332,20 @@ function App() {
     setIsEmployee(isEmployeePath);
 
     // Dynamic Manifest switching for PWA
-    const manifestTag = document.getElementById('manifest-tag') as HTMLLinkElement;
+    const manifestTag = document.getElementById('main-manifest') as HTMLLinkElement;
     if (manifestTag) {
       manifestTag.href = isEmployeePath ? '/employee-manifest.json' : '/manifest.json';
     }
+
+    // Update document language and direction
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
 
     // Redirect employee from customer root if they are on employee system
     if (isEmployeePath && currentPath === '/') {
       window.location.href = '/employee';
     }
-  }, []);
+  }, [i18n.language]);
 
   return (
     <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
