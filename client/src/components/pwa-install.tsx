@@ -4,12 +4,14 @@ import { Download, Bell, Info, Share2, PlusSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import clunyLogo from "@assets/cluny-logo-customer.png";
+import { useTranslation } from "react-i18next";
 
 export function PWAInstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Check if app is already installed
@@ -18,7 +20,7 @@ export function PWAInstallButton() {
     }
 
     // Listen for beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e: Event) => {
+    const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
       // Auto-show prompt after 3 seconds for new users
@@ -49,13 +51,13 @@ export function PWAInstallButton() {
       const ua = navigator.userAgent.toLowerCase();
       if (/iphone|ipad|ipod/.test(ua)) {
         toast({
-          title: "تثبيت على iPhone",
-          description: "اضغط على أيقونة المشاركة (Share) ثم اختر 'إضافة إلى الشاشة الرئيسية'",
+          title: t("pwa.install_ios_title") || "تثبيت على iPhone",
+          description: t("pwa.install_ios_desc") || "اضغط على أيقونة المشاركة (Share) ثم اختر 'إضافة إلى الشاشة الرئيسية'",
         });
       } else {
         toast({
-          title: "تثبيت التطبيق",
-          description: "اضغط على القائمة (⋮) في المتصفح ثم اختر 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'",
+          title: t("pwa.install_title") || "تثبيت التطبيق",
+          description: t("pwa.install_desc") || "اضغط على القائمة (⋮) في المتصفح ثم اختر 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'",
         });
       }
     }
@@ -72,15 +74,15 @@ export function PWAInstallButton() {
               <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-black text-primary leading-tight">ثبت تطبيق كلووني</h3>
-              <p className="text-xs text-muted-foreground font-medium">استمتع بتجربة أسرع ووصول فوري</p>
+              <h3 className="text-lg font-black text-primary leading-tight">{t("pwa.prompt_title") || "ثبت تطبيق كلووني"}</h3>
+              <p className="text-xs text-muted-foreground font-medium">{t("pwa.prompt_desc") || "استمتع بتجربة أسرع ووصول فوري"}</p>
             </div>
             <div className="flex flex-col gap-2">
               <Button 
                 onClick={handleInstall}
                 className="rounded-xl h-10 px-6 font-bold bg-primary text-primary-foreground hover-elevate shadow-lg shadow-primary/20"
               >
-                تثبيت الآن
+                {t("pwa.install_btn") || "تثبيت الآن"}
               </Button>
               <Button 
                 variant="ghost" 
@@ -88,7 +90,7 @@ export function PWAInstallButton() {
                 onClick={() => setShowPrompt(false)}
                 className="text-[10px] h-6 text-muted-foreground hover:bg-transparent"
               >
-                ليس الآن
+                {t("pwa.not_now") || "ليس الآن"}
               </Button>
             </div>
           </div>

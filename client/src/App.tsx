@@ -348,7 +348,7 @@ function App() {
   }, [i18n.language]);
 
   return (
-    <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} key={i18n.language}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <CustomerProvider>

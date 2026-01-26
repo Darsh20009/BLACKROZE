@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,14 @@ export function AddToCartModal({
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const { toast } = useToast();
+
+  const resetModal = useCallback(() => {
+    setQuantity(1);
+    setSelectedSize(null);
+    setSelectedAddons([]);
+    setSelectedVariant(null);
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (isOpen && item) {
@@ -76,14 +84,6 @@ export function AddToCartModal({
 
     onAddToCart(cartItem);
     resetModal();
-  };
-
-  const resetModal = () => {
-    setQuantity(1);
-    setSelectedSize(null);
-    setSelectedAddons([]);
-    setSelectedVariant(null);
-    onClose();
   };
 
   if (!activeItem) return null;
