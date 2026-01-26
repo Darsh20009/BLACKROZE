@@ -69,7 +69,7 @@ export default function WelcomePage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="w-28 h-28 mx-auto mb-8 p-2 rounded-2xl bg-white shadow-2xl"
+              className="w-28 h-28 mx-auto mb-8"
             >
               <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
             </motion.div>
