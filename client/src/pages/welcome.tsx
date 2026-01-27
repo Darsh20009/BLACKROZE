@@ -7,14 +7,17 @@ import bannerImage1 from "@assets/banner-coffee-1.png";
 import bannerImage2 from "@assets/banner-coffee-2.png";
 import { useCustomer } from "@/contexts/CustomerContext";
 
+import { useTranslation } from "react-i18next";
+
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
   const { customer, isAuthenticated, logout } = useCustomer();
+  const { t } = useTranslation();
 
   const features = [
-    { icon: Coffee, title: "قهوة مختصة", desc: "أجود أنواع الحبوب المحمصة بعناية", color: "from-primary to-primary/70" },
-    { icon: Star, title: "تجربة فخمة", desc: "أجواء تجمع بين الرقي والراحة", color: "from-accent to-accent/70" },
-    { icon: MapPin, title: "مواقعنا", desc: "متواجدون في أرقى أحياء الرياض", color: "from-primary to-accent" },
+    { icon: Coffee, title: t("menu.featured") || "قهوة مختصة", desc: t("banner.1.subtitle") || "أجود أنواع الحبوب المحمصة بعناية", color: "from-primary to-primary/70" },
+    { icon: Star, title: t("app.tagline") || "تجربة فخمة", desc: t("banner.2.subtitle") || "أجواء تجمع بين الرقي والراحة", color: "from-accent to-accent/70" },
+    { icon: MapPin, title: t("location.riyadh") || "مواقعنا", desc: "متواجدون في أرقى أحياء الرياض", color: "from-primary to-accent" },
   ];
 
   return (
@@ -80,11 +83,11 @@ export default function WelcomePage() {
               transition={{ delay: 0.4 }}
             >
               <h1 className="text-5xl md:text-6xl font-bold mb-3 text-white drop-shadow-lg">
-                CLUNY CAFE
+                {t("app.name")}
               </h1>
               <div className="flex items-center justify-center gap-2 mb-8">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-white/80 text-lg tracking-wider">Premium Coffee Experience</span>
+                <span className="text-white/80 text-lg tracking-wider">{t("app.tagline")}</span>
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
             </motion.div>
@@ -124,7 +127,7 @@ export default function WelcomePage() {
                 onClick={() => setLocation("/menu")}
                 className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-xl shadow-primary/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
-                {isAuthenticated ? "اطلب الآن" : "استكشف القائمة"}
+                {isAuthenticated ? (t("menu.order_now") || "اطلب الآن") : (t("menu.view_all") || "استكشف القائمة")}
                 <ChevronLeft className="mr-2 w-5 h-5" />
               </Button>
               

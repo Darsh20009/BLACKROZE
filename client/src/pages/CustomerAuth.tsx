@@ -190,7 +190,7 @@ export default function CustomerAuth() {
  <TabsContent value="login" className="space-y-5 mt-5">
  <form onSubmit={handleLogin} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="login-identifier" className="text-card flex items-center gap-2">
+ <Label htmlFor="login-identifier" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
  <Mail className="w-4 h-4" />
  رقم الجوال أو البريد الإلكتروني
  </Label>
@@ -208,7 +208,7 @@ export default function CustomerAuth() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="login-password" className="text-card flex items-center gap-2">
+ <Label htmlFor="login-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
  <Lock className="w-4 h-4" />
  كلمة المرور
  </Label>
@@ -263,7 +263,7 @@ export default function CustomerAuth() {
  <TabsContent value="register" className="space-y-5 mt-5">
  <form onSubmit={handleRegister} className="space-y-5">
  <div className="space-y-2">
- <Label htmlFor="register-name" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="register-name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
  <User className="w-4 h-4" />
  الاسم
  </Label>
@@ -280,7 +280,7 @@ export default function CustomerAuth() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="register-phone" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="register-phone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
  <Phone className="w-4 h-4" />
  رقم الجوال
  </Label>
@@ -298,7 +298,7 @@ export default function CustomerAuth() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="register-email" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="register-email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
  <Mail className="w-4 h-4" />
  البريد الإلكتروني
  </Label>
@@ -319,7 +319,7 @@ export default function CustomerAuth() {
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="register-password" className="text-amber-100 flex items-center gap-2">
+ <Label htmlFor="register-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
  <Lock className="w-4 h-4" />
  كلمة المرور
  </Label>
