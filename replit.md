@@ -25,6 +25,7 @@ The system employs a modern, clean design inspired by Noon Food, featuring a vib
 
 ### Technical Implementations
 
+- **POS Order Alerts & Management:** Real-time order alerts with notification sounds via WebSocket, sound/alert toggles with persistence, new orders badge counter, split-screen view toggle, enhanced live orders dialog with details panel, color-coded status borders, and order actions (start, ready, complete, cancel).
 - **Business Mode System:** Supports configurable "cafe only," "restaurant only," or "both" modes, with dynamic menu filtering and real-time status indicators.
 - **ERP Accounting System:** Features a professional Chart of Accounts following Saudi standards, double-entry bookkeeping, journal entry management, and financial reports (Trial Balance, Income Statement, Balance Sheet). Includes expense management with approval workflows and vendor management.
 - **ZATCA Professional Invoicing:** Generates ZATCA-compliant invoices with TLV encoded QR codes containing mandatory fields, integrated into order creation and standalone invoice generation.
