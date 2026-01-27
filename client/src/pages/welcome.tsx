@@ -69,7 +69,7 @@ export default function WelcomePage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm p-2 border border-white/20 shadow-xl"
+              className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-sm p-2 border border-white/20 shadow-xl bg-[#a7b0b1]"
             >
               <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
             </motion.div>
@@ -160,7 +160,6 @@ export default function WelcomePage() {
           </div>
         </motion.div>
       </div>
-
       {/* Features Section */}
       <section className="py-20 px-6 bg-gradient-to-b from-white to-slate-50">
         <div className="max-w-4xl mx-auto">
@@ -194,7 +193,6 @@ export default function WelcomePage() {
           </div>
         </div>
       </section>
-
       {/* Gallery Section */}
       <section className="py-16 px-6 bg-slate-50">
         <div className="max-w-4xl mx-auto">
@@ -218,7 +216,6 @@ export default function WelcomePage() {
           </div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="py-10 px-6 bg-white border-t border-border">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
