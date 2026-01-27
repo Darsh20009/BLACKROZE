@@ -105,11 +105,22 @@ export default function MenuPage() {
 
   const representativeItems = Object.values(groupedItems).map(group => group[0]);
 
+  const drinkCategories = ['basic', 'hot', 'cold', 'specialty', 'desserts'];
+  const foodCategoryIds = ['appetizers', 'main_courses', 'sandwiches', 'salads', 'breakfast', 'pastries'];
+
   const filteredItems = representativeItems.filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
     const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    const itemMenuType = (item as any).menuType || 'drinks';
+    const matchesMode = !isBothModes || (
+      activeMode === "drinks" 
+        ? (itemMenuType === 'drinks' || drinkCategories.includes(item.category))
+        : (itemMenuType === 'food' || foodCategoryIds.includes(item.category))
+    );
+    
+    return matchesCategory && matchesSearch && matchesMode;
   });
 
   const handleAddToCartDirect = (item: CoffeeItem) => {

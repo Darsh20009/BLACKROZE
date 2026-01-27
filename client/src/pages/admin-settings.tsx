@@ -49,10 +49,7 @@ export default function AdminSettings() {
 
   const updateBusinessConfigMutation = useMutation({
     mutationFn: async (data: { activityType?: string; isFoodEnabled?: boolean }) => {
-      return apiRequest('/api/config', {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('PATCH', '/api/config', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/business-config'] });
