@@ -114,7 +114,7 @@ export function CustomerLayout({
               data-testid="nav-cart"
             >
               <ShoppingCart className="h-5 w-5" />
-              <span className="text-xs">السلة</span>
+              <span className="text-xs">{t("nav.cart") || "السلة"}</span>
               {cartItemCount > 0 && (
                 <Badge 
                   variant="destructive" 
