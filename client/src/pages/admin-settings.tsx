@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Shield, Bell, Palette, Database, Plus } from 'lucide-react';
+import { Save, Shield, Bell, Palette, Database, Plus, Store, Utensils, Coffee } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import {
   Select,
   SelectContent,
@@ -26,6 +28,58 @@ export default function AdminSettings() {
     emailNotifications: true,
     dataBackupInterval: 'daily',
   });
+
+  const { data: businessConfig, isLoading: isLoadingConfig } = useQuery<{
+    activityType: 'cafe' | 'restaurant' | 'both';
+    isFoodEnabled: boolean;
+    isDrinksEnabled: boolean;
+  }>({
+    queryKey: ['/api/business-config'],
+  });
+
+  const [businessMode, setBusinessMode] = useState<'cafe' | 'restaurant' | 'both'>('cafe');
+  const [isFoodEnabled, setIsFoodEnabled] = useState(false);
+
+  useEffect(() => {
+    if (businessConfig) {
+      setBusinessMode(businessConfig.activityType || 'cafe');
+      setIsFoodEnabled(businessConfig.isFoodEnabled || false);
+    }
+  }, [businessConfig]);
+
+  const updateBusinessConfigMutation = useMutation({
+    mutationFn: async (data: { activityType?: string; isFoodEnabled?: boolean }) => {
+      return apiRequest('/api/config', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/business-config'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/config'] });
+      toast({
+        title: 'تم الحفظ',
+        description: 'تم تحديث إعدادات وضع العمل بنجاح',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'خطأ',
+        description: 'فشل في حفظ الإعدادات',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleBusinessModeChange = (mode: 'cafe' | 'restaurant' | 'both') => {
+    setBusinessMode(mode);
+    const newFoodEnabled = mode === 'restaurant' || mode === 'both';
+    setIsFoodEnabled(newFoodEnabled);
+    updateBusinessConfigMutation.mutate({ 
+      activityType: mode,
+      isFoodEnabled: newFoodEnabled
+    });
+  };
 
   const handleSave = () => {
     toast({
@@ -70,6 +124,84 @@ export default function AdminSettings() {
           حفظ التغييرات
         </Button>
       </div>
+
+      {/* Business Mode Settings */}
+      <SettingSection
+        icon={Store}
+        title="وضع العمل"
+        description="اختر نوع نشاطك التجاري - كافيه فقط أو مطعم وكافيه معاً"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => handleBusinessModeChange('cafe')}
+              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-3 ${
+                businessMode === 'cafe' 
+                  ? 'border-accent bg-accent/10' 
+                  : 'border-gray-200 dark:border-gray-700 hover:border-accent/50'
+              }`}
+              data-testid="button-mode-cafe"
+            >
+              <Coffee className={`w-8 h-8 ${businessMode === 'cafe' ? 'text-accent' : 'text-muted-foreground'}`} />
+              <div className="text-center">
+                <p className="font-bold">كافيه فقط</p>
+                <p className="text-xs text-muted-foreground">مشروبات وحلويات</p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleBusinessModeChange('restaurant')}
+              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-3 ${
+                businessMode === 'restaurant' 
+                  ? 'border-accent bg-accent/10' 
+                  : 'border-gray-200 dark:border-gray-700 hover:border-accent/50'
+              }`}
+              data-testid="button-mode-restaurant"
+            >
+              <Utensils className={`w-8 h-8 ${businessMode === 'restaurant' ? 'text-accent' : 'text-muted-foreground'}`} />
+              <div className="text-center">
+                <p className="font-bold">مطعم فقط</p>
+                <p className="text-xs text-muted-foreground">مأكولات ووجبات</p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleBusinessModeChange('both')}
+              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-3 ${
+                businessMode === 'both' 
+                  ? 'border-accent bg-accent/10' 
+                  : 'border-gray-200 dark:border-gray-700 hover:border-accent/50'
+              }`}
+              data-testid="button-mode-both"
+            >
+              <div className="flex gap-1">
+                <Coffee className={`w-6 h-6 ${businessMode === 'both' ? 'text-accent' : 'text-muted-foreground'}`} />
+                <Utensils className={`w-6 h-6 ${businessMode === 'both' ? 'text-accent' : 'text-muted-foreground'}`} />
+              </div>
+              <div className="text-center">
+                <p className="font-bold">كافيه ومطعم</p>
+                <p className="text-xs text-muted-foreground">مشروبات ومأكولات معاً</p>
+              </div>
+            </button>
+          </div>
+          <div className={`p-4 rounded-lg ${isFoodEnabled ? 'bg-green-50 dark:bg-green-900/20' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${isFoodEnabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+              <div>
+                <p className="font-medium">
+                  {isFoodEnabled ? 'قائمة الطعام مفعلة' : 'قائمة الطعام غير مفعلة'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isFoodEnabled 
+                    ? 'العملاء يمكنهم رؤية واختيار المأكولات من المنيو' 
+                    : 'اختر وضع "مطعم" أو "كافيه ومطعم" لتفعيل قائمة الطعام'}
+                </p>
+              </div>
+            </div>
+          </div>
+          {updateBusinessConfigMutation.isPending && (
+            <p className="text-sm text-muted-foreground text-center">جاري الحفظ...</p>
+          )}
+        </div>
+      </SettingSection>
 
       {/* General Settings */}
       <SettingSection

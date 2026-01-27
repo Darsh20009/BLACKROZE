@@ -10,6 +10,7 @@ export interface ICoffeeItem extends Document {
   price: number;
   oldPrice?: number;
   category: string;
+  menuType?: 'drinks' | 'food';
   imageUrl?: string;
   isAvailable: number;
   availabilityStatus?: string;
@@ -53,6 +54,7 @@ const CoffeeItemSchema = new Schema<ICoffeeItem>({
   price: { type: Number, required: true },
   oldPrice: { type: Number },
   category: { type: String, required: true },
+  menuType: { type: String, enum: ['drinks', 'food'], default: 'drinks' },
   imageUrl: { type: String },
   isAvailable: { type: Number, default: 1, required: true },
   availabilityStatus: { type: String, default: "available" },
