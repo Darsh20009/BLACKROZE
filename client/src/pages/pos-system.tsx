@@ -24,8 +24,11 @@ import {
   Loader2, CheckCircle, Zap, Building, Users, Edit3,
   Receipt, Wallet, QrCode, SplitSquareVertical, AlertTriangle,
   RefreshCw, Archive, MoreVertical, MessageSquare, ScanLine, Camera, Gift,
-  Table2, Lock, Unlock
+  Table2, Lock, Unlock, Bell, BellOff, Volume2, VolumeX, Eye, XCircle,
+  Columns2
 } from "lucide-react";
+import { playNotificationSound } from "@/lib/notification-sounds";
+import { useOrderWebSocket } from "@/lib/websocket";
 
 interface TableData {
   id: string;
@@ -211,6 +214,17 @@ export default function POSSystem() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [notificationAudio] = useState(new Audio("/notification.mp3"));
   const [showLiveOrders, setShowLiveOrders] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem("pos_sound_enabled");
+    return saved !== "false";
+  });
+  const [alertsEnabled, setAlertsEnabled] = useState(() => {
+    const saved = localStorage.getItem("pos_alerts_enabled");
+    return saved !== "false";
+  });
+  const [splitViewMode, setSplitViewMode] = useState(false);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
 
   // Fetch live orders for POS notification and control
   const { data: liveOrders = [] } = useQuery<any[]>({
@@ -227,15 +241,56 @@ export default function POSSystem() {
   const [prevOrderCount, setPrevOrderCount] = useState(0);
   useEffect(() => {
     if (liveOrders.length > prevOrderCount && prevOrderCount > 0) {
-      notificationAudio.play().catch(() => {});
-      toast({
-        title: "طلب جديد!",
-        description: "وصل طلب جديد إلى النظام",
-        className: "bg-primary text-primary-foreground",
-      });
+      const newCount = liveOrders.length - prevOrderCount;
+      setNewOrdersCount(prev => prev + newCount);
+      
+      if (soundEnabled) {
+        playNotificationSound('newOrder', 0.7);
+      }
+      
+      if (alertsEnabled) {
+        toast({
+          title: "طلب جديد!",
+          description: `وصل ${newCount > 1 ? newCount + ' طلبات جديدة' : 'طلب جديد'} إلى النظام`,
+          className: "bg-primary text-primary-foreground",
+        });
+      }
     }
     setPrevOrderCount(liveOrders.length);
-  }, [liveOrders.length, prevOrderCount, notificationAudio, toast]);
+  }, [liveOrders.length, prevOrderCount, toast, soundEnabled, alertsEnabled]);
+
+  // WebSocket for real-time order updates
+  const { isConnected: wsConnected } = useOrderWebSocket({
+    clientType: 'pos',
+    branchId: employee?.branchId,
+    onNewOrder: (order) => {
+      if (soundEnabled) {
+        playNotificationSound('newOrder', 0.7);
+      }
+      if (alertsEnabled) {
+        toast({
+          title: "طلب جديد!",
+          description: `طلب #${order?.orderNumber || 'جديد'} - ${order?.customerInfo?.customerName || 'عميل'}`,
+          className: "bg-primary text-primary-foreground",
+        });
+      }
+      setNewOrdersCount(prev => prev + 1);
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+    },
+    onOrderUpdated: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+    },
+    enabled: !!employee?.branchId
+  });
+
+  // Save preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem("pos_sound_enabled", String(soundEnabled));
+  }, [soundEnabled]);
+  
+  useEffect(() => {
+    localStorage.setItem("pos_alerts_enabled", String(alertsEnabled));
+  }, [alertsEnabled]);
   
   const [isCheckingCustomer, setIsCheckingCustomer] = useState(false);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
@@ -1223,23 +1278,55 @@ export default function POSSystem() {
                 )}
                 
                 <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setShowLiveOrders(true)} 
-                  className="text-xs sm:text-sm"
+                  variant={soundEnabled ? "outline" : "secondary"}
+                  size="icon"
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className="h-9 w-9"
+                  title={soundEnabled ? "إيقاف الصوت" : "تشغيل الصوت"}
+                  data-testid="button-toggle-sound"
                 >
-                  <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
-                  <span className="hidden sm:inline">الطلبات</span>
+                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 </Button>
-
+                
+                <Button 
+                  variant={alertsEnabled ? "outline" : "secondary"}
+                  size="icon"
+                  onClick={() => setAlertsEnabled(!alertsEnabled)}
+                  className="h-9 w-9"
+                  title={alertsEnabled ? "إيقاف التنبيهات" : "تشغيل التنبيهات"}
+                  data-testid="button-toggle-alerts"
+                >
+                  {alertsEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                </Button>
+                
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => window.open(window.location.href, '_blank')} 
-                  className="text-xs sm:text-sm"
+                  onClick={() => {
+                    setShowLiveOrders(true);
+                    setNewOrdersCount(0);
+                  }} 
+                  className="text-xs sm:text-sm relative"
+                  data-testid="button-live-orders"
                 >
-                  <SplitSquareVertical className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
-                  <span className="hidden sm:inline">فصل</span>
+                  <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
+                  <span className="hidden sm:inline">الطلبات</span>
+                  {newOrdersCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-2 -left-2 h-5 w-5 p-0 flex items-center justify-center text-xs animate-pulse">
+                      {newOrdersCount > 9 ? '9+' : newOrdersCount}
+                    </Badge>
+                  )}
+                </Button>
+
+                <Button 
+                  variant={splitViewMode ? "default" : "outline"}
+                  size="sm" 
+                  onClick={() => setSplitViewMode(!splitViewMode)} 
+                  className="text-xs sm:text-sm"
+                  data-testid="button-split-view"
+                >
+                  <Columns2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
+                  <span className="hidden sm:inline">{splitViewMode ? 'عرض كامل' : 'عرض مقسم'}</span>
                 </Button>
 
                 <Badge 
@@ -2166,68 +2253,208 @@ export default function POSSystem() {
       </Dialog>
 
       <Dialog open={showLiveOrders} onOpenChange={setShowLiveOrders}>
-        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="w-6 h-6 text-primary" />
-              إدارة الطلبات المباشرة
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="w-6 h-6 text-primary" />
+                إدارة الطلبات المباشرة
+                {wsConnected && (
+                  <Badge variant="outline" className="text-xs">
+                    <div className="w-2 h-2 bg-green-500 rounded-full ml-1 animate-pulse" />
+                    مباشر
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">
+                  {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length} طلب نشط
+                </Badge>
+              </div>
             </DialogTitle>
             <DialogDescription>
-              متابعة وتحكم في الطلبات النشطة في النظام
+              متابعة وتحكم في الطلبات النشطة في النظام - اضغط على الطلب لعرض التفاصيل
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 mt-4">
-            <div className="space-y-4 pr-4">
-              {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').map((order: any) => (
-                <Card key={order.id || order._id} className="overflow-hidden border-primary/10">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="text-lg font-bold px-3 py-1">
-                          #{order.orderNumber}
-                        </Badge>
-                        <div>
-                          <p className="font-bold text-foreground">{order.customerInfo?.customerName || "عميل"}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleTimeString('ar-SA')}</p>
+          <div className="flex gap-4 flex-1 min-h-0 mt-4">
+            <ScrollArea className="flex-1">
+              <div className="space-y-3 pr-4">
+                {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').map((order: any) => {
+                  const statusColors: Record<string, string> = {
+                    pending: 'border-r-4 border-r-orange-500',
+                    in_progress: 'border-r-4 border-r-blue-500',
+                    ready: 'border-r-4 border-r-green-500',
+                    open: 'border-r-4 border-r-purple-500'
+                  };
+                  const statusLabels: Record<string, string> = {
+                    pending: 'في الانتظار',
+                    in_progress: 'قيد التجهيز',
+                    ready: 'جاهز للاستلام',
+                    open: 'طاولة مفتوحة'
+                  };
+                  return (
+                    <Card 
+                      key={order.id || order._id} 
+                      className={`overflow-hidden cursor-pointer hover-elevate ${statusColors[order.status] || ''} ${selectedOrderDetails?.id === order.id || selectedOrderDetails?._id === order._id ? 'ring-2 ring-primary' : ''}`}
+                      onClick={() => setSelectedOrderDetails(order)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="text-base font-bold px-2 py-0.5">
+                              #{order.orderNumber}
+                            </Badge>
+                            <div>
+                              <p className="font-medium text-foreground text-sm">{order.customerInfo?.customerName || "عميل"}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Clock className="w-3 h-3" />
+                                {new Date(order.createdAt).toLocaleTimeString('ar-SA')}
+                                {order.tableNumber && (
+                                  <>
+                                    <span className="mx-1">•</span>
+                                    <Table2 className="w-3 h-3" />
+                                    طاولة {order.tableNumber}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge variant={order.status === 'pending' ? 'destructive' : order.status === 'ready' ? 'default' : 'secondary'}>
+                              {statusLabels[order.status] || order.status}
+                            </Badge>
+                            <p className="font-bold text-primary text-sm">{Number(order.totalAmount).toFixed(2)} ر.س</p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={order.status === 'pending' ? 'destructive' : 'default'}>
-                          {order.status === 'pending' ? 'في الانتظار' : order.status}
-                        </Badge>
-                        <p className="font-bold text-primary">{Number(order.totalAmount).toFixed(2)} ر.س</p>
-                      </div>
+                        
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {order.status === 'pending' && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async (e) => {
+                              e.stopPropagation();
+                              await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "in_progress" });
+                              if (soundEnabled) playNotificationSound('statusChange', 0.3);
+                              queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+                            }}>
+                              <PlayCircle className="w-3 h-3 ml-1" />
+                              بدء التجهيز
+                            </Button>
+                          )}
+                          {order.status === 'in_progress' && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async (e) => {
+                              e.stopPropagation();
+                              await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "ready" });
+                              if (soundEnabled) playNotificationSound('success', 0.5);
+                              queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+                            }}>
+                              <Check className="w-3 h-3 ml-1" />
+                              جاهز
+                            </Button>
+                          )}
+                          {(order.status === 'ready' || order.status === 'in_progress') && (
+                            <Button size="sm" className="h-7 text-xs" onClick={async (e) => {
+                              e.stopPropagation();
+                              await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "completed" });
+                              if (soundEnabled) playNotificationSound('success', 0.5);
+                              queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+                              toast({ title: "تم إكمال الطلب", description: `طلب #${order.orderNumber}` });
+                            }}>
+                              <CheckCircle className="w-3 h-3 ml-1" />
+                              إكمال
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:bg-destructive/10" onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
+                              await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "cancelled" });
+                              queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+                              toast({ title: "تم إلغاء الطلب", variant: "destructive" });
+                            }
+                          }}>
+                            <XCircle className="w-3 h-3 ml-1" />
+                            إلغاء
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length === 0 && (
+                  <EmptyState title="لا توجد طلبات نشطة" description="ستظهر الطلبات الجديدة هنا تلقائياً" />
+                )}
+              </div>
+            </ScrollArea>
+            
+            {selectedOrderDetails && (
+              <Card className="w-80 flex-shrink-0 flex flex-col">
+                <CardContent className="p-4 flex-1 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-lg">تفاصيل الطلب</h3>
+                    <Button size="icon" variant="ghost" onClick={() => setSelectedOrderDetails(null)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3 flex-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">رقم الطلب:</span>
+                      <span className="font-bold">#{selectedOrderDetails.orderNumber}</span>
                     </div>
-                    
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      <Button size="sm" variant="outline" onClick={async () => {
-                        await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "in_progress" });
-                        queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-                      }}>
-                        تجهيز
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={async () => {
-                        await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "ready" });
-                        queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-                      }}>
-                        جاهز
-                      </Button>
-                      <Button size="sm" onClick={async () => {
-                        await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "completed" });
-                        queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-                      }}>
-                        إكمال
-                      </Button>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">العميل:</span>
+                      <span>{selectedOrderDetails.customerInfo?.customerName || 'عميل'}</span>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-              {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length === 0 && (
-                <EmptyState title="لا توجد طلبات نشطة" description="ستظهر الطلبات الجديدة هنا تلقائياً" />
-              )}
-            </div>
-          </ScrollArea>
+                    {selectedOrderDetails.customerInfo?.phoneNumber && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">الهاتف:</span>
+                        <span dir="ltr">{selectedOrderDetails.customerInfo.phoneNumber}</span>
+                      </div>
+                    )}
+                    {selectedOrderDetails.tableNumber && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">الطاولة:</span>
+                        <span>طاولة {selectedOrderDetails.tableNumber}</span>
+                      </div>
+                    )}
+                    <Separator className="my-2" />
+                    <div className="text-sm font-medium mb-2">الأصناف:</div>
+                    <ScrollArea className="h-40">
+                      <div className="space-y-2">
+                        {selectedOrderDetails.items?.map((item: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-sm bg-muted/30 rounded p-2">
+                            <span>{item.quantity}x {item.name || item.coffeeItem?.name || 'صنف'}</span>
+                            <span className="font-medium">{Number(item.price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                    <Separator className="my-2" />
+                    <div className="flex justify-between font-bold">
+                      <span>الإجمالي:</span>
+                      <span className="text-primary">{Number(selectedOrderDetails.totalAmount).toFixed(2)} ر.س</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      printSimpleReceipt(selectedOrderDetails);
+                      toast({ title: "جاري الطباعة..." });
+                    }}>
+                      <Printer className="w-4 h-4 ml-1" />
+                      طباعة
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      printTaxInvoice(selectedOrderDetails);
+                      toast({ title: "جاري طباعة الفاتورة..." });
+                    }}>
+                      <FileText className="w-4 h-4 ml-1" />
+                      فاتورة
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
