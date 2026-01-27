@@ -158,224 +158,224 @@ export default function CustomerAuth() {
  };
 
  return (
- <div 
- className="min-h-screen flex items-center justify-center p-4"
- style={{
- background: "linear-gradient(135deg, hsl(175 20% 10%) 0%, hsl(175 18% 18%) 50%, hsl(175 20% 10%) 100%)",
- }}
- dir="rtl"
- >
- <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-foreground/5 to-foreground/10 backdrop-blur shadow-2xl">
- <CardHeader className="space-y-3 text-center pb-6">
- <div className="flex justify-center">
- <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg shadow-accent/50">
- <img src="/logo.png" alt="CLUNY CAFE" className="w-full h-full object-cover" />
- </div>
- </div>
- <CardTitle className="text-3xl font-bold text-card">
- مرحباً بك في CLUNY CAFE
- </CardTitle>
- <CardDescription className="text-card/80 text-lg">
- سجل دخولك للحصول على حسابك الخاص
- </CardDescription>
- </CardHeader>
+  <div 
+  className="min-h-screen flex items-center justify-center p-4"
+  style={{
+  background: "linear-gradient(135deg, hsl(175 20% 10%) 0%, hsl(175 18% 18%) 50%, hsl(175 20% 10%) 100%)",
+  }}
+  dir="rtl"
+  >
+   <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-foreground/5 to-foreground/10 backdrop-blur shadow-2xl">
+   <CardHeader className="space-y-3 text-center pb-6">
+   <div className="flex justify-center">
+   <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg shadow-accent/50">
+   <img src="/logo.png" alt="CLUNY CAFE" className="w-full h-full object-cover" />
+   </div>
+   </div>
+   <CardTitle className="tracking-tight text-3xl font-bold text-[#a7b0b1]">
+   مرحباً بك في CLUNY CAFE
+   </CardTitle>
+   <CardDescription className="text-lg text-[#b2babc]">
+   سجل دخولك للحصول على حسابك الخاص
+   </CardDescription>
+   </CardHeader>
 
- <CardContent>
- <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "register")} className="w-full">
- <TabsList className="h-10 items-center justify-center rounded-md p-1 grid w-full grid-cols-2 bg-primary/20 text-primary">
- <TabsTrigger value="login" data-testid="tab-login">تسجيل دخول</TabsTrigger>
- <TabsTrigger value="register" data-testid="tab-register">حساب جديد</TabsTrigger>
- </TabsList>
+   <CardContent>
+   <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "register")} className="w-full">
+   <TabsList className="h-10 items-center justify-center rounded-md p-1 grid w-full grid-cols-2 bg-primary/20 text-primary">
+   <TabsTrigger value="login" data-testid="tab-login">تسجيل دخول</TabsTrigger>
+   <TabsTrigger value="register" data-testid="tab-register">حساب جديد</TabsTrigger>
+   </TabsList>
 
- <TabsContent value="login" className="space-y-5 mt-5">
- <form onSubmit={handleLogin} className="space-y-5">
- <div className="space-y-2">
- <Label htmlFor="login-identifier" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
- <Mail className="w-4 h-4" />
- رقم الجوال أو البريد الإلكتروني
- </Label>
- <SmartIdentifierInput
- id="login-identifier"
- value={identifier}
- onChange={(e) => setIdentifier(e)}
- placeholder="5xxxxxxxx أو email@example.com"
- data-testid="input-identifier"
- required
- />
- <p className="text-xs text-card/70 mt-1">
- يمكنك تسجيل الدخول بالجوال (9 أرقام يبدأ بـ 5) أو البريد الإلكتروني
- </p>
- </div>
+   <TabsContent value="login" className="space-y-5 mt-5">
+   <form onSubmit={handleLogin} className="space-y-5">
+   <div className="space-y-2">
+   <Label htmlFor="login-identifier" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
+   <Mail className="w-4 h-4" />
+   رقم الجوال أو البريد الإلكتروني
+   </Label>
+   <SmartIdentifierInput
+   id="login-identifier"
+   value={identifier}
+   onChange={(e) => setIdentifier(e)}
+   placeholder="5xxxxxxxx أو email@example.com"
+   data-testid="input-identifier"
+   required
+   />
+   <p className="text-xs text-card/70 mt-1">
+   يمكنك تسجيل الدخول بالجوال (9 أرقام يبدأ بـ 5) أو البريد الإلكتروني
+   </p>
+   </div>
 
- <div className="space-y-2">
- <Label htmlFor="login-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
- <Lock className="w-4 h-4" />
- كلمة المرور
- </Label>
- <div className="relative">
- <Input
- id="login-password"
- type={showPassword ? "text" : "password"}
- placeholder="أدخل كلمة المرور"
- value={password}
- onChange={(e) => setPassword(e.target.value)}
- className="bg-primary/20 border-primary/50 text-card placeholder:text-card/60 focus:border-accent focus:ring-accent/30 pl-10"
- data-testid="input-password"
- required
- />
- <button
- type="button"
- onClick={() => setShowPassword(!showPassword)}
- className="absolute left-3 top-2.5 text-accent hover:text-accent/80"
- data-testid="button-toggle-password"
- >
- {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
- </button>
- </div>
- <button
- type="button"
- onClick={() => navigate("/forgot-password")}
- className="text-xs text-accent/80 hover:text-accent transition-colors underline-offset-4 hover:underline"
- data-testid="link-forgot-password"
- >
- نسيت كلمة المرور؟
- </button>
- </div>
+   <div className="space-y-2">
+   <Label htmlFor="login-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
+   <Lock className="w-4 h-4" />
+   كلمة المرور
+   </Label>
+   <div className="relative">
+   <Input
+   id="login-password"
+   type={showPassword ? "text" : "password"}
+   placeholder="أدخل كلمة المرور"
+   value={password}
+   onChange={(e) => setPassword(e.target.value)}
+   className="bg-primary/20 border-primary/50 text-card placeholder:text-card/60 focus:border-accent focus:ring-accent/30 pl-10"
+   data-testid="input-password"
+   required
+   />
+   <button
+   type="button"
+   onClick={() => setShowPassword(!showPassword)}
+   className="absolute left-3 top-2.5 text-accent hover:text-accent/80"
+   data-testid="button-toggle-password"
+   >
+   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   </button>
+   </div>
+   <button
+   type="button"
+   onClick={() => navigate("/forgot-password")}
+   className="text-xs text-accent/80 hover:text-accent transition-colors underline-offset-4 hover:underline"
+   data-testid="link-forgot-password"
+   >
+   نسيت كلمة المرور؟
+   </button>
+   </div>
 
- <Button
- type="submit"
- disabled={loading}
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-accent to-accent/90 hover:from-accent/90 hover:to-accent/80 text-card shadow-lg shadow-accent/50 transition-all duration-300 hover:scale-[1.02]"
- data-testid="button-login"
- >
- {loading ? (
- <div className="flex items-center gap-2">
- <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
- <span>جارٍ تسجيل الدخول...</span>
- </div>
- ) : (
- "تسجيل الدخول"
- )}
- </Button>
- </form>
- </TabsContent>
+   <Button
+   type="submit"
+   disabled={loading}
+   className="w-full h-12 text-lg font-bold bg-gradient-to-r from-accent to-accent/90 hover:from-accent/90 hover:to-accent/80 text-card shadow-lg shadow-accent/50 transition-all duration-300 hover:scale-[1.02]"
+   data-testid="button-login"
+   >
+   {loading ? (
+   <div className="flex items-center gap-2">
+   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+   <span>جارٍ تسجيل الدخول...</span>
+   </div>
+   ) : (
+   "تسجيل الدخول"
+   )}
+   </Button>
+   </form>
+   </TabsContent>
 
- <TabsContent value="register" className="space-y-5 mt-5">
- <form onSubmit={handleRegister} className="space-y-5">
- <div className="space-y-2">
- <Label htmlFor="register-name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
- <User className="w-4 h-4" />
- الاسم
- </Label>
- <Input
- id="register-name"
- type="text"
- placeholder="أدخل اسمك"
- value={name}
- onChange={(e) => setName(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30"
- data-testid="input-name"
- required
- />
- </div>
+   <TabsContent value="register" className="space-y-5 mt-5">
+   <form onSubmit={handleRegister} className="space-y-5">
+   <div className="space-y-2">
+   <Label htmlFor="register-name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
+   <User className="w-4 h-4" />
+   الاسم
+   </Label>
+   <Input
+   id="register-name"
+   type="text"
+   placeholder="أدخل اسمك"
+   value={name}
+   onChange={(e) => setName(e.target.value)}
+   className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30"
+   data-testid="input-name"
+   required
+   />
+   </div>
 
- <div className="space-y-2">
- <Label htmlFor="register-phone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
- <Phone className="w-4 h-4" />
- رقم الجوال
- </Label>
- <PhoneInput
- id="register-phone"
- value={identifier}
- onChange={(e) => setIdentifier(e)}
- placeholder="5xxxxxxxx"
- data-testid="input-phone-register"
- required
- />
- <p className="text-xs text-amber-200/50 mt-1">
- ابدأ بـ 5 ثم باقي الأرقام (9 أرقام)
- </p>
- </div>
+   <div className="space-y-2">
+   <Label htmlFor="register-phone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
+   <Phone className="w-4 h-4" />
+   رقم الجوال
+   </Label>
+   <PhoneInput
+   id="register-phone"
+   value={identifier}
+   onChange={(e) => setIdentifier(e)}
+   placeholder="5xxxxxxxx"
+   data-testid="input-phone-register"
+   required
+   />
+   <p className="text-xs text-amber-200/50 mt-1">
+   ابدأ بـ 5 ثم باقي الأرقام (9 أرقام)
+   </p>
+   </div>
 
- <div className="space-y-2">
- <Label htmlFor="register-email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
- <Mail className="w-4 h-4" />
- البريد الإلكتروني
- </Label>
- <Input
- id="register-email"
- type="email"
- placeholder="example@email.com"
- value={email}
- onChange={(e) => setEmail(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30"
- data-testid="input-email"
- dir="ltr"
- required
- />
- <p className="text-xs text-amber-200/50 mt-1">
- مطلوب لاستعادةكلمة المرور إذا نسيتها
- </p>
- </div>
+   <div className="space-y-2">
+   <Label htmlFor="register-email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
+   <Mail className="w-4 h-4" />
+   البريد الإلكتروني
+   </Label>
+   <Input
+   id="register-email"
+   type="email"
+   placeholder="example@email.com"
+   value={email}
+   onChange={(e) => setEmail(e.target.value)}
+   className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30"
+   data-testid="input-email"
+   dir="ltr"
+   required
+   />
+   <p className="text-xs text-amber-200/50 mt-1">
+   مطلوب لاستعادةكلمة المرور إذا نسيتها
+   </p>
+   </div>
 
- <div className="space-y-2">
- <Label htmlFor="register-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
- <Lock className="w-4 h-4" />
- كلمة المرور
- </Label>
- <div className="relative">
- <Input
- id="register-password"
- type={showPassword ? "text" : "password"}
- placeholder="أدخل كلمة المرور (4 أحرف على الأقل)"
- value={password}
- onChange={(e) => setPassword(e.target.value)}
- className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
- data-testid="input-password-register"
- required
- />
- <button
- type="button"
- onClick={() => setShowPassword(!showPassword)}
- className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
- data-testid="button-toggle-password-register"
- >
- {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
- </button>
- </div>
- </div>
+   <div className="space-y-2">
+   <Label htmlFor="register-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
+   <Lock className="w-4 h-4" />
+   كلمة المرور
+   </Label>
+   <div className="relative">
+   <Input
+   id="register-password"
+   type={showPassword ? "text" : "password"}
+   placeholder="أدخل كلمة المرور (4 أحرف على الأقل)"
+   value={password}
+   onChange={(e) => setPassword(e.target.value)}
+   className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30 pl-10"
+   data-testid="input-password-register"
+   required
+   />
+   <button
+   type="button"
+   onClick={() => setShowPassword(!showPassword)}
+   className="absolute left-3 top-2.5 text-amber-400 hover:text-amber-300"
+   data-testid="button-toggle-password-register"
+   >
+   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   </button>
+   </div>
+   </div>
 
- <Button
- type="submit"
- disabled={loading}
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg shadow-green-900/50 transition-all duration-300 hover:scale-[1.02]"
- data-testid="button-register"
- >
- {loading ? (
- <div className="flex items-center gap-2">
- <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
- <span>جارٍ إنشاء الحساب...</span>
- </div>
- ) : (
- "إنشاء حساب"
- )}
- </Button>
- </form>
- </TabsContent>
- </Tabs>
+   <Button
+   type="submit"
+   disabled={loading}
+   className="w-full h-12 text-lg font-bold bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg shadow-green-900/50 transition-all duration-300 hover:scale-[1.02]"
+   data-testid="button-register"
+   >
+   {loading ? (
+   <div className="flex items-center gap-2">
+   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+   <span>جارٍ إنشاء الحساب...</span>
+   </div>
+   ) : (
+   "إنشاء حساب"
+   )}
+   </Button>
+   </form>
+   </TabsContent>
+   </Tabs>
 
- <div className="pt-6 text-center">
- <button
- type="button"
- onClick={() => navigate("/")}
- className="text-amber-300/70 hover:text-amber-200 transition-colors text-sm underline-offset-4 hover:underline"
- data-testid="link-skip"
- >
- تخطي وتصفح القائمة
- </button>
- </div>
- </CardContent>
- </Card>
- </div>
+   <div className="pt-6 text-center">
+   <button
+   type="button"
+   onClick={() => navigate("/")}
+   className="text-amber-300/70 hover:text-amber-200 transition-colors text-sm underline-offset-4 hover:underline"
+   data-testid="link-skip"
+   >
+   تخطي وتصفح القائمة
+   </button>
+   </div>
+   </CardContent>
+   </Card>
+  </div>
  );
 }
