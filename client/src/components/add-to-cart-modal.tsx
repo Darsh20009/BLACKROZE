@@ -126,7 +126,7 @@ export function AddToCartModal({
           {variants.length > 1 && (
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">اختر النوع</Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {variants.map((variant) => (
                   <button
                     key={variant.id}
@@ -134,10 +134,10 @@ export function AddToCartModal({
                       setSelectedVariant(variant);
                       setSelectedSize(null);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                       selectedVariant?.id === variant.id 
-                        ? "bg-primary text-white shadow-md" 
-                        : "bg-secondary text-foreground border border-border hover:border-primary/50"
+                        ? "bg-primary text-white shadow-md border-2 border-primary" 
+                        : "bg-secondary text-foreground border-2 border-border hover:border-primary/50"
                     }`}
                   >
                     {variant.nameAr}
