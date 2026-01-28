@@ -5,24 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/cart-store";
 import { getCoffeeImage } from "@/lib/coffee-data-clean";
-import { ArrowRight, ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
+import { ArrowRight, ShoppingCart, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function CartPage() {
+  const { t, i18n } = useTranslation();
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCartStore();
   const [, setLocation] = useLocation();
 
+  const isAr = i18n.language === 'ar';
+
   // Set SEO metadata
   useEffect(() => {
-    document.title = "سلة التسوق - CLUNY CAFE | اكتمل طلبك";
+    document.title = isAr ? "سلة التسوق - CLUNY CAFE | اكتمل طلبك" : "Shopping Cart - CLUNY CAFE";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'سلة التسوق الخاصة بك في CLUNY CAFE - أضف المزيد من القهوة المفضلة وانتقل للدفع');
-  }, []);
+    if (metaDesc) {
+      metaDesc.setAttribute('content', isAr 
+        ? 'سلة التسوق الخاصة بك في CLUNY CAFE - أضف المزيد من القهوة المفضلة وانتقل للدفع' 
+        : 'Your shopping cart at CLUNY CAFE - add more of your favorite coffee and proceed to checkout');
+    }
+  }, [isAr]);
 
   const totalPrice = getTotalPrice();
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
+      <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background" dir={isAr ? 'rtl' : 'ltr'}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-20 left-20 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
           <div className="absolute bottom-32 right-16 w-24 h-24 bg-accent/8 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
@@ -34,23 +42,23 @@ export default function CartPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center h-16">
                 <Link href="/menu" className="flex items-center space-x-4 space-x-reverse text-muted-foreground hover:text-primary transition-colors group">
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  <span className="text-lg font-semibold">العودة للمنيو</span>
+                  {isAr ? <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /> : <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />}
+                  <span className="text-lg font-semibold">{t("product.back")}</span>
                 </Link>
-                <h1 className="font-amiri text-2xl font-bold text-primary">سلة التسوق</h1>
+                <h1 className="font-amiri text-2xl font-bold text-primary">{t("cart.title")}</h1>
               </div>
             </div>
           </header>
 
           <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
             <ShoppingCart className="w-24 h-24 text-accent mb-6" />
-            <h2 className="font-playfair text-3xl font-bold text-foreground mb-4">السلة فارغة حالياً</h2>
+            <h2 className="font-playfair text-3xl font-bold text-foreground mb-4">{t("cart.empty_title")}</h2>
             <p className="text-muted-foreground text-lg mb-8 text-center max-w-md leading-relaxed font-cairo">
-              ابدأ رحلة القهوة الخاصة بك واختر من تشكيلتنا الرائعة من القهوة الطازجة 
+              {t("cart.empty_desc")}
             </p>
             <Link href="/menu">
               <Button className="bg-gradient-to-r from-accent to-accent/90 hover:from-accent/95 hover:to-accent/85 text-accent-foreground px-8 py-4 text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl rounded-lg">
-                تصفح المنيو
+                {t("welcome.explore")}
               </Button>
             </Link>
           </div>
@@ -60,7 +68,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
+    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-20 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
         <div className="absolute bottom-32 right-16 w-24 h-24 bg-accent/8 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
@@ -72,10 +80,10 @@ export default function CartPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <Link href="/menu" className="flex items-center space-x-4 space-x-reverse text-muted-foreground hover:text-primary transition-colors group">
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                <span className="text-lg font-semibold">العودة للمنيو</span>
+                {isAr ? <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /> : <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />}
+                <span className="text-lg font-semibold">{t("product.back")}</span>
               </Link>
-              <h1 className="font-amiri text-2xl font-bold text-primary">سلة التسوق</h1>
+              <h1 className="font-amiri text-2xl font-bold text-primary">{t("cart.title")}</h1>
             </div>
           </div>
         </header>
@@ -84,8 +92,8 @@ export default function CartPage() {
           <div className="grid gap-4 sm:gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-3 sm:space-y-6">
               <h2 className="font-playfair text-xl sm:text-3xl font-bold text-foreground mb-4 sm:mb-8 flex items-center">
-                <ShoppingCart className="w-6 h-6 sm:w-8 sm:h-8 ml-2 sm:ml-3" />
-                العناصر المختارة
+                <ShoppingCart className={`w-6 h-6 sm:w-8 sm:h-8 ${isAr ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'}`} />
+                {t("cart.selected_items")}
               </h2>
 
               {cartItems.map((item, index) => (
@@ -100,20 +108,22 @@ export default function CartPage() {
                         <div className="relative flex-shrink-0">
                           <img 
                             src={item.coffeeItem?.imageUrl || getCoffeeImage(item.coffeeItem?.id || '')}
-                            alt={item.coffeeItem?.nameAr}
+                            alt={isAr ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn || item.coffeeItem?.nameAr}
                             className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl shadow-lg"
                             loading="lazy"
                             onError={(e) => {
                               e.currentTarget.src = "/images/default-coffee.png";
                             }}
                           />
-                          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-amber-600 rounded-full flex items-center justify-center shadow-md">
+                          <div className={`absolute -top-1 sm:-top-2 w-5 h-5 sm:w-6 sm:h-6 bg-amber-600 rounded-full flex items-center justify-center shadow-md ${isAr ? '-right-1 sm:-right-2' : '-left-1 sm:-left-2'}`}>
                             <span className="text-white text-[10px] sm:text-xs font-bold">{item.quantity}</span>
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-amiri font-bold text-foreground text-base sm:text-xl mb-0.5 sm:mb-1 truncate">{item.coffeeItem?.nameAr}</h3>
-                          <p className="text-primary font-bold text-sm sm:text-lg">{item.coffeeItem?.price} ريال</p>
+                        <div className="flex-1 min-w-0 text-start">
+                          <h3 className="font-amiri font-bold text-foreground text-base sm:text-xl mb-0.5 sm:mb-1 truncate">
+                            {isAr ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn || item.coffeeItem?.nameAr}
+                          </h3>
+                          <p className="text-primary font-bold text-sm sm:text-lg">{item.coffeeItem?.price} {t("currency")}</p>
                         </div>
                       </div>
 
@@ -165,21 +175,21 @@ export default function CartPage() {
                 <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-t-lg">
                   <CardTitle className="font-amiri text-2xl flex items-center gap-2">
                     <ShoppingCart className="w-6 h-6" />
-                    ملخص الطلب
+                    {t("checkout.order_summary")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
                   <div className="flex justify-between items-center text-foreground gap-2">
-                    <span className="text-lg">عدد العناصر:</span>
+                    <span className="text-lg">{t("cart.items_count")}</span>
                     <Badge className="bg-primary text-primary-foreground text-lg px-3 py-1">
-                      {cartItems.reduce((sum, item) => sum + item.quantity, 0)} قطعة
+                      {t("cart.items_pcs", { count: cartItems.reduce((sum, item) => sum + item.quantity, 0) })}
                     </Badge>
                   </div>
 
                   <div className="border-t border-primary pt-6">
                     <div className="flex justify-between items-center gap-2">
-                      <span className="text-xl font-bold text-foreground">المجموع الكلي:</span>
-                      <span className="text-2xl font-black text-primary">{totalPrice.toFixed(2)} ريال</span>
+                      <span className="text-xl font-bold text-foreground">{t("cart.total_price")}</span>
+                      <span className="text-2xl font-black text-primary">{totalPrice.toFixed(2)} {t("currency")}</span>
                     </div>
                   </div>
 
@@ -188,7 +198,7 @@ export default function CartPage() {
                     className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-6 text-xl font-bold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 shadow-xl hover:shadow-amber-500/25 rounded-full"
                     data-testid="button-checkout"
                   >
-                    إتمام الطلب الآن
+                    {t("cart.checkout_now")}
                   </Button>
                 </CardContent>
               </Card>
@@ -199,16 +209,16 @@ export default function CartPage() {
         {/* Fixed Bottom Summary for Mobile */}
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border shadow-2xl p-4 z-50">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">المجموع ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} قطعة)</span>
-              <span className="text-xl font-black text-primary">{totalPrice.toFixed(2)} ريال</span>
+            <div className="flex flex-col text-start">
+              <span className="text-xs text-muted-foreground">{t("cart.total")} ({t("cart.items_pcs", { count: cartItems.reduce((sum, item) => sum + item.quantity, 0) })})</span>
+              <span className="text-xl font-black text-primary">{totalPrice.toFixed(2)} {t("currency")}</span>
             </div>
             <Button 
               onClick={() => setLocation("/delivery")}
               className="flex-1 max-w-[200px] bg-gradient-to-r from-amber-600 to-orange-600 text-white py-5 text-lg font-bold hover:from-amber-700 hover:to-orange-700 rounded-full shadow-lg"
               data-testid="button-checkout-mobile"
             >
-              إتمام الطلب
+              {t("cart.checkout")}
             </Button>
           </div>
         </div>

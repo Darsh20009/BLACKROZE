@@ -43,6 +43,11 @@ const resources = {
       "menu_view.slogan": "For every coffee moment, a moment of success",
       "menu_view.current_drink": "Current Drink",
       "menu_view.camera_hint": "Point your camera at the code to order",
+      "cart.items_count": "Items: {{count}}",
+      "cart.items_pcs": "{{count}} pcs",
+      "cart.total_price": "Total Price:",
+      "cart.checkout_now": "Checkout Now",
+      "cart.selected_items": "Selected Items",
       "currency": "SAR",
       "product": {
         "back": "Back to Menu",
@@ -249,6 +254,11 @@ const resources = {
       "menu_view.slogan": "لكل لحظة قهوة ، لحظة نجاح",
       "menu_view.current_drink": "المشروب الحالي",
       "menu_view.camera_hint": "وجّه الكاميرا نحو الرمز للطلب",
+      "cart.items_count": "عدد العناصر:",
+      "cart.items_pcs": "{{count}} قطعة",
+      "cart.total_price": "المجموع الكلي:",
+      "cart.checkout_now": "إتمام الطلب الآن",
+      "cart.selected_items": "العناصر المختارة",
       "currency": "ر.س",
       "product": {
         "back": "العودة للمنيو",
