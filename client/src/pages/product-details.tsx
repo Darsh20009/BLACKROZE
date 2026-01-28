@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/lib/cart-store";
-import { ArrowRight, Plus, Minus, Check, X, Coffee, Heart, Share2, Info } from "lucide-react";
+import { ArrowRight, ArrowLeft, Plus, Minus, Check, X, Coffee, Heart, Share2, Info } from "lucide-react";
 import { useState } from "react";
 import type { CoffeeItem, Branch } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { getCoffeeImage } from "@/lib/coffee-data-clean";
+import { useTranslation } from "react-i18next";
 
 export default function ProductDetails() {
+  const { t, i18n } = useTranslation();
   const [, params] = useRoute("/product/:id");
   const [, setLocation] = useLocation();
   const { addToCart } = useCartStore();
@@ -74,27 +76,23 @@ export default function ProductDetails() {
       });
       
       if (response.ok) {
-        const data = await response.json();
         toast({
-          title: "تم الحفظ بنجاح",
-          description: `تم إضافة المشروب إلى ${selectedBranches.length} فرع`,
+          title: t("product.saved"),
+          description: i18n.language === 'ar' ? `تم إضافة المشروب إلى ${selectedBranches.length} فرع` : `Drink added to ${selectedBranches.length} branches`,
         });
         setSelectedBranches([]);
         setTimeout(() => refetch(), 100);
       } else {
-        const errorData = await response.text();
-        console.error('Save error:', errorData);
         toast({
-          title: "خطأ",
-          description: "فشل حفظ الفروع",
+          title: t("product.error"),
+          description: t("product.save_error"),
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Fetch error:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء الحفظ",
+        title: t("product.error"),
+        description: i18n.language === 'ar' ? "حدث خطأ أثناء الحفظ" : "An error occurred during saving",
         variant: "destructive",
       });
     } finally {
@@ -106,8 +104,8 @@ export default function ProductDetails() {
     if (item) {
       addToCart(item.id, quantity, selectedSize, selectedAddons);
       toast({
-        title: "تمت الإضافة للسلة",
-        description: `تم إضافة ${item.nameAr} بنجاح`,
+        title: t("cart.added"),
+        description: t("cart.added_desc"),
       });
       setLocation("/menu");
     }
@@ -156,7 +154,7 @@ export default function ProductDetails() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">جاري التحميل...</p>
+          <p className="text-muted-foreground">{t("product.loading")}</p>
         </div>
       </div>
     );
@@ -167,9 +165,9 @@ export default function ProductDetails() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
           <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground mb-4">المنتج غير موجود</p>
+            <p className="text-muted-foreground mb-4">{t("product.not_found")}</p>
             <Button onClick={handleGoBack} variant="outline">
-              العودة للمنيو
+              {t("product.back")}
             </Button>
           </CardContent>
         </Card>
@@ -182,17 +180,18 @@ export default function ProductDetails() {
   const discount = oldPriceNum > 0 ? Math.round(((oldPriceNum - priceNum) / oldPriceNum) * 100) : 0;
   const currentPrice = getPrice();
   const totalPrice = currentPrice * quantity;
+  const currentName = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
 
   // Group addons by category
   const addonsByCategory = addonsData.reduce((acc: any, addon: any) => {
-    const category = addon.category || 'أخرى';
+    const category = i18n.language === 'ar' ? (addon.category || 'أخرى') : (addon.categoryEn || addon.category || 'Other');
     if (!acc[category]) acc[category] = [];
     acc[category].push(addon);
     return acc;
   }, {});
 
   return (
-    <div className="min-h-screen bg-background" data-testid="page-product-details">
+    <div className="min-h-screen bg-background" data-testid="page-product-details" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <Button 
@@ -201,8 +200,8 @@ export default function ProductDetails() {
           className="mb-6 hover-elevate"
           data-testid="button-back"
         >
-          <ArrowRight className="w-4 h-4 ml-2" />
-          العودة للمنيو
+          {i18n.language === 'ar' ? <ArrowRight className="w-4 h-4 ml-2" /> : <ArrowLeft className="w-4 h-4 mr-2" />}
+          {t("product.back")}
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
@@ -211,16 +210,8 @@ export default function ProductDetails() {
             {item.imageUrl || getCoffeeImage(item.id) ? (
               <img 
                 src={item.imageUrl || getCoffeeImage(item.id)}
-                alt={item.nameAr}
+                alt={currentName}
                 className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-2xl shadow-lg"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    const placeholder = parent.querySelector('[data-testid="image-placeholder"]') as HTMLElement;
-                    if (placeholder) placeholder.style.display = 'flex';
-                  }
-                }}
                 data-testid="img-product"
               />
             ) : null}
@@ -229,13 +220,13 @@ export default function ProductDetails() {
               className={`w-full h-96 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 ${(item.imageUrl || getCoffeeImage(item.id)) ? 'hidden' : ''}`}
             >
               <Coffee className="w-20 h-20 text-primary/40" />
-              <p className="text-lg font-medium text-muted-foreground">صورة المشروب</p>
+              <p className="text-lg font-medium text-muted-foreground">{i18n.language === 'ar' ? 'صورة المشروب' : 'Product Image'}</p>
             </div>
             {/* Status and Discount Badges */}
-            <div className="flex gap-2 flex-wrap absolute top-4 left-4">
+            <div className={`flex gap-2 flex-wrap absolute top-4 ${i18n.language === 'ar' ? 'left-4' : 'right-4'}`}>
               {oldPriceNum > 0 && (
                 <Badge className="bg-red-500 text-white" data-testid="badge-discount">
-                  خصم {discount}%
+                  {t("product.discount")} {discount}%
                 </Badge>
               )}
 
@@ -248,9 +239,9 @@ export default function ProductDetails() {
                   }
                   data-testid="badge-availability"
                 >
-                  {item.availabilityStatus === 'out_of_stock' && " نفذت الكمية "}
-                  {item.availabilityStatus === 'coming_soon' && " قريباً"}
-                  {item.availabilityStatus === 'temporarily_unavailable' && "⏸ غير متوفر مؤقتاً"}
+                  {item.availabilityStatus === 'out_of_stock' && t("product.out_of_stock")}
+                  {item.availabilityStatus === 'coming_soon' && t("product.coming_soon")}
+                  {item.availabilityStatus === 'temporarily_unavailable' && `⏸ ${t("product.temporarily_unavailable")}`}
                 </Badge>
               )}
             </div>
@@ -260,30 +251,35 @@ export default function ProductDetails() {
           <div className="space-y-6" data-testid="section-product-info">
             <div>
               <h1 className="font-amiri text-4xl font-bold text-foreground mb-2" data-testid="text-product-name">
-                {item.nameAr}
+                {currentName}
               </h1>
-              {item.nameEn && (
+              {i18n.language === 'ar' && item.nameEn && (
                 <p className="text-lg text-muted-foreground" data-testid="text-product-name-en">
                   {item.nameEn}
+                </p>
+              )}
+              {i18n.language === 'en' && item.nameAr && (
+                <p className="text-lg text-muted-foreground font-amiri" data-testid="text-product-name-ar">
+                  {item.nameAr}
                 </p>
               )}
             </div>
 
             <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-product-description">
-              {item.description}
+              {i18n.language === 'ar' ? item.description : item.descriptionEn || item.description}
             </p>
 
             {/* Category Badge */}
             <Badge variant="outline" className="w-fit" data-testid="badge-category">
-              {item.category === 'basic' && 'قهوة أساسية'}
-              {item.category === 'hot' && 'قهوة ساخنة'}
-              {item.category === 'cold' && 'قهوة باردة'}
+              {item.category === 'basic' && (i18n.language === 'ar' ? 'قهوة أساسية' : 'Basic Coffee')}
+              {item.category === 'hot' && (i18n.language === 'ar' ? 'قهوة ساخنة' : 'Hot Coffee')}
+              {item.category === 'cold' && (i18n.language === 'ar' ? 'قهوة باردة' : 'Cold Coffee')}
             </Badge>
 
             {/* Ingredients Section */}
             {ingredients.length > 0 && (
               <div className="space-y-3" data-testid="section-ingredients">
-                <h3 className="text-lg font-semibold text-foreground">المكونات</h3>
+                <h3 className="text-lg font-semibold text-foreground">{t("product.ingredients")}</h3>
                 <div className="flex flex-wrap gap-2">
                   {ingredients.map((ing: any, index: number) => (
                     <Badge 
@@ -292,8 +288,8 @@ export default function ProductDetails() {
                       className={`${ing.isAvailable === 0 ? 'opacity-50 line-through' : ''}`}
                       data-testid={`badge-ingredient-${ing.id || index}`}
                     >
-                      {ing.nameAr}
-                      {ing.isAvailable === 0 && ' (غير متوفر)'}
+                      {i18n.language === 'ar' ? ing.nameAr : ing.nameEn || ing.nameAr}
+                      {ing.isAvailable === 0 && ` (${t("product.not_available")})`}
                     </Badge>
                   ))}
                 </div>
@@ -302,35 +298,38 @@ export default function ProductDetails() {
 
             {/* Sizes Section */}
             <div className="space-y-3" data-testid="section-sizes">
-              <h3 className="text-lg font-semibold text-foreground">الحجم</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t("product.size")}</h3>
               {item.availableSizes && item.availableSizes.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                  {item.availableSizes.map((size, index) => (
-                    <Button
-                      key={index}
-                      variant={selectedSize === size.nameAr ? "default" : "outline"}
-                      onClick={() => setSelectedSize(size.nameAr)}
-                      className="text-sm h-11 sm:h-10 justify-between px-4"
-                      data-testid={`button-size-${size.nameAr}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{size.nameAr}</span>
-                        {size.sizeML && <span className="text-[10px] opacity-70">({size.sizeML} مل)</span>}
-                      </div>
-                      {size.price !== item.price && (
-                        <span className="text-xs font-bold">+{(size.price - (typeof item.price === 'number' ? item.price : parseFloat(String(item.price || 0)))).toFixed(2)} ر.س</span>
-                      )}
-                    </Button>
-                  ))}
+                  {item.availableSizes.map((size, index) => {
+                    const sizeName = i18n.language === 'ar' ? size.nameAr : size.nameEn || size.nameAr;
+                    return (
+                      <Button
+                        key={index}
+                        variant={selectedSize === size.nameAr ? "default" : "outline"}
+                        onClick={() => setSelectedSize(size.nameAr)}
+                        className="text-sm h-11 sm:h-10 justify-between px-4"
+                        data-testid={`button-size-${size.nameAr}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{sizeName}</span>
+                          {size.sizeML && <span className="text-[10px] opacity-70">({size.sizeML} {i18n.language === 'ar' ? 'مل' : 'ml'})</span>}
+                        </div>
+                        {size.price !== item.price && (
+                          <span className="text-xs font-bold">+{(size.price - (typeof item.price === 'number' ? item.price : parseFloat(String(item.price || 0)))).toFixed(2)} {t("currency")}</span>
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">حجم واحد متاح</p>
+                <p className="text-sm text-muted-foreground">{t("product.single_size")}</p>
               )}
             </div>
 
             {/* Add-ons Section */}
             <div className="space-y-4" data-testid="section-addons">
-              <h3 className="text-lg font-semibold text-foreground">الإضافات</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t("product.addons")}</h3>
               {Object.keys(addonsByCategory).length > 0 ? (
                 Object.entries(addonsByCategory).map(([category, addons]: [string, any]) => (
                   <div key={category} className="space-y-2">
@@ -356,14 +355,14 @@ export default function ProductDetails() {
                               <Check className="w-3 h-3 text-primary" />
                             )}
                           </div>
-                          <div className="flex-1 text-right">
-                            <p className="font-medium">{addon.nameAr}</p>
+                          <div className={`flex-1 ${i18n.language === 'ar' ? 'text-right' : 'text-left'}`}>
+                            <p className="font-medium">{i18n.language === 'ar' ? addon.nameAr : addon.nameEn || addon.nameAr}</p>
                           </div>
                           {addon.price > 0 && (
-                            <span className="text-sm font-medium">+{addon.price.toFixed(2)} ر.س</span>
+                            <span className="text-sm font-medium">+{addon.price.toFixed(2)} {t("currency")}</span>
                           )}
                           {addon.isFree && addon.price === 0 && (
-                            <Badge variant="secondary" className="text-xs">مجاني</Badge>
+                            <Badge variant="secondary" className="text-xs">{t("product.free")}</Badge>
                           )}
                         </button>
                       ))}
@@ -371,77 +370,33 @@ export default function ProductDetails() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">لا توجد إضافات متاحة</p>
+                <p className="text-sm text-muted-foreground">{t("product.no_addons")}</p>
               )}
             </div>
 
             {/* Price */}
             <div className="space-y-2" data-testid="section-pricing">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-3">
                 {item.oldPrice && (
                   <span className="price-old text-lg line-through" data-testid="text-old-price">
-                    {item.oldPrice} ريال
+                    {item.oldPrice} {t("currency")}
                   </span>
                 )}
                 <span className="text-3xl font-bold text-primary" data-testid="text-current-price">
-                  {currentPrice.toFixed(2)} ريال
+                  {currentPrice.toFixed(2)} {t("currency")}
                 </span>
               </div>
               {discount > 0 && (
                 <p className="text-sm text-green-600" data-testid="text-savings">
-                  توفير {(oldPriceNum - priceNum).toFixed(2)} ريال
+                  {i18n.language === 'ar' ? 'توفير' : 'Savings'} {(oldPriceNum - priceNum).toFixed(2)} {t("currency")}
                 </p>
               )}
             </div>
 
-            {/* Branch Availability Section */}
-            {branches.length > 0 && (
-              <div className="space-y-3" data-testid="section-branches">
-                <label className="text-sm font-semibold text-foreground">اختر الفروع المتاحة (اختياري)</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-3">
-                  {branches.map((branch) => {
-                    const isInItem = item?.branchAvailability?.some((b: any) => b.branchId === branch.id && b.isAvailable === 1);
-                    const isSelected = selectedBranches.includes(branch.id || "");
-                    
-                    return (
-                      <div
-                        key={branch.id}
-                        className="flex items-center p-2 rounded hover:bg-muted cursor-pointer"
-                        onClick={() => {
-                          setSelectedBranches(prev =>
-                            prev.includes(branch.id || "")
-                              ? prev.filter(id => id !== branch.id)
-                              : [...prev, branch.id || ""]
-                          );
-                        }}
-                      >
-                        <div className={`w-4 h-4 rounded border mr-3 flex items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'border-border'}`}>
-                          {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
-                        </div>
-                        <span className="flex-1">{branch.nameAr}</span>
-                        {isInItem && <Badge variant="outline" className="text-xs">موجود</Badge>}
-                      </div>
-                    );
-                  })}
-                </div>
-                {selectedBranches.length > 0 && (
-                  <Button
-                    onClick={saveBranchAvailability}
-                    disabled={isSavingBranches}
-                    className="w-full"
-                    variant="outline"
-                    data-testid="button-save-branches"
-                  >
-                    {isSavingBranches ? "جاري الحفظ..." : `حفظ للفروع المختارة (${selectedBranches.length})`}
-                  </Button>
-                )}
-              </div>
-            )}
-
             {/* Quantity Selector */}
             <div className="space-y-3" data-testid="section-quantity">
-              <label className="text-sm font-semibold text-foreground">الكمية</label>
-              <div className="flex items-center space-x-4">
+              <label className="text-sm font-semibold text-foreground">{t("product.quantity")}</label>
+              <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
                   size="icon"
@@ -469,9 +424,9 @@ export default function ProductDetails() {
             {/* Total Price */}
             <div className="bg-card rounded-xl p-4 border" data-testid="section-total">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-foreground">المجموع:</span>
+                <span className="text-lg font-semibold text-foreground">{t("product.total")}:</span>
                 <span className="text-2xl font-bold text-primary" data-testid="text-total-price">
-                  {totalPrice.toFixed(2)} ريال
+                  {totalPrice.toFixed(2)} {t("currency")}
                 </span>
               </div>
             </div>
@@ -485,11 +440,11 @@ export default function ProductDetails() {
                 className="w-full btn-primary text-accent-foreground py-6 sm:py-7 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-xl lg:shadow-none"
                 data-testid="button-add-to-cart"
               >
-                <Plus className="w-5 h-5 ml-2" />
-                {item.availabilityStatus === 'out_of_stock' ? ' نفذت الكمية ' :
-                item.availabilityStatus === 'coming_soon' ? ' قريباً' :
-                item.availabilityStatus === 'temporarily_unavailable' ? '⏸ غير متوفر مؤقتاً' :
-                'أضف للسلة '}
+                <Plus className={`w-5 h-5 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                {item.availabilityStatus === 'out_of_stock' ? t("product.out_of_stock") :
+                item.availabilityStatus === 'coming_soon' ? t("product.coming_soon") :
+                item.availabilityStatus === 'temporarily_unavailable' ? `⏸ ${t("product.temporarily_unavailable")}` :
+                t("product.add_to_cart")}
               </Button>
             </div>
             

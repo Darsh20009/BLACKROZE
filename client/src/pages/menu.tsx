@@ -172,10 +172,10 @@ export default function MenuPage() {
 
   return (
     <div dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} className="min-h-screen bg-background pb-24 font-sans overflow-x-hidden text-foreground">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md px-4 h-16 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-xl px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <img src={clunyLogo} className="w-10 h-10 rounded-xl border-2 border-white/30 shadow-lg" alt="Logo" />
+            <img src={clunyLogo} className="w-10 h-10 rounded-2xl border-2 border-white/30 shadow-lg backdrop-blur-xl bg-[#a7b0b1]/30" alt="Logo" />
           </div>
           <div>
             <h1 className="text-lg font-bold leading-none text-white drop-shadow-md">{t("app.name")}</h1>

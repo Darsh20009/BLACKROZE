@@ -1,23 +1,22 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Coffee, Star, MapPin, ChevronLeft, LogOut, Sparkles } from "lucide-react";
+import { Coffee, Star, MapPin, ChevronLeft, ChevronRight, LogOut, Sparkles } from "lucide-react";
 import clunyLogo from "@/assets/cluny-logo.png";
 import bannerImage1 from "@assets/banner-coffee-1.png";
 import bannerImage2 from "@assets/banner-coffee-2.png";
 import { useCustomer } from "@/contexts/CustomerContext";
-
 import { useTranslation } from "react-i18next";
 
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
   const { customer, isAuthenticated, logout } = useCustomer();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const features = [
     { icon: Coffee, title: t("menu.featured") || "قهوة مختصة", desc: t("banner.1.subtitle") || "أجود أنواع الحبوب المحمصة بعناية", color: "from-primary to-primary/70" },
     { icon: Star, title: t("app.tagline") || "تجربة فخمة", desc: t("banner.2.subtitle") || "أجواء تجمع بين الرقي والراحة", color: "from-accent to-accent/70" },
-    { icon: MapPin, title: t("location.riyadh") || "مواقعنا", desc: "متواجدون في أرقى أحياء الرياض", color: "from-primary to-accent" },
+    { icon: MapPin, title: t("location.riyadh") || "مواقعنا", desc: i18n.language === 'ar' ? "متواجدون في أرقى أحياء الرياض" : "Located in the finest districts of Riyadh", color: "from-primary to-accent" },
   ];
 
   return (
@@ -43,8 +42,8 @@ export default function WelcomePage() {
         {/* Header */}
         <header className="relative z-20 flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md p-1 border border-white/30">
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-lg" />
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xl p-1 border border-white/30">
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <span className="text-white font-bold text-lg tracking-wide">CLUNY</span>
           </div>
@@ -72,9 +71,9 @@ export default function WelcomePage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-sm p-2 border border-white/20 shadow-xl bg-[#a7b0b1]"
+              className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-xl p-2 border border-white/20 shadow-xl bg-[#a7b0b1]/30"
             >
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
             </motion.div>
 
             <motion.div
@@ -100,10 +99,10 @@ export default function WelcomePage() {
                 className="mb-10"
               >
                 <p className="text-white text-2xl mb-2 font-semibold">
-                  مرحباً، {customer?.name} 👋
+                  {i18n.language === 'ar' ? `مرحباً، ${customer?.name} 👋` : `Welcome, ${customer?.name} 👋`}
                 </p>
                 <p className="text-white/70 text-base">
-                  اشتقنا لرائحة قهوتك المفضلة
+                  {i18n.language === 'ar' ? "اشتقنا لرائحة قهوتك المفضلة" : "We missed the aroma of your favorite coffee"}
                 </p>
               </motion.div>
             ) : (
@@ -113,7 +112,7 @@ export default function WelcomePage() {
                 transition={{ delay: 0.6 }}
                 className="text-white/80 text-xl mb-10"
               >
-                حيث تبدأ حكايات القهوة الفاخرة
+                {i18n.language === 'ar' ? "حيث تبدأ حكايات القهوة الفاخرة" : "Where premium coffee stories begin"}
               </motion.p>
             )}
 
@@ -127,8 +126,8 @@ export default function WelcomePage() {
                 onClick={() => setLocation("/menu")}
                 className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-xl shadow-primary/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
-                {isAuthenticated ? (t("menu.order_now") || "اطلب الآن") : (t("menu.view_all") || "استكشف القائمة")}
-                <ChevronLeft className="mr-2 w-5 h-5" />
+                {isAuthenticated ? (t("menu.order_now") || (i18n.language === 'ar' ? "اطلب الآن" : "Order Now")) : (t("menu.view_all") || (i18n.language === 'ar' ? "استكشف القائمة" : "Explore Menu"))}
+                {i18n.language === 'ar' ? <ChevronLeft className="mr-2 w-5 h-5" /> : <ChevronRight className="ml-2 w-5 h-5" />}
               </Button>
               
               {!isAuthenticated ? (
@@ -137,7 +136,7 @@ export default function WelcomePage() {
                   onClick={() => setLocation("/auth")}
                   className="w-full h-14 bg-white/10 backdrop-blur-md border-white/30 text-white rounded-2xl text-lg hover:bg-white/20"
                 >
-                  تسجيل الدخول
+                  {i18n.language === 'ar' ? "تسجيل الدخول" : "Login"}
                 </Button>
               ) : (
                 <Button
@@ -145,7 +144,7 @@ export default function WelcomePage() {
                   onClick={() => setLocation("/profile")}
                   className="w-full h-14 bg-white/10 backdrop-blur-md border-white/30 text-white rounded-2xl text-lg hover:bg-white/20"
                 >
-                  حسابي وطلباتي
+                  {i18n.language === 'ar' ? "حسابي وطلباتي" : "My Account & Orders"}
                 </Button>
               )}
             </motion.div>
@@ -172,8 +171,12 @@ export default function WelcomePage() {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-foreground mb-3">لماذا كلوني؟</h2>
-            <p className="text-muted-foreground">تجربة قهوة لا تُنسى</p>
+            <h2 className="text-3xl font-bold text-foreground mb-3">
+              {i18n.language === 'ar' ? "لماذا كلوني؟" : "Why Cluny?"}
+            </h2>
+            <p className="text-muted-foreground">
+              {i18n.language === 'ar' ? "تجربة قهوة لا تُنسى" : "An unforgettable coffee experience"}
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -222,9 +225,9 @@ export default function WelcomePage() {
       {/* Footer */}
       <footer className="py-10 px-6 bg-white border-t border-border">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
-          <img src={clunyLogo} alt="Logo" className="w-12 h-12 mb-4" />
+          <img src={clunyLogo} alt="Logo" className="w-12 h-12 mb-4 rounded-2xl" />
           <p className="text-muted-foreground text-sm">
-            © 2026 CLUNY CAFE. All Rights Reserved.
+            © {new Date().getFullYear()} CLUNY CAFE. {t("legal.rights")}
           </p>
         </div>
       </footer>
