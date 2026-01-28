@@ -14,47 +14,6 @@ import LocationPreparationCheck from "@/components/location-preparation-check";
 import type { Order } from "@shared/schema";
 import { useTranslation } from 'react-i18next';
 
-function CountdownTimer({ estimatedMinutes, startTime }: { estimatedMinutes: number, startTime: string | Date }) {
-  const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [progress, setProgress] = useState(100);
-
-  useEffect(() => {
-    const calculateTime = () => {
-      const start = new Date(startTime).getTime();
-      const end = start + estimatedMinutes * 60 * 1000;
-      const now = Date.now();
-      const remaining = Math.max(0, Math.floor((end - now) / 1000));
-      const totalSeconds = estimatedMinutes * 60;
-      const elapsed = (now - start) / 1000;
-      
-      setTimeLeft(remaining);
-      setProgress(Math.max(0, Math.min(100, 100 - (elapsed / totalSeconds) * 100)));
-    };
-
-    calculateTime();
-    const timer = setInterval(calculateTime, 1000);
-    return () => clearInterval(timer);
-  }, [estimatedMinutes, startTime]);
-
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-
-  return (
-    <div className="mt-6 space-y-3">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-muted-foreground">{t("tracking.prep_remaining")}</span>
-        <span className="text-2xl font-bold text-primary font-mono" dir="ltr">
-          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-        </span>
-      </div>
-      <Progress value={progress} className="h-2" />
-      <p className="text-center text-xs text-muted-foreground">
-        {t("tracking.est_time", { minutes: estimatedMinutes })}
-      </p>
-    </div>
-  );
-}
-
 function CountdownTimer({ estimatedMinutes, startTime, t }: { estimatedMinutes: number, startTime: string | Date, t: any }) {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [progress, setProgress] = useState(100);
