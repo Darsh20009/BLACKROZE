@@ -330,29 +330,29 @@ export default function DeliverySelectionPage() {
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2" dir="rtl">اختر فرع الاستلام</h1>
-          <p className="text-muted-foreground" dir="rtl">
-            يرجى اختيار الفرع المناسب لاستلام طلبك
+          <h1 className="text-2xl font-bold mb-2">{t("delivery.title")}</h1>
+          <p className="text-muted-foreground">
+            {t("delivery.subtitle")}
           </p>
         </div>
 
         {/* Branch Selection */}
         <Card className="mb-6">
           <CardContent className="p-6">
-              <Label htmlFor="branch-select" className="text-base font-semibold mb-4 block" dir="rtl">
+              <Label htmlFor="branch-select" className="text-base font-semibold mb-4 block">
                 <MapPin className="w-4 h-4 inline-block ml-2" />
-                اختر الفرع
+                {t("delivery.select_branch")}
               </Label>
               
               {isLoading ? (
-                <p className="text-muted-foreground" dir="rtl">جارٍ التحميل...</p>
+                <p className="text-muted-foreground">{t("delivery.loading_branches") || "Loading..."}</p>
               ) : branches.length === 0 ? (
-                <p className="text-muted-foreground" dir="rtl">لا توجد فروع متاحة حالياً</p>
+                <p className="text-muted-foreground">{t("delivery.no_branches") || "No branches available"}</p>
               ) : (
                 <>
                   <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
                     <SelectTrigger className="w-full" data-testid="select-branch">
-                      <SelectValue placeholder="اختر الفرع" />
+                      <SelectValue placeholder={t("delivery.select_branch")} />
                     </SelectTrigger>
                     <SelectContent>
                       {branches.map((branch) => (
@@ -381,18 +381,18 @@ export default function DeliverySelectionPage() {
                     return (
                       <div className="mt-4 space-y-3">
                         {/* Branch Info Card */}
-                        <div className="bg-muted/50 rounded-lg p-4 space-y-2" dir="rtl">
+                        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                           <div className="flex items-start gap-2">
                             <MapPin className="w-4 h-4 mt-1 text-primary shrink-0" />
                             <div>
-                              <p className="text-sm font-medium">العنوان</p>
+                              <p className="text-sm font-medium">{t("delivery.address")}</p>
                               <p className="text-sm text-muted-foreground">{selectedBranch.address}</p>
                             </div>
                           </div>
                           <div className="flex items-start gap-2">
                             <Phone className="w-4 h-4 mt-1 text-primary shrink-0" />
                             <div>
-                              <p className="text-sm font-medium">رقم الهاتف</p>
+                              <p className="text-sm font-medium">{t("delivery.phone")}</p>
                               <p className="text-sm text-muted-foreground" dir="ltr">{selectedBranch.phone}</p>
                             </div>
                           </div>
@@ -402,8 +402,8 @@ export default function DeliverySelectionPage() {
                         {isCheckingLocation || isGettingLocation ? (
                           <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
                             <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                            <AlertDescription className="text-blue-800 dark:text-blue-200" dir="rtl">
-                              جارٍ التحقق من موقعك...
+                            <AlertDescription className="text-blue-800 dark:text-blue-200">
+                              {t("delivery.check_location")}
                             </AlertDescription>
                           </Alert>
                         ) : locationError ? (
@@ -418,7 +418,7 @@ export default function DeliverySelectionPage() {
                                 data-testid="button-refresh-location"
                               >
                                 <Navigation className="w-4 h-4 ml-1" />
-                                تحديث الموقع
+                                {t("delivery.update_location")}
                               </Button>
                             </AlertDescription>
                           </Alert>
@@ -429,8 +429,8 @@ export default function DeliverySelectionPage() {
                               <div className="flex items-center justify-between gap-2 flex-wrap">
                                 <span>
                                   {locationStatus.withinRange 
-                                    ? `أنت ضمن نطاق الفرع (${locationStatus.distance} متر)`
-                                    : `أنت على بعد مسافة ${locationStatus.distance} متر من الفرع`}
+                                    ? t("delivery.within_range", { distance: locationStatus.distance })
+                                    : t("delivery.out_of_range", { distance: locationStatus.distance })}
                                 </span>
                                 <Button
                                   variant="outline"
@@ -439,7 +439,7 @@ export default function DeliverySelectionPage() {
                                   data-testid="button-refresh-location-2"
                                 >
                                   <Navigation className="w-4 h-4 ml-1" />
-                                  تحديث
+                                  {t("delivery.update")}
                                 </Button>
                               </div>
                             </AlertDescription>
@@ -459,9 +459,9 @@ export default function DeliverySelectionPage() {
                               <div className="p-4 rounded-full bg-primary/10">
                                 <Map className="w-8 h-8 text-primary" />
                               </div>
-                              <div className="text-center" dir="rtl">
-                                <p className="font-medium">عرض الموقع على الخريطة</p>
-                                <p className="text-sm text-muted-foreground">اضغط لفتح في خرائط جوجل</p>
+                              <div className="text-center">
+                                <p className="font-medium">{t("delivery.view_on_map")}</p>
+                                <p className="text-sm text-muted-foreground">{t("delivery.google_maps")}</p>
                               </div>
                             </div>
                           </a>
@@ -475,12 +475,12 @@ export default function DeliverySelectionPage() {
                                 <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                                   <Coffee className="w-5 h-5 text-primary" />
                                 </div>
-                                <div className="flex-1" dir="rtl">
+                                <div className="flex-1">
                                   <Label htmlFor="dine-in" className="text-base font-semibold cursor-pointer">
-                                    الجلوس في الكافيه
+                                    {t("delivery.dine_in")}
                                   </Label>
                                   <p className="text-sm text-muted-foreground mt-1">
-                                    احصل على طلبك واستمتع به في الكافيه
+                                    {t("delivery.dine_in_desc")}
                                   </p>
                                 </div>
                               </div>
@@ -499,19 +499,19 @@ export default function DeliverySelectionPage() {
                                 {loadingTables ? (
                                   <div className="text-center py-6">
                                     <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-                                    <p className="text-sm text-muted-foreground">جارٍ تحميل الطاولات...</p>
+                                    <p className="text-sm text-muted-foreground">{t("delivery.loading_tables")}</p>
                                   </div>
                                 ) : availableTables.length === 0 ? (
                                   <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
                                     <AlertCircle className="w-4 h-4 text-yellow-600" />
-                                    <AlertDescription className="text-yellow-800 dark:text-yellow-200" dir="rtl">
-                                      لا توجد طاولات في هذا الفرع حالياً
+                                    <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                                      {t("delivery.no_tables")}
                                     </AlertDescription>
                                   </Alert>
                                 ) : (
                                   <>
-                                    <div dir="rtl">
-                                      <Label className="text-sm font-semibold">اختر الطاولة</Label>
+                                    <div>
+                                      <Label className="text-sm font-semibold">{t("delivery.select_table")}</Label>
                                       <Select 
                                         value={selectedTableId} 
                                         onValueChange={(value) => {
@@ -519,7 +519,7 @@ export default function DeliverySelectionPage() {
                                         }}
                                       >
                                         <SelectTrigger className="w-full mt-2" data-testid="select-table">
-                                          <SelectValue placeholder="اختر طاولة" />
+                                          <SelectValue placeholder={t("delivery.select_table")} />
                                         </SelectTrigger>
                                         <SelectContent>
                                           {availableTables.map((table) => {
@@ -530,10 +530,10 @@ export default function DeliverySelectionPage() {
                                             }
                                             // Use isAvailable directly from server data (it's computed from isOccupied)
                                             const isAvailable = table.isAvailable === true;
-                                            const statusText = isAvailable ? '(متاحة)' : '(مشغولة)';
+                                            const statusText = isAvailable ? t("delivery.available") : t("delivery.occupied");
                                             return (
                                               <SelectItem key={tableId} value={tableId} disabled={!isAvailable} data-testid={`table-option-${table.tableNumber}`}>
-                                                <span dir="rtl">طاولة {table.tableNumber} (السعة: {table.capacity || 4} أشخاص) {statusText}</span>
+                                                <span>{t("delivery.table_label", { number: table.tableNumber, capacity: table.capacity || 4 })} {statusText}</span>
                                               </SelectItem>
                                             );
                                           })}
@@ -541,14 +541,14 @@ export default function DeliverySelectionPage() {
                                       </Select>
                                       {selectedTableId && (
                                         <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                                          تم اختيار الطاولة بنجاح
+                                          {t("delivery.table_success")}
                                         </p>
                                       )}
                                     </div>
 
-                                    <div dir="rtl">
+                                    <div>
                                       <Label htmlFor="arrival-time" className="text-sm font-semibold">
-                                        وقت الوصول المتوقع
+                                        {t("delivery.arrival_time")}
                                       </Label>
                                       <Input
                                         id="arrival-time"
@@ -563,8 +563,8 @@ export default function DeliverySelectionPage() {
                                     {bookedTable && (
                                       <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
                                         <Check className="w-4 h-4 text-green-600" />
-                                        <AlertDescription className="text-green-800 dark:text-green-200" dir="rtl">
-                                          تم حجز الطاولة {bookedTable.tableNumber} بنجاح
+                                        <AlertDescription className="text-green-800 dark:text-green-200">
+                                          {t("delivery.booking_success")}
                                         </AlertDescription>
                                       </Alert>
                                     )}
@@ -591,7 +591,7 @@ export default function DeliverySelectionPage() {
                                 rel="noopener noreferrer"
                               >
                                 <Map className="w-4 h-4 ml-2" />
-                                <span dir="rtl">التوجيه إلى الفرع</span>
+                                <span>{t("delivery.navigate")}</span>
                               </a>
                             </Button>
                           )}
@@ -605,7 +605,7 @@ export default function DeliverySelectionPage() {
                             >
                               <a href={`tel:+966${selectedBranch.phone}`}>
                                 <Phone className="w-4 h-4 ml-2" />
-                                <span dir="rtl">الاتصال بالفرع</span>
+                                <span>{t("delivery.call")}</span>
                               </a>
                             </Button>
                           )}
@@ -626,8 +626,8 @@ export default function DeliverySelectionPage() {
           disabled={!selectedBranchId || isLoading || isCheckingLocation}
           data-testid="button-continue"
         >
-          <span dir="rtl">
-            {isCheckingLocation ? 'جارٍ التحقق من الموقع...' : 'متابعة'}
+          <span>
+            {isCheckingLocation ? t("delivery.check_location") : t("delivery.continue")}
           </span>
           {!isCheckingLocation && <ArrowRight className="w-5 h-5 mr-2" />}
           {isCheckingLocation && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
