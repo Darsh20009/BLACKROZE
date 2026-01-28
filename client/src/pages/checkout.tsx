@@ -19,15 +19,16 @@ import { CreditCard, FileText, MessageCircle, CheckCircle, Coffee, Clock, Star, 
 import type { PaymentMethodInfo, PaymentMethod, Order } from "@shared/schema";
 
 export default function CheckoutPage() {
- const [, setLocation] = useLocation();
- const { cartItems, clearCart, getTotalPrice, deliveryInfo, getFinalTotal } = useCartStore();
- const { toast } = useToast();
+  const { t, i18n } = useTranslation();
+  const [, setLocation] = useLocation();
+  const { cartItems, clearCart, getTotalPrice, deliveryInfo, getFinalTotal } = useCartStore();
+  const { toast } = useToast();
 
- useEffect(() => {
-   document.title = "إتمام الشراء - CLUNY CAFE | سهل وآمن";
-   const metaDesc = document.querySelector('meta[name="description"]');
-   if (metaDesc) metaDesc.setAttribute('content', 'إتمام عملية الشراء بأمان وسهولة في CLUNY CAFE - خيارات دفع متعددة وتوصيل سريع');
- }, []);
+  useEffect(() => {
+    document.title = `${t("nav.checkout")} - CLUNY CAFE`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', t("delivery.subtitle"));
+  }, [t]);
 
  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
  const [secondaryPaymentMethod, setSecondaryPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -162,7 +163,7 @@ export default function CheckoutPage() {
      const response = await apiRequest("POST", "/api/orders", orderData);
      if (!response.ok) {
        const error = await response.json();
-       throw new Error(error.error || "فشل في إنشاء الطلب");
+       throw new Error(error.error || t("checkout.order_failed") || "فشل في إنشاء الطلب");
      }
      return response.json();
    },
@@ -183,9 +184,9 @@ export default function CheckoutPage() {
            });
        }
      }
-     toast({ title: "تم إنشاء الطلب بنجاح", description: `رقم الطلب: ${data.orderNumber}` });
+     toast({ title: t("checkout.order_success") || "تم إنشاء الطلب بنجاح", description: `${t("tracking.order_number")}: ${data.orderNumber}` });
    },
-   onError: (error) => toast({ variant: "destructive", title: "خطأ في إنشاء الطلب", description: error.message }),
+   onError: (error) => toast({ variant: "destructive", title: t("checkout.order_error") || "خطأ في إنشاء الطلب", description: error.message }),
  });
 
  const handleValidateDiscount = async () => {
@@ -200,10 +201,10 @@ export default function CheckoutPage() {
      const data = await response.json();
      if (response.ok && data.valid) {
        setAppliedDiscount({ code: discountCode.trim(), percentage: data.discountPercentage });
-       toast({ title: "تم تطبيق الخصم بنجاح", description: `خصم ${data.discountPercentage}% على إجمالي الطلب` });
+       toast({ title: t("checkout.discount_applied") || "تم تطبيق الخصم بنجاح", description: `${t("checkout.discount_desc", { percentage: data.discountPercentage })}` });
      } else {
        setAppliedDiscount(null);
-       toast({ variant: "destructive", title: "كود خصم غير صحيح" });
+       toast({ variant: "destructive", title: t("checkout.invalid_discount") || "كود خصم غير صحيح" });
      }
    } finally {
      setIsValidatingDiscount(false);
@@ -402,35 +403,35 @@ export default function CheckoutPage() {
 
  if (showSuccessPage) {
    return (
-     <div className="min-h-screen flex items-center justify-center p-8 bg-[#533d2d]">
+     <div className="min-h-screen flex items-center justify-center p-8 bg-[#533d2d]" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl text-center space-y-6">
          <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
-         <h2 className="text-3xl font-bold text-accent">شكراً لطلبك!</h2>
-         <p>طلبك رقم <span className="font-bold text-primary">#{orderDetails?.orderNumber}</span> قيد التحضير</p>
-         <Button onClick={() => setLocation("/menu")} className="w-full h-12 bg-primary">العودة للقائمة</Button>
+         <h2 className="text-3xl font-bold text-accent">{t("nav.thank_you")}</h2>
+         <p>{t("checkout.order_desc")} <span className="font-bold text-primary">#{orderDetails?.orderNumber}</span> {t("status.in_progress")}</p>
+         <Button onClick={() => setLocation("/menu")} className="w-full h-12 bg-primary">{t("cart.continue_shopping")}</Button>
        </div>
      </div>
    );
  }
 
  return (
-   <div className="min-h-screen py-12 bg-[#21302f]" dir="rtl">
+   <div className="min-h-screen py-12 bg-[#21302f]" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
      <div className="max-w-6xl mx-auto px-4">
-       <h1 className="text-3xl font-bold text-center mb-8">إتمام عملية الدفع</h1>
+       <h1 className="text-3xl font-bold text-center mb-8">{t("nav.checkout")}</h1>
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          <div className="lg:col-span-1 space-y-6">
            <Card>
-             <CardHeader><CardTitle>ملخص الطلب</CardTitle></CardHeader>
+             <CardHeader><CardTitle>{t("checkout.order_summary")}</CardTitle></CardHeader>
              <CardContent className="space-y-4">
                {cartItems.map(item => (
                  <div key={item.coffeeItemId} className="flex justify-between items-center">
-                   <span>{item.coffeeItem?.nameAr} × {item.quantity}</span>
-                   <span className="font-bold">{((typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0))) * item.quantity).toFixed(2)} ريال</span>
+                   <span>{i18n.language === 'ar' ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn || item.coffeeItem?.nameAr} × {item.quantity}</span>
+                   <span className="font-bold">{((typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0))) * item.quantity).toFixed(2)} {t("currency")}</span>
                  </div>
                ))}
                <div className="pt-4 border-t font-bold text-xl flex justify-between">
-                 <span>الإجمالي:</span>
-                 <span className="text-primary">{getFinalTotal().toFixed(2)} ريال</span>
+                 <span>{t("cart.total")}:</span>
+                 <span className="text-primary">{getFinalTotal().toFixed(2)} {t("currency")}</span>
                </div>
              </CardContent>
            </Card>
@@ -441,8 +442,8 @@ export default function CheckoutPage() {
                <div className="space-y-4">
                  {!isRegisteredCustomer && (
                    <div className="space-y-2">
-                     <Label>الاسم الكامل</Label>
-                     <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="أدخل اسمك" />
+                     <Label>{t("checkout.full_name")}</Label>
+                     <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={t("checkout.enter_name")} />
                    </div>
                  )}
                  {isRegisteredCustomer && (
@@ -466,13 +467,13 @@ export default function CheckoutPage() {
                  <div className="border rounded-lg p-4 bg-gradient-to-r from-amber-50 to-orange-50">
                    <div className="flex items-center gap-2 mb-3">
                      <Gift className="w-5 h-5 text-amber-600" />
-                     <Label className="font-semibold text-amber-800">هل لديك كود خصم؟</Label>
+                     <Label className="font-semibold text-amber-800">{t("checkout.have_discount")}</Label>
                    </div>
                    <div className="flex gap-2">
                      <Input
                        value={discountCode}
                        onChange={(e) => setDiscountCode(e.target.value)}
-                       placeholder="أدخل كود الخصم"
+                       placeholder={t("checkout.enter_discount")}
                        className="flex-1"
                        disabled={!!appliedDiscount}
                        data-testid="input-discount-code"
@@ -487,7 +488,7 @@ export default function CheckoutPage() {
                          className="text-red-600 border-red-300"
                          data-testid="button-remove-discount"
                        >
-                         إزالة
+                         {t("checkout.remove")}
                        </Button>
                      ) : (
                        <Button
@@ -496,19 +497,19 @@ export default function CheckoutPage() {
                          className="bg-amber-600 hover:bg-amber-700"
                          data-testid="button-apply-discount"
                        >
-                         {isValidatingDiscount ? "جاري التحقق..." : "تطبيق"}
+                         {isValidatingDiscount ? t("checkout.validating") : t("checkout.apply")}
                        </Button>
                      )}
                    </div>
                    {appliedDiscount && (
                      <div className="mt-3 flex items-center gap-2 text-green-700 bg-green-50 p-2 rounded-lg">
                        <Sparkles className="w-4 h-4" />
-                       <span className="font-medium">تم تطبيق خصم {appliedDiscount.percentage}% بنجاح!</span>
+                       <span className="font-medium">{t("checkout.discount_applied_success", { percentage: appliedDiscount.percentage })}</span>
                      </div>
                    )}
                  </div>
 
-                 <Button onClick={handleProceedPayment} className="w-full h-14 text-lg" data-testid="button-confirm-order">تأكيد الطلب</Button>
+                 <Button onClick={handleProceedPayment} className="w-full h-14 text-lg" data-testid="button-confirm-order">{t("checkout.confirm_order")}</Button>
                </div>
              </CardContent>
            </Card>

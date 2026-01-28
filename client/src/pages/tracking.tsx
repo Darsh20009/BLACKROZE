@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import LocationPreparationCheck from "@/components/location-preparation-check";
 import type { Order } from "@shared/schema";
+import { useTranslation } from 'react-i18next';
 
 function CountdownTimer({ estimatedMinutes, startTime }: { estimatedMinutes: number, startTime: string | Date }) {
   const [timeLeft, setTimeLeft] = useState<number>(0);
@@ -41,21 +42,63 @@ function CountdownTimer({ estimatedMinutes, startTime }: { estimatedMinutes: num
   return (
     <div className="mt-6 space-y-3">
       <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-muted-foreground">الوقت المتبقي للتحضير:</span>
+        <span className="text-sm font-medium text-muted-foreground">{t("tracking.prep_remaining")}</span>
         <span className="text-2xl font-bold text-primary font-mono" dir="ltr">
           {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
         </span>
       </div>
       <Progress value={progress} className="h-2" />
       <p className="text-center text-xs text-muted-foreground">
-        الوقت المقدر: {estimatedMinutes} دقائق
+        {t("tracking.est_time", { minutes: estimatedMinutes })}
+      </p>
+    </div>
+  );
+}
+
+function CountdownTimer({ estimatedMinutes, startTime, t }: { estimatedMinutes: number, startTime: string | Date, t: any }) {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [progress, setProgress] = useState(100);
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const start = new Date(startTime).getTime();
+      const end = start + estimatedMinutes * 60 * 1000;
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((end - now) / 1000));
+      const totalSeconds = estimatedMinutes * 60;
+      const elapsed = (now - start) / 1000;
+      
+      setTimeLeft(remaining);
+      setProgress(Math.max(0, Math.min(100, 100 - (elapsed / totalSeconds) * 100)));
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 1000);
+    return () => clearInterval(timer);
+  }, [estimatedMinutes, startTime]);
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+
+  return (
+    <div className="mt-6 space-y-3">
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-medium text-muted-foreground">{t("tracking.prep_remaining")}</span>
+        <span className="text-2xl font-bold text-primary font-mono" dir="ltr">
+          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+        </span>
+      </div>
+      <Progress value={progress} className="h-2" />
+      <p className="text-center text-xs text-muted-foreground">
+        {t("tracking.est_time", { minutes: estimatedMinutes })}
       </p>
     </div>
   );
 }
 
 export default function OrderTrackingPage() {
- const [location] = useLocation();
+  const { t, i18n } = useTranslation();
+  const [location] = useLocation();
  const [orderNumber, setOrderNumber] = useState("");
  const [trackingOrderNumber, setTrackingOrderNumber] = useState("");
  const previousStatusRef = useRef<string>("");
@@ -97,8 +140,8 @@ export default function OrderTrackingPage() {
     if (order && order.status === 'ready' && previousStatusRef.current && previousStatusRef.current !== 'ready') {
       // Sound alerts disabled by user request
       toast({
-        title: "طلبك جاهز!",
-        description: "يمكنك الآن استلام طلبك من الفرع",
+        title: t("tracking.ready_toast_title"),
+        description: t("tracking.ready_toast_desc"),
         className: "bg-green-600 text-white border-green-700",
         duration: 10000,
       });
@@ -107,245 +150,236 @@ export default function OrderTrackingPage() {
     if (order) {
       previousStatusRef.current = order.status;
     }
-  }, [order, toast]);
+  }, [order, toast, t]);
 
   const handleTrack = () => {
     if (!orderNumber) return;
     setTrackingOrderNumber(orderNumber);
   };
 
- const getStatusIcon = (status: string) => {
- switch (status) {
- case 'pending':
- case 'payment_confirmed':
- return <Clock className="w-8 h-8 text-yellow-500" />;
- case 'in_progress':
- return <Package className="w-8 h-8 text-blue-500" />;
- case 'ready':
- return <Coffee className="w-8 h-8 text-green-500" />;
- case 'out_for_delivery':
- return <Truck className="w-8 h-8 text-purple-500" />;
- case 'completed':
- return <Check className="w-8 h-8 text-green-600" />;
- default:
- return <Clock className="w-8 h-8 text-gray-500" />;
- }
- };
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+      case 'payment_confirmed':
+        return <Clock className="w-8 h-8 text-yellow-500" />;
+      case 'in_progress':
+        return <Package className="w-8 h-8 text-blue-500" />;
+      case 'ready':
+        return <Coffee className="w-8 h-8 text-green-500" />;
+      case 'out_for_delivery':
+        return <Truck className="w-8 h-8 text-purple-500" />;
+      case 'completed':
+        return <Check className="w-8 h-8 text-green-600" />;
+      default:
+        return <Clock className="w-8 h-8 text-gray-500" />;
+    }
+  };
 
- const getStatusText = (status: string) => {
- const statusMap: Record<string, string> = {
- 'pending': 'في الانتظار',
- 'payment_confirmed': 'تم تأكيد الدفع',
- 'in_progress': 'قيد التحضير',
- 'ready': 'جاهز للاستلام',
- 'out_for_delivery': 'في الطريق',
- 'completed': 'تم التسليم',
- 'cancelled': 'ملغي'
- };
- return statusMap[status] || status;
- };
+  const getStatusText = (status: string) => {
+    return t(`status.${status}`) || status;
+  };
 
- return (
- <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-12 px-4">
- <div className="max-w-4xl mx-auto">
- <div className="text-center mb-8">
- <h1 className="font-amiri text-4xl font-bold text-primary mb-2">
- تتبع طلبك
- </h1>
- <p className="text-muted-foreground">
- أدخل رقم طلبك لتتبع حالته
- </p>
- </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-12 px-4" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="font-amiri text-4xl font-bold text-primary mb-2">
+            {t("tracking.title")}
+          </h1>
+          <p className="text-muted-foreground">
+            {t("tracking.subtitle")}
+          </p>
+        </div>
 
- <Card className="mb-8">
- <CardContent className="p-6">
- <div className="flex gap-4">
- <div className="flex-1">
- <Label htmlFor="order-number">رقم الطلب</Label>
- <Input
- id="order-number"
- value={orderNumber}
- onChange={(e) => setOrderNumber(e.target.value)}
- placeholder="ORD-..."
- className="text-right"
- dir="ltr"
- />
- </div>
- <div className="flex items-end">
- <Button
- onClick={handleTrack}
- disabled={!orderNumber || isLoading}
- className="bg-primary text-primary-foreground"
- >
- {isLoading ? "جاري البحث..." : "تتبع"}
- </Button>
- </div>
- </div>
- </CardContent>
- </Card>
-
-    {order && (
-      <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-10 duration-500">
-        {/* Order Status */}
-        <Card className="overflow-hidden border-2 border-primary/20">
-          <CardHeader className="bg-primary/5 pb-6">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="p-4 bg-background rounded-full shadow-lg border-2 border-primary/10">
-                {getStatusIcon(order.status)}
-              </div>
-              <div className="space-y-1">
-                <CardTitle className="text-2xl font-bold text-primary">
-                  {getStatusText(order.status)}
-                </CardTitle>
-                <p className="text-muted-foreground text-sm">تم تحديث الحالة مؤخراً</p>
-              </div>
-            </div>
-          </CardHeader>
+        <Card className="mb-8">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                  <span className="text-muted-foreground">رقم الطلب:</span>
-                  <span className="font-bold text-primary" dir="ltr">{order.orderNumber}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                  <span className="text-muted-foreground">المبلغ الإجمالي:</span>
-                  <span className="font-bold">{order.totalAmount} ريال</span>
-                </div>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Label htmlFor="order-number">{t("tracking.order_number")}</Label>
+                <Input
+                  id="order-number"
+                  value={orderNumber}
+                  onChange={(e) => setOrderNumber(e.target.value)}
+                  placeholder="ORD-..."
+                  className={i18n.language === 'ar' ? "text-right" : "text-left"}
+                  dir="ltr"
+                />
               </div>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                  <span className="text-muted-foreground">حالة المشروب:</span>
-                  <Badge variant={order.status === 'ready' ? 'default' : 'secondary'} className="text-sm px-3 py-1">
-                    {order.status === 'ready' ? 'جاهز للاستلام ✨' : order.status === 'in_progress' ? 'جاري التحضير ☕' : 'في الانتظار ⏳'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                  <span className="text-muted-foreground">تأكيد الطلب:</span>
-                  <Badge variant="outline" className="text-sm px-3 py-1 border-green-500 text-green-600">
-                    تم التأكيد ✅
-                  </Badge>
-                </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={handleTrack}
+                  disabled={!orderNumber || isLoading}
+                  className="bg-primary text-primary-foreground"
+                >
+                  {isLoading ? t("tracking.searching") : t("tracking.track_btn")}
+                </Button>
               </div>
             </div>
-
-            {order.status === 'in_progress' && order.estimatedPrepTimeInMinutes && (
-              <CountdownTimer 
-                estimatedMinutes={order.estimatedPrepTimeInMinutes} 
-                startTime={order.prepTimeSetAt || order.updatedAt || order.createdAt} 
-              />
-            )}
           </CardContent>
         </Card>
 
-        {order.deliveryType && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">نوع التسليم:</span>
-                <span className="font-bold">
-                  {order.deliveryType === 'delivery' ? 'توصيل' : 'استلام من الفرع'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {branch && (
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold">
-                <Store className="w-5 h-5" />
-                <span>معلومات الفرع</span>
-              </div>
-              <div className="space-y-3 pt-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">اسم الفرع:</span>
-                  <span className="font-bold">{branch.nameAr}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">العنوان:</span>
-                  <span className="font-bold">{branch.address}</span>
-                </div>
-                {branch.phone && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">الهاتف:</span>
-                    <span className="font-bold" dir="ltr">{branch.phone}</span>
+        {order && (
+          <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-10 duration-500">
+            {/* Order Status */}
+            <Card className="overflow-hidden border-2 border-primary/20">
+              <CardHeader className="bg-primary/5 pb-6">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="p-4 bg-background rounded-full shadow-lg border-2 border-primary/10">
+                    {getStatusIcon(order.status)}
                   </div>
+                  <div className="space-y-1">
+                    <CardTitle className="text-2xl font-bold text-primary">
+                      {getStatusText(order.status)}
+                    </CardTitle>
+                    <p className="text-muted-foreground text-sm">{t("tracking.status_updated")}</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                      <span className="text-muted-foreground">{t("tracking.order_number")}:</span>
+                      <span className="font-bold text-primary" dir="ltr">{order.orderNumber}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                      <span className="text-muted-foreground">{t("tracking.total_amount")}:</span>
+                      <span className="font-bold">{order.totalAmount} {t("currency")}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                      <span className="text-muted-foreground">{t("tracking.drink_status")}:</span>
+                      <Badge variant={order.status === 'ready' ? 'default' : 'secondary'} className="text-sm px-3 py-1">
+                        {order.status === 'ready' ? `✨ ${t("tracking.ready_badge")}` : order.status === 'in_progress' ? `☕ ${t("tracking.preparing_badge")}` : `⏳ ${t("tracking.pending_badge")}`}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                      <span className="text-muted-foreground">{t("tracking.order_confirmed")}:</span>
+                      <Badge variant="outline" className="text-sm px-3 py-1 border-green-500 text-green-600">
+                        {t("tracking.confirmed_badge")} ✅
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {order.status === 'in_progress' && order.estimatedPrepTimeInMinutes && (
+                  <CountdownTimer 
+                    estimatedMinutes={order.estimatedPrepTimeInMinutes} 
+                    startTime={order.prepTimeSetAt || order.updatedAt || order.createdAt} 
+                    t={t}
+                  />
                 )}
-                {branch.mapsUrl && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => window.open(branch.mapsUrl, '_blank')}
-                    data-testid="button-view-branch-location"
-                  >
-                    <MapPin className="w-4 h-4 ml-2" />
-                    عرض الموقع على الخريطة
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {order.deliveryType && (
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t("tracking.delivery_type")}:</span>
+                    <span className="font-bold">
+                      {order.deliveryType === 'delivery' ? t("tracking.delivery") : t("tracking.pickup")}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {branch && (
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-semibold">
+                    <Store className="w-5 h-5" />
+                    <span>{t("tracking.branch_info")}</span>
+                  </div>
+                  <div className="space-y-3 pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">{t("tracking.branch_name")}:</span>
+                      <span className="font-bold">{i18n.language === 'ar' ? branch.nameAr : branch.nameEn || branch.nameAr}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">{t("delivery.address")}:</span>
+                      <span className="font-bold">{branch.address}</span>
+                    </div>
+                    {branch.phone && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">{t("delivery.phone")}:</span>
+                        <span className="font-bold" dir="ltr">{branch.phone}</span>
+                      </div>
+                    )}
+                    {branch.mapsUrl && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => window.open(branch.mapsUrl, '_blank')}
+                        data-testid="button-view-branch-location"
+                      >
+                        <MapPin className="w-4 h-4 mx-2" />
+                        {t("tracking.view_map")}
+                        <ExternalLink className="w-4 h-4 mx-2" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Location Preparation Check - Show when order is ready for pickup */}
+            {branch && order.deliveryType === 'pickup' && ['in_progress', 'ready'].includes(order.status) && (
+              <LocationPreparationCheck 
+                branch={branch}
+                preparationRadius={300}
+                onPreparationReady={() => {
+                  toast({
+                    title: t("tracking.proximity_toast_title"),
+                    description: t("tracking.proximity_toast_desc"),
+                  });
+                }}
+              />
+            )}
+
+            {/* Live Driver Location (if applicable) */}
+            {order.deliveryType === 'delivery' && order.status === 'out_for_delivery' && order.driverLocation && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="w-6 h-6 text-primary" />
+                    {t("tracking.driver_location")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <p className="text-muted-foreground">{t("tracking.map_placeholder")}</p>
+                  </div>
+                  {order.estimatedDeliveryTime && (
+                    <p className="mt-4 text-center text-muted-foreground">
+                      {t("tracking.est_arrival")} {new Date(order.estimatedDeliveryTime).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Order Items */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("tracking.order_details")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Array.isArray(order.items) && order.items.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <span>{i18n.language === 'ar' ? item.nameAr || item.name : item.nameEn || item.name}</span>
+                      <span className="text-muted-foreground">× {item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
-
- {/* Location Preparation Check - Show when order is ready for pickup */}
- {branch && order.deliveryType === 'pickup' && ['in_progress', 'ready'].includes(order.status) && (
-   <LocationPreparationCheck 
-     branch={branch}
-     preparationRadius={300}
-     onPreparationReady={() => {
-       toast({
-         title: "أنت قريب من الفرع!",
-         description: "يمكننا البدء بتحضير طلبك الآن",
-       });
-     }}
-   />
- )}
-
- {/* Live Driver Location (if applicable) */}
- {order.deliveryType === 'delivery' && order.status === 'out_for_delivery' && order.driverLocation && (
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- <MapPin className="w-6 h-6 text-primary" />
- موقع السائق
- </CardTitle>
- </CardHeader>
- <CardContent>
- <div className="h-64 bg-gray-200 rounded-lg flex items-center justify-center">
- {/* Map placeholder - integrate with Google Maps or similar */}
- <p className="text-muted-foreground">خريطةالموقع</p>
- </div>
- {order.estimatedDeliveryTime && (
- <p className="mt-4 text-center text-muted-foreground">
- الوصول المتوقع: {new Date(order.estimatedDeliveryTime).toLocaleTimeString('ar-SA')}
- </p>
- )}
- </CardContent>
- </Card>
- )}
-
- {/* Order Items */}
- <Card>
- <CardHeader>
- <CardTitle>تفاصيل الطلب</CardTitle>
- </CardHeader>
- <CardContent>
- <div className="space-y-3">
- {Array.isArray(order.items) && order.items.map((item: any, index: number) => (
- <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
- <span>{item.name || item.nameAr}</span>
- <span className="text-muted-foreground">× {item.quantity}</span>
- </div>
- ))}
- </div>
- </CardContent>
- </Card>
- </div>
- )}
- </div>
- </div>
- );
+      </div>
+    </div>
+  );
 }

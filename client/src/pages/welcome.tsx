@@ -14,9 +14,9 @@ export default function WelcomePage() {
   const { t, i18n } = useTranslation();
 
   const features = [
-    { icon: Coffee, title: t("menu.featured") || "قهوة مختصة", desc: t("banner.1.subtitle") || "أجود أنواع الحبوب المحمصة بعناية", color: "from-primary to-primary/70" },
-    { icon: Star, title: t("app.tagline") || "تجربة فخمة", desc: t("banner.2.subtitle") || "أجواء تجمع بين الرقي والراحة", color: "from-accent to-accent/70" },
-    { icon: MapPin, title: t("location.riyadh") || "مواقعنا", desc: i18n.language === 'ar' ? "متواجدون في أرقى أحياء الرياض" : "Located in the finest districts of Riyadh", color: "from-primary to-accent" },
+    { icon: Coffee, title: t("welcome.specialty"), desc: t("welcome.specialty_desc"), color: "from-primary to-primary/70" },
+    { icon: Star, title: t("welcome.luxury"), desc: t("welcome.luxury_desc"), color: "from-accent to-accent/70" },
+    { icon: MapPin, title: t("welcome.locations"), desc: t("welcome.locations_desc"), color: "from-primary to-accent" },
   ];
 
   return (
@@ -99,10 +99,10 @@ export default function WelcomePage() {
                 className="mb-10"
               >
                 <p className="text-white text-2xl mb-2 font-semibold">
-                  {i18n.language === 'ar' ? `مرحباً، ${customer?.name} 👋` : `Welcome, ${customer?.name} 👋`}
+                  {t("welcome.greeting", { name: customer?.name })}
                 </p>
                 <p className="text-white/70 text-base">
-                  {i18n.language === 'ar' ? "اشتقنا لرائحة قهوتك المفضلة" : "We missed the aroma of your favorite coffee"}
+                  {t("welcome.missed_you")}
                 </p>
               </motion.div>
             ) : (
@@ -112,7 +112,7 @@ export default function WelcomePage() {
                 transition={{ delay: 0.6 }}
                 className="text-white/80 text-xl mb-10"
               >
-                {i18n.language === 'ar' ? "حيث تبدأ حكايات القهوة الفاخرة" : "Where premium coffee stories begin"}
+                {t("welcome.stories")}
               </motion.p>
             )}
 
@@ -126,7 +126,7 @@ export default function WelcomePage() {
                 onClick={() => setLocation("/menu")}
                 className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-xl shadow-primary/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
-                {isAuthenticated ? (t("menu.order_now") || (i18n.language === 'ar' ? "اطلب الآن" : "Order Now")) : (t("menu.view_all") || (i18n.language === 'ar' ? "استكشف القائمة" : "Explore Menu"))}
+                {t(isAuthenticated ? "menu.order_now" : "welcome.explore")}
                 {i18n.language === 'ar' ? <ChevronLeft className="mr-2 w-5 h-5" /> : <ChevronRight className="ml-2 w-5 h-5" />}
               </Button>
               
@@ -136,7 +136,7 @@ export default function WelcomePage() {
                   onClick={() => setLocation("/auth")}
                   className="w-full h-14 bg-white/10 backdrop-blur-md border-white/30 text-white rounded-2xl text-lg hover:bg-white/20"
                 >
-                  {i18n.language === 'ar' ? "تسجيل الدخول" : "Login"}
+                  {t("welcome.login")}
                 </Button>
               ) : (
                 <Button
@@ -144,7 +144,7 @@ export default function WelcomePage() {
                   onClick={() => setLocation("/profile")}
                   className="w-full h-14 bg-white/10 backdrop-blur-md border-white/30 text-white rounded-2xl text-lg hover:bg-white/20"
                 >
-                  {i18n.language === 'ar' ? "حسابي وطلباتي" : "My Account & Orders"}
+                  {t("welcome.my_account")}
                 </Button>
               )}
             </motion.div>
@@ -172,10 +172,10 @@ export default function WelcomePage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl font-bold text-foreground mb-3">
-              {i18n.language === 'ar' ? "لماذا كلوني؟" : "Why Cluny?"}
+              {t("welcome.why")}
             </h2>
             <p className="text-muted-foreground">
-              {i18n.language === 'ar' ? "تجربة قهوة لا تُنسى" : "An unforgettable coffee experience"}
+              {t("welcome.experience")}
             </p>
           </motion.div>
 

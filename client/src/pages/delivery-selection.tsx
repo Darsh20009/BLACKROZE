@@ -11,6 +11,7 @@ import { useCartStore } from '@/lib/cart-store';
 import { useToast } from '@/hooks/use-toast';
 import { Store, MapPin, ArrowRight, Phone, Map, Coffee, AlertCircle, Loader2, Navigation, Clock, Check } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 interface Branch {
   _id: string;
@@ -39,6 +40,7 @@ interface Table {
 }
 
 export default function DeliverySelectionPage() {
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { setDeliveryInfo, cartItems } = useCartStore();
   const { toast } = useToast();
@@ -46,10 +48,10 @@ export default function DeliverySelectionPage() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = "اختيار الفرع - CLUNY CAFE | توصيل سريع";
+    document.title = `${t("nav.branch_selection")} - CLUNY CAFE`;
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'اختر فرع CLUNY CAFE الأقرب إليك للتوصيل السريع أو الاستلام');
-  }, []);
+    if (metaDesc) metaDesc.setAttribute('content', t("delivery.subtitle"));
+  }, [t]);
   const [dineIn, setDineIn] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [locationError, setLocationError] = useState<string>('');
@@ -77,13 +79,13 @@ export default function DeliverySelectionPage() {
         },
         (error) => {
           console.error('Geolocation error:', error);
-          setLocationError('يرجى السماح بالوصول للموقع للتحقق من قربك من الفرع');
+          setLocationError(t("delivery.location_error"));
           setIsGettingLocation(false);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      setLocationError('المتصفح لا يدعم تحديد الموقع');
+      setLocationError(t("delivery.browser_error"));
     }
   }, []);
 
@@ -149,8 +151,8 @@ export default function DeliverySelectionPage() {
     } catch (error) {
       console.error('Error fetching tables:', error);
       toast({
-        title: 'خطأ',
-        description: 'فشل تحميل الطاولات',
+        title: t("product.error"),
+        description: t("delivery.loading_tables_error") || "Failed to load tables",
         variant: 'destructive',
       });
     } finally {
@@ -174,8 +176,8 @@ export default function DeliverySelectionPage() {
 
       if (!response.ok) {
         toast({
-          title: 'خطأ',
-          description: data.error || 'فشل حجز الطاولة',
+          title: t("product.error"),
+          description: data.error || t("delivery.booking_error") || 'Failed to book table',
           variant: 'destructive',
         });
         // Don't clear selections on error - user can try again or adjust arrival time
@@ -189,8 +191,8 @@ export default function DeliverySelectionPage() {
       });
 
       toast({
-        title: 'نجح',
-        description: data.message || 'تم حجز الطاولة بنجاح',
+        title: t("product.saved"),
+        description: data.message || t("delivery.booking_success") || 'Table booked successfully',
       });
     } catch (error) {
       // Keep selections - allow retry with same selections
@@ -236,7 +238,7 @@ export default function DeliverySelectionPage() {
         },
         (error) => {
           console.error('Geolocation error:', error);
-          setLocationError('يرجى السماح بالوصول للموقع للتحقق من قربك من الفرع');
+          setLocationError(t("delivery.location_error"));
           setIsGettingLocation(false);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -253,8 +255,8 @@ export default function DeliverySelectionPage() {
     // Validate cart is not empty
     if (!cartItems || cartItems.length === 0) {
       toast({
-        title: 'السلة فارغة',
-        description: 'الرجاء إضافة منتجات إلى السلة أولاً',
+        title: t("cart.empty_title"),
+        description: t("cart.empty_desc"),
         variant: 'destructive',
       });
       setLocation('/menu');
@@ -263,8 +265,8 @@ export default function DeliverySelectionPage() {
 
     if (!selectedBranchId) {
       toast({
-        title: 'تنبيه',
-        description: 'الرجاء اختيار الفرع',
+        title: t("product.error"),
+        description: t("delivery.select_branch_error") || 'Please select a branch',
         variant: 'destructive',
       });
       return;
@@ -276,8 +278,8 @@ export default function DeliverySelectionPage() {
     // If location couldn't be checked (no GPS or error), show warning but allow proceed
     if (!userLocation && locationError) {
       toast({
-        title: 'تنبيه',
-        description: 'لم نتمكن من التحقق من موقعك. يرجى التأكد من قربك من الفرع',
+        title: t("product.error"),
+        description: t("delivery.location_warning") || 'Could not verify location. Please ensure you are near the branch.',
         variant: 'default',
       });
     }
@@ -292,8 +294,8 @@ export default function DeliverySelectionPage() {
 
       if (!hasTableSelection) {
         toast({
-          title: 'تنبيه',
-          description: 'الرجاء اختيار طاولة',
+          title: t("product.error"),
+          description: t("delivery.select_table_error") || 'Please select a table',
           variant: 'destructive',
         });
         return;
@@ -301,8 +303,8 @@ export default function DeliverySelectionPage() {
 
       if (!arrivalTime) {
         toast({
-          title: 'تنبيه',
-          description: 'الرجاء إدخال وقت الوصول',
+          title: t("product.error"),
+          description: t("delivery.select_arrival_error") || 'Please enter arrival time',
           variant: 'destructive',
         });
         return;

@@ -20,8 +20,9 @@ interface Branch {
 }
 
 export default function ManagerEmployees() {
- const [, setLocation] = useLocation();
- const { toast } = useToast();
+  const { t, i18n } = useTranslation();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
  const [currentManager, setCurrentManager] = useState<any>(null);
@@ -325,19 +326,19 @@ export default function ManagerEmployees() {
  setIsUploadingImage(false);
  };
 
- return (
- <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4">
- <div className="max-w-7xl mx-auto">
- <div className="flex items-center justify-between mb-6">
- <div className="flex items-center gap-3">
- <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
- <Coffee className="w-6 h-6 text-white" />
- </div>
- <div>
- <h1 className="text-2xl font-bold text-accent">إدارةالموظفين</h1>
- <p className="text-gray-400 text-sm">لوحةتحكم المدير</p>
- </div>
- </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
+              <Coffee className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-accent">{t("manager.employees")}</h1>
+              <p className="text-gray-400 text-sm">{t("manager.dashboard")}</p>
+            </div>
+          </div>
  <div className="flex gap-2">
  <Button
  onClick={() => setLocation("/employee/dashboard")}
