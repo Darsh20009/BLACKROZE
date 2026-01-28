@@ -17,12 +17,15 @@ import { customerStorage } from "@/lib/customer-storage";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { CreditCard, FileText, MessageCircle, CheckCircle, Coffee, Clock, Star, User, Gift, Sparkles, Award, Copy, Check, Store, Truck, MapPin, Edit, ShoppingBag, Eye, EyeOff } from "lucide-react";
 import type { PaymentMethodInfo, PaymentMethod, Order } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 export default function CheckoutPage() {
   const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { cartItems, clearCart, getTotalPrice, deliveryInfo, getFinalTotal } = useCartStore();
   const { toast } = useToast();
+
+  const isAr = i18n.language === 'ar';
 
   useEffect(() => {
     document.title = `${t("nav.checkout")} - CLUNY CAFE`;
@@ -220,7 +223,7 @@ export default function CheckoutPage() {
     });
     
     if (!selectedPaymentMethod) {
-      toast({ variant: "destructive", title: "يرجى اختيار طريقة الدفع" });
+      toast({ variant: "destructive", title: t("checkout.select_payment") });
       return;
     }
 
@@ -235,7 +238,7 @@ export default function CheckoutPage() {
     }
 
     if (!finalName || !finalName.trim()) {
-      toast({ variant: "destructive", title: "يرجى إدخال اسم العميل" });
+      toast({ variant: "destructive", title: t("checkout.enter_customer_name") });
       return;
     }
     setShowConfirmation(true);
@@ -250,7 +253,7 @@ export default function CheckoutPage() {
      customerLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
    } catch (err) {
      if (selectedPaymentMethod === 'cash') {
-       toast({ variant: "destructive", title: "فشل الوصول للموقع", description: "يرجى السماح بالوصول للموقع لتفعيل الدفع كاش" });
+       toast({ variant: "destructive", title: t("checkout.location_failed"), description: t("checkout.location_allow") });
        return;
      }
    }
@@ -265,7 +268,7 @@ export default function CheckoutPage() {
        });
        const locationData = await res.json();
        if (!locationData.withinRange) {
-         toast({ variant: "destructive", title: "عذراً، أنت بعيد جداً", description: `الدفع كاش متاح فقط ضمن 500 متر.` });
+         toast({ variant: "destructive", title: t("checkout.too_far"), description: t("checkout.cash_limit") });
          return;
        }
      }
@@ -273,33 +276,33 @@ export default function CheckoutPage() {
 
    if (!isRegisteredCustomer) {
      if (!customerPhone.trim() || !/^5\d{8}$/.test(customerPhone.trim())) {
-       toast({ variant: "destructive", title: "رقم الجوال مطلوب بشكل صحيح" });
+       toast({ variant: "destructive", title: t("checkout.phone_required") });
        return;
      }
      if (!customerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
-       toast({ variant: "destructive", title: "البريد الإلكتروني مطلوب بشكل صحيح" });
+       toast({ variant: "destructive", title: t("checkout.email_required") });
        return;
      }
      if (wantToRegister && (!customerPassword.trim() || customerPassword.length < 6)) {
-       toast({ variant: "destructive", title: "كلمة السر مطلوبة وتكون 6 أحرف على الأقل" });
+       toast({ variant: "destructive", title: t("checkout.password_required") });
        return;
      }
    }
 
    if (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer && !transferOwnerName.trim()) {
-     toast({ variant: "destructive", title: "يرجى إدخال اسم صاحب التحويل" });
+     toast({ variant: "destructive", title: t("checkout.transfer_name_required") });
      return;
    }
 
    const electronicPayments = ['alinma', 'ur', 'barq', 'rajhi'];
    if (electronicPayments.includes(selectedPaymentMethod!) && !paymentReceiptUrl) {
-     toast({ variant: "destructive", title: "إيصال الدفع مطلوب" });
+     toast({ variant: "destructive", title: t("checkout.receipt_required") });
      return;
    }
 
    const isQahwaCardPayment = selectedPaymentMethod === 'qahwa-card';
    if (isQahwaCardPayment && availableFreeDrinks <= 0) {
-     toast({ variant: "destructive", title: "ليس لديك مشروبات مجانية" });
+     toast({ variant: "destructive", title: t("checkout.no_free_drinks") });
      return;
    }
 
@@ -307,7 +310,7 @@ export default function CheckoutPage() {
      const totalSelectedFreeItems = Object.values(selectedFreeItems).reduce((sum, val) => sum + val, 0);
      const totalDrinks = cartItems.reduce((sum, item) => sum + item.quantity, 0);
      if (totalDrinks > totalSelectedFreeItems && !secondaryPaymentMethod) {
-       toast({ variant: "destructive", title: "اختر طريقة دفع للمشروبات المتبقية" });
+       toast({ variant: "destructive", title: t("checkout.select_payment_remaining") });
        return;
      }
    }
@@ -345,14 +348,14 @@ export default function CheckoutPage() {
          activeCustomerId = newC.id;
          setCustomer(newC);
        } else {
-         toast({ variant: "destructive", title: "خطأ في التسجيل" });
+         toast({ variant: "destructive", title: t("checkout.registration_error") });
          setIsRegistering(false);
          return;
        }
      } finally { setIsRegistering(false); }
    }
 
-    const finalCustomerName = (customerName || "").trim() || (customer?.name || "").trim() || customerStorage.getProfile()?.name || "عميل";
+    const finalCustomerName = (customerName || "").trim() || (customer?.name || "").trim() || customerStorage.getProfile()?.name || (isAr ? "عميل" : "Customer");
     const finalCustomerPhone = (customerPhone || "").trim() || (customer?.phone || "").trim() || customerStorage.getProfile()?.phone || "";
     const finalCustomerEmail = (customerEmail || "").trim() || (customer?.email || "").trim() || customerStorage.getProfile()?.email || "";
 
