@@ -1,5 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import QRCode from "qrcode";
+import JsBarcode from "jsbarcode";
+import clunyLogo from "@assets/cluny-logo-customer.png";
 
 interface OrderItem {
   coffeeItem: {
@@ -108,6 +110,7 @@ function parseNumber(value: number | string | undefined): number {
 export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
   ({ orderNumber, invoiceNumber, customerName, customerPhone, items, subtotal, discount, invoiceDiscount, total, paymentMethod, employeeName, tableNumber, date, branchName, branchAddress }, ref) => {
     const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+    const [barcodeUrl, setBarcodeUrl] = useState<string>("");
 
     const totalAmount = parseNumber(total);
     
@@ -157,14 +160,36 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
       generateQR();
     }, [totalAmount, vatAmount, date]);
 
+    useEffect(() => {
+      const generateBarcode = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          JsBarcode(canvas, orderNumber, {
+            format: "CODE128",
+            width: 1.5,
+            height: 40,
+            displayValue: true,
+            fontSize: 10,
+            margin: 5,
+            textMargin: 2
+          });
+          setBarcodeUrl(canvas.toDataURL());
+        } catch (error) {
+          console.error("Error generating barcode:", error);
+        }
+      };
+      
+      if (orderNumber) {
+        generateBarcode();
+      }
+    }, [orderNumber]);
+
     return (
       <div ref={ref} className="hidden print:block">
         <div className="max-w-[80mm] mx-auto bg-white text-black p-3 font-sans" dir="rtl">
           <div className="text-center mb-4 pb-4 border-b-2 border-dashed border-gray-800">
-            <div className="w-16 h-16 mx-auto mb-2 bg-amber-100 rounded-full flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-10 h-10 text-amber-800" fill="currentColor">
-                <path d="M2,21H20V19H2M20,8H18V5H20M20,3H4V13A4,4 0 0,0 8,17H14A4,4 0 0,0 18,13V10H20A2,2 0 0,0 22,8V5C22,3.89 21.1,3 20,3Z" />
-              </svg>
+            <div className="w-20 h-20 mx-auto mb-2">
+              <img src={clunyLogo} alt="CLUNY CAFE" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{COMPANY_NAME}</h1>
             <p className="text-sm text-gray-600 font-medium">{COMPANY_NAME_EN}</p>
@@ -325,6 +350,20 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
               <span className="text-gray-600">طريقة الدفع:</span>
               <span className="font-bold text-blue-800">{paymentMethod}</span>
             </div>
+          </div>
+
+          <div className="text-center mb-4">
+            <p className="text-xs font-bold text-gray-700 mb-1">باركود تتبع الطلب</p>
+            <p className="text-[10px] text-gray-500 mb-2">Order Tracking Barcode</p>
+            {barcodeUrl && (
+              <div className="inline-block p-1 bg-white border border-gray-200 rounded">
+                <img 
+                  src={barcodeUrl} 
+                  alt="Order Barcode" 
+                  className="h-12 mx-auto"
+                />
+              </div>
+            )}
           </div>
 
           <div className="text-center mb-4">
