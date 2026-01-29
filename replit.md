@@ -32,7 +32,9 @@ The system employs a modern, clean design inspired by Noon Food, featuring a vib
 - **Financial Reports Dashboard:** Interactive visualizations for revenue vs. expenses, asset/liability distribution, and income statement breakdowns using `recharts`.
 - **Kitchen Display System (KDS):** Enhanced with SLA status tracking, priority badges, station routing, allergen warnings, prep time countdowns, and estimated total prep times.
 - **Loyalty Program:** Tier progress visualization (Bronze, Silver, Gold, Platinum) with progress bars and upgrade information. Unified `useLoyaltyCard` hook for consistent data management and offline sync.
-- **Menu Page Redesign:** Interactive menu with group filtering, search functionality, featured items slider, and PWA installation support.
+- **Menu Page Redesign:** Interactive menu with group filtering, search functionality, featured items slider, and PWA installation support. Products are now grouped by `groupId` for proper variant handling.
+- **Promotional Offers System:** Bundle/combo offers with original and discounted pricing, displayed prominently in "عروضنا" section. Supports time-based activation with start/end dates.
+- **Enhanced Addons System:** Supports both general addons (available for all products) and specific addons (linked to individual products via `CoffeeItemAddon`). The add-to-cart modal displays specific addons first, then general addons.
 - **Table Reservation System:** Time-based table occupancy, with reservations activating 30 minutes before and expiring 5 minutes after scheduled time. Staff can extend reservations.
 - **Checkout Page:** Includes discount code input, order confirmation dialog with accurate totals, and split payment options.
 - **Delivery System:** Manages external delivery platform integrations, geospatial delivery zones (polygon/radius-based), driver tracking, and order status tracking with ETA.
