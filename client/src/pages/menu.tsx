@@ -11,8 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import clunyLogo from "@assets/cluny-logo-customer.png";
 import bannerImage1 from "@assets/banner-coffee-1.png";
 import bannerImage2 from "@assets/banner-coffee-2.png";
-import type { CoffeeItem, IProductAddon } from "@shared/schema";
+import type { CoffeeItem, IProductAddon, IPromoOffer } from "@shared/schema";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
+import { Tag, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const bannerSlides = [
@@ -77,6 +78,10 @@ export default function MenuPage() {
     queryKey: ["/api/product-addons"],
   });
 
+  const { data: promoOffers = [] } = useQuery<IPromoOffer[]>({
+    queryKey: ["/api/promo-offers"],
+  });
+
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const { data: businessConfig } = useQuery<any>({
@@ -95,11 +100,11 @@ export default function MenuPage() {
     ...(isBothModes ? [{ id: "food", name: t("menu.categories.food") || "المأكولات", icon: Utensils }] : []),
   ];
 
+  // Group items by groupId if exists, otherwise treat as individual items
   const groupedItems = coffeeItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
-    const baseName = name.trim().split(/\s+/)[0];
-    if (!acc[baseName]) acc[baseName] = [];
-    acc[baseName].push(item);
+    const groupKey = (item as any).groupId || `single_${(item as any).id || (item as any)._id}`;
+    if (!acc[groupKey]) acc[groupKey] = [];
+    acc[groupKey].push(item);
     return acc;
   }, {});
 
@@ -125,8 +130,8 @@ export default function MenuPage() {
 
   const handleAddToCartDirect = (item: CoffeeItem) => {
     const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
-    const baseName = name.trim().split(/\s+/)[0];
-    const group = groupedItems[baseName] || [item];
+    const groupKey = (item as any).groupId || `single_${(item as any).id || (item as any)._id}`;
+    const group = groupedItems[groupKey] || [item];
     const hasMultipleVariants = group.length > 1;
     const hasSizes = item.availableSizes && item.availableSizes.length > 0;
     const hasAddons = allAddons.filter(a => a.isAvailable === 1).length > 0;
@@ -333,6 +338,52 @@ export default function MenuPage() {
             </div>
           </div>
 
+          {promoOffers.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-accent" />
+                <h2 className="text-xl font-bold text-foreground">{t("menu.offers") || "عروضنا"}</h2>
+              </div>
+              <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-2">
+                {promoOffers.map((offer) => (
+                  <motion.div 
+                    key={offer.id} 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-shrink-0 w-[200px] snap-start bg-gradient-to-br from-accent/10 to-primary/10 rounded-2xl border-2 border-accent/30 p-3 space-y-3 shadow-sm cursor-pointer group relative overflow-hidden"
+                    data-testid={`card-offer-${offer.id}`}
+                  >
+                    <div className="absolute top-2 left-2 z-10">
+                      <Badge className="bg-accent text-white border-0 px-2 py-0.5 text-[10px]">
+                        <Tag className="w-3 h-3 ml-1" />
+                        {t("menu.offer_badge") || "عرض"}
+                      </Badge>
+                    </div>
+                    {offer.imageUrl && (
+                      <div className="aspect-video rounded-xl overflow-hidden bg-secondary">
+                        <img 
+                          src={offer.imageUrl} 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                          alt={i18n.language === 'ar' ? offer.nameAr : offer.nameEn || offer.nameAr} 
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <h3 className="text-sm font-semibold text-foreground">{i18n.language === 'ar' ? offer.nameAr : offer.nameEn || offer.nameAr}</h3>
+                      {offer.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{offer.description}</p>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-accent font-bold">{offer.offerPrice} <small className="text-xs font-normal">{t("currency")}</small></span>
+                        <span className="text-xs text-muted-foreground line-through">{offer.originalPrice} {t("currency")}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <div className="relative group">
             <Search className={`absolute ${i18n.language === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors`} />
             <input 
@@ -461,7 +512,7 @@ export default function MenuPage() {
         item={selectedItem}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        variants={selectedItem ? (groupedItems[(i18n.language === 'ar' ? selectedItem.nameAr : selectedItem.nameEn || selectedItem.nameAr).trim().split(/\s+/)[0]] || [selectedItem]) : []}
+        variants={selectedItem ? (groupedItems[(selectedItem as any).groupId || `single_${(selectedItem as any).id || (selectedItem as any)._id}`] || [selectedItem]) : []}
         onAddToCart={(data) => {
           addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons);
           setIsModalOpen(false);

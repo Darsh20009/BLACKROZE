@@ -9582,6 +9582,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==========================================
+  // Promo Offers / Bundles Routes
+  // ==========================================
+
+  // Get all active promo offers (public)
+  app.get("/api/promo-offers", async (req, res) => {
+    try {
+      const { PromoOfferModel } = await import("@shared/schema");
+      const now = new Date();
+      const offers = await PromoOfferModel.find({
+        isActive: 1,
+        $or: [
+          { startDate: null, endDate: null },
+          { startDate: { $lte: now }, endDate: null },
+          { startDate: null, endDate: { $gte: now } },
+          { startDate: { $lte: now }, endDate: { $gte: now } }
+        ]
+      }).sort({ sortOrder: 1, createdAt: -1 });
+      res.json(offers.map(o => ({ ...o.toObject(), id: o.id })));
+    } catch (error) {
+      res.status(500).json({ error: "فشل في جلب العروض" });
+    }
+  });
+
+  // Get all promo offers (admin/manager)
+  app.get("/api/admin/promo-offers", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { PromoOfferModel } = await import("@shared/schema");
+      const offers = await PromoOfferModel.find({}).sort({ sortOrder: 1, createdAt: -1 });
+      res.json(offers.map(o => ({ ...o.toObject(), id: o.id })));
+    } catch (error) {
+      res.status(500).json({ error: "فشل في جلب العروض" });
+    }
+  });
+
+  // Create promo offer (admin/manager)
+  app.post("/api/promo-offers", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { PromoOfferModel } = await import("@shared/schema");
+      const crypto = await import("crypto");
+      
+      const offerData = {
+        ...req.body,
+        id: req.body.id || crypto.randomUUID(),
+        tenantId: req.body.tenantId || "default",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const offer = new PromoOfferModel(offerData);
+      await offer.save();
+      
+      res.status(201).json({ ...offer.toObject(), id: offer.id });
+    } catch (error: any) {
+      console.error("Error creating promo offer:", error);
+      res.status(500).json({ error: "فشل في إنشاء العرض" });
+    }
+  });
+
+  // Update promo offer
+  app.put("/api/promo-offers/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { PromoOfferModel } = await import("@shared/schema");
+      
+      const offer = await PromoOfferModel.findOneAndUpdate(
+        { id: req.params.id },
+        { $set: { ...req.body, updatedAt: new Date() } },
+        { new: true }
+      );
+      
+      if (!offer) {
+        return res.status(404).json({ error: "العرض غير موجود" });
+      }
+      
+      res.json({ ...offer.toObject(), id: offer.id });
+    } catch (error: any) {
+      res.status(500).json({ error: "فشل في تحديث العرض" });
+    }
+  });
+
+  // Delete promo offer
+  app.delete("/api/promo-offers/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { PromoOfferModel } = await import("@shared/schema");
+      await PromoOfferModel.deleteOne({ id: req.params.id });
+      res.json({ success: true, message: "تم حذف العرض بنجاح" });
+    } catch (error) {
+      res.status(500).json({ error: "فشل في حذف العرض" });
+    }
+  });
+
   // Lookup loyalty card by barcode/QR token (for POS scanner)
   app.get("/api/loyalty/cards/lookup/:token", async (req, res) => {
     try {

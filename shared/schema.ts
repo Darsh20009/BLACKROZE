@@ -197,6 +197,58 @@ CoffeeItemAddonSchema.index({ coffeeItemId: 1, addonId: 1 }, { unique: true });
 
 export const CoffeeItemAddonModel = mongoose.model<ICoffeeItemAddon>("CoffeeItemAddon", CoffeeItemAddonSchema);
 
+// نظام العروض - Promotional Offers / Bundles
+export interface IPromoOffer extends Document {
+  id: string;
+  tenantId: string;
+  nameAr: string;
+  nameEn?: string;
+  description?: string;
+  imageUrl?: string;
+  offerType: 'bundle' | 'discount' | 'bogo'; // bundle = combo, discount = percentage off, bogo = buy one get one
+  originalPrice: number;
+  offerPrice: number;
+  items: Array<{
+    coffeeItemId: string;
+    quantity: number;
+    sizeOption?: string;
+  }>;
+  isActive: number;
+  startDate?: Date;
+  endDate?: Date;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const PromoOfferSchema = new Schema<IPromoOffer>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String },
+  description: { type: String },
+  imageUrl: { type: String },
+  offerType: { type: String, enum: ['bundle', 'discount', 'bogo'], default: 'bundle' },
+  originalPrice: { type: Number, required: true },
+  offerPrice: { type: Number, required: true },
+  items: [{
+    coffeeItemId: { type: String, required: true },
+    quantity: { type: Number, default: 1 },
+    sizeOption: { type: String }
+  }],
+  isActive: { type: Number, default: 1 },
+  startDate: { type: Date },
+  endDate: { type: Date },
+  sortOrder: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+PromoOfferSchema.index({ tenantId: 1, isActive: 1 });
+PromoOfferSchema.index({ id: 1 }, { unique: true });
+
+export const PromoOfferModel = mongoose.model<IPromoOffer>("PromoOffer", PromoOfferSchema);
+
 export interface ICustomer extends Document {
   phone: string;
   email?: string;

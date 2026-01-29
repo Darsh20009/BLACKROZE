@@ -53,15 +53,30 @@ export function AddToCartModal({
 
   const activeItem = selectedVariant || item;
 
+  // Fetch all general addons
   const { data: allAddons = [] } = useQuery<IProductAddon[]>({
     queryKey: ["/api/product-addons"],
     enabled: isOpen && !!activeItem,
   });
 
-  const itemAddons = useMemo(() => {
+  // Fetch product-specific addons
+  const { data: specificAddons = [] } = useQuery<IProductAddon[]>({
+    queryKey: ["/api/coffee-items", (activeItem as any)?.id, "addons"],
+    enabled: isOpen && !!activeItem && !!(activeItem as any)?.id,
+  });
+
+  // General addons (available to all products)
+  const generalAddons = useMemo(() => {
     if (!activeItem) return [];
     return allAddons.filter(addon => addon.isAvailable === 1);
   }, [activeItem, allAddons]);
+
+  // Combined addons: specific first, then general (without duplicates)
+  const itemAddons = useMemo(() => {
+    const specificIds = new Set(specificAddons.map(a => a.id));
+    const uniqueGeneralAddons = generalAddons.filter(a => !specificIds.has(a.id));
+    return [...specificAddons, ...uniqueGeneralAddons];
+  }, [specificAddons, generalAddons]);
 
   const handleAddToCart = () => {
     if (!activeItem) return;
@@ -171,11 +186,41 @@ export function AddToCartModal({
             </div>
           )}
 
-          {itemAddons.length > 0 && (
+          {specificAddons.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">إضافات</Label>
+              <Label className="text-sm font-semibold text-foreground">إضافات خاصة</Label>
               <div className="flex flex-wrap gap-2">
-                {itemAddons.slice(0, 4).map((addon) => (
+                {specificAddons.map((addon) => (
+                  <button
+                    key={addon.id}
+                    onClick={() => {
+                      setSelectedAddons((prev) =>
+                        prev.includes(addon.id)
+                          ? prev.filter((id) => id !== addon.id)
+                          : [...prev, addon.id]
+                      );
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
+                      selectedAddons.includes(addon.id)
+                        ? "bg-primary text-white shadow-md"
+                        : "bg-secondary text-foreground border border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {addon.nameAr}
+                    <span className={selectedAddons.includes(addon.id) ? "text-white/80" : "text-primary"}>
+                      +{addon.price}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {generalAddons.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">{specificAddons.length > 0 ? "إضافات عامة" : "إضافات"}</Label>
+              <div className="flex flex-wrap gap-2">
+                {generalAddons.slice(0, 6).map((addon) => (
                   <button
                     key={addon.id}
                     onClick={() => {
