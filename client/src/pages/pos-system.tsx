@@ -35,6 +35,7 @@ interface TableData {
   _id?: string;
   tableNumber: string;
   seats: number;
+  capacity?: number;
   isOccupied: boolean | number;
   isActive: boolean | number;
 }

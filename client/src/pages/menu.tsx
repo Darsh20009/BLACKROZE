@@ -15,22 +15,6 @@ import type { CoffeeItem, IProductAddon, IPromoOffer } from "@shared/schema";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
 import { Tag, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-const bannerSlides = [
-  {
-    image: bannerImage1,
-    title: "قهوة استثنائية",
-    subtitle: "اكتشف نكهات مميزة من أجود حبوب البن",
-    badge: "عروض خاصة"
-  },
-  {
-    image: bannerImage2,
-    title: "لحظات لا تُنسى",
-    subtitle: "استمتع بتجربة قهوة فريدة معنا",
-    badge: "جديد"
-  }
-];
-
 import { useTranslation } from "react-i18next";
 import { Languages } from "lucide-react";
 
