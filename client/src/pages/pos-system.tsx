@@ -226,6 +226,19 @@ export default function POSSystem() {
   const [splitViewMode, setSplitViewMode] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [activeAlerts, setActiveAlerts] = useState<any[]>([]);
+
+  // Sound loop for new orders
+  useEffect(() => {
+    let soundInterval: any;
+    if (soundEnabled && activeAlerts.length > 0) {
+      playNotificationSound('newOrder', 0.7);
+      soundInterval = setInterval(() => {
+        playNotificationSound('newOrder', 0.7);
+      }, 5000); // Repeat every 5 seconds
+    }
+    return () => clearInterval(soundInterval);
+  }, [soundEnabled, activeAlerts.length]);
 
   // Fetch live orders for POS notification and control
   const { data: liveOrders = [] } = useQuery<any[]>({
@@ -265,9 +278,7 @@ export default function POSSystem() {
     clientType: 'pos',
     branchId: employee?.branchId,
     onNewOrder: (order) => {
-      if (soundEnabled) {
-        playNotificationSound('newOrder', 0.7);
-      }
+      setActiveAlerts(prev => [...prev, order]);
       if (alertsEnabled) {
         toast({
           title: "طلب جديد!",
