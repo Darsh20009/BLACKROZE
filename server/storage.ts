@@ -850,7 +850,14 @@ export class DBStorage implements IStorage {
   }
 
   async updateCoffeeItem(id: string, updates: Partial<CoffeeItem>): Promise<CoffeeItem | undefined> {
-    const item = await CoffeeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    // Try finding by 'id' field first (custom string ID)
+    let item = await CoffeeItemModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).exec();
+    
+    // If not found by 'id' field, try as MongoDB _id
+    if (!item && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
+      item = await CoffeeItemModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).exec();
+    }
+    
     return item ? serializeDoc(item) : undefined;
   }
 

@@ -646,19 +646,19 @@ export default function EmployeeMenuManagement() {
    }
  }
  
- const updates = {
-  nameAr: formData.get("nameAr") as string,
-  nameEn: formData.get("nameEn") as string || undefined,
-  description: formData.get("description") as string,
-  price: parseFloat(formData.get("price") as string),
-  oldPrice: formData.get("oldPrice") ? parseFloat(formData.get("oldPrice") as string) : undefined,
-  category: formData.get("category") as string,
-  imageUrl: imageUrl,
-  availableSizes: editableSizes,
-  addons: editableAddons,
- };
+    const updates = {
+      nameAr: formData.get("nameAr") as string,
+      nameEn: formData.get("nameEn") as string || undefined,
+      description: formData.get("description") as string,
+      price: parseFloat(formData.get("price") as string),
+      oldPrice: formData.get("oldPrice") ? parseFloat(formData.get("oldPrice") as string) : undefined,
+      category: formData.get("category") as string,
+      imageUrl: imageUrl, // Preserve or update image URL
+      availableSizes: editableSizes,
+      addons: editableAddons,
+    };
 
- updateItemMutation.mutate({ id: editingItem.id, updates });
+    updateItemMutation.mutate({ id: editingItem.id, updates });
  resetEditImageState();
  };
 
