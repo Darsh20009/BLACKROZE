@@ -221,6 +221,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (item.selectedSize && item.coffeeItem.availableSizes) {
           const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
           itemPrice = size ? size.price : basePrice;
+        } else if (item.coffeeItem.price) {
+          itemPrice = item.coffeeItem.price;
         } else {
           itemPrice = basePrice;
         }

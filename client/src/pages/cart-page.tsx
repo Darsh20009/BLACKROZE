@@ -122,8 +122,24 @@ export default function CartPage() {
                         <div className="flex-1 min-w-0 text-start">
                           <h3 className="font-amiri font-bold text-foreground text-base sm:text-xl mb-0.5 sm:mb-1 truncate">
                             {isAr ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn || item.coffeeItem?.nameAr}
+                            {item.selectedSize && item.selectedSize !== 'default' && (
+                              <span className="text-xs sm:text-sm text-muted-foreground mr-2 font-normal">
+                                ({item.selectedSize})
+                              </span>
+                            )}
                           </h3>
-                          <p className="text-primary font-bold text-sm sm:text-lg">{item.coffeeItem?.price} {t("currency")}</p>
+                          <div className="flex flex-col">
+                            <p className="text-primary font-bold text-sm sm:text-lg">
+                              {(() => {
+                                let price = Number(item.coffeeItem?.price || 0);
+                                if (item.selectedSize && item.coffeeItem?.availableSizes) {
+                                  const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
+                                  if (size) price = size.price;
+                                }
+                                return price;
+                              })()} {t("currency")}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
