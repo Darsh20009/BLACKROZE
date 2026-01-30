@@ -1329,15 +1329,16 @@ export default function POSSystem() {
                   onClick={() => {
                     setShowLiveOrders(true);
                     setNewOrdersCount(0);
+                    setActiveAlerts([]); // Clear alerts when clicking orders button
                   }} 
                   className="text-xs sm:text-sm relative"
                   data-testid="button-live-orders"
                 >
                   <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
                   <span className="hidden sm:inline">الطلبات</span>
-                  {newOrdersCount > 0 && (
+                  {activeAlerts.length > 0 && (
                     <Badge variant="destructive" className="absolute -top-2 -left-2 h-5 w-5 p-0 flex items-center justify-center text-xs animate-pulse">
-                      {newOrdersCount > 9 ? '9+' : newOrdersCount}
+                      {activeAlerts.length > 9 ? '9+' : activeAlerts.length}
                     </Badge>
                   )}
                 </Button>
