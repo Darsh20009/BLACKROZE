@@ -43,6 +43,7 @@ export interface SelectedAddon {
 }
 
 export interface DrinkCustomization {
+  selectedSize?: string;
   selectedAddons: SelectedAddon[];
   totalAddonsPrice: number;
   notes?: string;
@@ -231,6 +232,7 @@ export default function DrinkCustomizationDialog({
 
   const handleConfirm = () => {
     const customization: DrinkCustomization = {
+      selectedSize: selectedSize || undefined,
       selectedAddons: Array.from(selectedAddons.values()),
       totalAddonsPrice: calculateAddonsPrice(),
       notes: notes.trim() || undefined,

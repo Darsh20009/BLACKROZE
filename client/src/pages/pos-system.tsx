@@ -1156,9 +1156,11 @@ export default function POSSystem() {
     const orderData = {
       items: orderItems.map(item => {
         let itemPrice = Number(item.coffeeItem.price);
-        if (item.customization?.selectedSize) {
+        // Access selectedSize from the updated customization object
+        const selectedSizeName = item.customization?.selectedSize;
+        if (selectedSizeName) {
           const sizeOption = item.coffeeItem.availableSizes?.find(
-            s => s.nameAr === item.customization?.selectedSize
+            s => s.nameAr === selectedSizeName
           );
           if (sizeOption) itemPrice = sizeOption.price;
         }
@@ -1168,7 +1170,7 @@ export default function POSSystem() {
           price: itemPrice + (item.customization?.totalAddonsPrice || 0),
           itemDiscount: item.itemDiscount || 0,
           customization: item.customization ? {
-            selectedSize: item.customization.selectedSize,
+            selectedSize: selectedSizeName,
             selectedAddons: item.customization.selectedAddons,
             totalAddonsPrice: item.customization.totalAddonsPrice,
             notes: item.customization.notes
