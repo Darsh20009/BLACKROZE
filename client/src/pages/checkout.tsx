@@ -426,12 +426,25 @@ export default function CheckoutPage() {
            <Card>
              <CardHeader><CardTitle>{t("checkout.order_summary")}</CardTitle></CardHeader>
              <CardContent className="space-y-4">
-               {cartItems.map(item => (
-                 <div key={item.coffeeItemId} className="flex justify-between items-center">
-                   <span>{i18n.language === 'ar' ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn || item.coffeeItem?.nameAr} × {item.quantity}</span>
-                   <span className="font-bold">{((typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0))) * item.quantity).toFixed(2)} {t("currency")}</span>
-                 </div>
-               ))}
+                  {cartItems.map(item => {
+                    const itemPrice = typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0));
+                    let displayPrice = itemPrice;
+                    if (item.selectedSize && item.coffeeItem?.availableSizes) {
+                      const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
+                      if (size) displayPrice = size.price;
+                    }
+                    return (
+                      <div key={item.id} className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                          <span>{i18n.language === 'ar' ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn || item.coffeeItem?.nameAr} × {item.quantity}</span>
+                          {item.selectedSize && (
+                            <span className="text-xs text-muted-foreground">({item.selectedSize})</span>
+                          )}
+                        </div>
+                        <span className="font-bold">{(displayPrice * item.quantity).toFixed(2)} {t("currency")}</span>
+                      </div>
+                    );
+                  })}
                <div className="pt-4 border-t font-bold text-xl flex justify-between">
                  <span>{t("cart.total")}:</span>
                  <span className="text-primary">{getFinalTotal().toFixed(2)} {t("currency")}</span>

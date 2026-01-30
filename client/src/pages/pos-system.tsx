@@ -1154,17 +1154,27 @@ export default function POSSystem() {
     const isTableOpen = (tableId || tableNumber) && orderStatus === "pending";
 
     const orderData = {
-      items: orderItems.map(item => ({
-        coffeeItemId: item.coffeeItem.id,
-        quantity: item.quantity,
-        price: Number(item.coffeeItem.price) + (item.customization?.totalAddonsPrice || 0),
-        itemDiscount: item.itemDiscount || 0,
-        customization: item.customization ? {
-          selectedAddons: item.customization.selectedAddons,
-          totalAddonsPrice: item.customization.totalAddonsPrice,
-          notes: item.customization.notes
-        } : undefined
-      })),
+      items: orderItems.map(item => {
+        let itemPrice = Number(item.coffeeItem.price);
+        if (item.customization?.selectedSize) {
+          const sizeOption = item.coffeeItem.availableSizes?.find(
+            s => s.nameAr === item.customization?.selectedSize
+          );
+          if (sizeOption) itemPrice = sizeOption.price;
+        }
+        return {
+          coffeeItemId: item.coffeeItem.id,
+          quantity: item.quantity,
+          price: itemPrice + (item.customization?.totalAddonsPrice || 0),
+          itemDiscount: item.itemDiscount || 0,
+          customization: item.customization ? {
+            selectedSize: item.customization.selectedSize,
+            selectedAddons: item.customization.selectedAddons,
+            totalAddonsPrice: item.customization.totalAddonsPrice,
+            notes: item.customization.notes
+          } : undefined
+        };
+      }),
       totalAmount: calculateTotal(),
       paymentMethod: isTableOpen ? "cash" : (showSplitPayment ? "split" : paymentMethod),
       splitPayments: (!isTableOpen && showSplitPayment) ? splitPayments : undefined,

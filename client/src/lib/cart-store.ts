@@ -211,32 +211,34 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Computed values
     const getTotalPrice = (): number => {
-    return cartItems.reduce((total, item) => {
-    if (!item.coffeeItem?.price) return total;
-    
-    // Handle MongoDB Decimal128 and other formats
-    let price = 0;
-    let itemPrice = item.coffeeItem.price;
+      return cartItems.reduce((total, item) => {
+        if (!item.coffeeItem?.price) return total;
+        
+        let itemPrice = 0;
+        const basePrice = item.coffeeItem.price;
 
-    // Use size price if available
-    if (item.selectedSize && item.coffeeItem.availableSizes) {
-      const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
-      if (size) itemPrice = size.price;
-    }
+        // Use size price if available
+        if (item.selectedSize && item.coffeeItem.availableSizes) {
+          const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
+          itemPrice = size ? size.price : basePrice;
+        } else {
+          itemPrice = basePrice;
+        }
 
-    if (typeof itemPrice === 'number') {
-    price = itemPrice;
-    } else if (typeof itemPrice === 'string') {
-    price = parseFloat(itemPrice);
-    } else if (itemPrice && typeof itemPrice === 'object' && '$numberDecimal' in itemPrice) {
-    // Handle MongoDB Decimal128 format
-    price = parseFloat((itemPrice as any).$numberDecimal);
-    } else {
-    price = parseFloat(String(itemPrice));
-    }
-    
-    return total + (isNaN(price) ? 0 : price * item.quantity);
-    }, 0);
+        // Handle price formats
+        let price = 0;
+        if (typeof itemPrice === 'number') {
+          price = itemPrice;
+        } else if (typeof itemPrice === 'string') {
+          price = parseFloat(itemPrice);
+        } else if (itemPrice && typeof itemPrice === 'object' && '$numberDecimal' in (itemPrice as any)) {
+          price = parseFloat((itemPrice as any).$numberDecimal);
+        } else {
+          price = parseFloat(String(itemPrice));
+        }
+        
+        return total + (isNaN(price) ? 0 : price * item.quantity);
+      }, 0);
     };
 
  const getTotalItems = (): number => {
