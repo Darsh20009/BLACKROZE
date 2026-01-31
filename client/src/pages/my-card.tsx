@@ -48,6 +48,7 @@ export default function MyCardPage() {
       stamps: loyaltyCard?.stamps ?? baseProfile.stamps ?? 0,
       freeDrinks: loyaltyCard ? Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)) : (baseProfile.freeDrinks ?? 0),
     };
+    console.log("Loyalty Card sync debug:", { loyaltyCard, activeProfile });
     setProfile(activeProfile);
 
     const cardData = loyaltyCard?.qrToken || JSON.stringify({
@@ -286,35 +287,32 @@ export default function MyCardPage() {
               <CardContent className="space-y-6">
                 <div className="flex justify-between items-end">
                   <div className="space-y-1">
-                    <p className="text-3xl font-bold text-primary">{profile.stamps} / 5</p>
+                    <p className="text-3xl font-bold text-primary">{profile.stamps} / 6</p>
                     <p className="text-xs text-muted-foreground">{t("card.current_stamps") || "عدد الطوابع الحالية"}</p>
                   </div>
                   <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    {t("card.stamps_remaining", { count: 5 - profile.stamps }) || `${5 - profile.stamps} طوابع متبقية`}
+                    {t("card.stamps_remaining", { count: 6 - profile.stamps }) || `${6 - profile.stamps} طوابع متبقية`}
                   </Badge>
                 </div>
                 
                 {/* Stamp Visualization */}
                 <div className="flex justify-center items-center gap-3">
-                  {[1, 2, 3, 4, 5].map((s) => (
+                  {[1, 2, 3, 4, 5, 6].map((s) => (
                     <div 
                       key={s}
-                      className={`w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all ${
+                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                         s <= profile.stamps 
                           ? 'bg-primary border-primary text-white shadow-md' 
                           : 'bg-secondary border-dashed border-border text-muted-foreground'
                       }`}
                     >
-                      <Coffee className="w-5 h-5" />
+                      {s === 6 ? <Gift className="w-5 h-5" /> : <Coffee className="w-5 h-5" />}
                     </div>
                   ))}
-                  <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-white shadow-md">
-                    <Gift className="w-5 h-5" />
-                  </div>
                 </div>
                 
                 <p className="text-center text-xs text-muted-foreground">
-                  {t("card.loyalty_goal") || "اجمع 5 طوابع واحصل على مشروب مجاني"}
+                  {t("card.loyalty_goal") || "اجمع 6 طوابع واحصل على مشروب مجاني"}
                 </p>
 
                 {profile.freeDrinks > 0 && (
