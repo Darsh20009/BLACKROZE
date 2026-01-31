@@ -430,12 +430,16 @@ export default function CheckoutPage() {
              <CardHeader><CardTitle>{t("checkout.order_summary")}</CardTitle></CardHeader>
              <CardContent className="space-y-4">
                   {cartItems.map(item => {
-                    const itemPrice = typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0));
-                    let displayPrice = itemPrice;
+                    let itemPrice = 0;
+                    const basePrice = typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0));
+                    
                     if (item.selectedSize && item.coffeeItem?.availableSizes) {
                       const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
-                      if (size) displayPrice = size.price;
+                      itemPrice = size ? size.price : basePrice;
+                    } else {
+                      itemPrice = basePrice;
                     }
+
                     return (
                       <div key={item.id} className="flex justify-between items-center">
                         <div className="flex flex-col">
@@ -444,7 +448,7 @@ export default function CheckoutPage() {
                             <span className="text-xs text-muted-foreground">({item.selectedSize})</span>
                           )}
                         </div>
-                        <span className="font-bold">{(displayPrice * item.quantity).toFixed(2)} {t("currency")}</span>
+                        <span className="font-bold">{(itemPrice * item.quantity).toFixed(2)} {t("currency")}</span>
                       </div>
                     );
                   })}

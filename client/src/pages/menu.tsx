@@ -531,9 +531,31 @@ export default function MenuPage() {
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold">
                 {cartItems.reduce((sum, i) => {
-                  const price = (i as any).price || (i as any).coffeeItem?.price || 0;
-                  return sum + price * i.quantity;
-                }, 0)} {t("currency")}
+                  let itemPrice = 0;
+                  const basePrice = i.coffeeItem?.price || 0;
+
+                  // Use size price if available
+                  if (i.selectedSize && i.coffeeItem?.availableSizes) {
+                    const size = i.coffeeItem.availableSizes.find(s => s.nameAr === i.selectedSize);
+                    itemPrice = size ? size.price : basePrice;
+                  } else {
+                    itemPrice = basePrice;
+                  }
+
+                  // Handle price formats
+                  let price = 0;
+                  if (typeof itemPrice === 'number') {
+                    price = itemPrice;
+                  } else if (typeof itemPrice === 'string') {
+                    price = parseFloat(itemPrice);
+                  } else if (itemPrice && typeof itemPrice === 'object' && '$numberDecimal' in (itemPrice as any)) {
+                    price = parseFloat((itemPrice as any).$numberDecimal);
+                  } else {
+                    price = parseFloat(String(itemPrice));
+                  }
+                  
+                  return sum + (isNaN(price) ? 0 : price * i.quantity);
+                }, 0).toFixed(2)} {t("currency")}
               </span>
             </div>
           </Button>
