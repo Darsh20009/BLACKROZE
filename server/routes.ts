@@ -1274,7 +1274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Validate discount code and return discount info
   app.post("/api/discount-codes/validate", async (req, res) => {
     try {
-      const { code } = req.body;
+      const { code, customerId } = req.body;
 
       if (!code) {
         return res.status(400).json({ error: "Discount code is required" });
@@ -1288,6 +1288,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           valid: false,
           error: "كود الخصم غير موجود"
         });
+      }
+      
+      // Check if it's a permanent loyalty discount (qahwa-card)
+      if (discountCode.code === 'qahwa-card') {
+        if (!customerId) {
+          return res.status(400).json({ 
+            valid: false,
+            error: "يجب تسجيل الدخول لاستخدام خصم بطاقة كلوني"
+          });
+        }
+        
+        // Lookup customer to verify loyalty status
+        const customer = await storage.getCustomer(customerId);
+        if (!customer) {
+          return res.status(404).json({ 
+            valid: false,
+            error: "العميل غير موجود"
+          });
+        }
       }
 
       console.log(`[DISCOUNT] Found code:`, JSON.stringify(discountCode));

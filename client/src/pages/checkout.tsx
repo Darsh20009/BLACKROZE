@@ -199,7 +199,10 @@ export default function CheckoutPage() {
      const response = await fetch('/api/discount-codes/validate', {
        method: 'POST',
        headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ code: discountCode.trim() }),
+       body: JSON.stringify({ 
+         code: discountCode.trim(),
+         customerId: (customer as any)?.id || (customer as any)?._id || localStorage.getItem("customer-id")
+       }),
      });
      const data = await response.json();
      if (response.ok && data.valid) {
