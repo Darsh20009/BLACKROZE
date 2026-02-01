@@ -158,6 +158,7 @@ export default function POSSystem() {
   const [cashDrawerOpen, setCashDrawerOpen] = useState(false);
   const [currentSplitAmount, setCurrentSplitAmount] = useState(0);
   const [currentSplitMethod, setCurrentSplitMethod] = useState<PaymentMethod>("cash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [cashReceived, setCashReceived] = useState<number>(0);
   const [changeAmount, setChangeAmount] = useState<number>(0);
 
@@ -326,7 +327,6 @@ export default function POSSystem() {
   const [customizingItem, setCustomizingItem] = useState<CoffeeItem | null>(null);
   const [editingLineItemId, setEditingLineItemId] = useState<string | null>(null);
   const [usedFreeDrinks, setUsedFreeDrinks] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [offlineOrders, setOfflineOrders] = useState<any[]>([]);
   
   const [categoryPage, setCategoryPage] = useState(0);
