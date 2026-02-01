@@ -4035,6 +4035,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Serialize the order properly
       const serializedOrder = serializeDoc(updatedOrder);
 
+      // Broadcast update via WebSocket
+      console.log(`[ORDER] Status updated to ${status} for order #${serializedOrder.orderNumber}. Broadcasting...`);
+      wsManager.broadcastOrderUpdate(serializedOrder);
+      
+      if (status === 'ready') {
+        wsManager.broadcastOrderReady(serializedOrder);
+      }
+
       // Send email notification on status change
       if (updatedOrder) {
         const updateCustomerInfo = typeof updatedOrder.customerInfo === 'string' ? JSON.parse(updatedOrder.customerInfo) : updatedOrder.customerInfo;
