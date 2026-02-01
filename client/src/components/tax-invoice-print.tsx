@@ -111,6 +111,7 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
   ({ orderNumber, invoiceNumber, customerName, customerPhone, items, subtotal, discount, invoiceDiscount, total, paymentMethod, employeeName, tableNumber, date, branchName, branchAddress }, ref) => {
     const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
     const [barcodeUrl, setBarcodeUrl] = useState<string>("");
+    const [trackingQrUrl, setTrackingQrUrl] = useState<string>("");
 
     const totalAmount = parseNumber(total);
     
@@ -181,6 +182,30 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
       
       if (orderNumber) {
         generateBarcode();
+      }
+    }, [orderNumber]);
+
+    useEffect(() => {
+      const generateTrackingQR = async () => {
+        try {
+          const trackingUrl = `https://www.cluny.cafe/tracking?order=${orderNumber}`;
+          const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
+            width: 200,
+            margin: 1,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            },
+            errorCorrectionLevel: 'M'
+          });
+          setTrackingQrUrl(qrDataUrl);
+        } catch (error) {
+          console.error("Error generating tracking QR code:", error);
+        }
+      };
+
+      if (orderNumber) {
+        generateTrackingQR();
       }
     }, [orderNumber]);
 
@@ -353,8 +378,25 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
           </div>
 
           <div className="text-center mb-4">
-            <p className="text-xs font-bold text-gray-700 mb-1">باركود تتبع الطلب</p>
-            <p className="text-[10px] text-gray-500 mb-2">Order Tracking Barcode</p>
+            <p className="text-xs font-bold text-gray-700 mb-1">امسح للتتبع</p>
+            <p className="text-[10px] text-gray-500 mb-2">Scan to Track Order</p>
+            {trackingQrUrl && (
+              <div className="inline-block p-2 bg-white border border-gray-200 rounded-lg">
+                <img 
+                  src={trackingQrUrl} 
+                  alt="Order Tracking QR" 
+                  className="w-24 h-24 mx-auto"
+                />
+              </div>
+            )}
+            <p className="text-[9px] text-gray-400 mt-1">
+              امسح الرمز لتتبع حالة طلبك
+            </p>
+          </div>
+
+          <div className="text-center mb-4">
+            <p className="text-xs font-bold text-gray-700 mb-1">رقم الطلب</p>
+            <p className="text-[10px] text-gray-500 mb-2">Order Number</p>
             {barcodeUrl && (
               <div className="inline-block p-1 bg-white border border-gray-200 rounded">
                 <img 

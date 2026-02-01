@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import type { Order } from "@shared/schema";
 import logoImage from "../assets/cluny-logo.png";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
+import QRCode from "qrcode";
 
 interface ReceiptInvoiceProps {
   order: Order;
@@ -13,6 +14,29 @@ interface ReceiptInvoiceProps {
 
 export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const [trackingQrUrl, setTrackingQrUrl] = useState<string>("");
+
+  useEffect(() => {
+    const generateTrackingQR = async () => {
+      if (!order.orderNumber) return;
+      try {
+        const trackingUrl = `https://www.cluny.cafe/tracking?order=${order.orderNumber}`;
+        const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
+          width: 150,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'M'
+        });
+        setTrackingQrUrl(qrDataUrl);
+      } catch (error) {
+        console.error("Error generating tracking QR code:", error);
+      }
+    };
+    generateTrackingQR();
+  }, [order.orderNumber]);
 
   const generatePDF = async () => {
     if (!invoiceRef.current) return;
@@ -164,6 +188,24 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
           <div className="mb-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
             <p className="text-sm font-semibold text-yellow-800 mb-2">ملاحظات:</p>
             <p className="text-gray-700">{order.customerNotes}</p>
+          </div>
+        )}
+
+        {/* Order Tracking QR Code */}
+        {trackingQrUrl && (
+          <div className="text-center mb-8 pb-6 border-b border-gray-200">
+            <p className="text-sm font-semibold text-primary mb-2">امسح لتتبع طلبك</p>
+            <p className="text-xs text-gray-500 mb-3">Scan to Track Your Order</p>
+            <div className="inline-block p-3 bg-white border-2 border-primary/20 rounded-lg">
+              <img 
+                src={trackingQrUrl} 
+                alt="Order Tracking QR" 
+                className="w-28 h-28 mx-auto"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              امسح الرمز للاطلاع على حالة طلبك
+            </p>
           </div>
         )}
 
