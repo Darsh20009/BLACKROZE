@@ -1286,6 +1286,10 @@ export default function EmployeeCashier() {
  </SelectTrigger>
     <SelectContent className="bg-[#1a1410] border-primary/30 text-white">
       <SelectItem value="cash">نقدي</SelectItem>
+      <SelectItem value="pos-network">شبكة (POS)</SelectItem>
+      <SelectItem value="pos">مدى</SelectItem>
+      <SelectItem value="apple_pay">Apple Pay</SelectItem>
+      <SelectItem value="qahwa-card">بطاقة قهوة</SelectItem>
     </SelectContent>
  </Select>
  {paymentMethod === 'qahwa-card' && loyaltyCard && (

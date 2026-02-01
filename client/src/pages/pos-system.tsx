@@ -89,6 +89,7 @@ interface PaymentMethodInfo {
 
 const PAYMENT_METHODS: PaymentMethodInfo[] = [
   { id: "cash", name: "نقدي", nameEn: "Cash", icon: Banknote, color: "text-primary", bgColor: "bg-primary", enabled: true },
+  { id: "pos-network", name: "شبكة", nameEn: "Network (POS)", icon: CreditCard, color: "text-primary", bgColor: "bg-primary", enabled: true },
   { id: "pos", name: "مدى", nameEn: "Mada", icon: CreditCard, color: "text-primary", bgColor: "bg-primary", enabled: true },
   { id: "apple_pay", name: "Apple Pay", nameEn: "Apple Pay", icon: Smartphone, color: "text-foreground", bgColor: "bg-muted", enabled: true },
   { id: "alinma", name: "Alinma Pay", nameEn: "Alinma", icon: Wallet, color: "text-primary", bgColor: "bg-primary", enabled: true },
