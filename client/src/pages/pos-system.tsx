@@ -92,7 +92,7 @@ const PAYMENT_METHODS: PaymentMethodInfo[] = [
   { id: "pos-network", name: "شبكة", nameEn: "Network (POS)", icon: CreditCard, color: "text-primary", bgColor: "bg-primary", enabled: true },
   { id: "copy-card", name: "بطاقة كوبي", nameEn: "Copy Card", icon: CreditCard, color: "text-primary", bgColor: "bg-primary", enabled: true },
   { id: "pos", name: "مدى", nameEn: "Mada", icon: CreditCard, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "apple_pay", name: "Apple Pay", nameEn: "Apple Pay", icon: Smartphone, color: "text-foreground", bgColor: "bg-muted", enabled: true },
+  { id: "apple_pay", name: "Apple Pay", nameEn: "Apple Pay", icon: Smartphone, color: "text-white", bgColor: "bg-black", enabled: true },
   { id: "alinma", name: "Alinma Pay", nameEn: "Alinma", icon: Wallet, color: "text-primary", bgColor: "bg-primary", enabled: true },
   { id: "rajhi", name: "الراجحي", nameEn: "Al Rajhi", icon: Building, color: "text-primary", bgColor: "bg-primary", enabled: true },
   { id: "ur", name: "Ur Pay", nameEn: "Ur Pay", icon: Zap, color: "text-primary", bgColor: "bg-primary", enabled: true },
@@ -1885,11 +1885,19 @@ export default function POSSystem() {
                                     setPaymentMethod(method.id);
                                     if (method.id !== 'qahwa-card') setUsedFreeDrinks(0);
                                   }}
-                                  className="flex flex-col h-14 gap-0.5 p-1"
+                                  className={`flex flex-col h-14 gap-0.5 p-1 ${method.id === 'apple_pay' ? 'bg-black text-white hover:bg-black/90 border-0' : ''}`}
                                   data-testid={`button-payment-${method.id}`}
                                 >
-                                  <method.icon className="w-4 h-4" />
-                                  <span className="text-[9px] leading-tight text-center">{method.name}</span>
+                                  {method.id === 'apple_pay' ? (
+                                    <div className="flex flex-col items-center justify-center">
+                                      <span className="text-[10px] font-black tracking-tighter"> Pay</span>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <method.icon className="w-4 h-4" />
+                                      <span className="text-[9px] leading-tight text-center">{method.name}</span>
+                                    </>
+                                  )}
                                 </Button>
                               ))}
                             </div>

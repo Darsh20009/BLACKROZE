@@ -108,8 +108,19 @@ export default function PaymentMethods({
      <div className="space-y-4">
      {paymentMethods.map((method) => {
     const isQahwaCard = (method.id as string) === 'qahwa-card' || (method.id as string) === 'loyalty-card';
-    const isNeoLeap = (method.id as string) === 'neoleap' || (method.id as string) === 'neoleap-apple-pay';
+    const isNeoLeap = (method.id as string) === 'neoleap' || (method.id as string) === 'neoleap-apple-pay' || (method.id as string) === 'apple_pay';
+    const isApplePay = (method.id as string) === 'apple_pay' || (method.id as string) === 'neoleap-apple-pay';
     const isSelected = selectedMethod === method.id;
+
+    // Only show Apple Pay on iOS/iPhone
+    const [isIOS, setIsIOS] = useState(false);
+    useEffect(() => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const iosDevices = ['iphone', 'ipad', 'ipod'];
+      setIsIOS(iosDevices.some(device => userAgent.includes(device)));
+    }, []);
+
+    if (isApplePay && !isIOS) return null;
 
     return (
       <div key={method.id} className="relative group">
@@ -118,7 +129,9 @@ export default function PaymentMethods({
         )}
         <Card
          className={`cursor-pointer transition-all duration-500 relative overflow-hidden rounded-2xl ${
-          (isQahwaCard || isNeoLeap)
+          isApplePay
+          ? 'bg-black border-0 text-white shadow-xl hover:scale-[1.01]'
+          : (isQahwaCard || isNeoLeap)
           ? isSelected
            ? 'border-2 border-amber-400 shadow-2xl scale-[1.02] bg-white'
            : 'border-2 border-amber-200/50 hover:border-amber-400/80 shadow-lg hover:scale-[1.01] bg-white/80'
@@ -130,7 +143,13 @@ export default function PaymentMethods({
          data-testid={`payment-method-${method.id}`}
         >
          <CardContent className="p-0">
-           {(isQahwaCard || isNeoLeap) && isSelected ? (
+           {isApplePay ? (
+             <div className="p-5 flex items-center justify-center gap-2 bg-black h-16">
+               <span className="text-white font-bold text-lg">Pay with</span>
+               <Smartphone className="w-6 h-6 text-white" />
+               <span className="text-white font-black text-xl tracking-tighter"> Pay</span>
+             </div>
+           ) : (isQahwaCard || isNeoLeap) && isSelected ? (
              <div className="space-y-4">
                <div className="min-h-80 relative overflow-visible rounded-3xl shadow-2xl border border-white/10" 
                  style={{
