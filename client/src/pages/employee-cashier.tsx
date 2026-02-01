@@ -388,39 +388,51 @@ export default function EmployeeCashier() {
  };
 
  const addToOrder = (coffeeItem: CoffeeItem) => {
- const existingItem = orderItems.find(item => item.coffeeItem.id === coffeeItem.id);
- 
- if (existingItem) {
- setOrderItems(orderItems.map(item =>
- item.coffeeItem.id === coffeeItem.id
- ? { ...item, quantity: item.quantity + 1 }
- : item
- ));
- } else {
- setOrderItems([...orderItems, { coffeeItem, quantity: 1 }]);
- }
+   // Since the employee-cashier page doesn't seem to have a DrinkCustomizationDialog state defined like pos-system,
+   // we should ideally add it. But for now, let's fix the calculation logic if it's there.
+   // Looking at the code, it seems to add directly. 
+   const existingItem = orderItems.find(item => item.coffeeItem.id === coffeeItem.id);
+   
+   if (existingItem) {
+     setOrderItems(orderItems.map(item =>
+       item.coffeeItem.id === coffeeItem.id
+         ? { ...item, quantity: item.quantity + 1 }
+         : item
+     ));
+   } else {
+     setOrderItems([...orderItems, { coffeeItem, quantity: 1 }]);
+   }
  };
 
  const updateQuantity = (coffeeItemId: string, newQuantity: number) => {
- if (newQuantity <= 0) {
- setOrderItems(orderItems.filter(item => item.coffeeItem.id !== coffeeItemId));
- } else {
- setOrderItems(orderItems.map(item =>
- item.coffeeItem.id === coffeeItemId
- ? { ...item, quantity: newQuantity }
- : item
- ));
- }
+   if (newQuantity <= 0) {
+     setOrderItems(orderItems.filter(item => item.coffeeItem.id !== coffeeItemId));
+   } else {
+     setOrderItems(orderItems.map(item =>
+       item.coffeeItem.id === coffeeItemId
+         ? { ...item, quantity: newQuantity }
+         : item
+     ));
+   }
  };
 
  const removeFromOrder = (coffeeItemId: string) => {
- setOrderItems(orderItems.filter(item => item.coffeeItem.id !== coffeeItemId));
+   setOrderItems(orderItems.filter(item => item.coffeeItem.id !== coffeeItemId));
  };
 
  const calculateSubtotal = () => {
- return orderItems.reduce((sum, item) => {
- return sum + (Number(item.coffeeItem.price) * item.quantity);
- }, 0);
+   return orderItems.reduce((sum, item) => {
+     let itemPrice = Number(item.coffeeItem.price);
+     // Apply size price if available in item (customization check)
+     if (item.customization?.selectedSize) {
+       const sizeOption = item.coffeeItem.availableSizes?.find(
+         s => s.nameAr === item.customization?.selectedSize || s.nameEn === item.customization?.selectedSize
+       );
+       if (sizeOption) itemPrice = Number(sizeOption.price);
+     }
+     const addonsPrice = item.customization?.totalAddonsPrice || 0;
+     return sum + ((itemPrice + addonsPrice) * item.quantity);
+   }, 0);
  };
 
  const calculateDiscount = () => {

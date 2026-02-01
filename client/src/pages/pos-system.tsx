@@ -690,7 +690,7 @@ export default function POSSystem() {
     }
   }, [coffeeItems, searchQuery, selectedCategory]);
 
-  const addToOrder = (coffeeItem: CoffeeItem) => {
+  const addToOrder = (coffeeItem: ICoffeeItem) => {
     if (!coffeeItem) return;
     setCustomizingItem(coffeeItem);
     setEditingLineItemId(null);
@@ -716,6 +716,8 @@ export default function POSSystem() {
     } else {
       const existingItemIndex = orderItems.findIndex(item => {
         if (item.coffeeItem.id !== customizingItem.id) return false;
+        // Also check if size matches for merging
+        if (item.customization?.selectedSize !== customization.selectedSize) return false;
         const existingAddons = item.customization?.selectedAddons || [];
         const newAddons = customization.selectedAddons || [];
         if (existingAddons.length !== newAddons.length) return false;
@@ -759,7 +761,14 @@ export default function POSSystem() {
   const applyItemDiscount = (lineItemId: string, discount: number, type: 'fixed' | 'percentage') => {
     setOrderItems(orderItems.map(item => {
       if (item.lineItemId === lineItemId) {
-        const basePrice = Number(item.coffeeItem.price);
+        let basePrice = Number(item.coffeeItem.price);
+        // Size price logic
+        if (item.customization?.selectedSize) {
+          const sizeOption = item.coffeeItem.availableSizes?.find(
+            s => s.nameAr === item.customization?.selectedSize || s.nameEn === item.customization?.selectedSize
+          );
+          if (sizeOption) basePrice = Number(sizeOption.price);
+        }
         const addonsPrice = item.customization?.totalAddonsPrice || 0;
         const itemTotal = (basePrice + addonsPrice) * item.quantity;
         const actualDiscount = type === 'percentage' ? (itemTotal * discount / 100) : discount;
@@ -774,7 +783,19 @@ export default function POSSystem() {
 
   const calculateSubtotal = () => {
     return orderItems.reduce((sum, item) => {
-      const basePrice = Number(item.coffeeItem.price);
+      if (!item || !item.coffeeItem) return sum;
+      let basePrice = Number(item.coffeeItem.price);
+      
+      // Update price based on selected size
+      if (item.customization?.selectedSize) {
+        const sizeOption = item.coffeeItem.availableSizes?.find(
+          s => s.nameAr === item.customization?.selectedSize || s.nameEn === item.customization?.selectedSize
+        );
+        if (sizeOption) {
+          basePrice = Number(sizeOption.price);
+        }
+      }
+      
       const addonsPrice = item.customization?.totalAddonsPrice || 0;
       const itemTotal = (basePrice + addonsPrice) * item.quantity;
       const itemDiscount = item.itemDiscount || 0;
