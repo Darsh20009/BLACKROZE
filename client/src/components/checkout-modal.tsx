@@ -126,24 +126,25 @@ const CheckoutModal = memo(() => {
  return;
  }
 
- const orderData = {
- items: cartItems.map(item => ({
- coffeeItemId: item.coffeeItemId,
- quantity: item.quantity,
- price: item.coffeeItem?.price || "0",
- name: item.coffeeItem?.nameAr || "",
- })),
- totalAmount: getTotalPrice().toString(),
- paymentMethod: selectedPaymentMethod,
- status: "pending",
- customerId: customer?.id || null,
- customerInfo: { name: customerName, phone: customerPhone },
- deliveryType: deliveryType,
- branchId: deliveryType === 'pickup' ? selectedBranch : null,
- deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
- deliveryNotes: deliveryNotes || null,
- paymentReceiptUrl: receiptPreview || null,
- };
+    const orderData = {
+      items: cartItems.map(item => ({
+        coffeeItemId: item.coffeeItemId,
+        quantity: item.quantity,
+        price: item.coffeeItem?.price || "0",
+        name: item.coffeeItem?.nameAr || "",
+      })),
+      totalAmount: getTotalPrice().toString(),
+      paymentMethod: selectedPaymentMethod,
+      status: "pending",
+      customerId: customer?.id || null,
+      customerInfo: { name: customerName, phone: customerPhone },
+      deliveryType: deliveryType,
+      branchId: deliveryType === 'pickup' ? selectedBranch : null,
+      deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
+      deliveryNotes: deliveryNotes || null,
+      paymentReceiptUrl: receiptPreview || null,
+      customerPhone: customerPhone,
+    };
  createOrderMutation.mutate(orderData);
  };
 

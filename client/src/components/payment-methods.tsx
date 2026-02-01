@@ -113,12 +113,12 @@ export default function PaymentMethods({
 
     return (
       <div key={method.id} className="relative group">
-        {(isQahwaCard || isGeidea) && (
+        {(isQahwaCard || isGeidea || method.id === 'pos-network') && (
          <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-yellow-500/30 to-orange-500/30 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
         )}
         <Card
          className={`cursor-pointer transition-all duration-500 relative overflow-hidden rounded-2xl ${
-          (isQahwaCard || isGeidea)
+          (isQahwaCard || isGeidea || method.id === 'pos-network')
           ? isSelected
            ? 'border-2 border-amber-400 shadow-2xl scale-[1.02] bg-white'
            : 'border-2 border-amber-200/50 hover:border-amber-400/80 shadow-lg hover:scale-[1.01] bg-white/80'
@@ -130,12 +130,14 @@ export default function PaymentMethods({
          data-testid={`payment-method-${method.id}`}
         >
          <CardContent className="p-0">
-           {(isQahwaCard || isGeidea) && isSelected ? (
+           {(isQahwaCard || isGeidea || method.id === 'pos-network') && isSelected ? (
              <div className="space-y-4">
                <div className="min-h-80 relative overflow-visible rounded-3xl shadow-2xl border border-white/10" 
                  style={{
                    background: isGeidea 
                     ? `linear-gradient(135deg, #1a1a1a 0%, #333333 50%, #000000 100%)`
+                    : method.id === 'pos-network'
+                    ? `linear-gradient(135deg, #2c3e50 0%, #34495e 100%)`
                     : `linear-gradient(135deg, #B8860B 0%, #D4A017 25%, #C4880F 50%, #8B6914 75%, #5C3D2E 100%)`,
                  }}>
                  <div className="absolute inset-0 opacity-10">
@@ -147,19 +149,19 @@ export default function PaymentMethods({
                    <div className="flex justify-between items-start flex-shrink-0">
                      <div className="space-y-1">
                        <p className="text-xs uppercase tracking-widest opacity-75">CLUNY CAFE</p>
-                       <h4 className="text-2xl font-black">{isGeidea ? (method.id === 'apple-pay' ? 'Apple Pay' : 'Geidea Payment') : 'بطاقة الولاء'}</h4>
+                       <h4 className="text-2xl font-black">{isGeidea ? (method.id === 'apple-pay' ? 'Apple Pay' : 'Geidea Payment') : method.id === 'pos-network' ? 'شبكة (POS)' : 'بطاقة الولاء'}</h4>
                      </div>
                      <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
-                       {isGeidea ? <CreditCard className="w-6 h-6 text-white" /> : <Coffee className="w-6 h-6 text-white" />}
+                       {isGeidea || method.id === 'pos-network' ? <CreditCard className="w-6 h-6 text-white" /> : <Coffee className="w-6 h-6 text-white" />}
                      </div>
                    </div>
 
-                   {isGeidea ? (
+                   {isGeidea || method.id === 'pos-network' ? (
                      <div className="flex flex-col items-center justify-center my-auto text-center space-y-4">
                         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur">
                           <Zap className="w-8 h-8 text-amber-400 animate-pulse" />
                         </div>
-                        <p className="text-lg font-bold">دفع آمن عبر Geidea</p>
+                        <p className="text-lg font-bold">{method.id === 'pos-network' ? 'دفع عبر الشبكة' : 'دفع آمن عبر Geidea'}</p>
                         <p className="text-sm opacity-80">مدى، فيزا، ماستر كارد</p>
                      </div>
                    ) : cardMode === null ? (
@@ -228,13 +230,17 @@ export default function PaymentMethods({
                             <p className="font-bold text-base">{(foundCard.freeCupsEarned || 0) - (foundCard.freeCupsRedeemed || 0)}</p>
                           </div>
                           <div className="bg-white/10 rounded-lg p-2 backdrop-blur">
-                            <p className="text-xs opacity-70">نقاط</p>
-                            <p className="font-bold text-base">{foundCard.points || 0}</p>
+                            <p className="text-xs opacity-70">خصم</p>
+                            <p className="font-bold text-base">{foundCard.discountPercentage || 0}%</p>
                           </div>
+                        </div>
+                        <div className="bg-white/10 rounded-lg p-2 backdrop-blur text-center mt-2">
+                          <p className="text-xs opacity-70">رصيد المشروبات</p>
+                          <p className="font-bold text-base">{(foundCard.freeCupsEarned || 0) - (foundCard.freeCupsRedeemed || 0)} مشروب مجاني</p>
                         </div>
                         <Button 
                           size="sm"
-                          className="w-full bg-white/20 hover:bg-white/30 text-white transition-all duration-300 backdrop-blur border-0 mt-auto"
+                          className="w-full bg-white/20 hover:bg-white/30 text-white transition-all duration-300 backdrop-blur border-0 mt-4"
                           onClick={(e) => {
                             e.stopPropagation();
                             setCardMode(null);
