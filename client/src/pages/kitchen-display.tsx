@@ -129,11 +129,15 @@ export default function KitchenDisplay() {
     const pendingOrders = orders.filter(o => o.status === "pending" || o.status === "payment_confirmed");
     const readyOrders = orders.filter(o => o.status === "ready");
     
+    // Debug order count
+    console.log(`[KDS] Current pending: ${pendingOrders.length}, Previous: ${previousOrderCountRef.current}`);
+    
     if (pendingOrders.length > previousOrderCountRef.current) {
-      playNotificationSound('newOrder', 0.7);
+      console.log("[KDS] New order detected, playing sound...");
+      playNotificationSound('newOrder', 1.0); // Max volume
       toast({
         title: "طلب جديد!",
-        description: `وصل طلب جديد - الإجمالي: ${pendingOrders.length} طلب`,
+        description: `وصل طلب جديد #${orders[0]?.orderNumber || ''}`,
       });
     }
     

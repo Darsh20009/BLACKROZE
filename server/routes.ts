@@ -3165,6 +3165,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           order = await storage.createOrder(orderData);
           
+          // Broadcast new order to WebSocket
+          if (order) {
+            const serializedOrder = serializeDoc(order);
+            console.log(`[ORDER] Broadcasting new table order #${serializedOrder.orderNumber} to WebSocket`);
+            wsManager.broadcastNewOrder(serializedOrder);
+            wsManager.broadcastOrderUpdate(serializedOrder);
+          }
+          
           // Update table status
           await storage.updateTableOccupancy(tableId, true, order.id);
         }
@@ -3195,6 +3203,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           items: processedItems
         };
         order = await storage.createOrder(orderData);
+
+        // Broadcast new order to WebSocket
+        if (order) {
+          const serializedOrder = serializeDoc(order);
+          console.log(`[ORDER] Broadcasting new order #${serializedOrder.orderNumber} to WebSocket`);
+          wsManager.broadcastNewOrder(serializedOrder);
+          wsManager.broadcastOrderUpdate(serializedOrder);
+        }
       }
 
       // Finalize (Pay) Open Table Order

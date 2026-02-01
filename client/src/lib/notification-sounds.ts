@@ -29,8 +29,10 @@ export function playNotificationSound(type: NotificationSoundType = 'newOrder', 
   try {
     const audio = new Audio(SOUNDS[type]);
     audio.volume = Math.max(0, Math.min(1, volume)); // Clamp volume between 0 and 1
-    audio.play().catch((error) => {
-      console.debug('Notification sound playback failed:', error);
+    audio.play().then(() => {
+      console.log(`[SOUND] Successfully played: ${type}`);
+    }).catch((error) => {
+      console.error(`[SOUND] Playback failed for ${type}:`, error);
     });
   } catch (error) {
     console.debug('Failed to create notification sound:', error);
