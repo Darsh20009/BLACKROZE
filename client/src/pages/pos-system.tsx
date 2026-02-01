@@ -1894,6 +1894,106 @@ export default function POSSystem() {
                               ))}
                             </div>
                             
+                            {paymentMethod === 'cash' && (
+                              <div className="space-y-4 mt-2 p-3 bg-muted/30 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1">
+                                    <Label className="text-xs font-bold mb-1 block text-right">المبلغ المستلم</Label>
+                                    <div className="relative">
+                                      <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                      <Input
+                                        type="number"
+                                        value={cashReceived || ''}
+                                        onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
+                                        className="pr-10 h-10 text-lg font-bold text-center"
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex-1">
+                                    <Label className="text-xs font-bold mb-1 block text-right">المبلغ المتبقي</Label>
+                                    <div className="h-10 flex items-center justify-center bg-primary/10 rounded-lg border border-primary/20">
+                                      <span className="text-lg font-bold text-primary">
+                                        {changeAmount.toFixed(2)} ر.س
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-1.5">
+                                  {[10, 20, 50, 100, 200, 500].map(amount => (
+                                    <Button 
+                                      key={amount}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setCashReceived((cashReceived || 0) + amount)}
+                                      className="h-8 text-[10px] font-bold"
+                                    >
+                                      +{amount}
+                                    </Button>
+                                  ))}
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm" 
+                                    onClick={() => setCashReceived(0)}
+                                    className="h-8 text-[10px] font-bold col-span-3"
+                                  >
+                                    مسح المبلغ
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+
+                            {paymentMethod === 'cash' && (
+                              <div className="space-y-4 mt-2 p-3 bg-muted/30 rounded-lg" dir="rtl">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1">
+                                    <Label className="text-xs font-bold mb-1 block text-right">المبلغ المستلم</Label>
+                                    <div className="relative">
+                                      <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                      <Input
+                                        type="number"
+                                        value={cashReceived || ''}
+                                        onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
+                                        className="pr-10 h-10 text-lg font-bold text-center"
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex-1">
+                                    <Label className="text-xs font-bold mb-1 block text-right">المبلغ المتبقي</Label>
+                                    <div className="h-10 flex items-center justify-center bg-primary/10 rounded-lg border border-primary/20">
+                                      <span className="text-lg font-bold text-primary">
+                                        {changeAmount.toFixed(2)} ر.س
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-1.5">
+                                  {[10, 20, 50, 100, 200, 500].map(amount => (
+                                    <Button 
+                                      key={amount}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setCashReceived((cashReceived || 0) + amount)}
+                                      className="h-8 text-[10px] font-bold"
+                                    >
+                                      +{amount}
+                                    </Button>
+                                  ))}
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm" 
+                                    onClick={() => setCashReceived(0)}
+                                    className="h-8 text-[10px] font-bold col-span-3"
+                                  >
+                                    مسح المبلغ
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+
                             {paymentMethod === 'qahwa-card' && loyaltyCard && (() => {
                               const availableFreeDrinks = Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0));
                               const totalDrinks = orderItems.reduce((sum, item) => sum + item.quantity, 0);
