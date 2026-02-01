@@ -12,6 +12,7 @@ interface EnrichedCartItem {
   coffeeItem?: CoffeeItem;
   selectedSize?: string;
   selectedAddons?: string[];
+  enrichedAddons?: any[];
 }
 
 export interface DeliveryInfo {
@@ -238,8 +239,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           price = parseFloat(String(itemPrice));
         }
+
+        // Calculate addons price
+        const addonsPrice = (item.selectedAddons || []).reduce((sum, addonId) => {
+          if (item.enrichedAddons) {
+            const addon = item.enrichedAddons.find((a: any) => (a.id === addonId || a._id === addonId));
+            return sum + (addon?.price || 0);
+          }
+          return sum;
+        }, 0);
         
-        return total + (isNaN(price) ? 0 : price * item.quantity);
+        return total + ((isNaN(price) ? 0 : price) + addonsPrice) * item.quantity;
       }, 0);
     };
 

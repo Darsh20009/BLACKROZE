@@ -2866,23 +2866,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const coffeeItem = await CoffeeItemModel.findOne({ id: cartItem.coffeeItemId }).lean();
           const doc = serializeDoc(cartItem);
           
+          // Fetch addons to get their prices and names
+          const addons = await Promise.all(
+            (cartItem.selectedAddons || []).map((addonId: string) => ProductAddonModel.findById(addonId).lean())
+          );
+          
           // CRITICAL: Force the ID to be the custom 'id' (composite) if available, otherwise use coffeeItemId
           // This ensures the frontend ALWAYS receives an ID it can use for DELETE/PUT consistently
           const finalId = cartItem.id || cartItem.coffeeItemId;
           
-          console.log(`[CART] Enriching item ${cartItem.coffeeItemId}: Found coffee=${!!coffeeItem}`);
+          console.log(`[CART] Enriching item ${cartItem.coffeeItemId}: Found coffee=${!!coffeeItem}, addons=${addons.length}`);
           
           return {
             ...doc,
             id: finalId,
-            coffeeItem: coffeeItem ? serializeDoc(coffeeItem) : null
+            coffeeItem: coffeeItem ? serializeDoc(coffeeItem) : null,
+            enrichedAddons: addons.filter(Boolean).map(serializeDoc)
           };
         } catch (err) {
           console.error(`Error enriching cart item:`, err);
           return { 
             ...serializeDoc(cartItem), 
             id: cartItem.id || cartItem.coffeeItemId, 
-            coffeeItem: null 
+            coffeeItem: null,
+            enrichedAddons: []
           };
         }
       }));
