@@ -169,17 +169,6 @@ export default function POSSystem() {
       setChangeAmount(0);
     }
   }, [cashReceived, paymentMethod, orderItems, appliedDiscount, invoiceDiscount]);
-  const [cashReceived, setCashReceived] = useState<number>(0);
-  const [changeAmount, setChangeAmount] = useState<number>(0);
-
-  useEffect(() => {
-    const total = parseFloat(calculateTotal());
-    if (paymentMethod === 'cash' && cashReceived >= total) {
-      setChangeAmount(cashReceived - total);
-    } else {
-      setChangeAmount(0);
-    }
-  }, [cashReceived, paymentMethod, orderItems, appliedDiscount, invoiceDiscount]);
 
   // Background sync logic
 
