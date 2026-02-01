@@ -677,7 +677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const methods = [
         { id: 'cash', nameAr: 'كاش', details: 'الدفع نقداً عند الاستلام', icon: 'fas fa-money-bill-wave' },
-        { id: 'pos-network', nameAr: 'شبكة (POS)', details: 'الدفع عبر جهاز نقاط البيع', icon: 'fas fa-credit-card' },
+        { id: 'neoleap', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد عبر NeoLeap', icon: 'fas fa-credit-card' },
+        { id: 'neoleap-apple-pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fas fa-mobile-alt' },
         { id: 'loyalty-card', nameAr: 'بطاقة كوبي (رقم العميل)', details: 'خصم تلقائي ودفع بالنقاط', icon: 'fas fa-gift' }
       ];
       res.json(methods);
