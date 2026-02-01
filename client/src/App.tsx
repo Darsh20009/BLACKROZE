@@ -338,8 +338,8 @@ function App() {
     }
 
     // Update document language and direction
-    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = i18n.language;
+    document.documentElement.dir = 'rtl';
+    document.documentElement.lang = 'ar';
 
     // Redirect employee from customer root if they are on employee system
     if (isEmployeePath && currentPath === '/') {

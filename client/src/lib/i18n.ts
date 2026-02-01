@@ -428,12 +428,11 @@ const resources = {
 };
 
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'ar',
     lng: 'ar',
+    fallbackLng: 'ar',
     interpolation: {
       escapeValue: false
     }
