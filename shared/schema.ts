@@ -4559,3 +4559,16 @@ export type InsertDeliveryDriver = z.infer<typeof insertDeliveryDriverSchema>;
 export type DeliveryDriver = IDeliveryDriver;
 export type InsertDeliveryOrder = z.infer<typeof insertDeliveryOrderSchema>;
 export type DeliveryOrder = IDeliveryOrder;
+
+// Kitchen Department types
+export type KitchenDepartment = IKitchenDepartment;
+export const insertKitchenDepartmentSchema = z.object({
+  nameAr: z.string().min(1),
+  nameEn: z.string().optional(),
+  description: z.string().optional(),
+  type: z.enum(['drinks', 'food', 'desserts', 'other']),
+  assignedEmployees: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
+  sortOrder: z.number().optional(),
+});
+export type InsertKitchenDepartment = z.infer<typeof insertKitchenDepartmentSchema>;
