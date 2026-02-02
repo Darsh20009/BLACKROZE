@@ -109,6 +109,7 @@ const OrdersDisplayEnhanced = lazy(() => import("@/pages/orders-display-enhanced
 const KitchenCategoriesManagement = lazy(() => import("@/pages/kitchen-categories-management"));
 const EnhancedTableBarcodes = lazy(() => import("@/pages/enhanced-table-barcodes"));
 const ExternalIntegrations = lazy(() => import("@/pages/external-integrations"));
+const AdminControlPanel = lazy(() => import("@/pages/admin-control-panel"));
 const WarehouseManagement = lazy(() => import("@/pages/warehouse-management"));
 const SupportSystem = lazy(() => import("@/pages/support-system"));
 const StockOrganizationDashboard = lazy(() => import("@/pages/stock-organization-dashboard"));
