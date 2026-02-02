@@ -307,6 +307,10 @@ function AppRouter() {
 
  {/* Customer Delivery Tracking */}
  <Route path="/delivery/track/:orderId"><DeliveryTracking /></Route>
+ {/* Hidden/Special Routes */}
+ <Route path="/tips"><SystemGuide /></Route>
+ 
+ {/* Default Route */}
  <Route component={MenuPage} />
  </Switch>
  </Suspense>
