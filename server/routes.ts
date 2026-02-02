@@ -676,10 +676,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/payment-methods", async (req, res) => {
     try {
       const methods = [
-        { id: 'cash', nameAr: 'كاش', details: 'الدفع نقداً عند الاستلام', icon: 'fas fa-money-bill-wave' },
-        { id: 'neoleap', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد عبر NeoLeap', icon: 'fas fa-credit-card' },
-        { id: 'neoleap-apple-pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fas fa-mobile-alt' },
-        { id: 'loyalty-card', nameAr: 'بطاقة كوبي (رقم العميل)', details: 'خصم تلقائي ودفع بالنقاط', icon: 'fas fa-gift' }
+        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', autoConfirm: true },
+        { id: 'network', nameAr: 'شبكة', nameEn: 'Network', details: 'الدفع عبر الشبكة', icon: 'fas fa-credit-card', autoConfirm: true },
+        { id: 'qahwa-card', nameAr: 'بطاقة كوبي', nameEn: 'Copy Card', details: 'استخدم المشروبات المجانية من بطاقتك', icon: 'fas fa-gift', autoConfirm: true },
+        { id: 'newleap', nameAr: 'نيو ليب', nameEn: 'New Leap', details: 'الدفع عبر نيو ليب', icon: 'fas fa-mobile-alt', autoConfirm: false },
+        { id: 'neoleap', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد عبر NeoLeap', icon: 'fas fa-credit-card', autoConfirm: false },
+        { id: 'neoleap-apple-pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fas fa-mobile-alt', autoConfirm: false },
       ];
       res.json(methods);
     } catch (error) {
