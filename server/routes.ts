@@ -4963,9 +4963,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/branches", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
+      const { insertBranchSchema, BranchModel: LocalBranchModel } = await import("@shared/schema");
       // SINGLE BRANCH RESTRICTION: Check if a branch already exists
       const tenantId = req.employee?.tenantId || 'demo-tenant';
-      const existingBranches = await BranchModel.find({ tenantId });
+      const existingBranches = await LocalBranchModel.find({ tenantId });
       
       if (existingBranches.length >= 1) {
         return res.status(400).json({ 
@@ -4974,7 +4975,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { insertBranchSchema, BranchModel } = await import("@shared/schema");
       const { managerAssignment, ...branchData } = req.body;
       
       // Force cafeId and tenantId for safety
@@ -4982,7 +4982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const id = branchData.id || nanoid();
       
-      const newBranch = await BranchModel.create({
+      const newBranch = await LocalBranchModel.create({
         ...branchData,
         id,
         tenantId,
