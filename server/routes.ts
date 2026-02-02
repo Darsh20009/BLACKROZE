@@ -3394,26 +3394,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
 
-          // Calculate stamps (1 stamp per drink)
+          // Calculate stamps (1 stamp per drink) and points (10 points per drink)
           // Filter items that are actually drinks (using category or metadata if possible)
           const itemsToProcess = Array.isArray(processedItems) ? processedItems : [];
           const stampsToAdd = itemsToProcess.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
+          const pointsToAdd = stampsToAdd * 10; // 10 points per drink
 
-          console.log(`[LOYALTY] Stamps to add: ${stampsToAdd}, Current stamps: ${loyaltyCard.stamps}`);
+          console.log(`[LOYALTY] Stamps to add: ${stampsToAdd}, Points to add: ${pointsToAdd}, Current stamps: ${loyaltyCard.stamps}, Current points: ${loyaltyCard.points}`);
 
           if (stampsToAdd > 0) {
             const currentStamps = Number(loyaltyCard.stamps) || 0;
+            const currentPoints = Number(loyaltyCard.points) || 0;
             const currentFreeCups = Number(loyaltyCard.freeCupsEarned) || 0;
             const currentTotalSpent = parseFloat(loyaltyCard.totalSpent?.toString() || "0");
             
             const totalStamps = currentStamps + stampsToAdd;
             const freeCupsToEarn = Math.floor(totalStamps / 6);
             const remainingStamps = totalStamps % 6;
+            const newPoints = currentPoints + pointsToAdd;
 
-            console.log(`[LOYALTY] New totals - Stamps: ${remainingStamps}, Free Cups: ${currentFreeCups + freeCupsToEarn}`);
+            console.log(`[LOYALTY] New totals - Stamps: ${remainingStamps}, Free Cups: ${currentFreeCups + freeCupsToEarn}, Points: ${newPoints}`);
 
             await storage.updateLoyaltyCard(loyaltyCard.id, {
               stamps: remainingStamps,
+              points: newPoints,
               freeCupsEarned: currentFreeCups + freeCupsToEarn,
               totalSpent: currentTotalSpent + parseFloat(totalAmount.toString()),
               lastUsedAt: new Date()
@@ -3426,7 +3430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               pointsChange: stampsToAdd,
               discountAmount: 0,
               orderAmount: Number(totalAmount),
-              description: `اكتسبت ${stampsToAdd} ختم من الطلب رقم ${order.orderNumber}`,
+              description: `اكتسبت ${stampsToAdd} ختم و ${pointsToAdd} نقطة من الطلب رقم ${order.orderNumber}`,
             });
 
             // Create transaction for free cups earned
@@ -3439,6 +3443,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 orderAmount: Number(totalAmount),
                 description: `مبروك! لقد حصلت على ${freeCupsToEarn} قهوة مجانية من الطلب رقم ${order.orderNumber}`,
               });
+            }
+            
+            // Update customer points too
+            if (finalCustomerId) {
+              try {
+                await CustomerModel.findByIdAndUpdate(finalCustomerId, {
+                  $inc: { points: pointsToAdd }
+                });
+              } catch (e) {
+                console.error('[LOYALTY] Error updating customer points:', e);
+              }
             }
           }
         } catch (error) {
