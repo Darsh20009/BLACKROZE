@@ -3178,12 +3178,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateTableOccupancy(tableId, true, order.id);
         }
       } else {
+        // Auto-confirm payment for POS/Cashier orders with cash, network, or copy card
+        const autoConfirmPaymentMethods = ['cash', 'network', 'pos-network', 'qahwa-card'];
+        const autoConfirmStatus = (req.employee && autoConfirmPaymentMethods.includes(paymentMethod)) 
+          ? 'payment_confirmed' 
+          : 'pending';
+        
         const orderData: any = {
           customerId: finalCustomerId || null,
           totalAmount: Number(totalAmount),
           paymentMethod,
           paymentDetails: paymentDetails || "",
           paymentReceiptUrl: paymentReceiptUrl || null,
+          status: autoConfirmStatus, // Auto-confirm for POS orders
           customerInfo: customerInfo || { 
             customerName: finalCustomerName, 
             phoneNumber: req.body.customerPhone || "", 
@@ -3197,12 +3204,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           deliveryFee: deliveryFee ? Number(deliveryFee) : 0,
           branchId: finalBranchId,
           employeeId: req.employee?.id || null,
+          assignedCashierId: req.employee?.id || null, // Track cashier who created the order
           createdBy: req.employee?.username || 'system',
           tableNumber: tableNumber || null,
           tableId: tableId || null,
           orderType: orderType || (tableNumber || tableId ? 'dine-in' : 'regular'),
           items: processedItems
         };
+        
+        console.log(`[ORDER] Creating order with status: ${autoConfirmStatus} (Payment: ${paymentMethod}, Employee: ${req.employee ? 'Yes' : 'No'})`);
         order = await storage.createOrder(orderData);
 
         // Broadcast new order to WebSocket
