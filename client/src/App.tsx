@@ -243,6 +243,8 @@ function AppRouter() {
  <Route path="/manager/drivers"><AuthGuard userType="manager"><ManagerDrivers /></AuthGuard></Route>
  <Route path="/manager/dashboard"><AuthGuard userType="manager"><ManagerDashboard /></AuthGuard></Route>
  <Route path="/manager/tables"><AuthGuard userType="manager"><ManagerTables /></AuthGuard></Route>
+ <Route path="/manager/tables/barcodes"><AuthGuard userType="manager"><EnhancedTableBarcodes /></AuthGuard></Route>
+ <Route path="/manager/kitchen-categories"><AuthGuard userType="manager"><KitchenCategoriesManagement /></AuthGuard></Route>
  <Route path="/manager/attendance"><AuthGuard userType="manager"><ManagerAttendance /></AuthGuard></Route>
  <Route path="/manager/inventory"><AuthGuard userType="manager"><InventorySmartPage /></AuthGuard></Route>
  <Route path="/manager/inventory/raw-items"><AuthGuard userType="manager"><InventoryRawItems /></AuthGuard></Route>
