@@ -5046,6 +5046,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // KITCHEN DEPARTMENTS MANAGEMENT
+  app.get("/api/kitchen-departments", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = await getTenantIdFromRequest(req);
+      const kitchens = await KitchenDepartmentModel.find({ tenantId }).sort({ sortOrder: 1 });
+      res.json(kitchens.map(serializeDoc));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch kitchen departments" });
+    }
+  });
+
+  app.post("/api/kitchen-departments", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = await getTenantIdFromRequest(req);
+      const branchId = req.employee?.branchId;
+      
+      const kitchenData = {
+        id: `kitchen-${nanoid(10)}`,
+        tenantId,
+        branchId,
+        ...req.body,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const kitchen = await KitchenDepartmentModel.create(kitchenData);
+      res.status(201).json(serializeDoc(kitchen));
+    } catch (error) {
+      console.error('Error creating kitchen department:', error);
+      res.status(500).json({ error: "Failed to create kitchen department" });
+    }
+  });
+
+  app.put("/api/kitchen-departments/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = {
+        ...req.body,
+        updatedAt: new Date(),
+      };
+
+      const kitchen = await KitchenDepartmentModel.findOneAndUpdate(
+        { id },
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!kitchen) {
+        return res.status(404).json({ error: "Kitchen department not found" });
+      }
+
+      res.json(serializeDoc(kitchen));
+    } catch (error) {
+      console.error('Error updating kitchen department:', error);
+      res.status(500).json({ error: "Failed to update kitchen department" });
+    }
+  });
+
+  app.delete("/api/kitchen-departments/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const kitchen = await KitchenDepartmentModel.findOneAndDelete({ id });
+      
+      if (!kitchen) {
+        return res.status(404).json({ error: "Kitchen department not found" });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting kitchen department:', error);
+      res.status(500).json({ error: "Failed to delete kitchen department" });
+    }
+  });
+
   // CUSTOMER MANAGEMENT ROUTES (for manager dashboard)
   app.get("/api/admin/customers", async (req, res) => {
     try {
