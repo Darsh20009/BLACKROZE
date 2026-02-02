@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-02-02T18:00:40.533798",
+  "timestamp": "2026-02-02T18:03:54.713628",
   "summary": {
     "total_tests": 21,
-    "passed": 16,
-    "failed": 5,
-    "pass_rate": 76.19047619047619
+    "passed": 20,
+    "failed": 1,
+    "pass_rate": 95.23809523809523
   },
   "passed_tests": [
     "الصفحة الرئيسية تعمل",
@@ -12,6 +12,9 @@
     "JavaScript محمّل",
     "Payment Methods API",
     "طريقة الدفع 'cash' متوفرة",
+    "طريقة الدفع 'network' متوفرة",
+    "طريقة الدفع 'qahwa-card' متوفرة",
+    "طريقة الدفع 'newleap' متوفرة",
     "Coffee Items API",
     "تم تحميل 3 منتج",
     "حقل 'id' موجود في المنتج",
@@ -21,39 +24,16 @@
     "Categories API",
     "تم تحميل 3 فئة",
     "Loyalty Rewards API",
+    "نظام الولاء والمكافآت يعمل",
     "تقييد الفرع الواحد يعمل بشكل صحيح",
     "API إنشاء الطلبات يعمل"
   ],
   "issues": [
     {
-      "category": "Payment",
-      "severity": "HIGH",
-      "description": "طريقة الدفع 'network' مفقودة",
-      "timestamp": "2026-02-02T18:00:40.234820"
-    },
-    {
-      "category": "Payment",
-      "severity": "HIGH",
-      "description": "طريقة الدفع 'qahwa-card' مفقودة",
-      "timestamp": "2026-02-02T18:00:40.234830"
-    },
-    {
-      "category": "Payment",
-      "severity": "HIGH",
-      "description": "طريقة الدفع 'newleap' مفقودة",
-      "timestamp": "2026-02-02T18:00:40.234834"
-    },
-    {
       "category": "API",
       "severity": "HIGH",
       "description": "Tables API - Expected 200, got 401",
-      "timestamp": "2026-02-02T18:00:40.313411"
-    },
-    {
-      "category": "API",
-      "severity": "CRITICAL",
-      "description": "Loyalty Rewards API - Expecting value: line 1 column 1 (char 0)",
-      "timestamp": "2026-02-02T18:00:40.322663"
+      "timestamp": "2026-02-02T18:03:52.431667"
     }
   ]
 }
