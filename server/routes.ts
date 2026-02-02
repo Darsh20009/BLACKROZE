@@ -1134,6 +1134,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create first admin/manager without authentication (bootstrap endpoint)
+  app.post("/api/employees/bootstrap-admin", async (req, res) => {
+    try {
+      const { EmployeeModel } = await import("@shared/schema");
+      
+      // Check if any admin/manager exists
+      const existingAdmin = await EmployeeModel.findOne({ 
+        role: { $in: ['admin', 'owner', 'manager'] } 
+      });
+      
+      if (existingAdmin) {
+        return res.status(400).json({ 
+          error: "يوجد مدير بالفعل في النظام. استخدم /api/employees للإضافة",
+          errorEn: "Admin already exists. Use /api/employees endpoint" 
+        });
+      }
+
+      const { username, password, fullName, phone, branchId } = req.body;
+
+      if (!username || !password || !fullName) {
+        return res.status(400).json({ error: "اسم المستخدم وكلمة المرور والاسم الكامل مطلوبة" });
+      }
+
+      // Check if username exists
+      const existingUser = await EmployeeModel.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({ error: "اسم المستخدم موجود بالفعل" });
+      }
+
+      // Hash password
+      const bcrypt = await import("bcryptjs");
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create admin
+      const newAdmin = await EmployeeModel.create({
+        id: nanoid(),
+        tenantId: 'demo-tenant',
+        username,
+        password: hashedPassword,
+        fullName,
+        phone: phone || '',
+        role: 'admin',
+        branchId: branchId || null,
+        isActivated: 1,
+        permissions: ['*'],
+        allowedPages: ['*'],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      const { password: _, ...adminData } = serializeDoc(newAdmin);
+      res.status(201).json(adminData);
+    } catch (error) {
+      console.error("Error creating bootstrap admin:", error);
+      res.status(500).json({ error: "Failed to create admin" });
+    }
+  });
+
   // Reset employee password by username
   app.post("/api/employees/reset-password-by-username", async (req, res) => {
     try {
