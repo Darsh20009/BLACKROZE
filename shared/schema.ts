@@ -657,8 +657,9 @@ const BranchSchema = new Schema<IBranch>({
     lat: { type: Number },
     lng: { type: Number }
   },
-  geofenceRadius: { type: Number, default: 200 }, // الافتراضي 200 متر
-  geofenceBoundary: [{ lat: { type: Number }, lng: { type: Number } }], // حدود متعددة النقاط
+  geofenceRadius: { type: Number, default: 200 }, 
+  geofenceBoundary: [{ lat: { type: Number }, lng: { type: Number } }], 
+  isMainBranch: { type: Boolean, default: true },
   isActive: { type: Schema.Types.Mixed, default: true },
   managerName: { type: String },
   managerId: { type: String },

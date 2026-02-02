@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, MapPin, Phone, User, Store, ArrowRight, Loader2, Edit2, Trash2, Pentagon } from 'lucide-react';
+import { Plus, MapPin, Phone, User, Store, ArrowRight, Loader2, Edit2, Trash2, Pentagon, Info } from 'lucide-react';
 import BranchPolygonPicker from '@/components/branch-polygon-picker';
 import {
   AlertDialog,
@@ -71,6 +71,8 @@ export default function AdminBranches() {
   const { data: branches = [], isLoading } = useQuery<Branch[]>({
     queryKey: ['/api/branches'],
   });
+
+  const canAddBranch = !isLoading && branches.length === 0;
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/branches', data),
@@ -231,13 +233,20 @@ export default function AdminBranches() {
             <p className="text-muted-foreground mt-1">إضافة وتعديل فروع المقهى</p>
           </div>
         </div>
-        <Button 
-          onClick={() => setIsAddDialogOpen(true)}
-          className="bg-accent hover:bg-accent"
-        >
-          <Plus className="w-4 h-4 ml-2" />
-          إضافة فرع جديد
-        </Button>
+        {canAddBranch ? (
+          <Button 
+            onClick={() => setIsAddDialogOpen(true)}
+            className="bg-accent hover:bg-accent"
+          >
+            <Plus className="w-4 h-4 ml-2" />
+            إضافة فرع جديد
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg border border-amber-200">
+            <Info className="w-4 h-4" />
+            <span className="text-sm font-medium">النظام مقيد بفرع واحد فقط</span>
+          </div>
+        )}
       </div>
 
       {/* Add Branch Dialog */}

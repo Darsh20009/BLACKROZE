@@ -5131,7 +5131,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CATEGORY MANAGEMENT ROUTES
+  // Attendance Check with Geofencing
+  app.post("/api/attendance/check", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { latitude, longitude, branchId } = req.body;
+      const employee = req.employee!;
+      
+      const branch = await storage.getBranch(branchId || employee.branchId);
+      if (!branch) return res.status(404).json({ error: "Branch not found" });
+
+      let isWithinGeofence = false;
+      
+      if (branch.geofenceBoundary && branch.geofenceBoundary.length >= 3) {
+        // Use polygon check
+        const { isPointInPolygon } = await import("./utils/geo");
+        isWithinGeofence = isPointInPolygon({ lat: latitude, lng: longitude }, branch.geofenceBoundary);
+      } else if (branch.location?.lat && branch.location?.lng) {
+        // Use radius check
+        const { calculateDistance } = await import("./utils/geo");
+        const distance = calculateDistance(
+          { lat: latitude, lng: longitude },
+          { lat: branch.location.lat, lng: branch.location.lng }
+        );
+        isWithinGeofence = distance <= (branch.geofenceRadius || 200);
+      } else {
+        // No location data, assume within geofence to not block
+        isWithinGeofence = true;
+      }
+
+      if (!isWithinGeofence) {
+        // Send alert to manager
+        const managerId = branch.managerId;
+        if (managerId) {
+          await storage.createNotification({
+            userId: managerId,
+            title: "تنبيه خروج موظف",
+            message: `الموظف ${employee.fullName} خارج حدود الفرع أثناء وقت العمل.`,
+            type: "geofence_alert",
+            metadata: { employeeId: employee.id, latitude, longitude }
+          });
+        }
+      }
+
+      res.json({ isWithinGeofence });
+    } catch (error) {
+      console.error("Geofence check error:", error);
+      res.status(500).json({ error: "Failed to perform geofence check" });
+    }
+  });
   app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();

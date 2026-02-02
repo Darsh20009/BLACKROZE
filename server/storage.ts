@@ -1547,6 +1547,11 @@ export class DBStorage implements IStorage {
   }
 
   async createBranch(branch: Partial<IBranch>): Promise<IBranch> {
+    const tenantId = branch.tenantId || 'demo-tenant';
+    const existing = await BranchModel.findOne({ tenantId });
+    if (existing) {
+      throw new Error("لا يمكن إضافة أكثر من فرع واحد.");
+    }
     const newBranch = await BranchModel.create(branch);
     return serializeDoc(newBranch);
   }
