@@ -283,6 +283,7 @@ function AppRouter() {
 
  {/* Admin protected routes */}
  <Route path="/admin/dashboard"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminDashboard /></AuthGuard></Route>
+ <Route path="/admin/control-panel"><AuthGuard userType="manager" allowedRoles={["owner", "admin"]}><AdminControlPanel /></AuthGuard></Route>
  <Route path="/admin/employees"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminEmployees /></AuthGuard></Route>
     <Route path="/admin/reports"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminReports /></AuthGuard></Route>
     <Route path="/admin/settings"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminSettings /></AuthGuard></Route>
