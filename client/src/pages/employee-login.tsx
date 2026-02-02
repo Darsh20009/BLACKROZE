@@ -11,7 +11,7 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import clunyLogoStaff from "@assets/cluny-logo-staff.png";
 
 export default function EmployeeLogin() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

@@ -20,7 +20,6 @@ interface Branch {
 }
 
 export default function ManagerEmployees() {
-  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -327,7 +326,7 @@ export default function ManagerEmployees() {
  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4" dir="rtl">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -335,8 +334,8 @@ export default function ManagerEmployees() {
               <Coffee className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-accent">{t("manager.employees")}</h1>
-              <p className="text-gray-400 text-sm">{t("manager.dashboard")}</p>
+              <h1 className="text-2xl font-bold text-accent">إدارة الموظفين</h1>
+              <p className="text-gray-400 text-sm">لوحة التحكم</p>
             </div>
           </div>
  <div className="flex gap-2">
