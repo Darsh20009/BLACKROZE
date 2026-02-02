@@ -645,72 +645,72 @@ export default function ManagerDashboard() {
  .slice(0, 10);
  })();
 
- const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--accent))', 'hsl(var(--secondary))'];
- 
- const growthRate = (() => {
- if (dateFilter === "today" || dateFilter === "all") return 0;
- const now = new Date();
- const periodStart = dateFilter === "week" ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) :
- dateFilter === "month" ? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) : null;
- if (!periodStart) return 0;
- 
- const periodOrders = orders.filter(o => {
- if (!o.createdAt) return false;
- const date = new Date(o.createdAt);
- return !isNaN(date.getTime()) && date >= periodStart;
- });
- 
- const prevPeriodEnd = periodStart;
- const prevPeriodStart = dateFilter === "week" ? new Date(periodStart.getTime() - 7 * 24 * 60 * 60 * 1000) :
- new Date(periodStart.getTime() - 30 * 24 * 60 * 60 * 1000);
- const prevPeriodOrders = orders.filter(o => {
- if (!o.createdAt) return false;
- const date = new Date(o.createdAt);
- return !isNaN(date.getTime()) && date >= prevPeriodStart && date < prevPeriodEnd;
- });
- 
- const currentRevenue = periodOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
- const previousRevenue = prevPeriodOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
- 
- if (previousRevenue === 0) return currentRevenue > 0 ? 100 : 0;
- return Number((((currentRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1));
- })();
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--accent))', 'hsl(var(--secondary))'];
+  
+  const growthRate = (() => {
+    if (dateFilter === "today" || dateFilter === "all") return 0;
+    const now = new Date();
+    const periodStart = dateFilter === "week" ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) :
+    dateFilter === "month" ? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) : null;
+    if (!periodStart) return 0;
+    
+    const periodOrders = orders.filter(o => {
+      if (!o.createdAt) return false;
+      const date = new Date(o.createdAt);
+      return !isNaN(date.getTime()) && date >= periodStart;
+    });
+    
+    const prevPeriodEnd = periodStart;
+    const prevPeriodStart = dateFilter === "week" ? new Date(periodStart.getTime() - 7 * 24 * 60 * 60 * 1000) :
+    new Date(periodStart.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const prevPeriodOrders = orders.filter(o => {
+      if (!o.createdAt) return false;
+      const date = new Date(o.createdAt);
+      return !isNaN(date.getTime()) && date >= prevPeriodStart && date < prevPeriodEnd;
+    });
+    
+    const currentRevenue = periodOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const previousRevenue = prevPeriodOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    
+    if (previousRevenue === 0) return currentRevenue > 0 ? 100 : 0;
+    return Number((((currentRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1));
+  })();
 
- return (
- <div className="min-h-screen bg-background p-6" dir="rtl">
- <div className="max-w-7xl mx-auto">
- <header className="bg-card backdrop-blur-sm rounded-2xl border border-border p-6 mb-6">
- <div className="flex items-center justify-between gap-4 flex-wrap">
- <div className="flex items-center gap-4">
- <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center shadow-lg">
- <Coffee className="w-7 h-7 text-primary-foreground" />
- </div>
- <div>
- <h1 className="text-2xl font-bold text-primary">
- لوحة تحكم المدير
- </h1>
- <p className="text-muted-foreground text-sm">مرحباً، {manager.fullName}</p>
- </div>
- </div>
- <div className="flex items-center gap-3 flex-wrap">
- <Button
- variant="outline"
- onClick={handleLogout}
- data-testid="button-logout"
- >
- تسجيل الخروج
- </Button>
- <Button
- variant="outline"
- onClick={() => setLocation("/employee/dashboard")}
- data-testid="button-back"
- >
- <ArrowLeft className="w-4 h-4 ml-2" />
- رجوع
- </Button>
- </div>
- </div>
- </header>
+  return (
+    <div className="min-h-screen bg-background p-6" dir="rtl">
+      <div className="max-w-7xl mx-auto">
+        <header className="bg-card backdrop-blur-sm rounded-2xl border border-border p-6 mb-6">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center shadow-lg">
+                <Coffee className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-primary">
+                  لوحة تحكم المدير
+                </h1>
+                <p className="text-muted-foreground text-sm">مرحباً، {manager.fullName}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                data-testid="button-logout"
+              >
+                تسجيل الخروج
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/employee/dashboard")}
+                data-testid="button-back"
+              >
+                <ArrowLeft className="w-4 h-4 ml-2" />
+                رجوع
+              </Button>
+            </div>
+          </div>
+        </header>
 
  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
  <Button

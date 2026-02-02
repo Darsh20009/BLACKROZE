@@ -11,7 +11,6 @@ import { useCartStore } from '@/lib/cart-store';
 import { useToast } from '@/hooks/use-toast';
 import { Store, MapPin, ArrowRight, Phone, Map, Coffee, AlertCircle, Loader2, Navigation, Clock, Check } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useTranslation } from 'react-i18next';
 
 interface Branch {
   _id: string;
@@ -40,11 +39,48 @@ interface Table {
 }
 
 export default function DeliverySelectionPage() {
-  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { setDeliveryInfo, cartItems } = useCartStore();
   const { toast } = useToast();
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+
+  // Translation helpers
+  const t = (key: string, options?: any) => {
+    const translations: any = {
+      "nav.branch_selection": "اختيار الفرع",
+      "delivery.subtitle": "اختر الفرع الأقرب إليك",
+      "delivery.title": "خدمة التوصيل والاستلام",
+      "delivery.select_branch": "اختر الفرع",
+      "delivery.loading_branches": "جاري تحميل الفروع...",
+      "delivery.no_branches": "لا توجد فروع متاحة",
+      "delivery.address": "العنوان",
+      "delivery.phone": "الهاتف",
+      "delivery.check_location": "جاري التحقق من موقعك...",
+      "delivery.location_error": "خطأ في تحديد الموقع",
+      "delivery.update_location": "تحديث الموقع",
+      "delivery.browser_error": "متصفحك لا يدعم تحديد الموقع",
+      "delivery.view_on_map": "عرض على الخريطة",
+      "delivery.google_maps": "خرائط جوجل",
+      "delivery.dine_in": "تناول في الفرع",
+      "delivery.dine_in_desc": "احجز طاولتك الآن",
+      "delivery.loading_tables": "جاري تحميل الطاولات...",
+      "delivery.no_tables": "لا توجد طاولات متاحة",
+      "delivery.select_table": "اختر الطاولة",
+      "delivery.available": "متاح",
+      "delivery.occupied": "مشغول",
+      "delivery.table_label": `طاولة {number} (سعة {capacity} أشخاص)`,
+      "product.error": "خطأ",
+      "delivery.select_branch_error": "الرجاء اختيار فرع",
+      "delivery.location_warning": "تعذر التحقق من موقعك",
+      "delivery.select_table_error": "الرجاء اختيار طاولة",
+      "delivery.select_arrival_error": "الرجاء اختيار وقت الوصول",
+      "product.saved": "تم الحفظ",
+      "delivery.booking_success": "تم حجز الطاولة بنجاح",
+      "cart.empty_title": "السلة فارغة",
+      "cart.empty_desc": "أضف عناصر للسلة أولاً"
+    };
+    return translations[key] || key;
+  };
 
   // Set SEO metadata
   useEffect(() => {

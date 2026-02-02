@@ -114,7 +114,7 @@ export default function ManagerEmployees() {
  const isAdminOrOwner = currentManager?.role === "admin" || currentManager?.role === "owner";
  const managerBranchId = currentManager?.branchId;
 
-  const { data: employees, isLoading, isError, error } = useQuery<Employee[]>({
+  const { data: employees = [], isLoading, isError, error } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
     enabled: !!currentManager,
     retry: 1

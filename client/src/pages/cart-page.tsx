@@ -6,14 +6,34 @@ import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/cart-store";
 import { getCoffeeImage } from "@/lib/coffee-data-clean";
 import { ArrowRight, ShoppingCart, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
 export default function CartPage() {
-  const { t, i18n } = useTranslation();
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCartStore();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  const isAr = i18n.language === 'ar';
+  const isAr = true;
+
+  // Translation helpers since useTranslation was causing crashes
+  const t = (key: string, options?: any) => {
+    const translations: any = {
+      "product.back": "رجوع",
+      "cart.title": "سلة التسوق",
+      "cart.empty_title": "سلتك فارغة",
+      "cart.empty_desc": "ابدأ بإضافة بعض المشروبات اللذيذة لسلتك",
+      "welcome.explore": "استكشف القائمة",
+      "cart.selected_items": "العناصر المختارة",
+      "currency": "ر.س",
+      "checkout.order_summary": "ملخص الطلب",
+      "cart.items_count": "عدد العناصر",
+      "cart.items_pcs": `${options?.count || 0} قطعة`,
+      "cart.total_price": "الإجمالي الكلي",
+      "cart.checkout_now": "إتمام الطلب الآن",
+      "cart.total": "الإجمالي",
+      "cart.checkout": "الدفع"
+    };
+    return translations[key] || key;
+  };
 
   // Set SEO metadata
   useEffect(() => {
