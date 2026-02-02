@@ -104,6 +104,7 @@ const UserGuide = lazy(() => import("@/pages/user-guide"));
 const AdvancedAnalytics = lazy(() => import("@/pages/advanced-analytics"));
 const SupplierManagement = lazy(() => import("@/pages/supplier-management"));
 const LoyaltyProgram = lazy(() => import("@/pages/loyalty-program"));
+const MyOffers = lazy(() => import("@/pages/my-offers"));
 const ExternalIntegrations = lazy(() => import("@/pages/external-integrations"));
 const WarehouseManagement = lazy(() => import("@/pages/warehouse-management"));
 const SupportSystem = lazy(() => import("@/pages/support-system"));
