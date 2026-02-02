@@ -310,6 +310,7 @@ function AppRouter() {
  <Route path="/delivery/track/:orderId"><DeliveryTracking /></Route>
  {/* Hidden/Special Routes */}
  <Route path="/tips"><SystemGuide /></Route>
+ <Route path="/bootstrap-admin"><BootstrapAdmin /></Route>
  
  {/* Default Route */}
  <Route component={MenuPage} />
