@@ -4838,11 +4838,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/branches", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
+      // SINGLE BRANCH RESTRICTION: Check if a branch already exists
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const existingBranches = await BranchModel.find({ tenantId });
+      
+      if (existingBranches.length >= 1) {
+        return res.status(400).json({ 
+          error: "لا يمكن إضافة أكثر من فرع واحد. النظام مقيد بفرع واحد فقط.",
+          errorEn: "Cannot add more than one branch. System is limited to a single branch only."
+        });
+      }
+
       const { insertBranchSchema, BranchModel } = await import("@shared/schema");
       const { managerAssignment, ...branchData } = req.body;
       
       // Force cafeId and tenantId for safety
-      const tenantId = req.employee?.tenantId || 'demo-tenant';
       const cafeId = branchData.cafeId || tenantId;
       
       const id = branchData.id || nanoid();
