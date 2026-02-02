@@ -49,3 +49,7 @@ coverage/
 .env
 .env.*
 *.log
+-e 
+# Environment files
+*.env
+*.env.*
