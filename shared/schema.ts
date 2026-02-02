@@ -1136,6 +1136,45 @@ const CategorySchema = new Schema<ICategory>({
 
 export const CategoryModel = mongoose.model<ICategory>("Category", CategorySchema);
 
+// Kitchen Department Model - أقسام المطابخ
+export interface IKitchenDepartment extends Document {
+  id: string;
+  tenantId: string;
+  branchId?: string;
+  nameAr: string;
+  nameEn?: string;
+  description?: string;
+  type: 'drinks' | 'food' | 'desserts' | 'other';
+  isActive: number;
+  assignedEmployees?: string[];
+  categories?: string[]; // List of category IDs this kitchen handles
+  sortOrder?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const KitchenDepartmentSchema = new Schema<IKitchenDepartment>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String },
+  description: { type: String },
+  type: { type: String, enum: ['drinks', 'food', 'desserts', 'other'], default: 'other' },
+  isActive: { type: Number, default: 1 },
+  assignedEmployees: [{ type: String }],
+  categories: [{ type: String }],
+  sortOrder: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+KitchenDepartmentSchema.index({ tenantId: 1 });
+KitchenDepartmentSchema.index({ branchId: 1 });
+KitchenDepartmentSchema.index({ type: 1 });
+
+export const KitchenDepartmentModel = mongoose.model<IKitchenDepartment>("KitchenDepartment", KitchenDepartmentSchema);
+
 export interface IUser extends Document {
   username: string;
   password: string;
