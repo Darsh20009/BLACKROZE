@@ -224,6 +224,7 @@ function AppRouter() {
  <Route path="/employee/table-orders"><AuthGuard userType="employee"><CashierTableOrders /></AuthGuard></Route>
  <Route path="/employee/orders"><AuthGuard userType="employee"><EmployeeOrders /></AuthGuard></Route>
  <Route path="/employee/orders-display"><AuthGuard userType="employee"><EmployeeOrdersDisplay /></AuthGuard></Route>
+ <Route path="/employee/orders-display-enhanced"><AuthGuard userType="employee"><OrdersDisplayEnhanced /></AuthGuard></Route>
  <Route path="/employee/loyalty"><AuthGuard userType="employee"><EmployeeLoyalty /></AuthGuard></Route>
  <Route path="/employee/menu-management"><AuthGuard userType="employee" allowedRoles={["manager", "admin"]}><EmployeeMenuManagement /></AuthGuard></Route>
  <Route path="/employee/ingredients"><AuthGuard userType="employee" allowedRoles={["manager", "admin"]}><EmployeeIngredientsManagement /></AuthGuard></Route>
