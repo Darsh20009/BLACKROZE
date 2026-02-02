@@ -4171,6 +4171,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Loyalty rewards/tiers information
+  app.get("/api/loyalty/rewards", async (req, res) => {
+    try {
+      const rewards = [
+        {
+          tier: 'bronze',
+          nameAr: 'برونزي',
+          nameEn: 'Bronze',
+          requiredSpending: 0,
+          requiredPoints: 0,
+          benefits: [
+            'استرجاع نقدي 5%',
+            'قهوة عيد ميلاد مجانية',
+            'وصول مبكر للمنتجات الجديدة'
+          ]
+        },
+        {
+          tier: 'silver',
+          nameAr: 'فضي',
+          nameEn: 'Silver',
+          requiredSpending: 500,
+          requiredPoints: 100,
+          benefits: [
+            'استرجاع نقدي 7.5%',
+            'قهوة عيد ميلاد مجانية + حلوى',
+            'ترقية مجانية للحجم',
+            'دعوات للفعاليات الخاصة'
+          ]
+        },
+        {
+          tier: 'gold',
+          nameAr: 'ذهبي',
+          nameEn: 'Gold',
+          requiredSpending: 1500,
+          requiredPoints: 300,
+          benefits: [
+            'استرجاع نقدي 10%',
+            'وجبة عيد ميلاد كاملة مجانية',
+            'ترقية مجانية للحجم',
+            'أولوية الطلب',
+            'عروض حصرية شهرية'
+          ]
+        },
+        {
+          tier: 'platinum',
+          nameAr: 'بلاتيني',
+          nameEn: 'Platinum',
+          requiredSpending: 3000,
+          requiredPoints: 600,
+          benefits: [
+            'استرجاع نقدي 15%',
+            'حفلة عيد ميلاد كاملة',
+            'توصيل مجاني دائماً',
+            'وصول مبكر لجميع المنتجات',
+            'جلسات تذوق حصرية',
+            'خط خدمة VIP'
+          ]
+        }
+      ];
+      res.json(rewards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch loyalty rewards" });
+    }
+  });
+    }
+  });
+
   // LOYALTY CARD ROUTES
 
   // Get loyalty cards by customer ID (phone)
