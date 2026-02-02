@@ -676,6 +676,17 @@ export default function ManagerDashboard() {
     return Number((((currentRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1));
   })();
 
+  // Dashboard Arabic translations fallback
+  const dashboardTranslations: Record<string, string> = {
+    "manager.dashboard": "لوحة تحكم المدير",
+    "manager.welcome": "مرحباً",
+    "common.logout": "تسجيل الخروج",
+    "common.back": "رجوع",
+    "manager.export": "تصدير البيانات"
+  };
+
+  const tFallback = (key: string) => dashboardTranslations[key] || key;
+
   return (
     <div className="min-h-screen bg-background p-6" dir="rtl">
       <div className="max-w-7xl mx-auto">
@@ -687,9 +698,9 @@ export default function ManagerDashboard() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-primary">
-                  لوحة تحكم المدير
+                  {tFallback("manager.dashboard")}
                 </h1>
-                <p className="text-muted-foreground text-sm">مرحباً، {manager.fullName}</p>
+                <p className="text-muted-foreground text-sm">{tFallback("manager.welcome")}، {manager.fullName}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
@@ -698,7 +709,7 @@ export default function ManagerDashboard() {
                 onClick={handleLogout}
                 data-testid="button-logout"
               >
-                تسجيل الخروج
+                {tFallback("common.logout")}
               </Button>
               <Button
                 variant="outline"
@@ -706,7 +717,7 @@ export default function ManagerDashboard() {
                 data-testid="button-back"
               >
                 <ArrowLeft className="w-4 h-4 ml-2" />
-                رجوع
+                {tFallback("common.back")}
               </Button>
             </div>
           </div>
