@@ -205,7 +205,7 @@ function AppRouter() {
  <Route path="/cart"><AuthGuard userType="customer"><CartPage /></AuthGuard></Route>
  <Route path="/delivery"><AuthGuard userType="customer"><DeliverySelectionPage /></AuthGuard></Route>
  <Route path="/delivery/map"><AuthGuard userType="customer"><DeliveryMapPage /></AuthGuard></Route>
- <Route path="/checkout"><AuthGuard userType="customer"><CheckoutPage /></AuthGuard></Route>
+ <Route path="/checkout"><CheckoutPage /></Route>
  <Route path="/tracking"><AuthGuard userType="customer"><OrderTrackingPage /></AuthGuard></Route>
  <Route path="/profile"><AuthGuard userType="customer"><CustomerProfile /></AuthGuard></Route>
  
