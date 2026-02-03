@@ -44,6 +44,8 @@ export default function DeliverySelectionPage() {
   const { toast } = useToast();
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
 
+  const isAr = true;
+
   // Translation helpers
   const t = (key: string, options?: any) => {
     const translations: any = {
@@ -77,7 +79,10 @@ export default function DeliverySelectionPage() {
       "product.saved": "تم الحفظ",
       "delivery.booking_success": "تم حجز الطاولة بنجاح",
       "cart.empty_title": "السلة فارغة",
-      "cart.empty_desc": "أضف عناصر للسلة أولاً"
+      "cart.empty_desc": "أضف عناصر للسلة أولاً",
+      "delivery.update": "تحديث",
+      "delivery.within_range": "أنت ضمن نطاق التوصيل ({distance} كم)",
+      "delivery.out_of_range": "أنت خارج نطاق التوصيل ({distance} كم)"
     };
     return translations[key] || key;
   };
@@ -85,9 +90,7 @@ export default function DeliverySelectionPage() {
   // Set SEO metadata
   useEffect(() => {
     document.title = `${t("nav.branch_selection")} - CLUNY CAFE`;
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', t("delivery.subtitle"));
-  }, [t]);
+  }, []);
   const [dineIn, setDineIn] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [locationError, setLocationError] = useState<string>('');

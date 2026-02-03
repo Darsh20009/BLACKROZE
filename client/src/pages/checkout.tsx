@@ -17,21 +17,56 @@ import { customerStorage } from "@/lib/customer-storage";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { CreditCard, FileText, MessageCircle, CheckCircle, Coffee, Clock, Star, User, Gift, Sparkles, Award, Copy, Check, Store, Truck, MapPin, Edit, ShoppingBag, Eye, EyeOff } from "lucide-react";
 import type { PaymentMethodInfo, PaymentMethod, Order } from "@shared/schema";
-import { useTranslation } from "react-i18next";
 
 export default function CheckoutPage() {
-  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { cartItems, clearCart, getTotalPrice, deliveryInfo, getFinalTotal } = useCartStore();
   const { toast } = useToast();
 
-  const isAr = i18n.language === 'ar';
+  const isAr = true;
+
+  const t = (key: string, options?: any) => {
+    const translations: Record<string, string> = {
+      "nav.checkout": "الدفع",
+      "checkout.order_summary": "ملخص الطلب",
+      "checkout.order_failed": "فشل في إنشاء الطلب",
+      "checkout.order_success": "تم إنشاء الطلب بنجاح",
+      "checkout.order_error": "خطأ في إنشاء الطلب",
+      "checkout.discount_applied": "تم تطبيق الخصم بنجاح",
+      "checkout.invalid_discount": "كود خصم غير صحيح",
+      "checkout.select_payment": "الرجاء اختيار طريقة الدفع",
+      "checkout.enter_customer_name": "الرجاء إدخال اسم العميل",
+      "checkout.location_failed": "فشل في تحديد الموقع",
+      "checkout.location_allow": "الرجاء السماح بالوصول للموقع",
+      "checkout.too_far": "الموقع بعيد جداً",
+      "checkout.cash_limit": "الدفع النقدي متاح فقط للمواقع القريبة",
+      "checkout.phone_required": "رقم الهاتف مطلوب بصيغة صحيحة (5xxxxxxxx)",
+      "checkout.email_required": "البريد الإلكتروني مطلوب بصيغة صحيحة",
+      "checkout.password_required": "كلمة المرور مطلوبة (6 أحرف على الأقل)",
+      "checkout.transfer_name_required": "اسم صاحب الحساب المحول مطلوب",
+      "checkout.receipt_required": "إيصال التحويل مطلوب",
+      "checkout.no_free_drinks": "لا توجد مشروبات مجانية متاحة",
+      "checkout.select_payment_remaining": "الرجاء اختيار طريقة دفع للمبلغ المتبقي",
+      "checkout.registration_error": "خطأ في إنشاء الحساب",
+      "checkout.full_name": "الاسم الكامل",
+      "checkout.enter_name": "أدخل اسمك",
+      "checkout.have_discount": "هل لديك كود خصم؟",
+      "checkout.enter_discount": "أدخل الكود هنا",
+      "checkout.remove": "إزالة",
+      "checkout.order_desc": "تم استلام طلبك برقم",
+      "cart.total": "الإجمالي",
+      "cart.continue_shopping": "العودة للقائمة",
+      "currency": "ر.س",
+      "status.in_progress": "قيد التنفيذ",
+      "nav.thank_you": "شكراً لك",
+      "tracking.order_number": "رقم الطلب"
+    };
+    return translations[key] || key;
+  };
 
   useEffect(() => {
     document.title = `${t("nav.checkout")} - CLUNY CAFE`;
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', t("delivery.subtitle"));
-  }, [t]);
+  }, []);
 
  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
  const [secondaryPaymentMethod, setSecondaryPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -409,7 +444,7 @@ export default function CheckoutPage() {
 
  if (showSuccessPage) {
    return (
-     <div className="min-h-screen flex items-center justify-center p-8 bg-[#533d2d]" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+     <div className="min-h-screen flex items-center justify-center p-8 bg-[#533d2d]" dir="rtl">
        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl text-center space-y-6">
          <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
          <h2 className="text-3xl font-bold text-accent">{t("nav.thank_you")}</h2>
@@ -421,7 +456,7 @@ export default function CheckoutPage() {
  }
 
  return (
-   <div className="min-h-screen py-12 bg-[#21302f]" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+   <div className="min-h-screen py-12 bg-[#21302f]" dir="rtl">
      <div className="max-w-6xl mx-auto px-4">
        <h1 className="text-3xl font-bold text-center mb-8">{t("nav.checkout")}</h1>
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -443,7 +478,7 @@ export default function CheckoutPage() {
                     return (
                       <div key={item.id} className="flex justify-between items-center">
                         <div className="flex flex-col">
-                          <span>{i18n.language === 'ar' ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn || item.coffeeItem?.nameAr} × {item.quantity}</span>
+                          <span>{item.coffeeItem?.nameAr || item.coffeeItem?.nameEn} × {item.quantity}</span>
                           {item.selectedSize && (
                             <span className="text-xs text-muted-foreground">({item.selectedSize})</span>
                           )}
