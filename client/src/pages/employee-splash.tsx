@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Zap, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import blackroseLogoStaff from "@assets/blackrose-logo-staff.png";
+import blackroseLogoStaff from "@/assets/images/logo.png";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();

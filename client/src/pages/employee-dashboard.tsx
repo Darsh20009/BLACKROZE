@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import { EmployeeSidebar } from "@/components/employee-sidebar";
 import html2canvas from "html2canvas";
-import blackroseLogoStaff from "@assets/blackrose-logo-staff.png";
+import blackroseLogoStaff from "@/assets/images/logo.png";
 import type { Employee } from "@shared/schema";
 
 interface LeaveRequest {

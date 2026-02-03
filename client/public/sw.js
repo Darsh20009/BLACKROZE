@@ -1,5 +1,5 @@
 const CACHE_VERSION = 'v1';
-const CACHE_NAME = `cluny-cache-${CACHE_VERSION}`;
+const CACHE_NAME = `blackrose-cache-${CACHE_VERSION}`;
 
 const urlsToCache = [
   '/',
@@ -28,7 +28,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames
-          .filter(name => name.startsWith('cluny-cache-') && name !== CACHE_NAME)
+          .filter(name => name.startsWith('blackrose-cache-') && name !== CACHE_NAME)
           .map(name => caches.delete(name))
       );
     })

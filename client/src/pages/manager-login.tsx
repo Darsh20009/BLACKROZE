@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import type { Employee } from "@shared/schema";
-import blackroseLogoStaff from "@assets/blackrose-logo-staff.png";
+import blackroseLogoStaff from "@/assets/images/logo.png";
 
 export default function ManagerLogin() {
   const [, setLocation] = useLocation();

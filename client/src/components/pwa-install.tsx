@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Bell, Info, Share2, PlusSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
-import blackroseLogo from "@assets/blackrose-logo-customer.png";
+import blackroseLogo from "@/assets/images/logo.png";
 import { useTranslation } from "react-i18next";
 
 export function PWAInstallButton() {

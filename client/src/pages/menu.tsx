@@ -8,7 +8,7 @@ import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
 import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search, QrCode, ChevronLeft, ChevronRight, MapPin, Clock, Utensils } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import blackroseLogo from "@assets/blackrose-logo-customer.png";
+import blackroseLogo from "@/assets/images/logo.png";
 import bannerImage1 from "@assets/banner-coffee-1.png";
 import bannerImage2 from "@assets/banner-coffee-2.png";
 import type { CoffeeItem, IProductAddon, IPromoOffer } from "@shared/schema";

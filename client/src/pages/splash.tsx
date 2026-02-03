@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import blackroseLogo from "@/assets/blackrose-logo.png";
+import blackroseLogo from "@/assets/images/logo.png";
 import ButtonPourAnimation from "@/components/button-pour-animation";
 import { ChevronLeft } from "lucide-react";
 

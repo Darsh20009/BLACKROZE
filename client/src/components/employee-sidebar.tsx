@@ -2,7 +2,7 @@ import { useLocation } from 'wouter';
 import { LayoutDashboard, ShoppingCart, ClipboardList, Settings, LogOut, User, BarChart3, Warehouse, Wallet, ChefHat, Table, Eye, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Employee } from '@shared/schema';
-import blackroseLogoStaff from "@assets/blackrose-logo-staff.png";
+import blackroseLogoStaff from "@/assets/images/logo.png";
 
 interface EmployeeSidebarProps {
   employee: Employee | null;

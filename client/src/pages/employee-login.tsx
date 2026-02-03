@@ -8,7 +8,7 @@ import { User, Lock, Loader2, Eye, EyeOff, QrCode, Download } from "lucide-react
 import { apiRequest } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import blackroseLogoStaff from "@assets/blackrose-logo-staff.png";
+import blackroseLogoStaff from "@/assets/images/logo.png";
 
 export default function EmployeeLogin() {
   const [, setLocation] = useLocation();

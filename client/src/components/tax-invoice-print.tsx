@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
-import blackroseLogo from "@assets/blackrose-logo-customer.png";
+import blackroseLogo from "@/assets/images/logo.png";
 
 interface OrderItem {
   coffeeItem: {
