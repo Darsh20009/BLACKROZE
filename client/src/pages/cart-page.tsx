@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/cart-store";
 import { getCoffeeImage } from "@/lib/coffee-data-clean";
 import { ArrowRight, ShoppingCart, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CartPage() {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCartStore();
