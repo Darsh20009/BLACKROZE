@@ -676,12 +676,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/payment-methods", async (req, res) => {
     try {
       const methods = [
-        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', autoConfirm: true },
-        { id: 'network', nameAr: 'شبكة', nameEn: 'Network', details: 'الدفع عبر الشبكة', icon: 'fas fa-credit-card', autoConfirm: true },
-        { id: 'qahwa-card', nameAr: 'بطاقة كوبي', nameEn: 'Copy Card', details: 'استخدم المشروبات المجانية من بطاقتك', icon: 'fas fa-gift', autoConfirm: true },
-        { id: 'newleap', nameAr: 'نيو ليب', nameEn: 'New Leap', details: 'الدفع عبر نيو ليب', icon: 'fas fa-mobile-alt', autoConfirm: false },
-        { id: 'neoleap', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد عبر NeoLeap', icon: 'fas fa-credit-card', autoConfirm: false },
-        { id: 'neoleap-apple-pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fas fa-mobile-alt', autoConfirm: false },
+        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', autoConfirm: false },
+        { id: 'card', nameAr: 'بطاقة كلوني', nameEn: 'Klony Card', details: 'الدفع عبر بطاقة كلوني', icon: 'fas fa-credit-card', autoConfirm: true },
+        { id: 'mada', nameAr: 'مدى', nameEn: 'Mada', details: 'الدفع عبر مدى', icon: 'fas fa-credit-card', autoConfirm: true },
+        { id: 'apple_pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fab fa-apple-pay', autoConfirm: true },
       ];
       res.json(methods);
     } catch (error) {
@@ -3975,17 +3973,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all orders (branch-filtered for non-admin/owner roles)
   app.get("/api/orders", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { limit, offset } = req.query;
+      const { limit, offset, branchId: queryBranchId } = req.query;
       const limitNum = limit ? parseInt(limit as string) : undefined;
       const offsetNum = offset ? parseInt(offset as string) : undefined;
 
       const allOrders = await storage.getOrders(limitNum, offsetNum);
 
-      // Admin and owner see all orders, others see only their branch
-      const orders = filterByBranch(allOrders, req.employee as any);
+      // Filter by branch
+      const branchId = queryBranchId || req.employee?.branchId;
+      const orders = branchId ? allOrders.filter(o => o.branchId === branchId) : allOrders;
 
       const coffeeItems = await storage.getCoffeeItems();
 
@@ -4847,7 +4845,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/branches", async (req, res) => {
     try {
       const { BranchModel } = await import("@shared/schema");
-      const tenantId = (req as any).employee?.tenantId || 'demo-tenant';
+      const tenantId = (req as any).employee?.tenantId || 'black-rose-tenant';
       const userRole = (req as any).employee?.role;
       const userBranchId = (req as any).employee?.branchId;
 
@@ -4869,7 +4867,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         _id: b._id?.toString()
       }));
       
-      res.json(serialized);
+      // Enforce single branch system
+      res.json(serialized.slice(0, 1));
     } catch (error) {
       console.error("Error fetching branches:", error);
       res.status(500).json({ error: "Failed to fetch branches" });

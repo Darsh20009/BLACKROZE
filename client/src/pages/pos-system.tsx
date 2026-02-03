@@ -1232,6 +1232,7 @@ export default function POSSystem() {
       },
       customerId: customerId || undefined,
       employeeId: employee?.id,
+      tenantId: (employee as any)?.tenantId || 'black-rose-tenant',
       branchId: employee.branchId,
       orderType: (tableId || tableNumber) ? 'dine-in' : orderType,
       tableNumber: tableNumber || undefined,
