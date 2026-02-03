@@ -669,13 +669,13 @@ export default function ManagerEmployees() {
         <div className="text-center text-accent py-12">جاري تحميل الموظفين...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(employees || []).map((employee) => (
+          {(displayEmployees || []).map((employee: Employee) => (
             <Card
               key={employee.id}
-              className="bg-gradient-to-br from-background to-background border-primary/20 overflow-hidden hover-elevate"
+              className="bg-[#2d1f1a]/80 backdrop-blur-sm border-primary/20 overflow-hidden group hover:border-primary/50 transition-all duration-300"
               data-testid={`card-employee-${employee.id}`}
             >
- <CardHeader className="bg-gradient-to-r from-amber-500/20 to-amber-700/20">
+              <CardHeader className="bg-gradient-to-r from-amber-500/20 to-amber-700/20">
  <div className="flex items-center justify-between">
  <CardTitle className="text-accent flex items-center gap-2">
  {employee.imageUrl ? (
