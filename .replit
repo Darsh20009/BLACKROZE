@@ -46,10 +46,10 @@ build = ["npm", "run", "build"]
 [userenv]
 
 [userenv.shared]
-MONGODB_URI = "mongodb+srv://Vercel-Admin-CLUNY-CAFE:TOTY20009a@cluny-cafe.idvtc04.mongodb.net/?appName=CLUNY-CAFE"
+MONGODB_URI = "mongodb+srv://Vercel-Admin-blackrose:ASDQWE%40123@blackrose.xkn1stn.mongodb.net/blackrose?retryWrites=true&w=majority&appName=blackrose"
 SMTP_HOST = "pro.eu.turbo-smtp.com"
 SMTP_PORT = "587"
-NOTIFICATION_EMAIL = "noreply@cluny.cafe"
+NOTIFICATION_EMAIL = "noreply@blackrose.com.sa"
 SMTP_USER = "e09353b5db3d94e88d62"
 SMTP_PASS = "IPXW9ucbR1DHOQtzGikh"
-SMTP_FROM = "cluny@ma3k.online"
+SMTP_FROM = "blackrose@ma3k.online"

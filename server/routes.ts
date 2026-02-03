@@ -269,7 +269,7 @@ function generateInvoiceHTML(invoiceNumber: string, data: any): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>CLUNY CAFE</h1>
+          <h1>BLACK ROSE</h1>
           <p>فاتورة ضريبية</p>
         </div>
         
@@ -1354,7 +1354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!customerId) {
           return res.status(400).json({ 
             valid: false,
-            error: "يجب تسجيل الدخول لاستخدام خصم بطاقة كلوني"
+            error: "يجب تسجيل الدخول لاستخدام خصم بطاقة بلاك روز"
           });
         }
         

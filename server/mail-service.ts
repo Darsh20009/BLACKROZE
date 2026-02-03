@@ -97,7 +97,7 @@ export async function sendOrderNotificationEmail(
       return false;
     }
 
-    const senderEmail = process.env.SMTP_FROM || "cluny@qirox.online";
+    const senderEmail = process.env.SMTP_FROM || "blackrose@ma3k.online";
     
     const statusAr =
       orderStatus === "completed"
@@ -133,8 +133,8 @@ export async function sendOrderNotificationEmail(
         'X-Priority': '3',
         'X-MSMail-Priority': 'Normal',
         'Importance': 'Normal',
-        'X-Mailer': 'CLUNY CAFE',
-        'List-Unsubscribe': '<mailto:noreply@cluny.cafe>'
+        'X-Mailer': 'BLACK ROSE',
+        'List-Unsubscribe': '<mailto:noreply@blackrose.com.sa>'
       },
       text: `مرحباً ${customerName}
       
@@ -152,7 +152,7 @@ ${
   "جاري معالجة طلبك."
 }
 
-CLUNY CAFE
+BLACK ROSE
 تجربة القهوة الفاخرة`,
       html: `
         <html dir="rtl" lang="ar">
@@ -181,8 +181,8 @@ CLUNY CAFE
           <div class="wrapper">
             <div class="container">
               <div class="header">
-                <h1>CLUNY CAFE</h1>
-                <p class="tagline">تجربة القهوة الفاخرة</p>
+                <h1>BLACK ROSE</h1>
+                <p class="tagline">بلاك روز - تجربة القهوة الفاخرة</p>
               </div>
               
               <div class="content">
@@ -216,7 +216,7 @@ CLUNY CAFE
               </div>
               
               <div class="footer">
-                <p>© 2025 CLUNY CAFE - جميع الحقوق محفوظة</p>
+                <p>© 2025 BLACK ROSE - جميع الحقوق محفوظة</p>
                 <p>هذا البريد مرسل تلقائياً. يرجى عدم الرد.</p>
               </div>
             </div>
@@ -248,7 +248,7 @@ export async function sendReferralEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
+      from: `"BLACK ROSE" <${process.env.SMTP_FROM || "blackrose@ma3k.online"}>`,
       to: customerEmail,
       subject: "انضم إلى برنامج الإحالات الخاص بنا",
       html: `
@@ -286,7 +286,7 @@ export async function sendLoyaltyPointsEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
+      from: `"BLACK ROSE" <${process.env.SMTP_FROM || "blackrose@ma3k.online"}>`,
       to: customerEmail,
       subject: "لقد حصلت على نقاط جديدة!",
       html: `
@@ -322,7 +322,7 @@ export async function sendPromotionEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
+      from: `"BLACK ROSE" <${process.env.SMTP_FROM || "blackrose@ma3k.online"}>`,
       to: customerEmail,
       subject: promotionTitle,
       html: `
@@ -362,7 +362,7 @@ export async function sendReservationConfirmationEmail(
   }
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "cluny@qirox.online";
+    const senderEmail = process.env.SMTP_FROM || "blackrose@ma3k.online";
     const formattedDate = new Date(reservationDate).toLocaleDateString('ar');
     await transporter.sendMail({
       from: senderEmail,
@@ -371,7 +371,7 @@ export async function sendReservationConfirmationEmail(
       html: `
         <div style="font-family: Arial, sans-serif; direction: rtl; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #8B5A2B;">مرحباً ${customerName}</h2>
-          <p>تم تأكيد حجزك في CLUNY CAFE!</p>
+          <p>تم تأكيد حجزك في BLACK ROSE!</p>
           
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 5px solid #8B5A2B;">
             <p><strong>رقم الطاولة:</strong> ${tableNumber}</p>
@@ -386,7 +386,7 @@ export async function sendReservationConfirmationEmail(
           </p>
 
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-          <p style="font-size: 12px; color: #999;">شكراً لاختيارك CLUNY CAFE!</p>
+          <p style="font-size: 12px; color: #999;">شكراً لاختيارك BLACK ROSE!</p>
         </div>
       `,
     });
@@ -409,7 +409,7 @@ export async function sendReservationExpiryWarningEmail(
   if (!transporter) return false;
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "cluny@qirox.online";
+    const senderEmail = process.env.SMTP_FROM || "blackrose@ma3k.online";
     const expiryTimeFormatted = new Date(expiryTime).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
     await transporter.sendMail({
       from: senderEmail,
@@ -447,13 +447,13 @@ export async function sendWelcomeEmail(customerEmail: string, customerName: stri
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
+      from: `"BLACK ROSE" <${process.env.SMTP_FROM || "blackrose@ma3k.online"}>`,
       to: customerEmail,
-      subject: "أهلاً بك في CLUNY CAFE! ☕",
+      subject: "أهلاً بك في BLACK ROSE! ☕",
       html: `
         <div style="font-family: Arial, sans-serif; direction: rtl; padding: 20px;">
           <h2 style="color: #8B5A2B;">مرحباً ${customerName}</h2>
-          <p>يسعدنا انضمامك إلينا في عائلة CLUNY CAFE.</p>
+          <p>يسعدنا انضمامك إلينا في عائلة BLACK ROSE.</p>
           <p>يمكنك الآن البدء في طلب قهوتك المفضلة وجمع النقاط مع كل طلب!</p>
           <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
              <p>استخدم تطبيقنا لتجربة أسرع وأسهل.</p>
@@ -475,7 +475,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "cluny@qirox.online"}>`,
+      from: `"BLACK ROSE" <${process.env.SMTP_FROM || "blackrose@ma3k.online"}>`,
       to: customerEmail,
       subject: "نسيت شيئاً في عربتك؟ 🛒",
       html: `
@@ -484,7 +484,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
           <p>لاحظنا أنك تركت بعض الأصناف الرائعة في عربة التسوق الخاصة بك.</p>
           <p>لا تدع قهوتك تبرد! عد الآن وأكمل طلبك قبل نفاد الكمية.</p>
           <div style="margin: 20px 0;">
-            <a href="https://cluny.ma3k.online/checkout" style="background-color: #8B5A2B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">أكمل الطلب الآن</a>
+            <a href="https://BLACKROSE.com.sa/checkout" style="background-color: #8B5A2B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">أكمل الطلب الآن</a>
           </div>
         </div>
       `,

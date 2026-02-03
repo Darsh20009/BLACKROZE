@@ -1,7 +1,7 @@
 {
-  "name": "CLUNY CAFE - كافيه كلوني",
-  "short_name": "CLUNY CAFE",
-  "description": "استمتع بأفضل قهوة محضرة بعناية فائقة من CLUNY CAFE - اطلب الآن واستمتع بتجربة قهوة استثنائية",
+  "name": "BLACK ROSE - بلاك روز",
+  "short_name": "BLACK ROSE",
+  "description": "استمتع بأفضل قهوة محضرة بعناية فائقة من BLACK ROSE - اطلب الآن واستمتع بتجربة قهوة استثنائية",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -43,14 +43,14 @@
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "CLUNY CAFE"
+      "label": "BLACK ROSE"
     },
     {
       "src": "/logo.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "CLUNY CAFE"
+      "label": "BLACK ROSE"
     }
   ]
 }

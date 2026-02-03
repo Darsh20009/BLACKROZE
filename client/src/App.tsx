@@ -134,9 +134,9 @@ const PageLoader = () => {
     <div className="w-full h-screen flex items-center justify-center bg-[#F7F8F8] dark:bg-[#1a1410]">
       <div className="flex flex-col items-center gap-4">
         {isEmployee ? (
-          <img src={clunyLogoStaff} alt="CLUNY SYSTEMS" className="w-16 h-16 object-contain rounded-xl animate-pulse" />
+          <img src={clunyLogoStaff} alt="BLACK ROSE" className="w-16 h-16 object-contain rounded-xl animate-pulse" />
         ) : (
-          <img src={clunyLogoCustomer} alt="CLUNY CAFE" className="w-16 h-16 object-contain rounded-xl animate-pulse" />
+          <img src={clunyLogoCustomer} alt="BLACK ROSE" className="w-16 h-16 object-contain rounded-xl animate-pulse" />
         )}
         <p className="text-[#9FB2B3] font-medium animate-pulse font-ibm-arabic">جاري التحميل...</p>
       </div>
