@@ -2,7 +2,7 @@ import { useLocation } from 'wouter';
 import { LayoutDashboard, ShoppingCart, ClipboardList, Settings, LogOut, User, BarChart3, Warehouse, Wallet, ChefHat, Table, Eye, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Employee } from '@shared/schema';
-import clunyLogoStaff from "@assets/cluny-logo-staff.png";
+import blackroseLogoStaff from "@assets/blackrose-logo-staff.png";
 
 interface EmployeeSidebarProps {
   employee: Employee | null;
@@ -37,7 +37,7 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3 mb-2">
           <img 
-            src={clunyLogoStaff} 
+            src={blackroseLogoStaff} 
             alt="BLACK ROSE SYSTEMS" 
             className="w-10 h-10 object-contain rounded-lg"
           />

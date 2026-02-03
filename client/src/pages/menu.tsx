@@ -8,7 +8,7 @@ import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
 import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search, QrCode, ChevronLeft, ChevronRight, MapPin, Clock, Utensils } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import clunyLogo from "@assets/cluny-logo-customer.png";
+import blackroseLogo from "@assets/blackrose-logo-customer.png";
 import bannerImage1 from "@assets/banner-coffee-1.png";
 import bannerImage2 from "@assets/banner-coffee-2.png";
 import type { CoffeeItem, IProductAddon, IPromoOffer } from "@shared/schema";
@@ -164,7 +164,7 @@ export default function MenuPage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-xl px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <img src={clunyLogo} className="w-10 h-10 rounded-2xl border-2 border-white/30 shadow-lg backdrop-blur-xl bg-[#a7b0b1]/30" alt="Logo" />
+            <img src={blackroseLogo} className="w-10 h-10 rounded-2xl border-2 border-white/30 shadow-lg backdrop-blur-xl bg-[#a7b0b1]/30" alt="Logo" />
           </div>
           <div>
             <h1 className="text-lg font-bold leading-none text-white drop-shadow-md">{t("app.name")}</h1>

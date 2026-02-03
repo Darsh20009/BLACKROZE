@@ -8,7 +8,7 @@ import { User, Lock, Loader2, Eye, EyeOff, QrCode, Download } from "lucide-react
 import { apiRequest } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import clunyLogoStaff from "@assets/cluny-logo-staff.png";
+import blackroseLogoStaff from "@assets/blackrose-logo-staff.png";
 
 export default function EmployeeLogin() {
   const [, setLocation] = useLocation();
@@ -143,7 +143,7 @@ export default function EmployeeLogin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-40 h-28 mb-4">
-            <img src={clunyLogoStaff} alt="BLACK ROSE SYSTEMS" className="w-full h-full object-contain" />
+            <img src={blackroseLogoStaff} alt="BLACK ROSE SYSTEMS" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">BLACK ROSE SYSTEMS</h1>
           <p className="text-muted-foreground font-cairo">تسجيل دخول الموظف</p>

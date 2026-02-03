@@ -998,7 +998,7 @@ export async function printCustomerPickupReceipt(data: TaxInvoiceData & { delive
     <div class="qr-section">
       <p class="qr-title">امسح لتتبع طلبك</p>
       ${qrCodeUrl ? `<div class="qr-container"><img src="${qrCodeUrl}" alt="Order Tracking QR" /></div>` : ''}
-      <p class="qr-note">أو زر الرابط: cluny.com/order/${data.orderNumber}</p>
+      <p class="qr-note">أو زر الرابط: BLACKROSE.com.sa/order/${data.orderNumber}</p>
     </div>
 
     <div class="footer">

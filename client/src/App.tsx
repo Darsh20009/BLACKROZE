@@ -121,8 +121,8 @@ const DriverLogin = lazy(() => import("@/pages/driver-login"));
 const DeliveryTracking = lazy(() => import("@/pages/delivery-tracking"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
 const EmployeeHome = lazy(() => import("@/pages/employee-home"));
-import clunyLogoCustomer from "@/assets/images/logo.png";
-import clunyLogoStaff from "@/assets/images/logo.png";
+import blackroseLogoCustomer from "@/assets/images/logo.png";
+import blackroseLogoStaff from "@/assets/images/logo.png";
 
 const PageLoader = () => {
   const isEmployee = window.location.pathname.startsWith('/employee') || 
@@ -134,9 +134,9 @@ const PageLoader = () => {
     <div className="w-full h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         {isEmployee ? (
-          <img src={clunyLogoStaff} alt="BLACK ROSE" className="w-24 h-24 object-contain animate-pulse" />
+          <img src={blackroseLogoStaff} alt="BLACK ROSE" className="w-24 h-24 object-contain animate-pulse" />
         ) : (
-          <img src={clunyLogoCustomer} alt="BLACK ROSE" className="w-24 h-24 object-contain animate-pulse" />
+          <img src={blackroseLogoCustomer} alt="BLACK ROSE" className="w-24 h-24 object-contain animate-pulse" />
         )}
         <p className="text-muted-foreground font-medium animate-pulse font-ibm-arabic">جاري التحميل...</p>
       </div>

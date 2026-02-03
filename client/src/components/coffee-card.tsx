@@ -78,7 +78,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
             loading="lazy"
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;
-              target.src = "/logo.png";
+              target.src = "@/assets/images/logo.png";
             }}
             data-testid={`img-coffee-${selectedVariant.id}`}
           />

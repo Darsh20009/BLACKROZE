@@ -26,5 +26,5 @@ export const allCategories = [...coffeeCategories, ...foodCategories];
 
 export function getCoffeeImage(coffeeId: string): string {
   // Return BLACK ROSE logo as placeholder for all images
-  return "/attached_assets/cluny_cafe_logo_1767095370460.png";
+  return "/attached_assets/blackrose_cafe_logo_1767095370460.png";
 }

@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
-import clunyLogo from "@assets/cluny-logo-customer.png";
+import blackroseLogo from "@assets/blackrose-logo-customer.png";
 
 interface OrderItem {
   coffeeItem: {
@@ -188,7 +188,7 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
     useEffect(() => {
       const generateTrackingQR = async () => {
         try {
-          const trackingUrl = `https://www.cluny.cafe/tracking?order=${orderNumber}`;
+          const trackingUrl = `https://BLACKROSE.com.sa/tracking?order=${orderNumber}`;
           const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
             width: 200,
             margin: 1,
@@ -214,7 +214,7 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
         <div className="max-w-[80mm] mx-auto bg-white text-black p-3 font-sans" dir="rtl">
           <div className="text-center mb-4 pb-4 border-b-2 border-dashed border-gray-800">
             <div className="w-20 h-20 mx-auto mb-2">
-              <img src={clunyLogo} alt="BLACK ROSE" className="w-full h-full object-contain" />
+              <img src={blackroseLogo} alt="BLACK ROSE" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{COMPANY_NAME}</h1>
             <p className="text-sm text-gray-600 font-medium">{COMPANY_NAME_EN}</p>

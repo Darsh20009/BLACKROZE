@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Zap, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import clunyLogoStaff from "@assets/cluny-logo-staff.png";
+import blackroseLogoStaff from "@assets/blackrose-logo-staff.png";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();
@@ -75,7 +75,7 @@ export default function EmployeeSplash() {
         >
           <div className="relative w-48 h-48 flex items-center justify-center">
             <img
-              src={clunyLogoStaff}
+              src={blackroseLogoStaff}
               alt="BLACK ROSE SYSTEMS - نظام إدارة الموظفين"
               className="w-full h-full object-contain rounded-2xl"
             />

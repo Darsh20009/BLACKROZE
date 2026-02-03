@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import type { Order } from "@shared/schema";
-import logoImage from "../assets/cluny-logo.png";
+import logoImage from "../assets/blackrose-logo.png";
 import { useRef, useState, useEffect } from "react";
 import QRCode from "qrcode";
 
@@ -20,7 +20,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
     const generateTrackingQR = async () => {
       if (!order.orderNumber) return;
       try {
-        const trackingUrl = `https://www.cluny.cafe/tracking?order=${order.orderNumber}`;
+        const trackingUrl = `https://BLACKROSE.com.sa/tracking?order=${order.orderNumber}`;
         const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
           width: 150,
           margin: 1,

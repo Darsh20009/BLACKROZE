@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Coffee, Star, MapPin, ChevronLeft, ChevronRight, LogOut, Sparkles } from "lucide-react";
-import clunyLogo from "/logo.png";
+import blackroseLogo from "@/assets/images/logo.png";
 import bannerImage1 from "/hero-cafe.png";
 import bannerImage2 from "/hero-cafe.png";
 import { useCustomer } from "@/contexts/CustomerContext";
@@ -43,7 +43,7 @@ export default function WelcomePage() {
         <header className="relative z-20 flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xl p-1 border border-white/30">
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+              <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <span className="text-white font-bold text-lg tracking-wide">BLACK ROSE</span>
           </div>
@@ -73,7 +73,7 @@ export default function WelcomePage() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-xl p-2 border border-white/20 shadow-xl bg-[#a7b0b1]/30"
             >
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
+              <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
             </motion.div>
 
             <motion.div
@@ -225,7 +225,7 @@ export default function WelcomePage() {
       {/* Footer */}
       <footer className="py-10 px-6 bg-white border-t border-border">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
-          <img src={clunyLogo} alt="Logo" className="w-12 h-12 mb-4 rounded-2xl" />
+          <img src={blackroseLogo} alt="Logo" className="w-12 h-12 mb-4 rounded-2xl" />
           <p className="text-muted-foreground text-sm">
             © {new Date().getFullYear()} BLACK ROSE. {t("legal.rights")}
           </p>

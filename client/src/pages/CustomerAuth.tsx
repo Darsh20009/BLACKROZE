@@ -171,7 +171,7 @@ export default function CustomerAuth() {
         <CardHeader className="space-y-3 text-center pb-6">
           <div className="flex justify-center">
             <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-accent/50 backdrop-blur-xl border border-white/20 bg-[#a7b0b1]/30">
-              <img src="/logo.png" alt="BLACK ROSE" className="w-full h-full object-cover rounded-2xl" />
+              <img src="@/assets/images/logo.png" alt="BLACK ROSE" className="w-full h-full object-cover rounded-2xl" />
             </div>
           </div>
           <CardTitle className="tracking-tight text-3xl font-bold text-[#a7b0b1]">
