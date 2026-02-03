@@ -554,7 +554,7 @@ export default function EmployeeDashboard() {
                       </div>
 
                       <div className="border-t-2 border-primary/20 pt-6 mt-6 space-y-2 text-right">
-                        <p className="text-primary/90 text-xs"><span className="font-bold">الموقع:</span> cluny.ma3k.online</p>
+                        <p className="text-primary/90 text-xs"><span className="font-bold">الموقع:</span> BLACKROSE.com.sa</p>
                         <p className="text-primary/60 text-xs">جميع الحقوق محفوظة © 2025</p>
                       </div>
                     </div>

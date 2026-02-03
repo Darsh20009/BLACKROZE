@@ -39,17 +39,17 @@
      ═══════════════════════════════════════════════════════════════ */
   
   /* Base Colors - Light Grey & Dark */
-  --background: 0 0% 98%; /* Pure white/light grey */
+  --background: 0 0% 90%; /* Light grey background */
   --foreground: 0 0% 10%; /* Dark text */
-  --border: 0 0% 90%; /* Subtle border */
-  --card: 0 0% 100%; /* Pure white cards */
+  --border: 0 0% 80%; /* Subtle border */
+  --card: 0 0% 95%; /* Slightly lighter cards */
   --card-foreground: 0 0% 10%; 
-  --card-border: 0 0% 95%;
+  --card-border: 0 0% 85%;
 
   /* Sidebar - Dark Theme */
-  --sidebar: 0 0% 10%; /* Dark sidebar */
+  --sidebar: 0 0% 5%; /* Very dark sidebar */
   --sidebar-foreground: 0 0% 95%; 
-  --sidebar-border: 0 0% 15%;
+  --sidebar-border: 0 0% 10%;
   --sidebar-primary: 0 0% 100%;
   --sidebar-primary-foreground: 0 0% 0%;
   --sidebar-accent: 0 0% 15%;
@@ -60,16 +60,16 @@
   --primary: 0 0% 0%; 
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary - Rose Accent */
-  --secondary: 350 20% 95%; 
-  --secondary-foreground: 350 20% 20%;
+  /* Secondary - Neutral Grey */
+  --secondary: 0 0% 85%; 
+  --secondary-foreground: 0 0% 20%;
 
   /* Muted */
   --muted: 0 0% 60%;
   --muted-foreground: 0 0% 45%;
 
   /* Accent */
-  --accent: 350 10% 90%; 
+  --accent: 0 0% 80%; 
   --accent-foreground: 0 0% 0%;
 
   /* Ring */

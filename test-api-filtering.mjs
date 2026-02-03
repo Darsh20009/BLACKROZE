@@ -6,7 +6,7 @@ async function testFiltering() {
   try {
     // Get branches
     console.log('📋 Getting branches...');
-    const branchesRes = await fetch('https://cluny.ma3k.online/api/branches');
+    const branchesRes = await fetch('https://BLACKROSE.com.sa/api/branches');
     const branches = await branchesRes.json();
     
     console.log(`Found ${branches.length} branches:\n`);
@@ -16,7 +16,7 @@ async function testFiltering() {
     for (const branch of branches.slice(0, 3)) {
       console.log(`\n📊 Testing branch: ${branch.nameAr}`);
       
-      const url = `https://cluny.ma3k.online/api/tables?branchId=${branch._id}`;
+      const url = `https://BLACKROSE.com.sa/api/tables?branchId=${branch._id}`;
       const tablesRes = await fetch(url);
       const tables = await tablesRes.json();
       
@@ -33,7 +33,7 @@ async function testFiltering() {
     
     // Test without branchId (should get all)
     console.log('\n📊 Testing without branchId (should get all):');
-    const allRes = await fetch('https://cluny.ma3k.online/api/tables');
+    const allRes = await fetch('https://BLACKROSE.com.sa/api/tables');
     const allTables = await allRes.json();
     console.log(`  ✓ Total tables: ${allTables.length}`);
     

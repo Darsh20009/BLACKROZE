@@ -121,8 +121,8 @@ const DriverLogin = lazy(() => import("@/pages/driver-login"));
 const DeliveryTracking = lazy(() => import("@/pages/delivery-tracking"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
 const EmployeeHome = lazy(() => import("@/pages/employee-home"));
-import clunyLogoCustomer from "/logo.png";
-import clunyLogoStaff from "/logo.png";
+import clunyLogoCustomer from "@/assets/images/logo.png";
+import clunyLogoStaff from "@/assets/images/logo.png";
 
 const PageLoader = () => {
   const isEmployee = window.location.pathname.startsWith('/employee') || 
@@ -131,14 +131,14 @@ const PageLoader = () => {
                      window.location.pathname === '/0';
   
   return (
-    <div className="w-full h-screen flex items-center justify-center bg-[#F7F8F8]">
+    <div className="w-full h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         {isEmployee ? (
-          <img src={clunyLogoStaff} alt="BLACK ROSE" className="w-16 h-16 object-contain rounded-xl animate-pulse" />
+          <img src={clunyLogoStaff} alt="BLACK ROSE" className="w-24 h-24 object-contain animate-pulse" />
         ) : (
-          <img src={clunyLogoCustomer} alt="BLACK ROSE" className="w-16 h-16 object-contain rounded-xl animate-pulse" />
+          <img src={clunyLogoCustomer} alt="BLACK ROSE" className="w-24 h-24 object-contain animate-pulse" />
         )}
-        <p className="text-[#9FB2B3] font-medium animate-pulse font-ibm-arabic">جاري التحميل...</p>
+        <p className="text-muted-foreground font-medium animate-pulse font-ibm-arabic">جاري التحميل...</p>
       </div>
     </div>
   );

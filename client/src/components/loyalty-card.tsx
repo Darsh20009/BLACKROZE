@@ -54,7 +54,7 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
   useEffect(() => {
     if (qrCanvasRef.current && card.qrToken) {
       const qrSize = compact ? 100 : 160;
-      const cardUrl = `https://cluny.ma3k.online/loyalty-verify?token=${card.qrToken}`;
+      const cardUrl = `https://BLACKROSE.com.sa/loyalty-verify?token=${card.qrToken}`;
       QRCode.toCanvas(
         qrCanvasRef.current,
         cardUrl,
@@ -435,7 +435,7 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
             className="gap-2"
             data-testid="button-apple-wallet"
             onClick={() => {
-              const url = `https://cluny.ma3k.online/api/loyalty/cards/${card.id || card._id}/apple-wallet-pass`;
+              const url = `https://BLACKROSE.com.sa/api/loyalty/cards/${card.id || card._id}/apple-wallet-pass`;
               window.open(url, '_blank');
             }}
           >
