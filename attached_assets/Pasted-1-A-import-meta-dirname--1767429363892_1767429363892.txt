@@ -33,7 +33,7 @@ A) بيانات MongoDB متخزنة صريحة داخل الكود
 
 server/index.ts سطر 13:
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://Vercel-Admin-CLUNY-CAFE:...@..."
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://Vercel-Admin-BLACK ROSE-CAFE:...@..."
 
 
 ده تسريب بيانات دخول (حتى لو DB قديمة). لازم يتشال فورًا ويكون ENV فقط.

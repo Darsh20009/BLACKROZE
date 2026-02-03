@@ -7,10 +7,10 @@ My project
 
 Production
 
-CLUNY-CAFE
+BLACK ROSE-CAFE
 
 Web Service
-CLUNY-CAFE
+BLACK ROSE-CAFE
 Node
 Free
 Upgrade your instance
@@ -21,7 +21,7 @@ Manual Deploy
 Service ID:
 srv-d59s7mngi27c73bi0k8g
 
-Darsh20009 / CLUNY-CAFE
+Darsh20009 / BLACK ROSE-CAFE
 main
 
 cluny.qirox.online

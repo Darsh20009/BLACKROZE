@@ -7,10 +7,10 @@ My project
 
 Production
 
-CLUNY-CAFE
+BLACK ROSE-CAFE
 
 Web Service
-CLUNY-CAFE
+BLACK ROSE-CAFE
 Node
 Free
 Upgrade your instance
@@ -21,7 +21,7 @@ Manual Deploy
 Service ID:
 srv-d59s7mngi27c73bi0k8g
 
-Darsh20009 / CLUNY-CAFE
+Darsh20009 / BLACK ROSE-CAFE
 main
 
 cluny.qirox.online
@@ -46,7 +46,7 @@ GMT+3
 
 
 ==> Downloading cache...
-==> Cloning from https://github.com/Darsh20009/CLUNY-CAFE
+==> Cloning from https://github.com/Darsh20009/BLACK ROSE-CAFE
 ==> Checking out commit 393704274579abedc72f464c68d1f7954ad2991c in branch main
 ==> Downloaded 277MB in 3s. Extraction took 8s.
 ==> Using Node.js version 22.16.0 (default)

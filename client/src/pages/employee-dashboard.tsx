@@ -51,9 +51,9 @@ export default function EmployeeDashboard() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = "لوحة تحكم الموظف - CLUNY SYSTEMS | إدارة الطلبات";
+    document.title = "لوحة تحكم الموظف - BLACK ROSE SYSTEMS | إدارة الطلبات";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الموظفين في CLUNY SYSTEMS - تتبع الطلبات والإجازات والإشعارات');
+    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الموظفين في BLACK ROSE SYSTEMS - تتبع الطلبات والإجازات والإشعارات');
   }, []);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
@@ -423,10 +423,10 @@ export default function EmployeeDashboard() {
                     <div className="bg-gradient-to-r from-primary via-primary to-primary/80 p-6 relative">
                       <div className="flex items-center justify-center gap-4 mb-2">
                         <div className="w-20 h-20 flex items-center justify-center shadow-lg rounded-lg">
-                          <img src={clunyLogoStaff} alt="CLUNY SYSTEMS Logo" className="w-full h-full object-contain rounded-lg" />
+                          <img src={clunyLogoStaff} alt="BLACK ROSE SYSTEMS Logo" className="w-full h-full object-contain rounded-lg" />
                         </div>
                         <div className="text-white text-right">
-                          <h3 className="text-2xl font-bold">CLUNY SYSTEMS</h3>
+                          <h3 className="text-2xl font-bold">BLACK ROSE SYSTEMS</h3>
                           <p className="text-white/80 text-xs">Staff Portal</p>
                         </div>
                       </div>

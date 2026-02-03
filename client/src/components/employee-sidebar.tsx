@@ -38,11 +38,11 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
         <div className="flex items-center gap-3 mb-2">
           <img 
             src={clunyLogoStaff} 
-            alt="CLUNY SYSTEMS" 
+            alt="BLACK ROSE SYSTEMS" 
             className="w-10 h-10 object-contain rounded-lg"
           />
           <div>
-            <h2 className="text-lg font-bold text-foreground">CLUNY SYSTEMS</h2>
+            <h2 className="text-lg font-bold text-foreground">BLACK ROSE</h2>
             <p className="text-xs text-muted-foreground">نظام الموظفين</p>
           </div>
         </div>

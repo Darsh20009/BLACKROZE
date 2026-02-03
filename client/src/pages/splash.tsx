@@ -32,7 +32,7 @@ export default function SplashScreen() {
   if (shouldShow === false) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#233230] flex items-center justify-center z-50 overflow-hidden font-ibm-arabic">
+    <div className="fixed inset-0 bg-[#0a0a0a] flex items-center justify-center z-50 overflow-hidden font-ibm-arabic">
       {/* Background Decorative Elements */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white rounded-full blur-[120px]" />
@@ -55,7 +55,7 @@ export default function SplashScreen() {
               transition={{ duration: 1 }}
               className="mb-16"
             >
-              <img src={clunyLogo} alt="CLUNY" className="w-24 h-24 object-contain brightness-0 invert" />
+              <img src={clunyLogo} alt="BLACK ROSE" className="w-24 h-24 object-contain brightness-0 invert" />
             </motion.div>
 
             {/* The Animated Button that fills with coffee */}
@@ -75,7 +75,7 @@ export default function SplashScreen() {
               className="text-center mt-16"
             >
               <h1 className="text-4xl font-playfair tracking-[0.2em] text-white mb-2 font-semibold">
-                CLUNY
+                BLACK ROSE
               </h1>
               <p className="text-white/70 text-sm tracking-[0.3em] uppercase font-medium">
                 Crafting Your Moment

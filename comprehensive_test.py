@@ -168,10 +168,10 @@ def test_homepage():
             
             # فحص المحتوى
             content = response.text
-            if 'CLUNY' in content or 'cluny' in content.lower():
-                log_pass("علامة CLUNY موجودة")
+            if 'BLACK ROSE' in content or 'cluny' in content.lower():
+                log_pass("علامة BLACK ROSE موجودة")
             else:
-                log_issue("Frontend", "LOW", "علامة CLUNY غير واضحة في الصفحة")
+                log_issue("Frontend", "LOW", "علامة BLACK ROSE غير واضحة في الصفحة")
                 
             if 'script' in content.lower():
                 log_pass("JavaScript محمّل")

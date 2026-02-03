@@ -2,7 +2,7 @@
 
 ## Overview
 
-BLACK ROSE is a comprehensive digital management system designed to streamline operations for coffee shops. It caters to both customers through the BLACK ROSE portal and employees via the CLUNY SYSTEMS portal. The system aims to modernize coffee shop management, enhance customer experience, and improve operational efficiency. Key capabilities include integrated ERP accounting, ZATCA-compliant invoicing, robust delivery management, employee shift and geofencing, and a customer loyalty program.
+BLACK ROSE is a comprehensive digital management system designed to streamline operations for coffee shops. It caters to both customers through the BLACK ROSE portal and employees via the BLACK ROSE SYSTEMS portal. The system aims to modernize coffee shop management, enhance customer experience, and improve operational efficiency. Key capabilities include integrated ERP accounting, ZATCA-compliant invoicing, robust delivery management, employee shift and geofencing, and a customer loyalty program.
 
 ## User Preferences
 
@@ -13,7 +13,7 @@ BLACK ROSE is a comprehensive digital management system designed to streamline o
 
 ## System Architecture
 
-### Design System (CLUNY)
+### Design System (BLACK ROSE)
 
 The system employs a modern, clean design inspired by Noon Food, featuring a vibrant teal green primary color (`#2D9B6E`) and ocean blue accent (`#2196F3`) against a pure white background. Typography uses Playfair Display for headings and Inter for body text, with Cairo as a fallback for Arabic.
 
@@ -42,7 +42,7 @@ The system employs a modern, clean design inspired by Noon Food, featuring a vib
 - **Branch Geofencing:** Configurable `geofenceRadius` and `geofenceBoundary` (polygon-based) for precise attendance and location-based management. Includes manager notifications for employee alerts.
 - **Shift Management:** Supports flexible shift scheduling, including overnight shifts, and employee assignment to shifts.
 - **Employee Permissions (RBAC):** Granular, page-level access control using `allowedPages` in employee profiles and a `PageGuard` component.
-- **PWA Configuration:** Dynamic manifest switching between BLACK ROSE (customer) and CLUNY SYSTEMS (employee) based on the route.
+- **PWA Configuration:** Dynamic manifest switching between BLACK ROSE (customer) and BLACK ROSE SYSTEMS (employee) based on the route.
 
 ### Technical Stack
 
@@ -52,7 +52,7 @@ The system employs a modern, clean design inspired by Noon Food, featuring a vib
 
 ## External Dependencies
 
-- **Database:** MongoDB Atlas (CLUNY-CAFE Project)
+- **Database:** MongoDB Atlas (BLACK ROSE-CAFE Project)
 - **Mapping/Geospatial:** `turf.js` for polygon-based geofencing.
 - **Charting:** `recharts` for financial dashboards.
 - **Delivery Platforms (Integrations):** Noon Food, Hunger Station, Keeta, Marsool, Careem.

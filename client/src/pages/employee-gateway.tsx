@@ -33,7 +33,7 @@ export default function EmployeeGateway() {
     <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">CLUNY SYSTEMS</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">BLACK ROSE SYSTEMS</h1>
           <p className="text-muted-foreground font-cairo">بوابة الموظفين</p>
         </div>
 
