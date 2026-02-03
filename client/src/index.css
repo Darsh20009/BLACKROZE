@@ -39,12 +39,12 @@
      ═══════════════════════════════════════════════════════════════ */
   
   /* Base Colors - Light Grey & Dark */
-  --background: 220 10% 97%; /* Lighter grey/white background */
-  --foreground: 220 20% 10%; /* Darker text */
-  --border: 220 10% 90%; /* Subtle border */
+  --background: 220 10% 98%; /* Even lighter background */
+  --foreground: 220 20% 5%; /* Darker text */
+  --border: 220 10% 92%; /* Subtle border */
   --card: 0 0% 100%; /* Pure white cards */
-  --card-foreground: 220 20% 10%; /* Rich dark text */
-  --card-border: 220 10% 95%; /* Subtle border */
+  --card-foreground: 220 20% 5%; /* Rich dark text */
+  --card-border: 220 10% 96%; /* Subtle border */
 
   /* Sidebar - Dark Theme */
   --sidebar: 220 20% 5%; /* Pure dark */
