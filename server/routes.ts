@@ -411,13 +411,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Business Config
   app.get("/api/config", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'black-rose-tenant';
     const config = await storage.getBusinessConfig(tenantId);
     res.json(config || {});
   });
 
   app.patch("/api/config", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'black-rose-tenant';
     const updated = await storage.updateBusinessConfig(tenantId, req.body);
     res.json(updated);
   });
@@ -427,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/settings/order-suspension", async (req, res) => {
     try {
-      const tenantId = (req as any).employee?.tenantId || 'demo-tenant';
+      const tenantId = (req as any).employee?.tenantId || 'black-rose-tenant';
       const branchId = (req as any).query?.branchId || (req as any).employee?.branchId;
       
       const status = orderSuspensionStore[tenantId] || { suspended: false };
@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/settings/order-suspension", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
-      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const tenantId = req.employee?.tenantId || 'black-rose-tenant';
       const { suspended, reason } = req.body;
       
       orderSuspensionStore[tenantId] = {
@@ -480,13 +480,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Ingredient Management
   app.get("/api/ingredients", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'black-rose-tenant';
     const ingredients = await storage.getIngredientItems(tenantId);
     res.json(ingredients);
   });
 
   app.post("/api/ingredients", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'black-rose-tenant';
     const newItem = await storage.createIngredientItem({ ...req.body, tenantId });
     res.json(newItem);
   });
@@ -3139,7 +3139,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finalCustomerName = req.body.customerName || customerInfo?.customerName || req.body.customerPhone || "عميل";
 
       // Determine branch ID from request body or employee session
-      const finalBranchId = branchId || req.employee?.branchId;
+      let finalBranchId = branchId || req.employee?.branchId;
+
+      // FIX: If no branchId is provided (e.g. guest customer) and there's only one branch, use it
+      if (!finalBranchId) {
+        try {
+          const branches = await storage.getAllBranches();
+          if (branches.length > 0) {
+            finalBranchId = branches[0].id;
+            console.log(`[ORDER] Auto-assigned order to branch: ${finalBranchId}`);
+          }
+        } catch (e) {
+          console.error("[ORDER] Error auto-assigning branch:", e);
+        }
+      }
 
       if (!finalCustomerName) {
         console.error("Missing customer name in request. customerInfo:", JSON.stringify(customerInfo), "req.body:", JSON.stringify(req.body));

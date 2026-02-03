@@ -389,6 +389,7 @@ export class DBStorage implements IStorage {
   private async initializeDatabase() {
     try {
       await this.initializeDemoEmployee();
+      await this.initializeDefaultBranch();
     } catch (error) {
       console.error("Error initializing database:", error);
     }
@@ -399,22 +400,39 @@ export class DBStorage implements IStorage {
   }
 
   private async initializeDemoEmployee() {
-    const existing = await EmployeeModel.findOne({ username: 'manager' });
+    const existing = await EmployeeModel.findOne({ username: 'admin' });
     if (existing) return;
 
-    const hashedPassword = bcrypt.hashSync('2030', 10);
+    const hashedPassword = bcrypt.hashSync('admin', 10);
     await EmployeeModel.create({
-      id: "manager-demo",
-      username: 'manager',
+      id: "admin-id",
+      username: 'admin',
       password: hashedPassword,
-      fullName: 'المدير',
-      role: 'manager',
-      title: 'مدير المقهى',
-      phone: '500000000',
-      jobTitle: 'مدير',
+      fullName: 'مدير النظام',
+      role: 'admin',
+      title: 'مدير النظام',
+      phone: '999999999',
+      jobTitle: 'Admin',
       isActivated: 1,
-      employmentNumber: 'EMP-001',
-      tenantId: 'demo-tenant'
+      employmentNumber: 'ADM-001',
+      tenantId: 'black-rose-tenant'
+    });
+  }
+
+  private async initializeDefaultBranch() {
+    const existing = await BranchModel.findOne({ tenantId: 'black-rose-tenant' });
+    if (existing) return;
+
+    await BranchModel.create({
+      id: "main-branch",
+      tenantId: "black-rose-tenant",
+      cafeId: "black-rose-cafe",
+      nameAr: "فرع بلاك روز الرئيسي",
+      address: "الرياض، المملكة العربية السعودية",
+      phone: "0500000000",
+      workingHours: { open: "08:00", close: "23:00" },
+      isMainBranch: true,
+      isActive: true
     });
   }
 
@@ -1547,7 +1565,7 @@ export class DBStorage implements IStorage {
   }
 
   async createBranch(branch: Partial<IBranch>): Promise<IBranch> {
-    const tenantId = branch.tenantId || 'demo-tenant';
+    const tenantId = branch.tenantId || 'black-rose-tenant';
     const existing = await BranchModel.findOne({ tenantId });
     if (existing) {
       throw new Error("لا يمكن إضافة أكثر من فرع واحد.");

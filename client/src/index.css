@@ -38,23 +38,23 @@
      Light Grey Background with Dark Accents
      ═══════════════════════════════════════════════════════════════ */
   
-  /* Base Colors - Light Grey & Dark */
-  --background: 0 0% 90%; /* Light grey background */
+  /* Base Colors - Clean White & Dark */
+  --background: 0 0% 100%; /* Pure white background */
   --foreground: 0 0% 10%; /* Dark text */
-  --border: 0 0% 80%; /* Subtle border */
-  --card: 0 0% 95%; /* Slightly lighter cards */
+  --border: 0 0% 90%; /* Subtle border */
+  --card: 0 0% 98%; /* Slightly grey cards */
   --card-foreground: 0 0% 10%; 
-  --card-border: 0 0% 85%;
+  --card-border: 0 0% 92%;
 
-  /* Sidebar - Dark Theme */
-  --sidebar: 0 0% 5%; /* Very dark sidebar */
-  --sidebar-foreground: 0 0% 95%; 
-  --sidebar-border: 0 0% 10%;
-  --sidebar-primary: 0 0% 100%;
-  --sidebar-primary-foreground: 0 0% 0%;
-  --sidebar-accent: 0 0% 15%;
-  --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 0 0% 100%;
+  /* Sidebar - Light/Glass Theme */
+  --sidebar: 0 0% 98%; 
+  --sidebar-foreground: 0 0% 10%; 
+  --sidebar-border: 0 0% 90%;
+  --sidebar-primary: 0 0% 0%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 94%;
+  --sidebar-accent-foreground: 0 0% 0%;
+  --sidebar-ring: 0 0% 20%;
 
   /* Primary - Black */
   --primary: 0 0% 0%; 
