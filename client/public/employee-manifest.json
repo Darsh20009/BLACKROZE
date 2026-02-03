@@ -1,12 +1,11 @@
-{
-  "name": "CLUNY SYSTEMS",
-  "short_name": "CLUNY SYSTEMS",
-  "description": "نظام إدارة الموظفين والعمليات والطلبات في كافيه CLUNY",
+  "name": "BLACK ROSE SYSTEMS",
+  "short_name": "BLACK ROSE SYSTEMS",
+  "description": "نظام إدارة الموظفين والعمليات والطلبات في بلاك روز",
   "start_url": "/employee/home",
   "scope": "/employee",
   "display": "standalone",
   "background_color": "#F7F8F8",
-  "theme_color": "#9FB2B3",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "lang": "ar",
   "dir": "rtl",
@@ -50,14 +49,14 @@
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "CLUNY SYSTEMS"
+      "label": "BLACK ROSE SYSTEMS"
     },
     {
       "src": "/employee-logo.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "CLUNY SYSTEMS"
+      "label": "BLACK ROSE SYSTEMS"
     }
   ]
 }

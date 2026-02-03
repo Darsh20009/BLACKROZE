@@ -85,7 +85,7 @@ export function TableQRCard({ tableNumber, qrToken, branchName, tableUrl }: Tabl
       ctx.fillStyle = "#8B6F47";
       ctx.font = "bold 72px 'Segoe UI', Cairo, Arial, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("CLUNY CAFE", width / 2, 240);
+      ctx.fillText("BLACK ROSE", width / 2, 240);
 
       // Elegant separator line
       ctx.strokeStyle = "#A0826D";
@@ -205,7 +205,7 @@ export function TableQRCard({ tableNumber, qrToken, branchName, tableUrl }: Tabl
           ctx.fillStyle = "#A0826D";
           ctx.font = "16px 'Segoe UI', Arial, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("Powered by CLUNY CAFE", width / 2, 1170);
+          ctx.fillText("Powered by BLACK ROSE", width / 2, 1170);
         };
         qrImage.src = qrCodeDataUrl;
       } catch (error) {

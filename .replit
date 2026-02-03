@@ -46,7 +46,7 @@ build = ["npm", "run", "build"]
 [userenv]
 
 [userenv.shared]
-MONGODB_URI = "mongodb+srv://Vercel-Admin-blackrose:ASDQWE%40123@blackrose.xkn1stn.mongodb.net/blackrose?retryWrites=true&w=majority&appName=blackrose"
+MONGODB_URI = "mongodb+srv://Vercel-Admin-blackrose:ASDQWE@123@blackrose.xkn1stn.mongodb.net/?appName=blackrose"
 SMTP_HOST = "pro.eu.turbo-smtp.com"
 SMTP_PORT = "587"
 NOTIFICATION_EMAIL = "noreply@blackrose.com.sa"
