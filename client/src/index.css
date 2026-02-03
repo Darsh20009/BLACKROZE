@@ -39,59 +39,41 @@
      ═══════════════════════════════════════════════════════════════ */
   
   /* Base Colors - Light Grey & Dark */
-  --background: 220 10% 98%; /* Even lighter background */
-  --foreground: 220 20% 5%; /* Darker text */
-  --border: 220 10% 92%; /* Subtle border */
+  --background: 0 0% 98%; /* Pure white/light grey */
+  --foreground: 0 0% 10%; /* Dark text */
+  --border: 0 0% 90%; /* Subtle border */
   --card: 0 0% 100%; /* Pure white cards */
-  --card-foreground: 220 20% 5%; /* Rich dark text */
-  --card-border: 220 10% 96%; /* Subtle border */
+  --card-foreground: 0 0% 10%; 
+  --card-border: 0 0% 95%;
 
   /* Sidebar - Dark Theme */
-  --sidebar: 220 20% 5%; /* Pure dark */
-  --sidebar-foreground: 0 0% 98%; /* Light text */
-  --sidebar-border: 220 15% 10%; /* Subtle border */
-  --sidebar-primary: 0 0% 100%; /* White primary */
-  --sidebar-primary-foreground: 0 0% 0%; /* Black text */
-  --sidebar-accent: 220 15% 12%; /* Elevated dark */
-  --sidebar-accent-foreground: 0 0% 100%; /* Light text */
-  --sidebar-ring: 0 0% 100%; /* White ring */
-
-  /* Popover */
-  --popover: 0 0% 100%; /* Pure white */
-  --popover-foreground: 220 20% 10%; /* Text */
-  --popover-border: 220 10% 90%; /* Subtle border */
+  --sidebar: 0 0% 10%; /* Dark sidebar */
+  --sidebar-foreground: 0 0% 95%; 
+  --sidebar-border: 0 0% 15%;
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-primary-foreground: 0 0% 0%;
+  --sidebar-accent: 0 0% 15%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 0 0% 100%;
 
   /* Primary - Black */
-  --primary: 0 0% 0%; /* #000000 Black */
-  --primary-foreground: 0 0% 100%; /* White text */
+  --primary: 0 0% 0%; 
+  --primary-foreground: 0 0% 100%;
 
-  /* Secondary - Light Gray */
-  --secondary: 220 15% 94%; /* Light background */
-  --secondary-foreground: 220 20% 20%; /* Text */
+  /* Secondary - Rose Accent */
+  --secondary: 350 20% 95%; 
+  --secondary-foreground: 350 20% 20%;
 
-  /* Muted - Gray */
-  --muted: 220 10% 60%; /* Professional muted */
-  --muted-foreground: 220 15% 50%; /* Gray text */
+  /* Muted */
+  --muted: 0 0% 60%;
+  --muted-foreground: 0 0% 45%;
 
-  /* Accent - Neutral Gray */
-  --accent: 220 10% 90%; /* Light gray accent */
-  --accent-foreground: 0 0% 0%; /* Dark text */
+  /* Accent */
+  --accent: 350 10% 90%; 
+  --accent-foreground: 0 0% 0%;
 
-  /* Destructive - Premium Red */
-  --destructive: 0 75% 55%; /* Elegant red */
-  --destructive-foreground: 0 0% 100%; /* White text */
-
-  /* Success - Emerald Green */
-  --success: 160 70% 40%; /* Elegant emerald */
-  --success-foreground: 0 0% 100%; /* White text */
-
-  /* Warning - Amber */
-  --warning: 38 95% 55%; /* Rich amber */
-  --warning-foreground: 38 100% 15%; /* Dark text */
-
-  /* Input & Focus */
-  --input: 220 15% 97%; /* Light gray input */
-  --ring: 160 55% 42%; /* Green focus ring */
+  /* Ring */
+  --ring: 0 0% 20%;
 
   /* Charts - Premium Palette */
   --chart-1: 160 55% 42%; /* Teal Green */
@@ -157,7 +139,7 @@
   --elevate-2: rgba(255,255,255, .09);
 
   /* ═══════════════════════════════════════════════════════════════
-     🌙 CLUNY CAFE DARK MODE - Modern Night Theme
+     🌙 BLACK ROSE DARK MODE - Modern Night Theme
      ═══════════════════════════════════════════════════════════════ */
   
   --background: 220 25% 10%; /* Deep navy */

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-اختبار شامل لنظام CLUNY CAFE
+اختبار شامل لنظام BLACK ROSE
 يختبر جميع الميزات والصفحات والـ APIs
 """
 
@@ -244,7 +244,7 @@ def generate_report():
 
 def main():
     """تشغيل جميع الاختبارات"""
-    print("🚀 بدء الاختبار الشامل لنظام CLUNY CAFE")
+    print("🚀 بدء الاختبار الشامل لنظام BLACK ROSE")
     print("="*60)
     
     # اختبار الواجهة الأمامية

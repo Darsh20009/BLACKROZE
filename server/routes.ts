@@ -306,8 +306,8 @@ function generateInvoiceHTML(invoiceNumber: string, data: any): string {
         </div>
 
         <div class="footer">
-          <p>شكراً لتعاملك معنا | تم إصدار هذه الفاتورة من نظام CLUNY CAFE</p>
-          <p>© 2025 CLUNY CAFE - جميع الحقوق محفوظة</p>
+          <p>شكراً لتعاملك معنا | تم إصدار هذه الفاتورة من نظام BLACK ROSE</p>
+          <p>© 2025 BLACK ROSE - جميع الحقوق محفوظة</p>
         </div>
       </div>
     </body>
@@ -3324,7 +3324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const { sendOrderNotificationEmail } = await import("./mail-service");
             const emailSent = await sendOrderNotificationEmail(
               customerEmail,
-              customerName || 'عميل CLUNY CAFE',
+              customerName || 'عميل BLACK ROSE',
               order.orderNumber,
               "pending",
               parseFloat(order.totalAmount.toString())
@@ -4142,7 +4142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const { sendOrderNotificationEmail } = await import("./mail-service");
               const emailSent = await sendOrderNotificationEmail(
                 customerEmail,
-                customerName || 'عميل CLUNY CAFE',
+                customerName || 'عميل BLACK ROSE',
                 updatedOrder.orderNumber,
                 status,
                 parseFloat(updatedOrder.totalAmount.toString()),
@@ -5833,7 +5833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tableUrl,
         tableNumber: table.tableNumber,
         qrToken: table.qrToken,
-        branchName: branch?.nameAr || 'CLUNY CAFE'
+        branchName: branch?.nameAr || 'BLACK ROSE'
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate QR code" });
@@ -6682,7 +6682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const { sendOrderNotificationEmail } = await import("./mail-service");
               await sendOrderNotificationEmail(
                 customerEmail,
-                updateCustomerInfo?.name || 'عميل CLUNY CAFE',
+                updateCustomerInfo?.name || 'عميل BLACK ROSE',
                 updatedOrder.orderNumber,
                 status,
                 parseFloat(updatedOrder.totalAmount.toString()),
@@ -10835,7 +10835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lines: req.body.lines,
         notes: req.body.notes,
         issuedBy,
-        sellerName: req.body.sellerName || "CLUNY CAFE",
+        sellerName: req.body.sellerName || "BLACK ROSE",
         sellerVatNumber: req.body.sellerVatNumber || "311234567890003",
       });
       res.json({ success: true, invoice: serializeDoc(invoice) });

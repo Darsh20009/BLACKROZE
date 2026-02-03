@@ -265,10 +265,10 @@ export default function CopyCard() {
     ctx.fillStyle = '#4a3728';
     ctx.font = 'bold 48px Cairo, Arial';
     ctx.textAlign = 'right';
-    ctx.fillText('CLUNY CAFE', canvas.width - 50, 70);
+    ctx.fillText('BLACK ROSE', canvas.width - 50, 70);
     ctx.font = '24px Georgia, serif';
     ctx.fillStyle = '#6b4f3c';
-    ctx.fillText('CLUNY CAFE Loyalty', canvas.width - 50, 105);
+    ctx.fillText('BLACK ROSE Loyalty', canvas.width - 50, 105);
     
     const tierColor: Record<string, string> = { bronze: '#cd7f32', silver: '#c0c0c0', gold: '#ffd700', platinum: '#e5e4e2' };
     ctx.fillStyle = tierColor[tier] || tierColor.bronze;
@@ -430,7 +430,7 @@ export default function CopyCard() {
                           <Coffee className="w-4 h-4 md:w-5 md:h-5 text-white" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-base md:text-lg font-black tracking-tighter text-blue-100 leading-none">CLUNY CAFE</span>
+                          <span className="text-base md:text-lg font-black tracking-tighter text-blue-100 leading-none">BLACK ROSE</span>
                           <span className="text-[6px] md:text-[7px] uppercase tracking-[0.3em] text-blue-300/90 font-bold">LOYALTY PREMIUM</span>
                         </div>
                       </div>

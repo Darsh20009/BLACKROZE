@@ -2,9 +2,9 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Coffee, Star, MapPin, ChevronLeft, ChevronRight, LogOut, Sparkles } from "lucide-react";
-import clunyLogo from "@/assets/cluny-logo.png";
-import bannerImage1 from "@assets/banner-coffee-1.png";
-import bannerImage2 from "@assets/banner-coffee-2.png";
+import clunyLogo from "/logo.png";
+import bannerImage1 from "/hero-cafe.png";
+import bannerImage2 from "/hero-cafe.png";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useTranslation } from "react-i18next";
 
@@ -227,7 +227,7 @@ export default function WelcomePage() {
         <div className="max-w-4xl mx-auto flex flex-col items-center">
           <img src={clunyLogo} alt="Logo" className="w-12 h-12 mb-4 rounded-2xl" />
           <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} CLUNY CAFE. {t("legal.rights")}
+            © {new Date().getFullYear()} BLACK ROSE. {t("legal.rights")}
           </p>
         </div>
       </footer>

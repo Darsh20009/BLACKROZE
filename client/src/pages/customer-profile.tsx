@@ -91,7 +91,7 @@ export default function CustomerProfilePage() {
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <Coffee className="w-6 h-6" />
-              CLUNY CAFE
+              BLACK ROSE
             </h1>
           </div>
           <Button
@@ -259,7 +259,7 @@ export default function CustomerProfilePage() {
 
                 {/* Brand Name Bottom */}
                 <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
-                  <p className="text-[10px] text-white/70 font-bold tracking-[0.3em]">CLUNY CAFE</p>
+                  <p className="text-[10px] text-white/70 font-bold tracking-[0.3em]">BLACK ROSE</p>
                 </div>
 
                 {/* Shine Effect */}

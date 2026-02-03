@@ -169,7 +169,7 @@ export async function printEmployeeCard(data: EmployeePrintData): Promise<void> 
 <body>
   <div class="card">
     <div class="header">
-      <div class="company-name">CLUNY CAFE</div>
+      <div class="company-name">BLACK ROSE</div>
       <div class="employee-title">بطاقة تعريف الموظف</div>
     </div>
     <div class="employee-name">${data.employeeName}</div>
@@ -243,8 +243,8 @@ export async function printKitchenOrder(data: KitchenOrderData): Promise<void> {
 
 const TAX_RATE = 0.15;
 const VAT_NUMBER = "311234567890003";
-const COMPANY_NAME = "CLUNY CAFE";
-const COMPANY_NAME_EN = "CLUNY CAFE";
+const COMPANY_NAME = "BLACK ROSE";
+const COMPANY_NAME_EN = "BLACK ROSE";
 const COMPANY_CR = "1010XXXXXX";
 const DEFAULT_BRANCH = "الفرع الرئيسي";
 const DEFAULT_ADDRESS = "الرياض، المملكة العربية السعودية";
@@ -881,7 +881,7 @@ export async function printTaxInvoice(data: TaxInvoiceData): Promise<void> {
       
       <div class="footer-social">
         <p>تابعونا على وسائل التواصل الاجتماعي</p>
-        <p class="handle">@CLUNY CAFE</p>
+        <p class="handle">@BLACK ROSE</p>
       </div>
       
       <div class="footer-generated">
@@ -1004,7 +1004,7 @@ export async function printCustomerPickupReceipt(data: TaxInvoiceData & { delive
     <div class="footer">
       <p style="font-weight: 600;">شكراً لزيارتكم</p>
       <p>نتمنى لكم تجربة ممتعة</p>
-      <p style="margin-top: 8px;">@CLUNY CAFE</p>
+      <p style="margin-top: 8px;">@BLACK ROSE</p>
     </div>
   </div>
 </body>
@@ -1286,7 +1286,7 @@ export async function printSimpleReceipt(data: TaxInvoiceData): Promise<void> {
       <p>شكراً لزيارتكم</p>
       <p style="font-size: 12px; color: #666;">نتمنى لكم تجربة ممتعة</p>
       <p style="margin-top: 12px; font-size: 12px;">تابعونا على وسائل التواصل الاجتماعي</p>
-      <p style="font-family: monospace;">@CLUNY CAFE</p>
+      <p style="font-family: monospace;">@BLACK ROSE</p>
     </div>
   </div>
 

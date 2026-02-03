@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CLUNY CAFE System Backend API Testing
+BLACK ROSE System Backend API Testing
 Testing all 12 features mentioned in the review request
 """
 
@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 import time
 
-class ClunyBackendTester:
+class Black RoseBackendTester:
     def __init__(self, base_url="http://localhost:5000"):
         self.base_url = base_url
         self.session = requests.Session()
@@ -226,7 +226,7 @@ class ClunyBackendTester:
         
     def run_all_tests(self):
         """Run all backend tests"""
-        self.log("🚀 Starting CLUNY CAFE Backend API Tests...")
+        self.log("🚀 Starting BLACK ROSE Backend API Tests...")
         self.log(f"🎯 Target URL: {self.base_url}")
         
         # Basic connectivity
@@ -290,7 +290,7 @@ def main():
             response = requests.get(f"{url}/health", timeout=5)
             if response.status_code == 200:
                 print(f"✅ Backend found at {url}")
-                tester = ClunyBackendTester(url)
+                tester = Black RoseBackendTester(url)
                 break
         except:
             continue

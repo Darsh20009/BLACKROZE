@@ -1,5 +1,5 @@
 # PHASE 1 — Recipe Intelligence Engine (FINAL STATUS)
-## CLUNY CAFE Engine - Complete Assessment
+## BLACK ROSE Engine - Complete Assessment
 
 **Date:** December 29, 2025
 **Mode:** Fast Mode - COMPLETED (Exceeded 3-turn limit)

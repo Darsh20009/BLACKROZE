@@ -113,7 +113,7 @@ export default function EnhancedTableBarcodes() {
           ctx.fillStyle = '#FFFFFF';
           ctx.font = 'bold 48px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText('CLUNY CAFE', canvas.width / 2, 70);
+          ctx.fillText('BLACK ROSE', canvas.width / 2, 70);
           
           ctx.font = '32px Arial';
           ctx.fillText('امسح للطلب', canvas.width / 2, 120);
@@ -146,7 +146,7 @@ export default function EnhancedTableBarcodes() {
           ctx.fillStyle = '#92400E';
           ctx.font = 'bold 44px serif';
           ctx.textAlign = 'center';
-          ctx.fillText('CLUNY CAFE', canvas.width / 2, 80);
+          ctx.fillText('BLACK ROSE', canvas.width / 2, 80);
 
           // Decorative line
           ctx.beginPath();
@@ -174,7 +174,7 @@ export default function EnhancedTableBarcodes() {
           ctx.fillStyle = '#000000';
           ctx.font = 'bold 36px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText('CLUNY CAFE', canvas.width / 2, 60);
+          ctx.fillText('BLACK ROSE', canvas.width / 2, 60);
 
           // Simple table number
           ctx.font = '32px Arial';

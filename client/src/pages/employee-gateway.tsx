@@ -13,9 +13,9 @@ export default function EmployeeGateway() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = "بوابة الموظفين - CLUNY CAFE | نظام الإدارة";
+    document.title = "بوابة الموظفين - BLACK ROSE | نظام الإدارة";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'بوابة دخول الموظفين لنظام إدارة CLUNY CAFE - نظام متكامل لإدارة الطلبات والمبيعات');
+    if (metaDesc) metaDesc.setAttribute('content', 'بوابة دخول الموظفين لنظام إدارة BLACK ROSE - نظام متكامل لإدارة الطلبات والمبيعات');
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {

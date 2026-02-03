@@ -434,5 +434,5 @@ Use the system now with the 19 basic tests, add more tests as needed.
 ---
 
 *Generated December 28, 2025*  
-*Café Operating System (CLUNY CAFE Engine)*  
+*Café Operating System (BLACK ROSE Engine)*  
 *Production Ready Version*

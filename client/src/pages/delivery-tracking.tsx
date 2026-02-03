@@ -59,7 +59,7 @@ export default function DeliveryTracking() {
   const orderId = params?.orderId;
 
   useEffect(() => {
-    document.title = "تتبع التوصيل - CLUNY CAFE";
+    document.title = "تتبع التوصيل - BLACK ROSE";
   }, []);
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -288,7 +288,7 @@ export default function DeliveryTracking() {
             <CardContent className="pt-6 text-center">
               <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
               <h3 className="text-xl font-bold text-green-600 mb-2">تم التوصيل بنجاح!</h3>
-              <p className="text-muted-foreground mb-4">شكراً لطلبك من CLUNY CAFE</p>
+              <p className="text-muted-foreground mb-4">شكراً لطلبك من BLACK ROSE</p>
               <Link href="/menu">
                 <Button className="w-full">
                   طلب جديد

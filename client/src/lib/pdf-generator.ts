@@ -70,7 +70,7 @@ export const generatePDF = async (
  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 4px solid #D4AF37; padding-bottom: 25px; background: linear-gradient(135deg, #FFF8DC, #FFFBEB); border-radius: 15px 15px 0 0; padding: 25px 20px;">
  <div style="flex: 1; text-align: center;">
  <h1 style="font-family: 'Amiri', serif; font-size: 42px; color: #B8860B; margin: 0; font-weight: bold; text-shadow: 2px 2px 4px rgba(184, 134, 11, 0.2);">
-  CLUNY CAFE 
+  BLACK ROSE 
  </h1>
  <p style="color: #8B6F47; font-size: 18px; margin: 12px 0 8px 0; font-weight: 600;"> تجربة قهوة استثنائية </p>
  <p style="color: #666; font-size: 16px; margin: 8px 0 0 0; font-style: italic; font-weight: 500;">
@@ -166,7 +166,7 @@ export const generatePDF = async (
   "لكل لحظة قهوة ، لحظة نجاح" 
  </p>
  <p style="margin: 0; font-size: 13px; text-align: center; color: #666; font-weight: 600;">
- <span style="font-weight: bold;"> رمز الاستجابة السريع:</span> يحتوي على رابط موقع CLUNY CAFE
+ <span style="font-weight: bold;"> رمز الاستجابة السريع:</span> يحتوي على رابط موقع BLACK ROSE
  </p>
  <p style="margin: 8px 0 0 0; font-size: 12px; text-align: center; color: #8B6F47;">
  امسح الرمز للوصول إلى <span style="font-weight: bold; color: #D4AF37;">cluny.ma3k.online</span> وطلب المزيد من منتجاتنا اللذيذة 
@@ -175,7 +175,7 @@ export const generatePDF = async (
 
  <!-- Creative Footer -->
  <div style="text-align: center; margin-top: 35px; padding: 25px; border-top: 4px solid #D4AF37; background: linear-gradient(135deg, #FFF8DC, #FFFBEB); border-radius: 0 0 15px 15px; color: #8B6F47;">
- <p style="margin: 0; font-size: 20px; font-weight: bold; color: #B8860B;"> شكراً لاختياركم CLUNY CAFE </p>
+ <p style="margin: 0; font-size: 20px; font-weight: bold; color: #B8860B;"> شكراً لاختياركم BLACK ROSE </p>
  <p style="margin: 8px 0; font-size: 16px; font-style: italic; color: #8B6F47;"> "لكل لحظة قهوة ، لحظة نجاح" </p>
  <p style="margin: 15px 0 5px 0; font-size: 13px; color: #666; font-weight: 500;">
   تم إنشاء فاتورة الاستلام هذه إلكترونياً
@@ -237,7 +237,7 @@ export const generatePDF = async (
  const lineHeight = 7;
  
  // Header
- pdf.text('CLUNY CAFE - Coffee Invoice', 105, yPosition, { align: 'center' });
+ pdf.text('BLACK ROSE - Coffee Invoice', 105, yPosition, { align: 'center' });
  yPosition += lineHeight * 2;
  
  // Order details

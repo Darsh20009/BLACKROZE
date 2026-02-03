@@ -5,7 +5,7 @@
 
 ## 📊 EXECUTIVE SUMMARY
 
-**Project**: Café Operating System (CLUNY CAFE Engine)  
+**Project**: Café Operating System (BLACK ROSE Engine)  
 **Duration**: 1 day (December 27-28, 2025)  
 **Mode**: Fast mode (10 turns)  
 **Status**: ✅ ALL BUSINESS LOGIC COMPLETE + API ROUTES ADDED

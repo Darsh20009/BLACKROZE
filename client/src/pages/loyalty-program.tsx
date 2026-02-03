@@ -136,7 +136,7 @@ const mockRewards: Reward[] = [
   { id: "1", name: "مشروب مجاني", description: "أي مشروب بالحجم المتوسط", pointsCost: 150, type: "free_item", value: 0, isActive: true, redemptions: 234 },
   { id: "2", name: "خصم 20%", description: "خصم على الطلب التالي", pointsCost: 200, type: "discount", value: 20, isActive: true, redemptions: 156 },
   { id: "3", name: "ترقية الحجم", description: "ترقية مجانية للحجم الأكبر", pointsCost: 50, type: "upgrade", value: 0, isActive: true, redemptions: 389 },
-  { id: "4", name: "كوب حصري", description: "كوب CLUNY CAFE الخاص", pointsCost: 500, type: "exclusive", value: 0, isActive: true, redemptions: 45 },
+  { id: "4", name: "كوب حصري", description: "كوب BLACK ROSE الخاص", pointsCost: 500, type: "exclusive", value: 0, isActive: true, redemptions: 45 },
   { id: "5", name: "خصم 50%", description: "خصم نصف السعر على طلبك", pointsCost: 400, type: "discount", value: 50, isActive: true, redemptions: 89 },
 ];
 

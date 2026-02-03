@@ -189,7 +189,7 @@ app.use(
     secret: process.env.SESSION_SECRET || "dev-secret",
     resave: false,
     saveUninitialized: false, 
-    name: 'cluny.sid', // custom cookie name
+    name: 'blackrose.sid', // custom cookie name
     store: new SessionStore({
       checkPeriod: 86400000, // prune expired entries every 24h
     }),

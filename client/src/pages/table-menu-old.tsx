@@ -272,7 +272,7 @@ export default function TableMenu() {
       <div className="sticky top-0 z-50 bg-background border-b p-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">CLUNY CAFE</h1>
+            <h1 className="text-2xl font-bold">BLACK ROSE</h1>
             <p className="text-sm text-muted-foreground">
               طاولة {table.tableNumber}
             </p>

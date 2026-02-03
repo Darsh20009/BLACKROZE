@@ -32,8 +32,8 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, ReceiptProps>(
  <div ref={ref} className="hidden print:block">
  <div className="max-w-[80mm] mx-auto bg-white text-black p-4" dir="rtl">
  <div className="text-center mb-4 border-b-2 border-dashed border-gray-400 pb-4">
- <h1 className="text-2xl font-bold mb-1">CLUNY CAFE</h1>
- <p className="text-sm">CLUNY CAFE</p>
+ <h1 className="text-2xl font-bold mb-1">BLACK ROSE</h1>
+ <p className="text-sm">BLACK ROSE</p>
  <p className="text-xs mt-2">فاتورة مبيعات</p>
  </div>
 
@@ -117,7 +117,7 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, ReceiptProps>(
  <p>شكراً لزيارتكم</p>
  <p>نتمنى لكم تجربة ممتعة </p>
  <p className="mt-3">تابعونا على وسائل التواصل الاجتماعي</p>
- <p className="font-mono">@CLUNY CAFE</p>
+ <p className="font-mono">@BLACK ROSE</p>
  </div>
  </div>
 

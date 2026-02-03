@@ -1,5 +1,5 @@
 {
-  "summary": "Completed comprehensive testing of CLUNY CAFE system - Backend APIs working well (72.2% success), but new feature pages have runtime errors preventing full functionality testing",
+  "summary": "Completed comprehensive testing of BLACK ROSE system - Backend APIs working well (72.2% success), but new feature pages have runtime errors preventing full functionality testing",
   
   "backend_issues": {
     "critical_bugs": [

@@ -22,9 +22,9 @@ export default function MyOrders() {
 
  // Set SEO metadata
  useEffect(() => {
-   document.title = "طلباتي - CLUNY CAFE | متابعة الطلبات والحالة";
+   document.title = "طلباتي - BLACK ROSE | متابعة الطلبات والحالة";
    const metaDesc = document.querySelector('meta[name="description"]');
-   if (metaDesc) metaDesc.setAttribute('content', 'متابع طلباتك السابقة والحالية في CLUNY CAFE - تتبع آني للحالة والتوصيل');
+   if (metaDesc) metaDesc.setAttribute('content', 'متابع طلباتك السابقة والحالية في BLACK ROSE - تتبع آني للحالة والتوصيل');
  }, []);
 
  const { data: orders = [], isLoading, refetch } = useQuery<OrderDisplay[]>({

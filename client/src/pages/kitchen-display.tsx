@@ -36,9 +36,9 @@ import { Link } from "wouter";
 
 // Set global SEO metadata on mount
 if (typeof document !== 'undefined') {
-  document.title = "شاشة المطبخ - CLUNY CAFE | إدارة الطلبات";
+  document.title = "شاشة المطبخ - BLACK ROSE | إدارة الطلبات";
   const metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc) metaDesc.setAttribute('content', 'شاشة المطبخ لـ CLUNY CAFE - إدارة سهلة وسريعة للطلبات المدخلة');
+  if (metaDesc) metaDesc.setAttribute('content', 'شاشة المطبخ لـ BLACK ROSE - إدارة سهلة وسريعة للطلبات المدخلة');
 }
 
 interface OrderItem {

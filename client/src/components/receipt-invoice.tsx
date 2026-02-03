@@ -107,7 +107,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
             <img src={logoImage} alt="Logo" className="h-20 w-20" />
           </div>
           <h1 className="text-3xl font-bold text-primary mb-2">فاتورة استلام</h1>
-          <p className="text-gray-600 text-lg">متجر CLUNY CAFE</p>
+          <p className="text-gray-600 text-lg">متجر BLACK ROSE</p>
         </div>
 
         {/* Order Info */}

@@ -1,5 +1,5 @@
 # PHASE 1 — Recipe Intelligence Engine (PARTIAL IMPLEMENTATION)
-## CLUNY CAFE Engine - Turn 3 of Fast Mode
+## BLACK ROSE Engine - Turn 3 of Fast Mode
 
 **Status:** ✅ PARTIAL COMPLETE (Schema + Foundations)
 **Date:** December 29, 2025

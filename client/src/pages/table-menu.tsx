@@ -413,7 +413,7 @@ export default function TableMenuNew() {
               <Coffee className="w-6 h-6 sm:w-8 sm:h-8 text-slate-600" />
               <div>
                 <h1 className="font-amiri text-lg sm:text-2xl font-bold text-slate-700">
-                  CLUNY CAFE
+                  BLACK ROSE
                 </h1>
                 <p className="text-xs text-slate-500">طاولة {table.tableNumber}</p>
               </div>
@@ -566,7 +566,7 @@ export default function TableMenuNew() {
           <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-in fade-in-0 slide-in-from-bottom-10 duration-1000">
             <div className="relative inline-block mb-4 sm:mb-6">
               <h2 className="font-amiri text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-700 mb-2 sm:mb-4">
-                منيو CLUNY CAFE
+                منيو BLACK ROSE
               </h2>
               <div className="absolute -bottom-1 sm:-bottom-2 left-1/2 transform -translate-x-1/2 w-16 sm:w-20 md:w-24 h-0.5 sm:h-1 bg-slate-300 rounded-full"></div>
             </div>

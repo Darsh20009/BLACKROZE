@@ -1,5 +1,5 @@
 # PHASE 2 — Smart Inventory Core (IMPLEMENTATION START)
-## CLUNY CAFE Engine - December 29, 2025
+## BLACK ROSE Engine - December 29, 2025
 
 **Status:** ✅ PARTIAL START (35% - Schema + Routes)
 

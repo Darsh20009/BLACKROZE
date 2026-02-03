@@ -37,8 +37,8 @@ interface TaxInvoiceProps {
 
 const TAX_RATE = 0.15;
 const VAT_NUMBER = "311234567890003";
-const COMPANY_NAME = "CLUNY CAFE";
-const COMPANY_NAME_EN = "CLUNY CAFE";
+const COMPANY_NAME = "BLACK ROSE";
+const COMPANY_NAME_EN = "BLACK ROSE";
 const COMPANY_CR = "1010XXXXXX";
 const DEFAULT_BRANCH = "الفرع الرئيسي";
 const DEFAULT_ADDRESS = "الرياض، المملكة العربية السعودية";
@@ -214,7 +214,7 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
         <div className="max-w-[80mm] mx-auto bg-white text-black p-3 font-sans" dir="rtl">
           <div className="text-center mb-4 pb-4 border-b-2 border-dashed border-gray-800">
             <div className="w-20 h-20 mx-auto mb-2">
-              <img src={clunyLogo} alt="CLUNY CAFE" className="w-full h-full object-contain" />
+              <img src={clunyLogo} alt="BLACK ROSE" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{COMPANY_NAME}</h1>
             <p className="text-sm text-gray-600 font-medium">{COMPANY_NAME_EN}</p>
@@ -436,7 +436,7 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
             
             <div className="text-xs text-gray-500">
               <p>تابعونا على وسائل التواصل الاجتماعي</p>
-              <p className="font-mono font-bold text-amber-700">@CLUNY CAFE</p>
+              <p className="font-mono font-bold text-amber-700">@BLACK ROSE</p>
             </div>
             
             <div className="mt-3 pt-2 border-t border-gray-300 text-[9px] text-gray-400">

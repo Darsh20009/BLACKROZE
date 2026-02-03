@@ -19,7 +19,7 @@ export default function AdminSettings() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [settings, setSettings] = useState({
-    companyName: 'CLUNY CAFE',
+    companyName: 'BLACK ROSE',
     businessEmail: 'info@qahwakup.com',
     businessPhone: '+966501234567',
     theme: 'auto',

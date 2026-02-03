@@ -1,7 +1,7 @@
 {
-  "name": "cluny-cafe",
+  "name": "black-rose",
   "version": "2.0.0",
-  "description": "CLUNY CAFE - نظام إدارة المقاهي الرقمي الشامل | CLUNY SYSTEMS - Employee Portal",
+  "description": "BLACK ROSE - Premium Cafe Management System",
   "type": "module",
   "license": "MIT",
   "scripts": {

@@ -64,7 +64,7 @@ export default function SystemGuide() {
               <BookOpen className="w-10 h-10" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold">دليل نظام CLUNY CAFE الشامل</h1>
+              <h1 className="text-4xl font-bold">دليل نظام BLACK ROSE الشامل</h1>
               <p className="text-blue-200 mt-2 text-lg">كل ما تحتاج معرفته عن النظام - من الألف إلى الياء</p>
             </div>
           </div>
@@ -134,12 +134,12 @@ export default function SystemGuide() {
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
                 <CardTitle className="text-2xl flex items-center gap-2">
                   <Info className="w-6 h-6 text-blue-600" />
-                  ما هو نظام CLUNY CAFE؟
+                  ما هو نظام BLACK ROSE؟
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 <p className="text-lg leading-relaxed">
-                  نظام CLUNY CAFE هو نظام إدارة مقاهي شامل ومتكامل يجمع بين إدارة الطلبات، المخزون، المحاسبة، 
+                  نظام BLACK ROSE هو نظام إدارة مقاهي شامل ومتكامل يجمع بين إدارة الطلبات، المخزون، المحاسبة، 
                   وبرنامج الولاء في منصة واحدة سهلة الاستخدام. تم تصميمه خصيصاً لتسهيل عمل المقاهي وتحسين تجربة العملاء.
                 </p>
 

@@ -1,8 +1,8 @@
-# CLUNY CAFE – Digital Coffee Shop Management System
+# BLACK ROSE – Digital Coffee Shop Management System
 
 ## Overview
 
-CLUNY CAFE is a comprehensive digital management system designed to streamline operations for coffee shops. It caters to both customers through the CLUNY CAFE portal and employees via the CLUNY SYSTEMS portal. The system aims to modernize coffee shop management, enhance customer experience, and improve operational efficiency. Key capabilities include integrated ERP accounting, ZATCA-compliant invoicing, robust delivery management, employee shift and geofencing, and a customer loyalty program.
+BLACK ROSE is a comprehensive digital management system designed to streamline operations for coffee shops. It caters to both customers through the BLACK ROSE portal and employees via the CLUNY SYSTEMS portal. The system aims to modernize coffee shop management, enhance customer experience, and improve operational efficiency. Key capabilities include integrated ERP accounting, ZATCA-compliant invoicing, robust delivery management, employee shift and geofencing, and a customer loyalty program.
 
 ## User Preferences
 
@@ -42,7 +42,7 @@ The system employs a modern, clean design inspired by Noon Food, featuring a vib
 - **Branch Geofencing:** Configurable `geofenceRadius` and `geofenceBoundary` (polygon-based) for precise attendance and location-based management. Includes manager notifications for employee alerts.
 - **Shift Management:** Supports flexible shift scheduling, including overnight shifts, and employee assignment to shifts.
 - **Employee Permissions (RBAC):** Granular, page-level access control using `allowedPages` in employee profiles and a `PageGuard` component.
-- **PWA Configuration:** Dynamic manifest switching between CLUNY CAFE (customer) and CLUNY SYSTEMS (employee) based on the route.
+- **PWA Configuration:** Dynamic manifest switching between BLACK ROSE (customer) and CLUNY SYSTEMS (employee) based on the route.
 
 ### Technical Stack
 

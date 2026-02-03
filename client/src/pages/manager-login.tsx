@@ -65,7 +65,7 @@ export default function ManagerLogin() {
           <div className="inline-flex items-center justify-center w-40 h-28 mb-4">
             <img src={clunyLogoStaff} alt="CLUNY SYSTEMS" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold font-playfair text-foreground mb-2">CLUNY CAFE</h1>
+          <h1 className="text-3xl font-bold font-playfair text-foreground mb-2">BLACK ROSE</h1>
           <p className="text-muted-foreground font-cairo">تسجيل دخول المدير</p>
         </div>
 

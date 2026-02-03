@@ -89,7 +89,7 @@ export default function DeliverySelectionPage() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = `${t("nav.branch_selection")} - CLUNY CAFE`;
+    document.title = `${t("nav.branch_selection")} - BLACK ROSE`;
   }, []);
   const [dineIn, setDineIn] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);

@@ -121,8 +121,8 @@ const DriverLogin = lazy(() => import("@/pages/driver-login"));
 const DeliveryTracking = lazy(() => import("@/pages/delivery-tracking"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
 const EmployeeHome = lazy(() => import("@/pages/employee-home"));
-import clunyLogoCustomer from "@assets/cluny-logo-customer.png";
-import clunyLogoStaff from "@assets/cluny-logo-staff.png";
+import clunyLogoCustomer from "/logo.png";
+import clunyLogoStaff from "/logo.png";
 
 const PageLoader = () => {
   const isEmployee = window.location.pathname.startsWith('/employee') || 
@@ -131,7 +131,7 @@ const PageLoader = () => {
                      window.location.pathname === '/0';
   
   return (
-    <div className="w-full h-screen flex items-center justify-center bg-[#F7F8F8] dark:bg-[#1a1410]">
+    <div className="w-full h-screen flex items-center justify-center bg-[#F7F8F8]">
       <div className="flex flex-col items-center gap-4">
         {isEmployee ? (
           <img src={clunyLogoStaff} alt="BLACK ROSE" className="w-16 h-16 object-contain rounded-xl animate-pulse" />

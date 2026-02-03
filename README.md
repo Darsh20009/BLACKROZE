@@ -1,4 +1,4 @@
-# ☕ Café Operating System (CLUNY CAFE Engine)
+# ☕ Café Operating System (BLACK ROSE Engine)
 
 **Status**: 80% Complete - All core business logic implemented with 14 REST API routes  
 **Mode**: Fast Mode (Completed in 10 turns)  

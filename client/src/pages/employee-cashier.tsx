@@ -51,7 +51,7 @@ ${data.items.map(item => `• ${item.coffeeItem.nameAr} × ${item.quantity} - ${
 
 سنبلغك عند اكتمال طلبك. شكراً لتعاملك معنا!
 
-CLUNY CAFE
+BLACK ROSE
 `.trim();
 
  const phoneNumber = data.phone.replace(/[^0-9]/g, '');

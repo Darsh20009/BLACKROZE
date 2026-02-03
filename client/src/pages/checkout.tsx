@@ -65,7 +65,7 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    document.title = `${t("nav.checkout")} - CLUNY CAFE`;
+    document.title = `${t("nav.checkout")} - BLACK ROSE`;
   }, []);
 
  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);

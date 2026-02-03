@@ -82,7 +82,7 @@ export function CustomerLayout({
             <div className="text-sm font-bold text-primary">{t("legal.vat")}</div>
           </div>
           <div className="text-[10px] text-muted-foreground/60 text-center">
-            &copy; {new Date().getFullYear()} CLUNY CAFE. {t("legal.rights")}
+            &copy; {new Date().getFullYear()} BLACK ROSE. {t("legal.rights")}
           </div>
         </div>
       </footer>
