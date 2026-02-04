@@ -1164,8 +1164,17 @@ export default function POSSystem() {
         className: "bg-green-600 text-white",
       });
       
+      // Play sound and show notification if enabled
+      if (soundEnabled) {
+        const audio = new Audio('/assets/notification.mp3');
+        audio.play().catch(() => {});
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       resetForm();
+      
+      // Redirect to dashboard after successful order
+      setTimeout(() => setLocation("/employee/dashboard"), 2000);
     },
     onError: (error: any) => {
       console.error("Order creation error:", error);

@@ -673,10 +673,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get payment method details
+  app.post("/api/orders/complete-all", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const branchId = req.employee?.branchId || "main-branch";
+      const { OrderModel } = await import("@shared/schema");
+      
+      const result = await OrderModel.updateMany(
+        { 
+          branchId, 
+          status: { $nin: ['completed', 'cancelled'] } 
+        },
+        { $set: { status: 'completed' } }
+      );
+      
+      res.json({ success: true, count: result.modifiedCount });
+    } catch (error) {
+      console.error("Error completing all orders:", error);
+      res.status(500).json({ error: "Failed to complete orders" });
+    }
+  });
+
+  // Simplified payment methods with auto-validation
   app.get("/api/payment-methods", async (req, res) => {
     try {
       const methods = [
-        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', autoConfirm: false },
+        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', autoConfirm: true },
         { id: 'card', nameAr: 'بطاقة كلوني', nameEn: 'Klony Card', details: 'الدفع عبر بطاقة كلوني', icon: 'fas fa-credit-card', autoConfirm: true },
         { id: 'mada', nameAr: 'مدى', nameEn: 'Mada', details: 'الدفع عبر مدى', icon: 'fas fa-credit-card', autoConfirm: true },
         { id: 'apple_pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fab fa-apple-pay', autoConfirm: true },
