@@ -13,6 +13,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
+import Screenshot_2026_01_28_125936 from "@assets/Screenshot 2026-01-28 125936.png";
+
 export default function CustomerAuth() {
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
@@ -171,7 +173,7 @@ export default function CustomerAuth() {
         <CardHeader className="space-y-3 text-center pb-6">
           <div className="flex justify-center">
             <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-accent/50 backdrop-blur-xl border border-white/20 bg-[#a7b0b1]/30">
-              <img src="@/assets/images/logo.png" alt="BLACK ROSE" className="w-full h-full object-cover rounded-2xl" />
+              <img src={Screenshot_2026_01_28_125936} alt="BLACK ROSE" className="w-full h-full object-cover rounded-2xl" />
             </div>
           </div>
           <CardTitle className="tracking-tight text-3xl font-bold text-[#a7b0b1]">
