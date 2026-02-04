@@ -761,7 +761,24 @@ export class DBStorage implements IStorage {
   async getTables(branchId?: string): Promise<Table[]> {
     const query = branchId ? { branchId } : {};
     const tables = await TableModel.find(query).lean();
-    return (tables as any[]).map(serializeDoc);
+    const serialized = (tables as any[]).map(serializeDoc);
+
+    if (branchId && serialized.length === 0) {
+      const createdTables = [];
+      for (let i = 1; i <= 10; i++) {
+        const table = await TableModel.create({
+          id: `table-${branchId}-${i}`,
+          branchId,
+          number: i.toString(),
+          capacity: 4,
+          status: "available",
+          isActive: true
+        });
+        createdTables.push(serializeDoc(table));
+      }
+      return createdTables;
+    }
+    return serialized;
   }
 
   async getTable(id: string): Promise<Table | undefined> {

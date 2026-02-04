@@ -3693,56 +3693,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get table orders (branch-filtered for managers)
-  app.get("/api/orders/table", requireAuth, async (req: AuthRequest, res) => {
+  app.post("/api/orders/complete-all", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
-      const { status } = req.query;
-      const allOrders = await storage.getTableOrders(status as string | undefined);
-
-      // Filter by branch for non-admin managers
-      const orders = filterByBranch(allOrders, req.employee);
-
-      const coffeeItems = await storage.getCoffeeItems();
-
-      // Enrich orders with coffee item details
-      const enrichedOrders = orders.map(order => {
-        const serializedOrder = serializeDoc(order);
-        
-        let orderItems = serializedOrder.items;
-        if (typeof orderItems === 'string') {
-          try {
-            orderItems = JSON.parse(orderItems);
-          } catch (e) {
-            orderItems = [];
-          }
-        }
-        
-        if (!Array.isArray(orderItems)) {
-          orderItems = [];
-        }
-        
-        const items = orderItems.map((item: any) => {
-          const coffeeItem = coffeeItems.find(ci => ci.id === item.coffeeItemId);
-          return {
-            ...item,
-            coffeeItem: coffeeItem ? {
-              nameAr: coffeeItem.nameAr,
-              nameEn: coffeeItem.nameEn,
-              price: coffeeItem.price,
-              imageUrl: coffeeItem.imageUrl
-            } : null
-          };
-        });
-
-        return {
-          ...serializedOrder,
-          items
-        };
-      });
-
-      res.json(enrichedOrders);
+      const branchId = req.employee?.branchId || "main-branch";
+      const { OrderModel } = await import("@shared/schema");
+      
+      const result = await OrderModel.updateMany(
+        { 
+          branchId, 
+          status: { $nin: ['completed', 'cancelled'] } 
+        },
+        { $set: { status: 'completed' } }
+      );
+      
+      res.json({ success: true, count: result.modifiedCount });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch table orders" });
+      console.error("Error completing all orders:", error);
+      res.status(500).json({ error: "Failed to complete orders" });
+    }
+  });
+
+  // Simplified payment methods with auto-validation
+  app.get("/api/payment-methods", async (req, res) => {
+    try {
+      const methods = [
+        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', autoConfirm: true },
+        { id: 'card', nameAr: 'بطاقة كلوني', nameEn: 'Klony Card', details: 'الدفع عبر بطاقة كلوني', icon: 'fas fa-credit-card', autoConfirm: true },
+        { id: 'mada', nameAr: 'مدى', nameEn: 'Mada', details: 'الدفع عبر مدى', icon: 'fas fa-credit-card', autoConfirm: true },
+        { id: 'apple_pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fab fa-apple-pay', autoConfirm: true },
+      ];
+      res.json(methods);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payment methods" });
     }
   });
 
