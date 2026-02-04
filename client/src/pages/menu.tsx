@@ -34,16 +34,16 @@ export default function MenuPage() {
 
   const bannerSlides = [
     {
-      image: bannerImage1,
-      title: t("banner.1.title"),
-      subtitle: t("banner.1.subtitle"),
-      badge: t("banner.1.badge")
+      image: "/assets/images/banner_1.png",
+      badge: t("menu.featured") || "مميز",
+      title: "بلاك روز كافيه",
+      subtitle: "استمتع بأجود أنواع القهوة المختصة والحلويات الفاخرة",
     },
     {
-      image: bannerImage2,
-      title: t("banner.2.title"),
-      subtitle: t("banner.2.subtitle"),
-      badge: t("banner.2.badge")
+      image: "/assets/images/banner_2.png",
+      badge: t("menu.offers") || "عروض",
+      title: "تجربة فريدة",
+      subtitle: "أجواء رائعة وخدمة متميزة في قلب الرياض",
     }
   ];
 
