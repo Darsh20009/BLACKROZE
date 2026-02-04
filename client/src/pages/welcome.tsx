@@ -8,6 +8,8 @@ import bannerImage2 from "/hero-cafe.png";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useTranslation } from "react-i18next";
 
+import Screenshot_2026_01_28_125936 from "@assets/Screenshot 2026-01-28 125936.png";
+
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
   const { customer, isAuthenticated, logout } = useCustomer();
@@ -73,7 +75,7 @@ export default function WelcomePage() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-xl p-2 border border-white/20 shadow-xl bg-[#a7b0b1]/30"
             >
-              <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
+              <img src={Screenshot_2026_01_28_125936} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
             </motion.div>
 
             <motion.div
