@@ -45,7 +45,7 @@ export default function WelcomePage() {
         <header className="relative z-20 flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xl p-1 border border-white/30">
-              <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+              <img src={Screenshot_2026_01_28_125936} alt="Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <span className="text-white font-bold text-lg tracking-wide">BLACK ROSE</span>
           </div>
