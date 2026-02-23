@@ -141,7 +141,6 @@ const resources = {
       },
       "points": {
         "black_rose_points": "Black Rose Points",
-        "black_rose_points": "Black Rose Points",
         "your_balance": "Your balance",
         "points_unit": "points",
         "points_discount": "BLACK ROSE Points discount",
@@ -711,7 +710,6 @@ const resources = {
         "added_desc": "تم إضافة المنتج بنجاح"
       },
       "points": {
-        "black_rose_points": "نقاط بلاك روز",
         "black_rose_points": "نقاط بلاك روز",
         "your_balance": "رصيدك",
         "points_unit": "نقطة",

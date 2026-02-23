@@ -273,6 +273,12 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
           const cogsAccount = await AccountModel.findOne({ tenantId, accountNumber: "5100" });
           const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
           
+          if (!cogsAccount) {
+            console.warn(`[ACCOUNTING] COGS account 5100 not found for tenant ${tenantId} - journal entry skipped`);
+          }
+          if (!inventoryAccount) {
+            console.warn(`[ACCOUNTING] Inventory account 1130 not found for tenant ${tenantId} - journal entry skipped`);
+          }
           if (cogsAccount && inventoryAccount) {
             await ErpAccountingService.createJournalEntry({
               tenantId,
@@ -613,6 +619,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.status(201).json(serializeDoc(order));
+
+      // Deduct inventory for this order asynchronously after response
+      if (order.branchId) {
+        deductInventoryForOrder(order.id, order.branchId, 'customer-order').then(result => {
+          if (result.success && result.costOfGoods > 0) {
+            console.log(`[INVENTORY] Deducted for order ${order.orderNumber}: cost=${result.costOfGoods}`);
+          } else if (result.error && result.error !== 'No valid branchId' && result.error !== 'Order not found') {
+            console.warn(`[INVENTORY] Issue for order ${order.orderNumber}: ${result.error}`);
+          }
+        }).catch(err => console.error('[INVENTORY] Deduction error:', err));
+      }
 
       try {
         const orderItems = Array.isArray(order.items)

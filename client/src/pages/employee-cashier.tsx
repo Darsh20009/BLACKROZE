@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { playNotificationSound } from "@/lib/notification-sounds";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Coffee, ShoppingBag, User, Phone, Trash2, Plus, Minus, ArrowRight, Check, Scan, Search, X, Gift, Printer, MonitorSmartphone, Settings, Wifi, WifiOff, FileText, Store, Truck, MapPin, Wallet, CreditCard } from "lucide-react";
+import { Coffee, ShoppingBag, User, Phone, Trash2, Plus, Minus, ArrowRight, Check, Scan, Search, X, Gift, Printer, MonitorSmartphone, Settings, Wifi, WifiOff, FileText, Store, Truck, MapPin, Wallet, CreditCard, Bell, BellOff } from "lucide-react";
 import QRScanner from "@/components/qr-scanner";
 import BarcodeScanner from "@/components/barcode-scanner";
 import { TableOccupancyAlerts } from "@/components/table-occupancy-alerts";
@@ -94,6 +95,9 @@ export default function EmployeeCashier() {
  const [usePointsDiscount, setUsePointsDiscount] = useState(false);
  const [orderType, setOrderType] = useState<'dine-in' | 'pickup' | 'delivery'>('pickup');
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+ const [soundEnabled, setSoundEnabled] = useState(true);
+ const previousOnlineOrderIdsRef = useRef<Set<string>>(new Set());
+ const hasInitializedRef = useRef(false);
  
  const { toast } = useToast();
 
@@ -169,7 +173,8 @@ export default function EmployeeCashier() {
  if (data.found && data.customer) {
  setCustomerName(data.customer.name);
  setCustomerEmail(data.customer.email || "");
- setCustomerPoints(data.customer.points || 0);
+ const actualPoints = data.loyaltyCard?.points ?? data.customer.points ?? 0;
+ setCustomerPoints(Number(actualPoints));
  setCustomerId(data.customer.id);
  setLoyaltyCard(data.loyaltyCard || null);
  setShowRegisterDialog(false);
@@ -238,6 +243,72 @@ export default function EmployeeCashier() {
  const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
  queryKey: ["/api/coffee-items"],
  });
+
+ const { data: businessConfig } = useQuery<any>({ queryKey: ["/api/business-config"] });
+
+ // Poll for new online orders and play sound notification
+ const { data: pendingOrders = [] } = useQuery<any[]>({
+   queryKey: ["/api/orders/pending-online"],
+   queryFn: async () => {
+     const branchId = employee?.branchId;
+     const url = branchId 
+       ? `/api/orders?status=pending&branchId=${branchId}&limit=20`
+       : `/api/orders?status=pending&limit=20`;
+     const res = await fetch(url, { credentials: 'include' });
+     if (!res.ok) return [];
+     const data = await res.json();
+     return Array.isArray(data) ? data : (data.orders || []);
+   },
+   enabled: !!employee,
+   refetchInterval: 8000,
+ });
+
+ // Detect new online orders and play sound
+ useEffect(() => {
+   if (!pendingOrders || pendingOrders.length === 0) {
+     if (!hasInitializedRef.current && employee) {
+       hasInitializedRef.current = true;
+       previousOnlineOrderIdsRef.current = new Set();
+     }
+     return;
+   }
+
+   const currentIds = new Set(pendingOrders.map((o: any) => o.id || o._id));
+
+   if (!hasInitializedRef.current) {
+     hasInitializedRef.current = true;
+     previousOnlineOrderIdsRef.current = currentIds;
+     return;
+   }
+
+   const newIds = [...currentIds].filter(id => !previousOnlineOrderIdsRef.current.has(id));
+   previousOnlineOrderIdsRef.current = currentIds;
+
+   if (newIds.length > 0) {
+     if (soundEnabled) {
+       playNotificationSound('onlineOrderVoice', 1.0).catch(() => {
+         playNotificationSound('newOrder', 1.0).catch(() => {});
+       });
+     }
+
+     toast({
+       title: `🔔 طلب جديد وارد!`,
+       description: `${newIds.length > 1 ? `${newIds.length} طلبات جديدة` : 'طلب جديد'} - انتظر التأكيد`,
+       duration: 8000,
+       className: "bg-green-600 text-white border-green-700 font-bold text-lg",
+     });
+
+     // Browser notification
+     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+       new Notification('🔔 طلب جديد!', {
+         body: `${newIds.length} ${newIds.length > 1 ? 'طلبات جديدة' : 'طلب جديد'}`,
+         icon: '/android-chrome-192x192.png',
+         tag: 'new-order-cashier',
+         requireInteraction: true,
+       });
+     }
+   }
+ }, [pendingOrders, soundEnabled, toast, employee]);
 
   // Create order mutation
   const createOrderMutation = useMutation({
@@ -459,7 +530,8 @@ export default function EmployeeCashier() {
  return (subtotal * appliedDiscount.percentage) / 100;
  };
 
- const pointsToSar = (pts: number) => (pts / 100) * 5;
+ const pointsPerSar: number = businessConfig?.loyaltyConfig?.pointsPerSar ?? 20;
+ const pointsToSar = (pts: number) => pts / pointsPerSar;
 
  const calculateTotal = () => {
  const subtotal = calculateSubtotal();
@@ -822,6 +894,15 @@ export default function EmployeeCashier() {
  </div>
  </div>
  <div className="flex items-center gap-3 flex-wrap">
+ <Button
+ variant="outline"
+ onClick={() => setSoundEnabled(prev => !prev)}
+ className={`border-primary/50 hover:bg-background0 ${soundEnabled ? 'text-green-400' : 'text-gray-500'}`}
+ data-testid="button-sound-toggle"
+ title={soundEnabled ? 'كتم صوت الإشعارات' : 'تفعيل صوت الإشعارات'}
+ >
+ {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+ </Button>
  <Button
  variant="outline"
  onClick={() => setLocation("/employee/cashier/phone-lookup")}

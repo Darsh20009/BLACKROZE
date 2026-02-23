@@ -14,7 +14,8 @@ import PaymentMethods from "@/components/payment-methods";
 import { customerStorage } from "@/lib/customer-storage";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
-import { User, Gift, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import { User, Gift, CheckCircle, Sparkles, Loader2, Ticket, Tag } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 import type { PaymentMethodInfo, PaymentMethod } from "@shared/schema";
 
@@ -43,7 +44,9 @@ export default function CheckoutPage() {
   const [pointsVerified, setPointsVerified] = useState(false);
   const { card: loyaltyCard, refetch: refetchLoyaltyCard } = useLoyaltyCard();
 
-  const pointsToSar = (pts: number) => (pts / 100) * 5;
+  const { data: businessConfig } = useQuery<any>({ queryKey: ["/api/business-config"] });
+  const pointsPerSar: number = businessConfig?.loyaltyConfig?.pointsPerSar ?? 20;
+  const pointsToSar = (pts: number) => pts / pointsPerSar;
 
   const getFinalTotalWithPoints = () => {
     let total = getFinalTotal();
@@ -169,7 +172,7 @@ export default function CheckoutPage() {
   );
 
   const handleValidateDiscount = async (codeOverride?: string) => {
-    const codeToUse = codeOverride || discountCode.trim();
+    const codeToUse = (codeOverride || discountCode.trim()).toUpperCase();
     if (!codeToUse) return;
     
     setIsValidatingDiscount(true);

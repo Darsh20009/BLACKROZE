@@ -1,6 +1,6 @@
 ## Overview
 
-CLUNY CAFE is a comprehensive digital management system designed to streamline operations for coffee shops, catering to both customers through the CLUNY CAFE portal and employees via the CLUNY SYSTEMS portal. The system aims to modernize coffee shop management, enhance customer experience, and improve operational efficiency. Key capabilities include integrated ERP accounting, ZATCA-compliant invoicing, robust delivery management, employee shift and geofencing, and a customer loyalty program. The project's vision is to provide a complete digital solution for coffee shop operations, enhancing customer engagement and optimizing internal processes.
+BLACK ROSE CAFE (مؤسسة الوردة السوداء) is a comprehensive digital management system for coffee shop operations. The system serves customers via the Black Rose Cafe portal and employees via BLACK ROSE SYSTEMS. Key capabilities include integrated ERP accounting, ZATCA-compliant invoicing, robust delivery management, employee shift and geofencing, and a customer loyalty program (بطاقة بلاك روز). Business info: VAT 312718675800003, CR 4700114396, Location: Yanbu, Domain: www.blackrose.com.sa.
 
 ## User Preferences
 
