@@ -140,7 +140,7 @@ const resources = {
         "added_desc": "Item has been successfully added to your cart"
       },
       "points": {
-        "cluny_points": "Black Rose Points",
+        "black_rose_points": "Black Rose Points",
         "black_rose_points": "Black Rose Points",
         "your_balance": "Your balance",
         "points_unit": "points",
@@ -582,7 +582,7 @@ const resources = {
       "menu.empty_menu": "القائمة قيد التحديث",
       "menu.empty_menu_desc": "تابعنا قريباً لمنتجات جديدة",
       "menu.banner.default1.badge": "جديدنا",
-      "menu.banner.default1.title": "لاتيه كلووني المميز",
+      "menu.banner.default1.title": "لاتيه بلاك روز المميز",
       "menu.banner.default1.subtitle": "استمتع بمزيجنا الخاص من القهوة الغنية مع الحليب الكريمي",
       "menu.banner.default2.badge": "عرض خاص",
       "menu.banner.default2.title": "قهوة مقطرة طازجة",
@@ -711,7 +711,7 @@ const resources = {
         "added_desc": "تم إضافة المنتج بنجاح"
       },
       "points": {
-        "cluny_points": "نقاط بلاك روز",
+        "black_rose_points": "نقاط بلاك روز",
         "black_rose_points": "نقاط بلاك روز",
         "your_balance": "رصيدك",
         "points_unit": "نقطة",
@@ -829,8 +829,8 @@ const resources = {
       },
       "card": {
         "title": "محفظتي",
-        "card_title": "بطاقة كلووني",
-        "default_customer_name": "عميل كلووني",
+        "card_title": "بطاقة بلاك روز",
+        "default_customer_name": "عميل بلاك روز",
         "points_balance": "رصيد النقاط",
         "pending_points": "نقاط معلقة",
         "pending_desc": "تضاف عند اكتمال الطلب",
@@ -946,7 +946,7 @@ const resources = {
       "pwa.install_ios_desc": "اضغط على أيقونة المشاركة (Share) ثم اختر 'إضافة إلى الشاشة الرئيسية'",
       "pwa.install_title": "تثبيت التطبيق",
       "pwa.install_desc": "اضغط على القائمة (⋮) في المتصفح ثم اختر 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'",
-      "pwa.prompt_title": "ثبت تطبيق كلووني",
+      "pwa.prompt_title": "ثبت تطبيق بلاك روز",
       "pwa.prompt_desc": "استمتع بتجربة أسرع ووصول فوري",
       "pwa.install_btn": "تثبيت الآن",
       "pwa.not_now": "ليس الآن",

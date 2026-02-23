@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coffee, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import blackroseLogo from "@assets/blackrose-logo.png";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EmployeeForgotPassword() {
@@ -96,8 +97,8 @@ export default function EmployeeForgotPassword() {
  <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-stone-900/95 to-stone-950/95 backdrop-blur shadow-2xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
- <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-900/50">
- <Coffee className="w-10 h-10 text-white" />
+ <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center overflow-hidden border border-white/20 shadow-lg">
+ <img src={blackroseLogo} alt="BLACK ROSE" className="w-full h-full object-contain" />
  </div>
  </div>
  <CardTitle className="text-3xl font-bold text-accent">
@@ -120,7 +121,7 @@ export default function EmployeeForgotPassword() {
  placeholder="أدخل اسم المستخدم الخاص بك"
  value={username}
  onChange={(e) => setUsername(e.target.value)}
- className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-primary/30"
  data-testid="input-username"
  required
  />
@@ -128,7 +129,7 @@ export default function EmployeeForgotPassword() {
 
  <Button
  type="submit"
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-900/50 transition-all duration-300 hover:scale-[1.02]"
+ className="w-full h-12 text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 border border-white/10 shadow-lg transition-all duration-300 hover:scale-[1.02]"
  data-testid="button-submit"
  >
  <div className="flex items-center gap-2">
@@ -150,7 +151,7 @@ export default function EmployeeForgotPassword() {
  placeholder="أدخل كلمة المرور الجديدة"
  value={newPassword}
  onChange={(e) => setNewPassword(e.target.value)}
- className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-primary/30 pl-10"
  data-testid="input-new-password"
  required
  />
@@ -174,7 +175,7 @@ export default function EmployeeForgotPassword() {
  placeholder="أعد إدخال كلمة المرور"
  value={confirmPassword}
  onChange={(e) => setConfirmPassword(e.target.value)}
- className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-amber-600/30 pl-10"
+ className="bg-stone-800/50 border-primary/50 text-accent placeholder:text-accent/40 focus:border-primary focus:ring-primary/30 pl-10"
  data-testid="input-confirm-password"
  required
  />
@@ -195,7 +196,7 @@ export default function EmployeeForgotPassword() {
  <Button
  type="submit"
  disabled={loading}
- className="w-full h-12 text-lg font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-lg shadow-amber-900/50 transition-all duration-300 hover:scale-[1.02]"
+ className="w-full h-12 text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 border border-white/10 shadow-lg transition-all duration-300 hover:scale-[1.02]"
  data-testid="button-reset-password"
  >
  {loading ? "جارٍ التغيير..." : "تغيير كلمة المرور"}

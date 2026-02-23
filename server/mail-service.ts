@@ -631,7 +631,7 @@ export async function sendPointsVerificationEmail(
             <p style="margin: 5px 0; color: #333;"><strong>النقاط المستخدمة:</strong> ${points} نقطة</p>
             <p style="margin: 5px 0; color: #333;"><strong>قيمة الخصم:</strong> ${valueSAR.toFixed(2)} ريال</p>
           </div>
-          <p style="color: #999; font-size: 12px; margin-top: 20px;">هذا الرمز صالح لمدة 10 دقائق فقط. لا تشاركه إلا مع موظف كلوني.</p>
+          <p style="color: #999; font-size: 12px; margin-top: 20px;">هذا الرمز صالح لمدة 10 دقائق فقط. لا تشاركه إلا مع موظف بلاك روز.</p>
           <p style="color: #999; font-size: 12px;">إذا لم تطلب هذا الرمز، يرجى تجاهل هذه الرسالة.</p>
         </div>
       `,

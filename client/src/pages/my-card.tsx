@@ -157,8 +157,8 @@ export default function MyCardPage() {
           <CardHeader className="relative z-10">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <CardTitle className="text-xl opacity-90 font-amiri">{t("card.card_title") || "بطاقة كلووني"}</CardTitle>
-                <p className="text-sm opacity-75 font-ibm-arabic">{customer?.name || t("card.default_customer_name") || 'عميل كلووني'}</p>
+                <CardTitle className="text-xl opacity-90 font-amiri">{t("card.card_title") || "بطاقة بلاك روز"}</CardTitle>
+                <p className="text-sm opacity-75 font-ibm-arabic">{customer?.name || t("card.default_customer_name") || 'عميل بلاك روز'}</p>
               </div>
               <Wallet className="w-8 h-8 opacity-50" />
             </div>

@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/phone-input";
 import { useToast } from "@/hooks/use-toast";
-import { Coffee, UserPlus, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Eye, EyeOff } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import blackroseLogo from "@assets/blackrose-logo.png";
 
 export default function EmployeeActivation() {
  const [, setLocation] = useLocation();
@@ -72,8 +73,8 @@ export default function EmployeeActivation() {
  <Card className="w-full max-w-md bg-gradient-to-br from-background to-background border-primary/20">
  <CardHeader className="space-y-4">
  <div className="flex justify-center">
- <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center">
- <Coffee className="w-8 h-8 text-white" />
+ <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center overflow-hidden border border-white/20">
+ <img src={blackroseLogo} alt="BLACK ROSE" className="w-full h-full object-contain" />
  </div>
  </div>
  <div className="text-center">

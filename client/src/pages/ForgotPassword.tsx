@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PhoneInput } from "@/components/phone-input";
-import { Coffee, Mail, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Mail, ArrowRight, Eye, EyeOff } from "lucide-react";
+import blackroseLogo from "@assets/blackrose-logo.png";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -180,8 +181,8 @@ export default function ForgotPassword() {
  <Card className="w-full max-w-md border-primary/30 bg-card backdrop-blur shadow-xl">
  <CardHeader className="space-y-3 text-center pb-6">
  <div className="flex justify-center">
- <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30">
- <Coffee className="w-10 h-10 text-white" />
+ <div className="w-20 h-20 bg-black rounded-2xl flex items-center justify-center overflow-hidden border border-white/20 shadow-lg">
+ <img src={blackroseLogo} alt="BLACK ROSE" className="w-full h-full object-contain" />
  </div>
  </div>
  <CardTitle className="text-3xl font-bold text-foreground">

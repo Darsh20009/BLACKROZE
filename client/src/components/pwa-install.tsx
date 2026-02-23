@@ -74,7 +74,7 @@ export function PWAInstallButton() {
               <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-black text-primary leading-tight">{t("pwa.prompt_title") || "ثبت تطبيق BLACK ROSE BLACK ROSE"}</h3>
+              <h3 className="text-lg font-black text-primary leading-tight">{t("pwa.prompt_title") || "ثبت تطبيق BLACK ROSE"}</h3>
               <p className="text-xs text-muted-foreground font-medium">{t("pwa.prompt_desc") || "استمتع بتجربة أسرع ووصول فوري"}</p>
             </div>
             <div className="flex flex-col gap-2">

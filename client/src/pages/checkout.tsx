@@ -524,7 +524,7 @@ export default function CheckoutPage() {
                   <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-800">
                     <div className="flex items-center gap-2 mb-3">
                       <Sparkles className="w-5 h-5 text-blue-600" />
-                      <Label className="font-semibold text-blue-800 dark:text-blue-300">{t("points.cluny_points")}</Label>
+                      <Label className="font-semibold text-blue-800 dark:text-blue-300">{t("points.black_rose_points")}</Label>
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center gap-2 flex-wrap">
