@@ -25,10 +25,11 @@ let isDbConnected = false;
 let isInitializing = false;
 let connectionRetries = 0;
 const MAX_RETRIES = 5;
+let authFailed = false;
 
 // Connect to MongoDB with robust error handling and retries
 async function connectDatabase() {
-  if (isInitializing) return;
+  if (isInitializing || authFailed) return;
   isInitializing = true;
   
   const options = {
@@ -43,9 +44,20 @@ async function connectDatabase() {
     isDbConnected = true;
     connectionRetries = 0;
     console.log("✅ MongoDB connected successfully");
-  } catch (error) {
+  } catch (error: any) {
     isDbConnected = false;
     console.error("❌ MongoDB connection error:", error);
+    
+    const isAuthError = error?.code === 8000 || error?.codeName === 'AtlasError' || 
+                        (error?.message && error.message.includes('bad auth'));
+    
+    if (isAuthError) {
+      authFailed = true;
+      console.error("❌ MongoDB authentication failed. Please check MONGODB_URI credentials.");
+      console.error("⚠️  Server will continue running without database functionality.");
+      isInitializing = false;
+      return;
+    }
     
     if (connectionRetries < MAX_RETRIES) {
       connectionRetries++;
@@ -65,14 +77,24 @@ async function connectDatabase() {
 
 // Handle connection events
 mongoose.connection.on('disconnected', () => {
+  if (connectionRetries >= MAX_RETRIES || authFailed) return;
   console.log('📡 MongoDB disconnected. Attempting to reconnect...');
   isDbConnected = false;
   connectDatabase();
 });
 
-mongoose.connection.on('error', (err) => {
-  console.error('📡 MongoDB error:', err);
+mongoose.connection.on('error', (err: any) => {
+  console.error('📡 MongoDB error:', err?.message || err);
   isDbConnected = false;
+});
+
+// Prevent crashes from unhandled promise rejections
+process.on('unhandledRejection', (reason: any) => {
+  console.error('⚠️  Unhandled rejection:', reason?.message || reason);
+});
+
+process.on('uncaughtException', (err: any) => {
+  console.error('⚠️  Uncaught exception:', err?.message || err);
 });
 
 // Start database connection in background
