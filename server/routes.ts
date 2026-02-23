@@ -157,6 +157,47 @@ function safeJsonParse<T>(json: string | null, fallback: T): T {
   }
 }
 
+// Auto-create a standard chart of account if it doesn't exist for the tenant
+async function ensureAccountExists(
+  tenantId: string,
+  accountNumber: string,
+  nameAr: string,
+  nameEn: string,
+  accountType: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense',
+  normalBalance: 'debit' | 'credit'
+) {
+  let account = await AccountModel.findOne({ tenantId, accountNumber });
+  if (!account) {
+    try {
+      const newId = `acc-${accountNumber}-${tenantId}-${Date.now()}`;
+      account = await AccountModel.create({
+        id: newId,
+        tenantId,
+        accountNumber,
+        nameAr,
+        nameEn,
+        accountType,
+        normalBalance,
+        isActive: 1,
+        isSystemAccount: 1,
+        currentBalance: 0,
+        openingBalance: 0,
+        level: 1,
+        path: accountNumber,
+      });
+      console.log(`[ACCOUNTING] Auto-created account ${accountNumber} (${nameAr}) for tenant ${tenantId}`);
+    } catch (err: any) {
+      // If duplicate key error, try to fetch the existing account
+      if (err.code === 11000) {
+        account = await AccountModel.findOne({ tenantId, accountNumber });
+      } else {
+        console.error(`[ACCOUNTING] Failed to create account ${accountNumber}:`, err.message);
+      }
+    }
+  }
+  return account;
+}
+
 // Helper function to deduct inventory when order status changes to in_progress
 // This version uses storage.deductInventoryForOrder for consistency with order creation
 async function deductInventoryForOrder(orderId: string, branchId: string, employeeId: string): Promise<{
@@ -270,15 +311,9 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
         const existingEntry = await JournalEntryModel.findOne({ tenantId, referenceType: 'order_cogs', referenceId: orderId });
         
         if (!existingEntry) {
-          const cogsAccount = await AccountModel.findOne({ tenantId, accountNumber: "5100" });
-          const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
+          const cogsAccount = await ensureAccountExists(tenantId, "5100", "تكلفة البضاعة المباعة", "Cost of Goods Sold", "expense", "debit");
+          const inventoryAccount = await ensureAccountExists(tenantId, "1130", "المخزون", "Inventory", "asset", "debit");
           
-          if (!cogsAccount) {
-            console.warn(`[ACCOUNTING] COGS account 5100 not found for tenant ${tenantId} - journal entry skipped`);
-          }
-          if (!inventoryAccount) {
-            console.warn(`[ACCOUNTING] Inventory account 1130 not found for tenant ${tenantId} - journal entry skipped`);
-          }
           if (cogsAccount && inventoryAccount) {
             await ErpAccountingService.createJournalEntry({
               tenantId,
@@ -3617,15 +3652,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "رقم الجوال مطلوب" });
       }
 
-      const cleanPhone = phone.trim().replace(/\s/g, '');
-      
-      const customer = await storage.getCustomerByPhone(cleanPhone);
+      const rawPhone = phone.trim().replace(/\s/g, '');
+      // Normalize: strip leading 0, 966 prefix to get 9-digit Saudi number
+      let cleanPhone = rawPhone;
+      if (cleanPhone.startsWith('966')) cleanPhone = cleanPhone.slice(3);
+      if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.slice(1);
+
+      // Try multiple formats to handle registration inconsistencies
+      const phoneVariants = [cleanPhone, `0${cleanPhone}`, `966${cleanPhone}`];
+      let customer = null;
+      for (const variant of phoneVariants) {
+        customer = await storage.getCustomerByPhone(variant) || null;
+        if (customer) break;
+      }
       
       if (!customer) {
         return res.json({ found: false });
       }
 
-      const loyaltyCard = await storage.getLoyaltyCardByPhone(cleanPhone);
+      // Also try multiple phone formats for loyalty card lookup
+      let loyaltyCard = null;
+      for (const variant of phoneVariants) {
+        loyaltyCard = await storage.getLoyaltyCardByPhone(variant) || null;
+        if (loyaltyCard) break;
+      }
 
       const { password: _, ...customerData } = customer.toObject ? customer.toObject() : customer;
       const serializedCustomer = serializeDoc(customerData);
@@ -10267,10 +10317,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create Accounting Entry for stock addition
       if (quantity > 0 && (movementType === 'purchase' || movementType === 'adjustment')) {
         try {
-          const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
-          const cashAccount = await AccountModel.findOne({ tenantId, accountNumber: "1000" })
-            || await AccountModel.findOne({ tenantId, accountNumber: "2100" })
-            || await AccountModel.findOne({ tenantId });
+          const inventoryAccount = await ensureAccountExists(tenantId, "1130", "المخزون", "Inventory", "asset", "debit");
+          const cashAccount = await ensureAccountExists(tenantId, "1000", "النقدية والبنوك", "Cash and Banks", "asset", "debit");
 
           const cost = (unitCost || rawItem.unitCost || 0) * Math.abs(quantity);
           if (cost > 0 && inventoryAccount && cashAccount) {

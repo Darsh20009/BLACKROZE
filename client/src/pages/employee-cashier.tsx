@@ -264,19 +264,22 @@ export default function EmployeeCashier() {
  queryKey: ["/api/coffee-items"],
  });
 
- const { data: businessConfig } = useQuery<any>({ queryKey: ["/api/business-config"] });
+ const { data: businessConfig } = useQuery<any>({ queryKey: ["/api/business-config"], refetchInterval: 60000, staleTime: 30000 });
 
  // Poll for new online orders and play sound notification
+ // Include pending, confirmed, and payment_confirmed statuses to avoid missing orders that skip 'pending'
  const { data: pendingOrders = [] } = useQuery<any[]>({
    queryKey: ["/api/orders/pending-online"],
    queryFn: async () => {
      const res = await fetch(
-       `/api/orders?status=pending&orderSource=website&limit=50`,
+       `/api/orders?orderSource=website&limit=50`,
        { credentials: 'include' }
      );
      if (!res.ok) return [];
      const data = await res.json();
-     return Array.isArray(data) ? data : (data.orders || []);
+     const allOrders = Array.isArray(data) ? data : (data.orders || []);
+     // Filter in-browser: keep only active (not completed/cancelled) website orders
+     return allOrders.filter((o: any) => !['completed', 'cancelled', 'delivered'].includes(o.status));
    },
    enabled: !!employee,
    refetchInterval: 5000,
@@ -445,6 +448,10 @@ export default function EmployeeCashier() {
  if (loyaltyResponse.ok) {
  const card = await loyaltyResponse.json();
  setLoyaltyCard(card);
+ // Update customerPoints from loyaltyCard (accurate source)
+ if (card && typeof card.points === 'number') {
+   setCustomerPoints(card.points);
+ }
  }
  } catch (error) {
  console.error('Error fetching loyalty card after registration:', error);
@@ -1273,7 +1280,8 @@ export default function EmployeeCashier() {
  setLoyaltyCard(result.card as any);
  if (result.customer?.id) {
  setCustomerId(result.customer.id);
- setCustomerPoints(result.customer.points || 0);
+ // Use loyaltyCard.points as primary source (most accurate)
+ setCustomerPoints(result.card?.points || result.customer?.points || 0);
  }
  setShowBarcodeScanner(false);
  toast({

@@ -445,7 +445,7 @@ export default function CheckoutPage() {
                         <Input 
                           value={discountCode} 
                           onChange={e => {
-                            setDiscountCode(e.target.value);
+                            setDiscountCode(e.target.value.toUpperCase());
                             setShowCouponSuggestions(true);
                           }}
                           onFocus={() => setShowCouponSuggestions(true)}
