@@ -41,7 +41,6 @@ export default function CheckoutPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<{code: string, percentage: number, isOffer?: boolean} | null>(null);
   const [pointsRedeemed, setPointsRedeemed] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
-  const [pointsVerified, setPointsVerified] = useState(false);
   const { card: loyaltyCard, refetch: refetchLoyaltyCard } = useLoyaltyCard();
 
   const { data: businessConfig } = useQuery<any>({ queryKey: ["/api/business-config"] });
@@ -219,13 +218,11 @@ export default function CheckoutPage() {
       return;
     }
     setUsePoints(true);
-    setPointsVerified(true);
     toast({ title: t("points.verified_success"), description: `تم تطبيق خصم ${pointsToSar(pointsRedeemed).toFixed(2)} ر.س` });
   };
 
   const handleCancelPoints = () => {
     setUsePoints(false);
-    setPointsVerified(false);
     setPointsRedeemed(0);
   };
 
@@ -366,7 +363,7 @@ export default function CheckoutPage() {
                     <span>-{(getFinalTotal() * appliedDiscount.percentage / 100).toFixed(2)} {t("currency")}</span>
                   </div>
                 )}
-                {usePoints && pointsVerified && (
+                {usePoints && pointsRedeemed > 0 && (
                   <div className="flex justify-between items-center gap-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-950/30 p-2 rounded">
                     <span>{t("points.points_discount")}</span>
                     <span>-{pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}</span>

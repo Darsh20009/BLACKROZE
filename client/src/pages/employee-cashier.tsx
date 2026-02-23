@@ -144,6 +144,12 @@ export default function EmployeeCashier() {
  loadEmployee();
  }, [setLocation]);
 
+ // Reset notification tracking refs when employee changes (login/logout)
+ useEffect(() => {
+   hasInitializedRef.current = false;
+   previousOnlineOrderIdsRef.current = new Set();
+ }, [employee?.id]);
+
  // Check POS device connection
  useEffect(() => {
  const checkPosConnection = async () => {
@@ -199,7 +205,7 @@ export default function EmployeeCashier() {
  
  toast({
  title: "عميل مسجل",
- description: `مرحباً ${data.customer.name}! لديك ${data.customer.points || 0} نقطة${availableStamps > 0 ? ` و ${availableStamps} أختام متاحة` : ''}`,
+ description: `مرحباً ${data.customer.name}! لديك ${actualPoints} نقطة${availableStamps > 0 ? ` و ${availableStamps} أختام متاحة` : ''}`,
  className: "bg-green-600 text-white",
  });
  } else {
@@ -567,7 +573,7 @@ export default function EmployeeCashier() {
  const response = await fetch('/api/discount-codes/validate', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ code: discountCode })
+ body: JSON.stringify({ code: discountCode.trim().toUpperCase(), amount: parseFloat(calculateTotal()) })
  });
 
  let data;
@@ -1316,7 +1322,7 @@ export default function EmployeeCashier() {
  </div>
  )}
 
- {customerId && customerPoints > 0 && (
+ {customerId && ((loyaltyCard?.points || 0) > 0 || customerPoints > 0) && (
  <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-3 rounded-lg border border-purple-500/30 space-y-3">
  <div className="flex items-center justify-between">
  <Badge variant="outline" className="border-purple-400 text-purple-300">

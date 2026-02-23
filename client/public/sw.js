@@ -1,5 +1,5 @@
-const CACHE_VERSION = 'v4';
-const CACHE_NAME = `cluny-cache-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v5';
+const CACHE_NAME = `black-rose-cache-${CACHE_VERSION}`;
 
 // Essential shell files to pre-cache during install
 // Vite-built assets (JS/CSS bundles) are cached at runtime via the fetch handler
@@ -34,7 +34,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames
-          .filter(name => name.startsWith('cluny-cache-') && name !== CACHE_NAME)
+          .filter(name => (name.startsWith('cluny-') || name.startsWith('black-rose-cache-')) && name !== CACHE_NAME)
           .map(name => caches.delete(name))
       );
     })
@@ -160,7 +160,7 @@ function buildOrderStatusNotification(data) {
 }
 
 self.addEventListener('push', function(event) {
-  let data = { title: 'CLUNY CAFE', body: 'لديك إشعار جديد', url: '/', type: 'general' };
+  let data = { title: 'BLACK ROSE CAFE', body: 'لديك إشعار جديد', url: '/', type: 'general' };
 
   try {
     if (event.data) {
@@ -244,7 +244,7 @@ self.addEventListener('push', function(event) {
         orderId: data.orderId,
         timestamp: Date.now()
       },
-      tag: data.tag || 'cluny-notification',
+      tag: data.tag || 'black-rose-notification',
       renotify: true,
       requireInteraction: true,
       silent: false,
@@ -329,7 +329,7 @@ async function syncPendingOrders() {
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('cluny-offline', 1);
+    const request = indexedDB.open('black-rose-offline', 1);
     request.onupgradeneeded = function(event) {
       const db = event.target.result;
       if (!db.objectStoreNames.contains('pending-orders')) {

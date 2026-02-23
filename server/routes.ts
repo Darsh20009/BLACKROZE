@@ -595,9 +595,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const tenantId = body.tenantId || getTenantIdFromRequest(req) || 'demo-tenant';
 
+      // Resolve "default" branchId to the first real branch for inventory deduction to work
+      let resolvedBranchId = body.branchId;
+      if (!resolvedBranchId || resolvedBranchId === 'default') {
+        try {
+          const { BranchModel } = await import("@shared/schema");
+          const firstBranch = await BranchModel.findOne({ tenantId }).lean();
+          if (firstBranch) {
+            resolvedBranchId = (firstBranch as any).id || (firstBranch as any)._id?.toString();
+          }
+        } catch (e) {
+          console.warn('[ORDERS] Could not resolve default branchId:', e);
+        }
+      }
+
       const orderData = {
         ...body,
         tenantId,
+        branchId: resolvedBranchId || body.branchId,
         totalAmount: body.totalAmount || body.total || 0,
         paymentMethod: paymentMethodMap[body.paymentMethod] || body.paymentMethod || 'cash',
         customerInfo: body.customerInfo || {
@@ -10253,7 +10268,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (quantity > 0 && (movementType === 'purchase' || movementType === 'adjustment')) {
         try {
           const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
-          const cashAccount = await AccountModel.findOne({ tenantId, accountNumber: "1000" });
+          const cashAccount = await AccountModel.findOne({ tenantId, accountNumber: "1000" })
+            || await AccountModel.findOne({ tenantId, accountNumber: "2100" })
+            || await AccountModel.findOne({ tenantId });
 
           const cost = (unitCost || rawItem.unitCost || 0) * Math.abs(quantity);
           if (cost > 0 && inventoryAccount && cashAccount) {
@@ -10406,26 +10423,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const totalAmount = (Number(unitCost) || 0) * numQuantity;
         if (totalAmount > 0) {
+          // Try inventory account first, then any available account
           const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
+          const fallbackAccount = inventoryAccount || await AccountModel.findOne({ tenantId });
           
-          await ExpenseErpModel.create({
-            id: nanoid(),
-            tenantId,
-            branchId,
-            expenseNumber: `EXP-INV-${nanoid(6).toUpperCase()}`,
-            expenseDate: new Date(),
-            category: 'inventory',
-            description: `شراء مخزون: ${notes || 'دفعة جديدة'}`,
-            amount: totalAmount,
-            taxAmount: totalAmount * 0.15, // Assuming 15% VAT
-            totalAmount: totalAmount * 1.15,
-            paymentMethod: 'cash',
-            status: 'paid',
-            requestedBy: req.employee?.id || 'system',
-            accountId: inventoryAccount?.id,
-            notes: `تلقائي من إضافة مخزون - مادة: ${rawItemId}`
-          });
-          console.log(`[ACCOUNTING] Created expense for inventory batch: ${totalAmount}`);
+          if (!fallbackAccount) {
+            console.warn(`[ACCOUNTING] No accounts found for tenant ${tenantId} - expense record skipped`);
+          } else {
+            await ExpenseErpModel.create({
+              id: nanoid(),
+              tenantId,
+              branchId,
+              expenseNumber: `EXP-INV-${nanoid(6).toUpperCase()}`,
+              expenseDate: new Date(),
+              category: 'inventory',
+              description: `شراء مخزون: ${notes || 'دفعة جديدة'}`,
+              amount: totalAmount,
+              taxAmount: totalAmount * 0.15,
+              totalAmount: totalAmount * 1.15,
+              paymentMethod: 'cash',
+              status: 'paid',
+              requestedBy: req.employee?.id || 'system',
+              accountId: fallbackAccount.id,
+              notes: `تلقائي من إضافة مخزون - مادة: ${rawItemId}`
+            });
+            console.log(`[ACCOUNTING] Created expense for inventory batch: ${totalAmount} SAR`);
+          }
         }
       } catch (expError) {
         console.error("[ACCOUNTING] Failed to create expense record:", expError);
