@@ -40,8 +40,8 @@ localPort = 24678
 externalPort = 3000
 
 [deployment]
-deploymentTarget = "autoscale"
-run = ["node", "./dist/index.cjs"]
+deploymentTarget = "vm"
+run = ["node", "dist/index.js"]
 build = ["npm", "run", "build"]
 
 [userenv]
