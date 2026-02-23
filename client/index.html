@@ -44,14 +44,23 @@
     <link rel="manifest" href="/manifest.json" id="main-manifest">
     
     <!-- Favicon & Apple Touch Icons -->
-    <link rel="icon" type="image/png" href="/logo.png" id="main-favicon">
-    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/logo.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/logo.png">
-    <link rel="apple-touch-icon" href="/logo.png">
-    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" id="main-favicon">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="/favicon-128.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <!-- MS Tiles -->
+    <meta name="msapplication-TileImage" content="/favicon-144.png">
     <!-- Safari Pinned Tab -->
-    <link rel="mask-icon" href="/logo.png" color="#000000">
+    <link rel="mask-icon" href="/favicon-32.png" color="#000000">
     
     <!-- Canonical URL -->
     <link rel="canonical" href="https://www.blackrose.com.sa/">
@@ -63,14 +72,14 @@
     <noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
     
     <!-- Safari Splash Screens -->
-    <link rel="apple-touch-startup-image" href="/logo.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="/logo.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="/logo.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="/logo.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="/logo.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
-    <link rel="apple-touch-startup-image" href="/logo.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="/logo.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="/logo.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
     
     <!-- Structured Data / JSON-LD -->
     <script type="application/ld+json">
@@ -136,23 +145,14 @@
         const appleTouchIcons = document.querySelectorAll('link[rel="apple-touch-icon"]');
 
         if (isEmployeePath) {
-          if (manifestLink) manifestLink.href = '/employee-manifest.json';
-          if (favicon) favicon.href = '/employee-logo.png';
+          if (manifestLink) manifestLink.href = '/employee-manifest.json?v=' + Date.now();
+          document.querySelectorAll('link[rel="icon"]').forEach(el => { el.href = '/employee-logo.png'; });
           appleTouchIcons.forEach(icon => { icon.href = '/employee-logo.png'; });
-          const existingIcon = document.querySelector('link[rel="icon"]');
-          if (existingIcon) existingIcon.href = '/employee-logo.png';
           document.title = "BLACK ROSE | نظام إدارة الموظفين";
-          if (manifestLink) {
-            const newManifest = manifestLink.cloneNode(true);
-            newManifest.href = '/employee-manifest.json?v=' + Date.now();
-            manifestLink.parentNode.replaceChild(newManifest, manifestLink);
-          }
         } else {
-          if (manifestLink) manifestLink.href = '/manifest.json';
-          if (favicon) favicon.href = '/logo.png';
-          appleTouchIcons.forEach(icon => { icon.href = '/logo.png'; });
-          const existingIcon = document.querySelector('link[rel="icon"]');
-          if (existingIcon) existingIcon.href = '/logo.png';
+          if (manifestLink) manifestLink.href = '/manifest.json?v=' + Date.now();
+          document.querySelectorAll('link[rel="icon"]').forEach(el => { el.href = el.sizes?.value?.includes('16') ? '/favicon-16.png' : el.sizes?.value?.includes('32') ? '/favicon-32.png' : '/android-chrome-192x192.png'; });
+          appleTouchIcons.forEach(icon => { icon.href = '/apple-touch-icon.png'; });
         }
       })();
     </script>

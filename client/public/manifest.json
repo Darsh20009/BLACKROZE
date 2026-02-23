@@ -2,7 +2,7 @@
   "id": "/",
   "name": "BLACK ROSE CAFE - مؤسسة الوردة السوداء",
   "short_name": "BLACK ROSE",
-  "description": "استمتع بأفضل قهوة محضرة بعناية فائقة من BLACK ROSE CAFE - اطلب الآن واستمتع بتجربة قهوة استثنائية",
+  "description": "استمتع بأفضل قهوة محضرة بعناية فائقة من BLACK ROSE CAFE في ينبع - اطلب الآن",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -20,25 +20,61 @@
   },
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo.png",
+      "src": "/favicon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo.png",
+      "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/logo.png",
+      "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -46,15 +82,15 @@
   ],
   "screenshots": [
     {
-      "src": "/logo.png",
-      "sizes": "540x720",
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "BLACK ROSE CAFE Home"
+      "label": "BLACK ROSE CAFE"
     },
     {
-      "src": "/logo.png",
-      "sizes": "1280x720",
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide",
       "label": "BLACK ROSE CAFE Desktop"
