@@ -47,4 +47,4 @@ build = ["npm", "run", "build"]
 [userenv]
 
 [userenv.shared]
-MONGODB_URI = "mongodb+srv://Vercel-Admin-blackrose:ASDQWE%40123@blackrose.xkn1stn.mongodb.net/?appName=blackrose"
+MONGODB_URI = "mongodb+srv://Vercel-Admin-blackrose:ASDqwe123@blackrose.xkn1stn.mongodb.net/?appName=blackrose"
