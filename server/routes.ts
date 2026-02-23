@@ -5663,7 +5663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all orders (branch-filtered for non-admin/owner roles)
   app.get("/api/orders", async (req: any, res) => {
     try {
-      const { limit, offset } = req.query;
+      const { limit, offset, status, branchId: queryBranchId } = req.query;
       const limitNum = limit ? parseInt(limit as string) : undefined;
       const offsetNum = offset ? parseInt(offset as string) : undefined;
 
@@ -5671,7 +5671,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If session employee exists, filter by branch; otherwise return all orders
       const employee = req.session?.employee;
-      const orders = employee ? filterByBranch(allOrders, { ...employee, tenantId: employee.tenantId || 'default' }) : allOrders;
+      let orders = employee ? filterByBranch(allOrders, { ...employee, tenantId: employee.tenantId || 'default' }) : allOrders;
+
+      // Filter by status if provided
+      if (status) {
+        const statuses = (status as string).split(',').map(s => s.trim());
+        orders = orders.filter((o: any) => statuses.includes(o.status));
+      }
+
+      // Filter by orderSource if provided (e.g. 'website' for online orders only)
+      const orderSource = req.query.orderSource as string | undefined;
+      if (orderSource) {
+        orders = orders.filter((o: any) => o.orderSource === orderSource);
+      }
+
+      // Filter by branchId query param if provided and not already filtered by session
+      if (queryBranchId && !employee) {
+        orders = orders.filter((o: any) => o.branchId === queryBranchId);
+      }
 
       const coffeeItems = await storage.getCoffeeItems();
 

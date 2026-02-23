@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { playNotificationSound } from "@/lib/notification-sounds";
+import { playNotificationSound, unlockAudio } from "@/lib/notification-sounds";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -96,10 +96,24 @@ export default function EmployeeCashier() {
  const [orderType, setOrderType] = useState<'dine-in' | 'pickup' | 'delivery'>('pickup');
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
  const [soundEnabled, setSoundEnabled] = useState(true);
+ const [newOrdersCount, setNewOrdersCount] = useState(0);
  const previousOnlineOrderIdsRef = useRef<Set<string>>(new Set());
  const hasInitializedRef = useRef(false);
  
  const { toast } = useToast();
+
+ // Unlock Web Audio API on first user interaction (required by browsers)
+ useEffect(() => {
+   const handler = () => unlockAudio();
+   document.addEventListener('click', handler, { once: true });
+   document.addEventListener('touchstart', handler, { once: true });
+   document.addEventListener('keydown', handler, { once: true });
+   return () => {
+     document.removeEventListener('click', handler);
+     document.removeEventListener('touchstart', handler);
+     document.removeEventListener('keydown', handler);
+   };
+ }, []);
 
  useEffect(() => {
  const loadEmployee = async () => {
@@ -250,17 +264,16 @@ export default function EmployeeCashier() {
  const { data: pendingOrders = [] } = useQuery<any[]>({
    queryKey: ["/api/orders/pending-online"],
    queryFn: async () => {
-     const branchId = employee?.branchId;
-     const url = branchId 
-       ? `/api/orders?status=pending&branchId=${branchId}&limit=20`
-       : `/api/orders?status=pending&limit=20`;
-     const res = await fetch(url, { credentials: 'include' });
+     const res = await fetch(
+       `/api/orders?status=pending&orderSource=website&limit=50`,
+       { credentials: 'include' }
+     );
      if (!res.ok) return [];
      const data = await res.json();
      return Array.isArray(data) ? data : (data.orders || []);
    },
    enabled: !!employee,
-   refetchInterval: 8000,
+   refetchInterval: 5000,
  });
 
  // Detect new online orders and play sound
@@ -285,20 +298,19 @@ export default function EmployeeCashier() {
    previousOnlineOrderIdsRef.current = currentIds;
 
    if (newIds.length > 0) {
+     setNewOrdersCount(prev => prev + newIds.length);
+
      if (soundEnabled) {
-       playNotificationSound('onlineOrderVoice', 1.0).catch(() => {
-         playNotificationSound('newOrder', 1.0).catch(() => {});
-       });
+       playNotificationSound('onlineOrderVoice', 1.0);
      }
 
      toast({
        title: `🔔 طلب جديد وارد!`,
        description: `${newIds.length > 1 ? `${newIds.length} طلبات جديدة` : 'طلب جديد'} - انتظر التأكيد`,
-       duration: 8000,
+       duration: 10000,
        className: "bg-green-600 text-white border-green-700 font-bold text-lg",
      });
 
-     // Browser notification
      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
        new Notification('🔔 طلب جديد!', {
          body: `${newIds.length} ${newIds.length > 1 ? 'طلبات جديدة' : 'طلب جديد'}`,
@@ -894,9 +906,37 @@ export default function EmployeeCashier() {
  </div>
  </div>
  <div className="flex items-center gap-3 flex-wrap">
+ {/* New online orders badge - always visible when there are pending orders */}
+ <div className="relative" data-testid="new-orders-badge-wrapper">
+   <Button
+     variant="outline"
+     onClick={() => {
+       setNewOrdersCount(0);
+       setLocation('/employee/orders');
+     }}
+     className={`border-primary/50 hover:bg-background0 gap-2 ${newOrdersCount > 0 ? 'text-green-400 border-green-500 animate-pulse' : 'text-gray-500'}`}
+     data-testid="button-new-orders"
+     title="الطلبات الجديدة من الموقع"
+   >
+     <ShoppingBag className="w-4 h-4" />
+     {newOrdersCount > 0 && (
+       <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+         {newOrdersCount > 9 ? '9+' : newOrdersCount}
+       </span>
+     )}
+     {newOrdersCount === 0 && <span className="text-xs">طلبات</span>}
+   </Button>
+ </div>
  <Button
  variant="outline"
- onClick={() => setSoundEnabled(prev => !prev)}
+ onClick={() => {
+   const prev = soundEnabled;
+   setSoundEnabled(!prev);
+   if (!prev) {
+     unlockAudio();
+     playNotificationSound('success', 0.8);
+   }
+ }}
  className={`border-primary/50 hover:bg-background0 ${soundEnabled ? 'text-green-400' : 'text-gray-500'}`}
  data-testid="button-sound-toggle"
  title={soundEnabled ? 'كتم صوت الإشعارات' : 'تفعيل صوت الإشعارات'}

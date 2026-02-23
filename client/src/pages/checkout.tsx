@@ -285,6 +285,7 @@ export default function CheckoutPage() {
       totalAmount: finalTotal,
       paymentMethod: selectedPaymentMethod as PaymentMethod,
       status: "pending",
+      orderSource: "website",
       branchId: deliveryInfo?.branchId || "default",
       orderType: deliveryInfo?.type === 'car-pickup' ? 'car_pickup' : (deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn ? 'dine-in' : 'regular'),
       deliveryType: deliveryInfo?.type === 'car-pickup' ? 'car_pickup' : deliveryInfo?.type || 'pickup',
