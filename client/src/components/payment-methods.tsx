@@ -113,7 +113,7 @@ export default function PaymentMethods({
     const isLoyaltyCard = (method.id as string) === 'loyalty-card';
     const isSelected = selectedMethod === method.id;
 
-    // Filter for POS: Only Cash, Network (pos), and Cluny Card (qahwa-card)
+    // Filter for POS: Only Cash, Network (pos), and BLACK ROSE Card (qahwa-card)
     const allowedPosMethods = ['cash', 'pos', 'qahwa-card'];
     const isPosRoute = window.location.pathname.includes('/employee/pos');
     if (isPosRoute && !allowedPosMethods.includes(method.id as string)) {

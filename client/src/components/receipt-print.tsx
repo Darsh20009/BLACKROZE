@@ -233,7 +233,7 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, ReceiptProps>(
             <p className="text-sm text-gray-600 font-medium">{COMPANY_NAME_EN}</p>
             <p className="text-xs text-gray-500 mt-1">{displayBranchName}</p>
             <p className="text-xs text-gray-400">{displayBranchAddress}</p>
-            <p className="text-xs font-bold text-amber-700 mt-1">www.blackrose.cafe</p>
+            <p className="text-xs font-bold text-amber-700 mt-1">www.blackrose.com.sa</p>
             <div className="mt-3 pt-3 border-t border-gray-300">
               <p className="text-lg font-bold text-gray-900">فاتورة ضريبية مبسطة</p>
               <p className="text-xs text-gray-500">Simplified Tax Invoice</p>
@@ -435,7 +435,7 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, ReceiptProps>(
             <div className="bg-gray-100 rounded-lg p-2 mb-3 text-xs">
               <p className="text-gray-600">جميع الأسعار شاملة ضريبة القيمة المضافة 15%</p>
               <p className="text-gray-500">All prices include 15% VAT</p>
-              <p className="font-bold text-amber-700 mt-1">www.blackrose.cafe</p>
+              <p className="font-bold text-amber-700 mt-1">www.blackrose.com.sa</p>
             </div>
             <div className="text-xs text-gray-500">
               <p>تابعونا على وسائل التواصل الاجتماعي</p>

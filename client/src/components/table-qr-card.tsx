@@ -257,8 +257,8 @@ export function TableQRCard({ tableNumber, qrToken, branchName, tableUrl }: Tabl
 
       const drawQRSection = async (ctx: CanvasRenderingContext2D, width: number, tableUrl: string) => {
         try {
-          // Force the table URL to use www.blackrose.cafe instead of any other domain
-          const finalTableUrl = tableUrl.replace(/https?:\/\/[^\/]+/, "https://www.blackrose.cafe");
+          // Force the table URL to use www.blackrose.com.sa instead of any other domain
+          const finalTableUrl = tableUrl.replace(/https?:\/\/[^\/]+/, "https://www.blackrose.com.sa");
           const qrCodeDataUrl = await QRCode.toDataURL(finalTableUrl, {
             width: 420,
             margin: 1,

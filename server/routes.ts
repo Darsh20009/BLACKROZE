@@ -346,7 +346,7 @@ function getOrderStatusMessage(status: string, orderNumber: string): string {
 // Maileroo Email Configuration - DISABLED IN FAVOR OF TURBOSMTP
 /*
 const mailerooApiKey = process.env.MAILEROO_API_KEY;
-const mailerooUser = process.env.MAILEROO_USER || 'cluny@qirox.online';
+const mailerooUser = process.env.MAILEROO_USER || 'admin@blackrosecafe.com';
 */
 
 // Set transporter to null to satisfy the rest of the code that might reference it

@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "CLUNY CAFE - كافيه كلوني",
-  "short_name": "CLUNY CAFE",
-  "description": "استمتع بأفضل قهوة محضرة بعناية فائقة من CLUNY CAFE - اطلب الآن واستمتع بتجربة قهوة استثنائية",
+  "name": "BLACK ROSE CAFE - مؤسسة الوردة السوداء",
+  "short_name": "BLACK ROSE",
+  "description": "استمتع بأفضل قهوة محضرة بعناية فائقة من BLACK ROSE CAFE - اطلب الآن واستمتع بتجربة قهوة استثنائية",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#F7F8F8",
-  "theme_color": "#9FB2B3",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "any",
   "lang": "ar",
   "dir": "rtl",
@@ -50,14 +50,14 @@
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "CLUNY CAFE Home"
+      "label": "BLACK ROSE CAFE Home"
     },
     {
       "src": "/logo.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "CLUNY CAFE Desktop"
+      "label": "BLACK ROSE CAFE Desktop"
     }
   ]
 }

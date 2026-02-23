@@ -141,9 +141,10 @@ const resources = {
       },
       "points": {
         "cluny_points": "Black Rose Points",
+        "black_rose_points": "Black Rose Points",
         "your_balance": "Your balance",
         "points_unit": "points",
-        "points_discount": "Cluny Points discount",
+        "points_discount": "BLACK ROSE Points discount",
         "send_code": "Send Code",
         "enter_points": "Number of points",
         "enter_points_amount": "Please enter the number of points",
@@ -420,7 +421,7 @@ const resources = {
       "pwa.install_ios_desc": "Tap the Share icon and then choose 'Add to Home Screen'",
       "pwa.install_title": "Install App",
       "pwa.install_desc": "Tap the Browser Menu and then choose 'Install App' or 'Add to Home Screen'",
-      "pwa.prompt_title": "Install Cluny App",
+      "pwa.prompt_title": "Install BLACK ROSE App",
       "pwa.prompt_desc": "Enjoy a faster experience and instant access",
       "pwa.install_btn": "Install Now",
       "pwa.not_now": "Not now",
@@ -711,6 +712,7 @@ const resources = {
       },
       "points": {
         "cluny_points": "نقاط بلاك روز",
+        "black_rose_points": "نقاط بلاك روز",
         "your_balance": "رصيدك",
         "points_unit": "نقطة",
         "points_discount": "خصم نقاط بلاك روز",

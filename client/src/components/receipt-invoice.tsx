@@ -46,7 +46,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
     const generateTrackingQR = async () => {
       if (!order || !order.orderNumber) return;
       try {
-        const trackingUrl = `https://www.blackrose.cafe/tracking?order=${order.orderNumber}`;
+        const trackingUrl = `https://www.blackrose.com.sa/tracking?order=${order.orderNumber}`;
         const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
           width: 150,
           margin: 1,
@@ -282,7 +282,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
         <div className="text-center mt-4 pt-2 border-t border-black text-[9px]">
           <p className="font-bold">شكراً لزيارتكم</p>
           <p>الرقم الضريبي: 311234567890003</p>
-          <p className="font-bold mt-1 tracking-tight">www.blackrose.cafe</p>
+          <p className="font-bold mt-1 tracking-tight">www.blackrose.com.sa</p>
         </div>
       </div>
 

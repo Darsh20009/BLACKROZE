@@ -127,7 +127,7 @@ export async function sendOrderNotificationEmail(
       return false;
     }
 
-    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.cafe";
+    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.com.sa";
     
     const statusAr =
       orderStatus === "completed"
@@ -164,7 +164,7 @@ export async function sendOrderNotificationEmail(
         'X-MSMail-Priority': 'Normal',
         'Importance': 'Normal',
         'X-Mailer': 'BLACK ROSE CAFE',
-        'List-Unsubscribe': '<mailto:noreply@blackrose.cafe>',
+        'List-Unsubscribe': '<mailto:noreply@blackrose.com.sa>',
         'X-SMTPAPI': JSON.stringify({
           api_key: process.env.SMTP2GO_API_KEY
         })
@@ -281,7 +281,7 @@ export async function sendReferralEmail(
 
   try {
     await transporter.sendMail({
-      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.com.sa"}>`,
       to: customerEmail,
       subject: "انضم إلى برنامج الإحالات الخاص بنا",
       headers: {
@@ -324,7 +324,7 @@ export async function sendLoyaltyPointsEmail(
 
   try {
     await transporter.sendMail({
-      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.com.sa"}>`,
       to: customerEmail,
       subject: "لقد حصلت على نقاط جديدة!",
       headers: {
@@ -364,7 +364,7 @@ export async function sendPromotionEmail(
   if (!transporter) return false;
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.cafe";
+    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.com.sa";
     const mailOptions = {
       from: senderEmail,
       to: customerEmail,
@@ -415,7 +415,7 @@ export async function sendReservationConfirmationEmail(
   }
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.cafe";
+    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.com.sa";
     const formattedDate = new Date(reservationDate).toLocaleDateString('ar');
     await transporter.sendMail({
       from: senderEmail,
@@ -467,7 +467,7 @@ export async function sendReservationExpiryWarningEmail(
   if (!transporter) return false;
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.cafe";
+    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.com.sa";
     const expiryTimeFormatted = new Date(expiryTime).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
     await transporter.sendMail({
       from: senderEmail,
@@ -510,7 +510,7 @@ export async function sendWelcomeEmail(customerEmail: string, customerName: stri
 
   try {
     await transporter.sendMail({
-      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.com.sa"}>`,
       to: customerEmail,
       subject: "أهلاً بك في BLACK ROSE CAFE! ☕",
       headers: {
@@ -543,7 +543,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
 
   try {
     await transporter.sendMail({
-      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.com.sa"}>`,
       to: customerEmail,
       subject: "نسيت شيئاً في عربتك؟ 🛒",
       headers: {
@@ -557,7 +557,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
           <p>لاحظنا أنك تركت بعض الأصناف الرائعة في عربة التسوق الخاصة بك.</p>
           <p>لا تدع قهوتك تبرد! عد الآن وأكمل طلبك قبل نفاد الكمية.</p>
           <div style="margin: 20px 0;">
-            <a href="https://cluny.ma3k.online/checkout" style="background-color: #8B5A2B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">أكمل الطلب الآن</a>
+            <a href="https://www.blackrose.com.sa/checkout" style="background-color: #8B5A2B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">أكمل الطلب الآن</a>
           </div>
         </div>
       `,
@@ -608,7 +608,7 @@ export async function sendPointsVerificationEmail(
 
   try {
     await transporter.sendMail({
-      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.com.sa"}>`,
       to: customerEmail,
       subject: "رمز تأكيد استخدام النقاط - BLACK ROSE CAFE",
       headers: {

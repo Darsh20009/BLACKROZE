@@ -363,7 +363,7 @@ export async function printUnifiedReceipt(data: TaxInvoiceData): Promise<void> {
     <div class="header">
       <div class="label">إيصال العميل (فاتورة ضريبية)</div>
       <h2 style="margin: 5px 0;">${COMPANY_NAME}</h2>
-      <div style="font-size: 14px; font-weight: bold; color: #b45309; margin-bottom: 5px;">www.blackrose.cafe</div>
+      <div style="font-size: 14px; font-weight: bold; color: #b45309; margin-bottom: 5px;">www.blackrose.com.sa</div>
       <div style="font-size: 12px;">الرقم الضريبي: ${VAT_NUMBER}</div>
       <div style="font-size: 12px;">رقم الطلب: ${data.orderNumber}</div>
       <div style="font-size: 11px;">التاريخ: ${formattedDate} ${formattedTime}</div>
@@ -405,7 +405,7 @@ export async function printUnifiedReceipt(data: TaxInvoiceData): Promise<void> {
     ` : ''}
 
     <div class="footer">
-      <div style="font-weight: bold; margin-bottom: 4px;">www.blackrose.cafe</div>
+      <div style="font-weight: bold; margin-bottom: 4px;">www.blackrose.com.sa</div>
       شكراً لزيارتكم!
     </div>
   </div>
@@ -806,7 +806,7 @@ export async function printCustomerPickupReceipt(data: TaxInvoiceData & { delive
     <div class="qr-section">
       <p class="qr-title">امسح لتتبع طلبك</p>
       ${qrCodeUrl ? `<div class="qr-container"><img src="${qrCodeUrl}" alt="Order Tracking QR" /></div>` : ''}
-      <p class="qr-note">أو زر الرابط: blackrose.cafe/order/${data.orderNumber}</p>
+      <p class="qr-note">أو زر الرابط: blackrose.com.sa/order/${data.orderNumber}</p>
     </div>
 
     <div class="footer">

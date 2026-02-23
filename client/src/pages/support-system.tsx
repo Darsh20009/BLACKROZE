@@ -567,7 +567,7 @@ export default function SupportSystemPage() {
                   </div>
                   <h3 className="text-white font-bold text-lg mb-2">البريد الإلكتروني</h3>
                   <p className="text-white/60 text-sm mb-4">رد خلال 24 ساعة</p>
-                  <p className="text-white font-mono">support@blackrose.cafe</p>
+                  <p className="text-white font-mono">support@blackrose.com.sa</p>
                 </CardContent>
               </Card>
             </div>

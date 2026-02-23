@@ -19,7 +19,7 @@ export const generatePDF = async (
  paymentMethod: PaymentMethod
 ): Promise<Blob> => {
  // Generate QR code for website URL
- const websiteUrl = 'https://www.blackrose.cafe';
+ const websiteUrl = 'https://www.blackrose.com.sa';
  const qrCodeDataURL = await QRCode.toDataURL(websiteUrl, {
  width: 120,
  margin: 2,
@@ -156,7 +156,7 @@ export const generatePDF = async (
  <h3 style="color: #D4AF37; font-size: 18px; margin-bottom: 15px; font-weight: bold;">معلومات التواصل</h3>
  <div style="text-align: center; font-size: 14px;">
  <p style="margin: 0 0 10px 0;"><span style="font-weight: bold;">الهاتف:</span> +966532441566</p>
- <p style="margin: 0 0 10px 0;"><span style="font-weight: bold;">الموقع الإلكتروني:</span> www.blackrose.cafe</p>
+ <p style="margin: 0 0 10px 0;"><span style="font-weight: bold;">الموقع الإلكتروني:</span> www.blackrose.com.sa</p>
  </div>
  </div>
 
@@ -169,7 +169,7 @@ export const generatePDF = async (
  <span style="font-weight: bold;"> رمز الاستجابة السريع:</span> يحتوي على رابط موقع BLACK ROSE CAFE
  </p>
  <p style="margin: 8px 0 0 0; font-size: 12px; text-align: center; color: #8B6F47;">
- امسح الرمز للوصول إلى <span style="font-weight: bold; color: #D4AF37;">www.blackrose.cafe</span> وطلب المزيد من منتجاتنا اللذيذة 
+ امسح الرمز للوصول إلى <span style="font-weight: bold; color: #D4AF37;">www.blackrose.com.sa</span> وطلب المزيد من منتجاتنا اللذيذة 
  </p>
  </div>
 
