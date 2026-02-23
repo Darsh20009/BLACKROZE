@@ -47,7 +47,7 @@ export default function DeliverySelectionPage() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = `${t("nav.branch_selection")} - CLUNY CAFE`;
+    document.title = `${t("nav.branch_selection")} - BLACK ROSE CAFE`;
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', t("delivery.subtitle"));
   }, [t]);
@@ -56,7 +56,7 @@ export default function DeliverySelectionPage() {
   const [saveCarInfo, setSaveCarInfo] = useState<boolean>(false);
   const [carInfo, setCarInfo] = useState(() => {
     try {
-      const saved = localStorage.getItem('cluny_saved_car');
+      const saved = localStorage.getItem('blackrose_saved_car');
       if (saved) {
         const parsed = JSON.parse(saved);
         return { model: parsed.model || '', color: parsed.color || '', plateNumber: parsed.plateNumber || '' };
@@ -65,7 +65,7 @@ export default function DeliverySelectionPage() {
     return { model: '', color: '', plateNumber: '' };
   });
   const [hasSavedCar] = useState(() => {
-    try { return !!localStorage.getItem('cluny_saved_car'); } catch { return false; }
+    try { return !!localStorage.getItem('blackrose_saved_car'); } catch { return false; }
   });
   const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [locationError, setLocationError] = useState<string>('');
@@ -310,9 +310,9 @@ export default function DeliverySelectionPage() {
         return;
       }
       if (saveCarInfo) {
-        try { localStorage.setItem('cluny_saved_car', JSON.stringify(carInfo)); } catch {}
+        try { localStorage.setItem('blackrose_saved_car', JSON.stringify(carInfo)); } catch {}
       } else {
-        try { localStorage.removeItem('cluny_saved_car'); } catch {}
+        try { localStorage.removeItem('blackrose_saved_car'); } catch {}
       }
     }
 

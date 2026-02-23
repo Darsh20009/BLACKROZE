@@ -29,9 +29,9 @@ export default function AdminDashboard() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = "لوحة تحكم الإدارة - CLUNY CAFE | إحصائيات شاملة";
+    document.title = "لوحة تحكم الإدارة - BLACK ROSE CAFE | إحصائيات شاملة";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الإدارة في CLUNY CAFE - إحصائيات المبيعات والموظفين والطلبات');
+    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الإدارة في BLACK ROSE CAFE - إحصائيات المبيعات والموظفين والطلبات');
   }, []);
 
   const { data: employees } = useQuery({

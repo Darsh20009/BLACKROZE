@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Coffee, Star, MapPin, ChevronLeft, ChevronRight, LogOut, Sparkles, User, KeyRound, X as XIcon } from "lucide-react";
-import clunyLogo from "@assets/cluny-logo-customer.png";
+import blackroseLogo from "@assets/blackrose-logo.png";
 import bannerImage1 from "@assets/banner-coffee-1.png";
 import bannerImage2 from "@assets/banner-coffee-2.png";
 import { useCustomer } from "@/contexts/CustomerContext";
@@ -60,9 +60,9 @@ export default function WelcomePage() {
         <header className="relative z-20 flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xl p-1 border border-white/30">
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+              <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
-            <span className="text-white font-bold text-lg tracking-wide">CLUNY</span>
+            <span className="text-white font-bold text-lg tracking-wide">BLACK ROSE</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -137,7 +137,7 @@ export default function WelcomePage() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-xl p-2 border border-white/20 shadow-xl bg-[#a7b0b1]/30"
             >
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
+              <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
             </motion.div>
 
             <motion.div

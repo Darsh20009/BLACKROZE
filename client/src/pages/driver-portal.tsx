@@ -70,7 +70,7 @@ export default function DriverPortal() {
   const { toast } = useToast();
 
   useEffect(() => {
-    document.title = "بوابة المندوب - CLUNY SYSTEMS";
+    document.title = "بوابة المندوب - BLACK ROSE SYSTEMS";
     const storedDriver = localStorage.getItem("currentDriver");
     if (storedDriver) {
       const driverData = JSON.parse(storedDriver);

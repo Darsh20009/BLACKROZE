@@ -59,7 +59,7 @@ export function POSLayout({
 
   const handleLogout = () => {
     localStorage.removeItem("currentEmployee");
-    localStorage.removeItem("cluny-restore-key");
+    localStorage.removeItem("blackrose-restore-key");
     setLocation("/employee/gateway");
   };
 

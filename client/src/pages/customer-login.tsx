@@ -18,9 +18,9 @@ export default function CustomerLogin() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = "تسجيل دخول العملاء - CLUNY CAFE | ادخل الآن";
+    document.title = "تسجيل دخول العملاء - BLACK ROSE CAFE | ادخل الآن";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'تسجيل دخول عملاء CLUNY CAFE - سجل الآن واستمتع بعروضنا الحصرية والمكافآت');
+    if (metaDesc) metaDesc.setAttribute('content', 'تسجيل دخول عملاء BLACK ROSE CAFE - سجل الآن واستمتع بعروضنا الحصرية والمكافآت');
   }, []);
 
   const handleRegister = () => {
@@ -65,7 +65,7 @@ export default function CustomerLogin() {
  <div className="text-center mb-8">
  <div className="flex items-center justify-center gap-2 mb-2">
  <Coffee className="w-12 h-12 text-accent" />
- <h1 className="text-4xl font-bold font-playfair text-foreground">CLUNY CAFE</h1>
+ <h1 className="text-4xl font-bold font-playfair text-foreground">BLACK ROSE CAFE</h1>
  </div>
  <p className="text-muted-foreground text-lg font-cairo">لكل لحظة قهوة ، لحظة نجاح</p>
  </div>

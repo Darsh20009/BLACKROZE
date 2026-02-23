@@ -19,12 +19,12 @@ export default function CartPage() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = isAr ? "سلة التسوق - CLUNY CAFE | اكتمل طلبك" : "Shopping Cart - CLUNY CAFE";
+    document.title = isAr ? "سلة التسوق - BLACK ROSE CAFE | اكتمل طلبك" : "Shopping Cart - BLACK ROSE CAFE";
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
       metaDesc.setAttribute('content', isAr 
-        ? 'سلة التسوق الخاصة بك في CLUNY CAFE - أضف المزيد من القهوة المفضلة وانتقل للدفع' 
-        : 'Your shopping cart at CLUNY CAFE - add more of your favorite coffee and proceed to checkout');
+        ? 'سلة التسوق الخاصة بك في BLACK ROSE CAFE - أضف المزيد من القهوة المفضلة وانتقل للدفع' 
+        : 'Your shopping cart at BLACK ROSE CAFE - add more of your favorite coffee and proceed to checkout');
     }
   }, [isAr]);
 

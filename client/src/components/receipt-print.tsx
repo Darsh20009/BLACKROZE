@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
-import clunyLogo from "@assets/cluny-logo-customer.png";
+import blackroseLogo from "@assets/blackrose-logo.png";
 
 interface OrderItem {
   coffeeItem: {
@@ -37,13 +37,13 @@ interface ReceiptProps {
 }
 
 const TAX_RATE = 0.15;
-const VAT_NUMBER = "311234567890003";
-const COMPANY_NAME = "كلاوني كافيه";
-const COMPANY_NAME_EN = "CLUNY CAFE";
-const COMPANY_CR = "1010123456";
-const COMPANY_VAT_NAME = "شركة كلاوني للخدمات الغذائية"; // Added for ZATCA compliance
-const DEFAULT_BRANCH = "فرع الرباط";
-const DEFAULT_ADDRESS = "حي الرياض، الرباط، المملكة المغربية";
+const VAT_NUMBER = "312718675800003";
+const COMPANY_NAME = "الوردة السوداء";
+const COMPANY_NAME_EN = "BLACK ROSE CAFE";
+const COMPANY_CR = "4700114396";
+const COMPANY_VAT_NAME = "مؤسسة الوردة السوداء لتأجير لوازم المناسبات";
+const DEFAULT_BRANCH = "فرع ينبع";
+const DEFAULT_ADDRESS = "ينبع، حي البندر، الملك خالد ابن عبدالعزيز سعود 4139، المملكة العربية السعودية";
 
 function generateZATCAQRCode(data: {
   sellerName: string;
@@ -233,7 +233,7 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, ReceiptProps>(
             <p className="text-sm text-gray-600 font-medium">{COMPANY_NAME_EN}</p>
             <p className="text-xs text-gray-500 mt-1">{displayBranchName}</p>
             <p className="text-xs text-gray-400">{displayBranchAddress}</p>
-            <p className="text-xs font-bold text-amber-700 mt-1">www.cluny.cafe</p>
+            <p className="text-xs font-bold text-amber-700 mt-1">www.blackrose.cafe</p>
             <div className="mt-3 pt-3 border-t border-gray-300">
               <p className="text-lg font-bold text-gray-900">فاتورة ضريبية مبسطة</p>
               <p className="text-xs text-gray-500">Simplified Tax Invoice</p>
@@ -435,11 +435,11 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, ReceiptProps>(
             <div className="bg-gray-100 rounded-lg p-2 mb-3 text-xs">
               <p className="text-gray-600">جميع الأسعار شاملة ضريبة القيمة المضافة 15%</p>
               <p className="text-gray-500">All prices include 15% VAT</p>
-              <p className="font-bold text-amber-700 mt-1">www.cluny.cafe</p>
+              <p className="font-bold text-amber-700 mt-1">www.blackrose.cafe</p>
             </div>
             <div className="text-xs text-gray-500">
               <p>تابعونا على وسائل التواصل الاجتماعي</p>
-              <p className="font-mono font-bold text-amber-700">@CLUNY CAFE</p>
+              <p className="font-mono font-bold text-amber-700">@BLACK ROSE CAFE</p>
             </div>
             <div className="mt-3 pt-2 border-t border-gray-300 text-[9px] text-gray-400">
               <p>تم إنشاء هذه الفاتورة إلكترونياً</p>

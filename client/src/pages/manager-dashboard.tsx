@@ -64,9 +64,9 @@ export default function ManagerDashboard() {
 
  // Set SEO metadata
  useEffect(() => {
-   document.title = "لوحة تحكم المدير - CLUNY CAFE | إدارة المبيعات والعمليات";
+   document.title = "لوحة تحكم المدير - BLACK ROSE CAFE | إدارة المبيعات والعمليات";
    const metaDesc = document.querySelector('meta[name="description"]');
-   if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم المدير في CLUNY CAFE - إدارة شاملة للمبيعات والموظفين والفروع والمخزون');
+   if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم المدير في BLACK ROSE CAFE - إدارة شاملة للمبيعات والموظفين والفروع والمخزون');
  }, []);
  const [isAddBranchOpen, setIsAddBranchOpen] = useState(false);
  const [isEditBranchOpen, setIsEditBranchOpen] = useState(false);

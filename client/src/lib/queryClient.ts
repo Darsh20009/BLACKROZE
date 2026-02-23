@@ -2,7 +2,7 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function tryRestoreSession(): Promise<boolean> {
   const stored = localStorage.getItem("currentEmployee");
-  const restoreKey = localStorage.getItem("cluny-restore-key");
+  const restoreKey = localStorage.getItem("blackrose-restore-key");
   if (!stored || !restoreKey) return false;
   
   try {
@@ -18,14 +18,14 @@ async function tryRestoreSession(): Promise<boolean> {
       const data = await res.json();
       localStorage.setItem("currentEmployee", JSON.stringify(data.employee));
       if (data.restoreKey) {
-        localStorage.setItem("cluny-restore-key", data.restoreKey);
+        localStorage.setItem("blackrose-restore-key", data.restoreKey);
       }
       return true;
     }
   } catch (e) {}
   
   localStorage.removeItem("currentEmployee");
-  localStorage.removeItem("cluny-restore-key");
+  localStorage.removeItem("blackrose-restore-key");
   return false;
 }
 

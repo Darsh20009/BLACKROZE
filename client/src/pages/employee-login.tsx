@@ -8,7 +8,7 @@ import { User, Lock, Loader2, Eye, EyeOff, QrCode, Download } from "lucide-react
 import { apiRequest } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import clunyLogoStaff from "@assets/cluny-logo-staff.png";
+import blackroseLogoStaff from "@assets/blackrose-logo.png";
 
 export default function EmployeeLogin() {
   const [location, setLocation] = useLocation();
@@ -24,7 +24,7 @@ export default function EmployeeLogin() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    document.title = "تسجيل دخول الموظفين - CLUNY SYSTEMS";
+    document.title = "تسجيل دخول الموظفين - BLACK ROSE SYSTEMS";
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -70,7 +70,7 @@ export default function EmployeeLogin() {
     },
     onSuccess: (employee: any) => {
       if (employee.restoreKey) {
-        localStorage.setItem("cluny-restore-key", employee.restoreKey);
+        localStorage.setItem("blackrose-restore-key", employee.restoreKey);
         delete employee.restoreKey;
       }
       localStorage.setItem("currentEmployee", JSON.stringify(employee));
@@ -149,9 +149,9 @@ export default function EmployeeLogin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-40 h-28 mb-4">
-            <img src={clunyLogoStaff} alt="CLUNY SYSTEMS" className="w-full h-full object-contain" />
+            <img src={blackroseLogoStaff} alt="BLACK ROSE SYSTEMS" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">CLUNY SYSTEMS</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">BLACK ROSE SYSTEMS</h1>
           <p className="text-muted-foreground font-cairo">تسجيل دخول الموظف</p>
         </div>
 

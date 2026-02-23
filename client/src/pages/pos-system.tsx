@@ -434,7 +434,7 @@ export default function PosSystem() {
             <div className="bg-primary/10 p-1.5 sm:p-2 rounded-lg">
               <Coffee className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-primary">CLUNY</h1>
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-primary">BLACK ROSE</h1>
           </div>
           
           <div className="flex items-center gap-2 sm:hidden">
@@ -1025,7 +1025,7 @@ export default function PosSystem() {
           {lastOrder && (
             <div className="space-y-4">
               <div className="text-center space-y-1 border-b pb-3">
-                <h3 className="font-black text-xl text-primary">CLUNY CAFE</h3>
+                <h3 className="font-black text-xl text-primary">BLACK ROSE CAFE</h3>
                 <p className="text-xs text-muted-foreground">
                   {new Date(lastOrder.date).toLocaleDateString('ar-SA')} - {new Date(lastOrder.date).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                 </p>

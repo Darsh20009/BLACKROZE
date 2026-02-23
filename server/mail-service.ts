@@ -127,7 +127,7 @@ export async function sendOrderNotificationEmail(
       return false;
     }
 
-    const senderEmail = process.env.SMTP_FROM || "noreply@cluny.cafe";
+    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.cafe";
     
     const statusAr =
       orderStatus === "completed"
@@ -163,8 +163,8 @@ export async function sendOrderNotificationEmail(
         'X-Priority': '3',
         'X-MSMail-Priority': 'Normal',
         'Importance': 'Normal',
-        'X-Mailer': 'CLUNY CAFE',
-        'List-Unsubscribe': '<mailto:noreply@cluny.cafe>',
+        'X-Mailer': 'BLACK ROSE CAFE',
+        'List-Unsubscribe': '<mailto:noreply@blackrose.cafe>',
         'X-SMTPAPI': JSON.stringify({
           api_key: process.env.SMTP2GO_API_KEY
         })
@@ -185,7 +185,7 @@ ${
   "جاري معالجة طلبك."
 }
 
-CLUNY CAFE
+BLACK ROSE CAFE
 تجربة القهوة الفاخرة`,
       html: `
         <html dir="rtl" lang="ar">
@@ -214,7 +214,7 @@ CLUNY CAFE
           <div class="wrapper">
             <div class="container">
               <div class="header">
-                <h1>CLUNY CAFE</h1>
+                <h1>BLACK ROSE CAFE</h1>
                 <p class="tagline">تجربة القهوة الفاخرة</p>
               </div>
               
@@ -249,7 +249,7 @@ CLUNY CAFE
               </div>
               
               <div class="footer">
-                <p>© 2025 CLUNY CAFE - جميع الحقوق محفوظة</p>
+                <p>© 2025 BLACK ROSE CAFE - جميع الحقوق محفوظة</p>
                 <p>هذا البريد مرسل تلقائياً. يرجى عدم الرد.</p>
               </div>
             </div>
@@ -281,7 +281,7 @@ export async function sendReferralEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "noreply@cluny.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
       to: customerEmail,
       subject: "انضم إلى برنامج الإحالات الخاص بنا",
       headers: {
@@ -324,7 +324,7 @@ export async function sendLoyaltyPointsEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "noreply@cluny.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
       to: customerEmail,
       subject: "لقد حصلت على نقاط جديدة!",
       headers: {
@@ -364,7 +364,7 @@ export async function sendPromotionEmail(
   if (!transporter) return false;
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "noreply@cluny.cafe";
+    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.cafe";
     const mailOptions = {
       from: senderEmail,
       to: customerEmail,
@@ -380,7 +380,7 @@ export async function sendPromotionEmail(
             </div>
           ` : ''}
           <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; font-size: 12px; color: #888;">
-            تم الإرسال بواسطة نظام CLUNY CAFE
+            تم الإرسال بواسطة نظام BLACK ROSE CAFE
           </div>
         </div>
       `,
@@ -415,7 +415,7 @@ export async function sendReservationConfirmationEmail(
   }
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "noreply@cluny.cafe";
+    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.cafe";
     const formattedDate = new Date(reservationDate).toLocaleDateString('ar');
     await transporter.sendMail({
       from: senderEmail,
@@ -429,7 +429,7 @@ export async function sendReservationConfirmationEmail(
       html: `
         <div style="font-family: Arial, sans-serif; direction: rtl; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #8B5A2B;">مرحباً ${customerName}</h2>
-          <p>تم تأكيد حجزك في CLUNY CAFE!</p>
+          <p>تم تأكيد حجزك في BLACK ROSE CAFE!</p>
           
           <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 5px solid #8B5A2B;">
             <p><strong>رقم الطاولة:</strong> ${tableNumber}</p>
@@ -444,7 +444,7 @@ export async function sendReservationConfirmationEmail(
           </p>
 
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-          <p style="font-size: 12px; color: #999;">شكراً لاختيارك CLUNY CAFE!</p>
+          <p style="font-size: 12px; color: #999;">شكراً لاختيارك BLACK ROSE CAFE!</p>
         </div>
       `,
     });
@@ -467,7 +467,7 @@ export async function sendReservationExpiryWarningEmail(
   if (!transporter) return false;
 
   try {
-    const senderEmail = process.env.SMTP_FROM || "noreply@cluny.cafe";
+    const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.cafe";
     const expiryTimeFormatted = new Date(expiryTime).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
     await transporter.sendMail({
       from: senderEmail,
@@ -510,9 +510,9 @@ export async function sendWelcomeEmail(customerEmail: string, customerName: stri
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "noreply@cluny.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
       to: customerEmail,
-      subject: "أهلاً بك في CLUNY CAFE! ☕",
+      subject: "أهلاً بك في BLACK ROSE CAFE! ☕",
       headers: {
         'X-SMTPAPI': JSON.stringify({
           api_key: process.env.SMTP2GO_API_KEY
@@ -521,7 +521,7 @@ export async function sendWelcomeEmail(customerEmail: string, customerName: stri
       html: `
         <div style="font-family: Arial, sans-serif; direction: rtl; padding: 20px;">
           <h2 style="color: #8B5A2B;">مرحباً ${customerName}</h2>
-          <p>يسعدنا انضمامك إلينا في عائلة CLUNY CAFE.</p>
+          <p>يسعدنا انضمامك إلينا في عائلة BLACK ROSE CAFE.</p>
           <p>يمكنك الآن البدء في طلب قهوتك المفضلة وجمع النقاط مع كل طلب!</p>
           <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
              <p>استخدم تطبيقنا لتجربة أسرع وأسهل.</p>
@@ -543,7 +543,7 @@ export async function sendAbandonedCartEmail(customerEmail: string, customerName
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "noreply@cluny.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
       to: customerEmail,
       subject: "نسيت شيئاً في عربتك؟ 🛒",
       headers: {
@@ -608,9 +608,9 @@ export async function sendPointsVerificationEmail(
 
   try {
     await transporter.sendMail({
-      from: `"CLUNY CAFE" <${process.env.SMTP_FROM || "noreply@cluny.cafe"}>`,
+      from: `"BLACK ROSE CAFE" <${process.env.SMTP_FROM || "noreply@blackrose.cafe"}>`,
       to: customerEmail,
-      subject: "رمز تأكيد استخدام النقاط - CLUNY CAFE",
+      subject: "رمز تأكيد استخدام النقاط - BLACK ROSE CAFE",
       headers: {
         'X-SMTPAPI': JSON.stringify({
           api_key: process.env.SMTP2GO_API_KEY
@@ -619,7 +619,7 @@ export async function sendPointsVerificationEmail(
       html: `
         <div style="font-family: Arial, sans-serif; direction: rtl; max-width: 500px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 20px;">
-            <h1 style="color: #2D9B6E; margin: 0;">CLUNY CAFE</h1>
+            <h1 style="color: #2D9B6E; margin: 0;">BLACK ROSE CAFE</h1>
           </div>
           <h2 style="color: #333;">مرحباً ${customerName}</h2>
           <p style="color: #555; font-size: 16px;">تم طلب استخدام نقاطك لخصم من طلب. يرجى مشاركة الرمز التالي مع الموظف:</p>

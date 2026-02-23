@@ -374,7 +374,7 @@ export default function MenuView() {
  {/* QR Code Section */}
  <div className="flex flex-col justify-center space-y-6">
  <QRCodeComponent 
- url="https://www.cluny.cafe"
+ url="https://www.blackrose.cafe"
  size="lg"
  title="امسح للطلب"
  className="w-full"
@@ -433,7 +433,7 @@ export default function MenuView() {
  <div className="flex flex-col justify-center space-y-8">
  <div className="text-center space-y-4">
  <h1 className="font-amiri text-5xl font-bold text-primary">
- CLUNY CAFE
+ BLACK ROSE CAFE
  </h1>
  <p className="text-xl text-muted-foreground">
  أجود أنواع القهوة العربية الأصيلة
@@ -441,7 +441,7 @@ export default function MenuView() {
  </div>
  
  <QRCodeComponent 
- url="https://www.cluny.cafe"
+ url="https://www.blackrose.cafe"
  size="lg"
  title="امسح للطلب"
  className="w-full"
@@ -515,7 +515,7 @@ export default function MenuView() {
  {/* Sidebar with QR Code */}
  <div className="lg:col-span-1 flex flex-col justify-center space-y-8">
  <QRCodeComponent 
- url="https://www.cluny.cafe"
+ url="https://www.blackrose.cafe"
  size="lg"
  title="امسح للطلب الآن"
  className="w-full"
@@ -559,7 +559,7 @@ export default function MenuView() {
  <span className="text-sm font-medium">وجّه الكاميرا نحو الرمز للطلب</span>
  <span className="text-lg"></span>
  </div>
- <div className="text-primary text-sm font-bold">CLUNY CAFE</div>
+ <div className="text-primary text-sm font-bold">BLACK ROSE CAFE</div>
  </div>
 
  {/* Main Camera View - Always Side by Side */}
@@ -569,7 +569,7 @@ export default function MenuView() {
  <div className="text-center space-y-3 md:space-y-6 p-2 md:p-4">
  <div className="bg-white rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-xl">
  <QRCodeComponent 
- url="https://www.cluny.cafe"
+ url="https://www.blackrose.cafe"
  size="lg"
  title="امسح للطلب"
  showURL={false}
@@ -579,7 +579,7 @@ export default function MenuView() {
  
  <div className="space-y-2 md:space-y-4">
  <h1 className="font-amiri text-lg md:text-4xl font-bold text-white">
- CLUNY CAFE
+ BLACK ROSE CAFE
  </h1>
  <p className="text-xs md:text-xl text-gray-300">
  أجود أنواع القهوة العربية الأصيلة

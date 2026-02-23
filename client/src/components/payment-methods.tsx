@@ -170,7 +170,7 @@ export default function PaymentMethods({
                  <div className="relative flex flex-col justify-between text-white h-full py-8 px-8">
                    <div className="flex justify-between items-start flex-shrink-0">
                      <div className="space-y-1">
-                       <p className="text-xs uppercase tracking-widest opacity-75">CLUNY CAFE</p>
+                       <p className="text-xs uppercase tracking-widest opacity-75">BLACK ROSE CAFE</p>
                        <h4 className="text-2xl font-black">{isNeoLeap ? (method.id === 'neoleap-apple-pay' ? 'Apple Pay' : 'بطاقة بنكية') : 'بطاقة الولاء'}</h4>
                      </div>
                      <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
@@ -200,12 +200,12 @@ export default function PaymentMethods({
                                   onSelectMethod(method.id);
                                   toast({
                                     title: "تم اختيار الدفع بالبطاقة",
-                                    description: "سيتم خصم قيمة الطلب من رصيد بطاقة كلوني كافيه الخاصة بك",
+                                    description: "سيتم خصم قيمة الطلب من رصيد بطاقة بلاك روز كافيه الخاصة بك",
                                   });
                                 }}
                               >
                                 <Zap className="w-4 h-4 ml-2" />
-                                ادفع ببطاقة كلوني كافيه (كوبي)
+                                ادفع ببطاقة بلاك روز كافيه (كوبي)
                               </Button>
                                {foundCard && (
                               <Button 

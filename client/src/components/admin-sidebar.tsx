@@ -14,7 +14,7 @@ export function AdminSidebar() {
 
   const handleLogout = async () => {
     await fetch('/api/employees/logout', { method: 'POST' });
-    localStorage.removeItem("cluny-restore-key");
+    localStorage.removeItem("blackrose-restore-key");
     navigate('/employee/login');
   };
 
@@ -22,7 +22,7 @@ export function AdminSidebar() {
     <div className="w-64 bg-gradient-to-b from-orange-50 to-white dark:from-slate-900 dark:to-slate-950 border-l border-orange-200 dark:border-orange-900/30 flex flex-col h-screen sticky top-0">
       {/* Logo */}
       <div className="p-6 border-b border-orange-200 dark:border-orange-900/30">
-        <h2 className="text-xl font-bold text-orange-600 dark:text-orange-400">CLUNY CAFE</h2>
+        <h2 className="text-xl font-bold text-orange-600 dark:text-orange-400">BLACK ROSE CAFE</h2>
         <p className="text-xs text-muted-foreground mt-1">لوحة التحكم الإدارية</p>
       </div>
 

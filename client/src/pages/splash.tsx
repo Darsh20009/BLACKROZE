@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import clunyLogo from "@assets/cluny-logo-customer.png";
+import blackroseLogo from "@assets/blackrose-logo.png";
 import ButtonPourAnimation from "@/components/button-pour-animation";
 import { ChevronLeft } from "lucide-react";
 
@@ -55,7 +55,7 @@ export default function SplashScreen() {
               transition={{ duration: 1 }}
               className="mb-16"
             >
-              <img src={clunyLogo} alt="CLUNY" className="w-24 h-24 object-contain brightness-0 invert" />
+              <img src={blackroseLogo} alt="BLACK ROSE" className="w-24 h-24 object-contain brightness-0 invert" />
             </motion.div>
 
             {/* The Animated Button that fills with coffee */}
@@ -75,7 +75,7 @@ export default function SplashScreen() {
               className="text-center mt-16"
             >
               <h1 className="text-4xl font-playfair tracking-[0.2em] text-white mb-2 font-semibold">
-                CLUNY
+                BLACK ROSE
               </h1>
               <p className="text-white/70 text-sm tracking-[0.3em] uppercase font-medium">
                 Crafting Your Moment

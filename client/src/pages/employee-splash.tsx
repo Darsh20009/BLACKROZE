@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Zap, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import clunyLogoStaff from "@assets/cluny-logo-staff.png";
+import blackroseLogoStaff from "@assets/blackrose-logo.png";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();
@@ -13,9 +13,9 @@ export default function EmployeeSplash() {
 
   useEffect(() => {
     // Set metadata for employee splash
-    document.title = "نظام الموظفين - CLUNY SYSTEMS | نظام إدارة متكامل";
+    document.title = "نظام الموظفين - BLACK ROSE SYSTEMS | نظام إدارة متكامل";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'نظام إدارة الموظفين والعمليات في CLUNY SYSTEMS - نظام متكامل لإدارة الطلبات والمبيعات');
+    if (metaDesc) metaDesc.setAttribute('content', 'نظام إدارة الموظفين والعمليات في BLACK ROSE SYSTEMS - نظام متكامل لإدارة الطلبات والمبيعات');
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -65,7 +65,7 @@ export default function EmployeeSplash() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        {/* CLUNY CAFE Logo */}
+        {/* BLACK ROSE CAFE Logo */}
         <motion.div
           className="relative"
           animate={{
@@ -75,8 +75,8 @@ export default function EmployeeSplash() {
         >
           <div className="relative w-48 h-48 flex items-center justify-center">
             <img
-              src={clunyLogoStaff}
-              alt="CLUNY SYSTEMS - نظام إدارة الموظفين"
+              src={blackroseLogoStaff}
+              alt="BLACK ROSE SYSTEMS - نظام إدارة الموظفين"
               className="w-full h-full object-contain rounded-2xl"
             />
           </div>

@@ -71,7 +71,7 @@ export const coffeeCategories = [
  }
 ];
 
-// Perfectly matched coffee menu data with CLUNY CAFE images
+// Perfectly matched coffee menu data with BLACK ROSE CAFE images
 export const defaultCoffeeMenu: CoffeeItem[] = [
  // Basic Coffee
  {
@@ -372,7 +372,7 @@ export const defaultCoffeeMenu: CoffeeItem[] = [
  // Desserts
  {
  id: "coffee-dessert-cup",
- nameAr: "حلى CLUNY CAFE",
+ nameAr: "حلى BLACK ROSE CAFE",
  nameEn: "Coffee Dessert Cup",
  description: "حلى قهوة فاخر في كوب، طبقات من الكريمة والقهوة والبسكويت المطحون، تجربة حلوةلا تُنسى",
  price: 8.00,

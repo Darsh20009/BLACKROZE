@@ -620,7 +620,7 @@ export default function AdminSettings() {
                         <Input
                           value={(socialLinks as any)[platform]}
                           onChange={(e) => setSocialLinks({ ...socialLinks, [platform]: e.target.value })}
-                          placeholder={`https://${platform}.com/cluny...`}
+                          placeholder={`https://${platform}.com/blackrose...`}
                           className="h-10 text-sm pl-10 bg-white dark:bg-gray-900 border-primary/10 focus:border-primary transition-all shadow-sm"
                           dir="ltr"
                         />
@@ -633,7 +633,7 @@ export default function AdminSettings() {
                 </div>
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
                   <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
-                  <p>تأكد من وضع الروابط كاملة (مثال: https://instagram.com/cluny) لتظهر بشكل صحيح في أسفل الموقع للعملاء.</p>
+                  <p>تأكد من وضع الروابط كاملة (مثال: https://instagram.com/blackrose) لتظهر بشكل صحيح في أسفل الموقع للعملاء.</p>
                 </div>
               </div>
             </div>
@@ -1276,7 +1276,7 @@ export default function AdminSettings() {
                 {[
                   { key: 'cashEnabled', label: 'الدفع نقداً (كاش)', icon: Banknote, value: pgCashEnabled, setter: setPgCashEnabled },
                   { key: 'posEnabled', label: 'جهاز نقاط البيع (POS)', icon: Smartphone, value: pgPosEnabled, setter: setPgPosEnabled },
-                  { key: 'qahwaCardEnabled', label: 'بطاقة كلوني كافيه', icon: CreditCard, value: pgQahwaCardEnabled, setter: setPgQahwaCardEnabled },
+                  { key: 'qahwaCardEnabled', label: 'بطاقة بلاك روز كافيه', icon: CreditCard, value: pgQahwaCardEnabled, setter: setPgQahwaCardEnabled },
                   { key: 'stcPayEnabled', label: 'STC Pay', icon: Smartphone, value: pgStcPayEnabled, setter: setPgStcPayEnabled },
                   { key: 'bankTransferEnabled', label: 'تحويل بنكي', icon: CreditCard, value: pgBankTransferEnabled, setter: setPgBankTransferEnabled },
                 ].map((method) => (
@@ -1349,7 +1349,7 @@ export default function AdminSettings() {
               <Input
                 value={config?.tradeNameAr || ""}
                 onChange={(e) => mutation.mutate({ tradeNameAr: e.target.value })}
-                placeholder="مثال: كلاوني كافيه"
+                placeholder="مثال: بلاك روز كافيه"
                 className="font-ibm-arabic"
               />
             </div>
@@ -1428,7 +1428,7 @@ export default function AdminSettings() {
                   <Gift className="w-6 h-6 text-amber-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-bold">بطاقة كلوني والعروض</CardTitle>
+                  <CardTitle className="text-xl font-bold">بطاقة بلاك روز والعروض</CardTitle>
                   <CardDescription>إدارة نظام النقاط والخصومات والعروض الترويجية</CardDescription>
                 </div>
               </div>
@@ -1878,7 +1878,7 @@ export default function AdminSettings() {
 
       {/* Footer Info */}
       <div className="text-center pt-10 text-muted-foreground text-xs font-ibm-arabic">
-        <p>نظام كلاوني - جميع التغييرات يتم تطبيقها فوراً على واجهة العميل</p>
+        <p>نظام بلاك روز - جميع التغييرات يتم تطبيقها فوراً على واجهة العميل</p>
         {mutation.isPending && <p className="text-accent animate-pulse mt-2">جاري حفظ التعديلات...</p>}
       </div>
     </div>

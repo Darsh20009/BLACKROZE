@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import QRCode from "qrcode";
-import clunyLogo from "@assets/cluny-logo-customer.png";
+import blackroseLogo from "@assets/blackrose-logo.png";
 
 interface TableQRCardProps {
   tableNumber: string;
@@ -177,7 +177,7 @@ export function TableQRCard({ tableNumber, qrToken, branchName, tableUrl }: Tabl
           ctx.font = "bold 42px 'Georgia', serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("CLUNY", logoCenterX, logoCenterY);
+          ctx.fillText("BLACK ROSE", logoCenterX, logoCenterY);
 
           ctx.font = "16px 'Georgia', serif";
           ctx.fillStyle = BRAND.white;
@@ -190,7 +190,7 @@ export function TableQRCard({ tableNumber, qrToken, branchName, tableUrl }: Tabl
         ctx.fillStyle = BRAND.textDark;
         ctx.font = "bold 54px 'Georgia', 'Playfair Display', serif";
         ctx.textAlign = "center";
-        ctx.fillText("CLUNY CAFE", width / 2, 340);
+        ctx.fillText("BLACK ROSE CAFE", width / 2, 340);
 
         ctx.strokeStyle = BRAND.sage;
         ctx.lineWidth = 1.5;
@@ -253,12 +253,12 @@ export function TableQRCard({ tableNumber, qrToken, branchName, tableUrl }: Tabl
 
       logoImg.onload = () => drawAfterLogo(true);
       logoImg.onerror = () => drawAfterLogo(false);
-      logoImg.src = clunyLogo;
+      logoImg.src = blackroseLogo;
 
       const drawQRSection = async (ctx: CanvasRenderingContext2D, width: number, tableUrl: string) => {
         try {
-          // Force the table URL to use www.cluny.cafe instead of any other domain
-          const finalTableUrl = tableUrl.replace(/https?:\/\/[^\/]+/, "https://www.cluny.cafe");
+          // Force the table URL to use www.blackrose.cafe instead of any other domain
+          const finalTableUrl = tableUrl.replace(/https?:\/\/[^\/]+/, "https://www.blackrose.cafe");
           const qrCodeDataUrl = await QRCode.toDataURL(finalTableUrl, {
             width: 420,
             margin: 1,
@@ -381,7 +381,7 @@ export function TableQRCard({ tableNumber, qrToken, branchName, tableUrl }: Tabl
             ctx.fillStyle = BRAND.textMuted;
             ctx.font = "14px 'Segoe UI', Arial, sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("Powered by CLUNY SYSTEMS", width / 2, height - 60);
+            ctx.fillText("Powered by BLACK ROSE SYSTEMS", width / 2, height - 60);
           };
           qrImage.src = qrCodeDataUrl;
         } catch (error) {

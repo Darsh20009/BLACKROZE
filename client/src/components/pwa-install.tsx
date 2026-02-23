@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Bell, Info, Share2, PlusSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
-import clunyLogo from "@assets/cluny-logo-customer.png";
+import blackroseLogo from "@assets/blackrose-logo.png";
 import { useTranslation } from "react-i18next";
 
 export function PWAInstallButton() {
@@ -71,7 +71,7 @@ export function PWAInstallButton() {
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-inner border border-primary/10 bg-white p-1">
-              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
+              <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-black text-primary leading-tight">{t("pwa.prompt_title") || "ثبت تطبيق كلووني"}</h3>

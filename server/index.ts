@@ -191,7 +191,7 @@ app.use(
     secret: process.env.SESSION_SECRET || "dev-secret",
     resave: false,
     saveUninitialized: false, 
-    name: 'cluny.sid', // custom cookie name
+    name: 'blackrose.sid', // custom cookie name
     store: MongoStore.create({
       mongoUrl: MONGODB_URI!,
       collectionName: 'sessions',

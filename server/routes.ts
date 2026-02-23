@@ -388,7 +388,7 @@ function generateInvoiceHTML(invoiceNumber: string, data: any): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>CLUNY CAFE</h1>
+          <h1>بلاك روز CAFE</h1>
           <p>فاتورة ضريبية</p>
         </div>
         
@@ -425,8 +425,8 @@ function generateInvoiceHTML(invoiceNumber: string, data: any): string {
         </div>
 
         <div class="footer">
-          <p>شكراً لتعاملك معنا | تم إصدار هذه الفاتورة من نظام CLUNY CAFE</p>
-          <p>© 2025 CLUNY CAFE - جميع الحقوق محفوظة</p>
+          <p>شكراً لتعاملك معنا | تم إصدار هذه الفاتورة من نظام بلاك روز CAFE</p>
+          <p>© 2025 بلاك روز CAFE - جميع الحقوق محفوظة</p>
         </div>
       </div>
     </body>
@@ -720,8 +720,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!config) {
         config = await BusinessConfigModel.create({
           tenantId,
-          tradeNameAr: "كلاوني كافيه",
-          tradeNameEn: "Cluny Cafe",
+          tradeNameAr: "بلاك روز كافيه",
+          tradeNameEn: "بلاك روز Cafe",
           activityType: "both",
           isFoodEnabled: true,
           isDrinksEnabled: true,
@@ -796,7 +796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let config = await BusinessConfigModel.findOne({ tenantId });
       if (!config) {
-        config = new BusinessConfigModel({ tenantId, tradeNameAr: "كلاوني كافيه" });
+        config = new BusinessConfigModel({ tenantId, tradeNameAr: "بلاك روز كافيه" });
       }
       
       for (const [key, value] of Object.entries(updates)) {
@@ -1547,7 +1547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!pg || pg.qahwaCardEnabled !== false) {
-        allMethods.push({ id: 'qahwa-card', nameAr: 'بطاقة كلوني كافيه', nameEn: 'Cluny Card', details: 'ادفع ببطاقة الولاء', icon: 'fas fa-gift' });
+        allMethods.push({ id: 'qahwa-card', nameAr: 'بطاقة بلاك روز كافيه', nameEn: 'بلاك روز Card', details: 'ادفع ببطاقة الولاء', icon: 'fas fa-gift' });
       }
 
       if (pg?.stcPayEnabled) {
@@ -3027,7 +3027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!customerId) {
           return res.status(400).json({ 
             valid: false,
-            error: "يجب تسجيل الدخول لاستخدام خصم بطاقة كلوني"
+            error: "يجب تسجيل الدخول لاستخدام خصم بطاقة بلاك روز"
           });
         }
         
@@ -4988,7 +4988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const { sendOrderNotificationEmail } = await import("./mail-service");
             const emailSent = await sendOrderNotificationEmail(
               customerEmail,
-              customerName || 'عميل CLUNY CAFE',
+              customerName || 'عميل بلاك روز CAFE',
               order.orderNumber,
               "pending",
               parseFloat(order.totalAmount.toString())
@@ -6007,7 +6007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const { sendOrderNotificationEmail } = await import("./mail-service");
               const emailSent = await sendOrderNotificationEmail(
                 customerEmail,
-                customerName || 'عميل CLUNY CAFE',
+                customerName || 'عميل بلاك روز CAFE',
                 updatedOrder.orderNumber,
                 status,
                 parseFloat(updatedOrder.totalAmount.toString()),
@@ -6451,7 +6451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create card if doesn't exist
       if (!loyaltyCard) {
-        const cardNumber = `CLUNY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const cardNumber = `بلاك روز-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
         const qrToken = `QR-${customerId || cleanPhone}-${Date.now()}`;
         
         loyaltyCard = await storage.createLoyaltyCard({
@@ -6550,7 +6550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!recipientCard && recipientCustomer) {
         const recipientCustomerId = (recipientCustomer as any)._id?.toString() || (recipientCustomer as any).id;
-        const cardNumber = `CLUNY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const cardNumber = `بلاك روز-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
         const qrToken = `QR-${recipientCustomerId}-${Date.now()}`;
         
         recipientCard = await storage.createLoyaltyCard({
@@ -8566,7 +8566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const { sendOrderNotificationEmail } = await import("./mail-service");
               await sendOrderNotificationEmail(
                 customerEmail,
-                updateCustomerInfo?.name || 'عميل CLUNY CAFE',
+                updateCustomerInfo?.name || 'عميل بلاك روز CAFE',
                 updatedOrder.orderNumber,
                 status,
                 parseFloat(updatedOrder.totalAmount.toString()),
@@ -12970,7 +12970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lines: req.body.lines,
         notes: req.body.notes,
         issuedBy,
-        sellerName: req.body.sellerName || "CLUNY CAFE",
+        sellerName: req.body.sellerName || "بلاك روز CAFE",
         sellerVatNumber: req.body.sellerVatNumber || "311234567890003",
       });
       res.json({ success: true, invoice: serializeDoc(invoice) });

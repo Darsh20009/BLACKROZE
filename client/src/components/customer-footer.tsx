@@ -75,7 +75,7 @@ export function CustomerFooter() {
           </div>
 
           <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <div className="text-xl font-bold text-primary tracking-tighter">CLUNY CAFE</div>
+            <div className="text-xl font-bold text-primary tracking-tighter">BLACK ROSE CAFE</div>
             <div className="text-xs text-muted-foreground/60 font-ibm-arabic max-w-[200px]">
               {t("footer.tagline") || "نقدم لك تجربة قهوة لا تُنسى في قلب الرياض"}
             </div>
@@ -94,7 +94,7 @@ export function CustomerFooter() {
         {/* Copyright */}
         <div className="flex flex-col items-center gap-2">
           <div className="text-[11px] font-medium text-muted-foreground/40 text-center uppercase tracking-[0.2em]">
-            &copy; {new Date().getFullYear()} CLUNY SYSTEMS . ALL RIGHTS RESERVED
+            &copy; {new Date().getFullYear()} BLACK ROSE SYSTEMS . ALL RIGHTS RESERVED
           </div>
           <div className="h-1 w-8 bg-primary/20 rounded-full" />
         </div>

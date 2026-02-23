@@ -32,7 +32,7 @@ export function MobileBottomNav({ employeeRole, onLogout }: MobileBottomNavProps
       onLogout();
     } else {
       localStorage.removeItem("currentEmployee");
-      localStorage.removeItem("cluny-restore-key");
+      localStorage.removeItem("blackrose-restore-key");
       window.location.href = "/employee/gateway";
     }
   };

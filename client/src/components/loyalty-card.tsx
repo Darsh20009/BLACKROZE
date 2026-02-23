@@ -54,7 +54,7 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
   useEffect(() => {
     if (qrCanvasRef.current && card.qrToken) {
       const qrSize = compact ? 100 : 160;
-      const cardUrl = `https://cluny.ma3k.online/loyalty-verify?token=${card.qrToken}`;
+      const cardUrl = `https://blackrose.cafe/loyalty-verify?token=${card.qrToken}`;
       QRCode.toCanvas(
         qrCanvasRef.current,
         cardUrl,
@@ -134,11 +134,11 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
     ctx.fillStyle = '#4a3728';
     ctx.font = 'bold 48px Cairo, Arial';
     ctx.textAlign = 'right';
-    ctx.fillText('CLUNY CAFE', canvas.width - 50, 70);
+    ctx.fillText('BLACK ROSE CAFE', canvas.width - 50, 70);
 
     ctx.font = '24px Georgia, serif';
     ctx.fillStyle = '#6b4f3c';
-    ctx.fillText('CLUNY CAFE Loyalty', canvas.width - 50, 105);
+    ctx.fillText('BLACK ROSE CAFE Loyalty', canvas.width - 50, 105);
 
     const tierColors: Record<string, string> = {
       bronze: '#cd7f32',
@@ -305,7 +305,7 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
                 <Coffee className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold" data-testid="text-brand">CLUNY CAFE</h3>
+                <h3 className="text-2xl font-bold" data-testid="text-brand">BLACK ROSE CAFE</h3>
                 <p className="text-sm opacity-80">بطاقة الولاء الذكية</p>
               </div>
             </div>
@@ -435,7 +435,7 @@ export default function LoyaltyCardComponent({ card, showActions = true, compact
             className="gap-2"
             data-testid="button-apple-wallet"
             onClick={() => {
-              const url = `https://cluny.ma3k.online/api/loyalty/cards/${card.id}/apple-wallet-pass`;
+              const url = `https://blackrose.cafe/api/loyalty/cards/${card.id}/apple-wallet-pass`;
               window.open(url, '_blank');
             }}
           >

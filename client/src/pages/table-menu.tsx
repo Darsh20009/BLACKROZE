@@ -10,7 +10,7 @@ import type { CoffeeItem, IProductAddon } from "@shared/schema";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import clunyLogo from "@assets/cluny-logo-customer.png";
+import blackroseLogo from "@assets/blackrose-logo.png";
 
 interface ITable {
   id: string;
@@ -508,10 +508,10 @@ export default function TableMenuNew() {
       <header className="fixed top-0 inset-x-0 z-[60] h-16 bg-primary/40 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-white/10 p-1.5 flex items-center justify-center">
-            <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
+            <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-base font-black text-white leading-tight">CLUNY</h1>
+            <h1 className="text-base font-black text-white leading-tight">BLACK ROSE</h1>
             <span className="text-[10px] font-bold text-white/60 tracking-wider uppercase">CAFE</span>
           </div>
         </div>

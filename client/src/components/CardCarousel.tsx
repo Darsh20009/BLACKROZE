@@ -81,7 +81,7 @@ export default function CardCarousel({ cards, activeCard, onSelectCard }: CardCa
               </div>
 
               <div className="relative z-10">
-                <h4 className="text-2xl font-black mb-2">CLUNY CAFE</h4>
+                <h4 className="text-2xl font-black mb-2">BLACK ROSE CAFE</h4>
                 <p className="text-sm opacity-90">{designColor.label}</p>
               </div>
 

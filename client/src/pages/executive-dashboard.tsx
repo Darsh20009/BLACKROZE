@@ -273,7 +273,7 @@ export default function ExecutiveDashboard() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-accent title-executive">
-                CLUNY CAFE Enterprise
+                BLACK ROSE CAFE Enterprise
               </h1>
               <p className="text-sm text-slate-400">
                 مرحباً، {manager.fullName}
@@ -750,7 +750,7 @@ export default function ExecutiveDashboard() {
       <footer className="border-t border-border mt-12 py-6">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-sm text-muted-foreground">
-            CLUNY CAFE Enterprise &copy; {new Date().getFullYear()} - نظام إدارة المقاهي المتكامل
+            BLACK ROSE CAFE Enterprise &copy; {new Date().getFullYear()} - نظام إدارة المقاهي المتكامل
           </p>
         </div>
       </footer>
