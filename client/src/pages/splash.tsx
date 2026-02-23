@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import blackroseLogo from "@assets/blackrose-logo.png";
-import bannerBg from "@assets/Screenshot_2026-02-04_200804_1771855809761.png";
+import bannerBg from "@assets/Screenshot_2026-02-04_200214_1771876180331.png";
 
 export default function SplashScreen() {
   const [, setLocation] = useLocation();

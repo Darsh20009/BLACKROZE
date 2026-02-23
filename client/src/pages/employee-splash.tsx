@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import blackroseLogoStaff from "@assets/blackrose-logo.png";
-import bannerBg from "@assets/Screenshot_2026-02-04_200804_1771855809761.png";
+import bannerBg from "@assets/Screenshot_2026-02-04_200214_1771876180331.png";
 
 export default function EmployeeSplash() {
   const [, setLocation] = useLocation();

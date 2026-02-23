@@ -28,8 +28,8 @@ import {
   Languages
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import banner1 from "@assets/Screenshot_2026-02-04_200214_1771855798638.png";
-import banner2 from "@assets/Screenshot_2026-02-04_200804_1771855809761.png";
+import banner1 from "@assets/Screenshot_2026-02-04_200214_1771876180331.png";
+import banner2 from "@assets/Screenshot_2026-02-04_200804_1771876180333.png";
 import blackroseLogo from "@assets/blackrose-logo.png";
 import type { CoffeeItem, IProductAddon, IPromoOffer } from "@shared/schema";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
