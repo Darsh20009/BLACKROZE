@@ -74,7 +74,7 @@ export default function TableOrderTracking() {
       return data;
     },
     enabled: !!orderId,
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 10000, // Poll every 10 seconds
   });
   
   // Detect status changes - Audio notifications removed

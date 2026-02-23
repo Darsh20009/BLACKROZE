@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import type { Order } from "@shared/schema";
-import logoImage from "@/assets/images/logo.png";
+import logoImage from "../assets/cluny-logo.png";
 import { useRef, useState, useEffect } from "react";
 import QRCode from "qrcode";
 
@@ -16,11 +16,37 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [trackingQrUrl, setTrackingQrUrl] = useState<string>("");
 
+  const getItemsArray = (): any[] => {
+    try {
+      if (!order || !order.items) return [];
+      const items = order.items;
+      if (Array.isArray(items)) return items;
+      if (typeof items === 'string') {
+        try {
+          const parsed = JSON.parse(items);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      if (typeof items === 'object' && items !== null) {
+        return Object.values(items);
+      }
+      return [];
+    } catch (e) {
+      console.error("Error parsing order items:", e, order?.items);
+      return [];
+    }
+  };
+
+  const items = getItemsArray();
+  const safeOrder = order || {} as Order;
+
   useEffect(() => {
     const generateTrackingQR = async () => {
-      if (!order.orderNumber) return;
+      if (!order || !order.orderNumber) return;
       try {
-        const trackingUrl = `https://BLACKROSE.com.sa/tracking?order=${order.orderNumber}`;
+        const trackingUrl = `https://www.cluny.cafe/tracking?order=${order.orderNumber}`;
         const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
           width: 150,
           margin: 1,
@@ -36,7 +62,12 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
       }
     };
     generateTrackingQR();
-  }, [order.orderNumber]);
+  }, [order?.orderNumber]);
+
+  // Early return if no valid order
+  if (!order || !order.orderNumber) {
+    return null;
+  }
 
   const generatePDF = async () => {
     if (!invoiceRef.current) return;
@@ -70,12 +101,79 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
     if (invoiceRef.current) {
       const printWindow = window.open("", "_blank");
       if (printWindow) {
-        printWindow.document.write(invoiceRef.current.outerHTML);
+        const style = `
+          <style>
+            @media print {
+              body { margin: 0; padding: 0; }
+              .no-print { display: none !important; }
+              .receipt-container { width: 100%; max-width: 80mm; margin: 0 auto; font-family: sans-serif; }
+              @page { size: 80mm auto; margin: 0; }
+            }
+          </style>
+        `;
+        
+        // Preparation Slip (Kitchen)
+        const prepSlip = `
+          <div class="receipt-container" style="direction: rtl; padding: 10px; border-bottom: 2px dashed #000; margin-bottom: 20px;">
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px;">
+              <h2 style="margin: 5px 0;">طلب تحضير</h2>
+              <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">
+                #${order.orderNumber.includes('-') ? order.orderNumber.split('-').pop() : order.orderNumber}
+              </div>
+            </div>
+            <div style="padding-top: 10px;">
+              ${items.map((item: any) => `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 18px; font-weight: bold;">
+                  <span>${item.nameAr || item.name}</span>
+                  <span style="border: 2px solid #000; padding: 2px 8px; border-radius: 4px;">x${item.quantity}</span>
+                </div>
+              `).join('')}
+            </div>
+            ${order.customerNotes ? `
+              <div style="margin-top: 10px; border: 1px solid #000; padding: 5px; font-size: 14px;">
+                <strong>ملاحظات:</strong> ${order.customerNotes}
+              </div>
+            ` : ''}
+            <div style="text-align: center; font-size: 12px; margin-top: 10px;">
+              ${new Date(order.createdAt).toLocaleTimeString('ar-SA')}
+            </div>
+          </div>
+        `;
+
+        printWindow.document.write(`
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              ${style}
+            </head>
+            <body dir="rtl">
+              <div class="receipt-container">
+                ${invoiceRef.current.innerHTML}
+                ${prepSlip}
+              </div>
+            </body>
+          </html>
+        `);
         printWindow.document.close();
-        printWindow.print();
+        
+        // Use a timeout to ensure styles and content are loaded before printing
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 500);
       }
     }
   };
+
+  useEffect(() => {
+    // Auto-print if variant is auto
+    if (variant === "auto" && order && order.id) {
+      const timer = setTimeout(() => {
+        printReceipt();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [variant, order?.id]);
 
   const getPaymentMethodName = (method: string) => {
     const methods: Record<string, string> = {
@@ -92,127 +190,99 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
     return methods[method] || method;
   };
 
+  // Early return if no valid order
+  if (!order || !order.orderNumber) {
+    return null;
+  }
+
   return (
     <div className="space-y-4">
       {/* Invoice Preview */}
       <div
         ref={invoiceRef}
         style={{ direction: "rtl" }}
-        className="bg-white rounded-lg p-8 border border-primary/20 shadow-lg"
+        className="bg-white rounded-none p-10 max-w-[80mm] mx-auto text-black"
         data-testid="invoice-preview"
       >
         {/* Header */}
-        <div className="text-center mb-8 pb-6 border-b-2 border-primary/20">
-          <div className="flex justify-center mb-4">
-            <img src={logoImage} alt="Logo" className="h-20 w-20" />
-          </div>
-          <h1 className="text-3xl font-bold text-primary mb-2">فاتورة استلام</h1>
-          <p className="text-gray-600 text-lg">متجر BLACK ROSE</p>
+        <div className="text-center mb-4 pb-2 border-b border-black">
+          <p className="text-[12px] font-black uppercase tracking-wider">CLUNY CAFE</p>
+          <p className="text-[9px] font-bold uppercase tracking-tight opacity-70">Tax Invoice - فاتورة ضريبية</p>
         </div>
 
         {/* Order Info */}
-        <div className="grid grid-cols-2 gap-6 mb-8 pb-6 border-b border-gray-200">
-          <div>
-            <p className="text-sm text-gray-500 mb-1">رقم الطلب</p>
-            <p className="text-xl font-bold text-gray-800">{order.orderNumber}</p>
-          </div>
-          <div className="text-left">
-            <p className="text-sm text-gray-500 mb-1">التاريخ والوقت</p>
-            <p className="text-lg font-semibold text-gray-800">
-              {new Date(order.createdAt).toLocaleDateString('ar-SA', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
-          </div>
-        </div>
-
-        {/* Customer Info */}
-        {order.customerInfo?.name && (
-          <div className="mb-8 pb-6 border-b border-gray-200">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">اسم العميل</p>
-                <p className="text-lg font-semibold text-gray-800">{order.customerInfo.name}</p>
-              </div>
-              {order.customerInfo.phone && (
-                <div className="text-left">
-                  <p className="text-sm text-gray-500 mb-1">رقم الهاتف</p>
-                  <p className="text-lg font-semibold text-gray-800">{order.customerInfo.phone}</p>
-                </div>
-              )}
+        <div className="grid grid-cols-2 gap-1 mb-3 text-[9px] border-b border-black/5 pb-2">
+          <div className="space-y-0.5">
+            <div className="flex justify-between">
+              <span className="opacity-60">رقم الفاتورة:</span>
+              <span className="font-mono">{order.orderNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="opacity-60">التاريخ:</span>
+              <span>{new Date(order.createdAt).toLocaleDateString('ar-SA')}</span>
             </div>
           </div>
-        )}
+          <div className="space-y-0.5 text-left">
+            <div className="flex justify-between flex-row-reverse">
+              <span className="opacity-60">:الوقت</span>
+              <span>{new Date(order.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            {order.tableNumber && (
+              <div className="flex justify-between flex-row-reverse">
+                <span className="opacity-60">:الطاولة</span>
+                <span className="font-bold">#{order.tableNumber}</span>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Items Table */}
-        <div className="mb-8">
-          <h3 className="text-lg font-bold text-primary mb-4 pb-2 border-b-2 border-primary/20">تفاصيل الطلب</h3>
-          <div className="space-y-3">
-            {(order.items || []).map((item: any, index: number) => (
-              <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-semibold text-gray-800">{item.nameAr || item.name}</p>
-                  <p className="text-sm text-gray-600">الكمية: {item.quantity}</p>
-                </div>
-                <div className="text-left">
-                  <p className="text-sm text-gray-600">السعر: {parseFloat(item.price).toFixed(2)} ريال</p>
-                  <p className="font-bold text-primary text-lg">
-                    {(parseFloat(item.price) * item.quantity).toFixed(2)} ريال
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="mb-3">
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="border-b border-black">
+                <th className="text-right py-1">المنتج</th>
+                <th className="text-center py-1">كمية</th>
+                <th className="text-left py-1">المجموع</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.map((item: any, index: number) => (
+                <tr key={index}>
+                  <td className="py-1 text-right">
+                    <div className="font-medium">{item.nameAr || item.name}</div>
+                  </td>
+                  <td className="py-1 text-center">{item.quantity}</td>
+                  <td className="py-1 text-left font-medium">
+                    {(parseFloat(item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        {/* Payment Method */}
-        <div className="mb-8 pb-6 border-b border-gray-200">
-          <p className="text-sm text-gray-500 mb-2">طريقة الدفع</p>
-          <p className="text-lg font-semibold text-gray-800">{getPaymentMethodName(order.paymentMethod)}</p>
-        </div>
-
-        {/* Total */}
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-6 mb-8">
-          <div className="flex justify-between items-center">
-            <span className="text-xl font-bold text-gray-800">المجموع الكلي:</span>
-            <span className="text-3xl font-bold text-primary">{Number(order.totalAmount).toFixed(2)} ريال</span>
+        {/* Totals */}
+        <div className="border-t border-black pt-1.5 space-y-0.5 text-[10px]">
+          <div className="flex justify-between">
+            <span>المجموع الفرعي:</span>
+            <span>{(Number(order.totalAmount) / 1.15).toFixed(2)} ر.س</span>
+          </div>
+          <div className="flex justify-between">
+            <span>الضريبة (15%):</span>
+            <span>{(Number(order.totalAmount) - (Number(order.totalAmount) / 1.15)).toFixed(2)} ر.س</span>
+          </div>
+          <div className="flex justify-between text-sm font-black border-t border-black mt-1 pt-1">
+            <span>الإجمالي:</span>
+            <span>{Number(order.totalAmount).toFixed(2)} ر.س</span>
           </div>
         </div>
-
-        {/* Notes */}
-        {order.customerNotes && (
-          <div className="mb-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-sm font-semibold text-yellow-800 mb-2">ملاحظات:</p>
-            <p className="text-gray-700">{order.customerNotes}</p>
-          </div>
-        )}
-
-        {/* Order Tracking QR Code */}
-        {trackingQrUrl && (
-          <div className="text-center mb-8 pb-6 border-b border-gray-200">
-            <p className="text-sm font-semibold text-primary mb-2">امسح لتتبع طلبك</p>
-            <p className="text-xs text-gray-500 mb-3">Scan to Track Your Order</p>
-            <div className="inline-block p-3 bg-white border-2 border-primary/20 rounded-lg">
-              <img 
-                src={trackingQrUrl} 
-                alt="Order Tracking QR" 
-                className="w-28 h-28 mx-auto"
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              امسح الرمز للاطلاع على حالة طلبك
-            </p>
-          </div>
-        )}
 
         {/* Footer */}
-        <div className="text-center pt-6 border-t border-gray-200">
-          <p className="text-lg font-semibold text-primary mb-2">شكراً لزيارتكم</p>
-          <p className="text-gray-600">نتطلع لخدمتكم مرة أخرى</p>
+        <div className="text-center mt-4 pt-2 border-t border-black text-[9px]">
+          <p className="font-bold">شكراً لزيارتكم</p>
+          <p>الرقم الضريبي: 311234567890003</p>
+          <p className="font-bold mt-1 tracking-tight">www.cluny.cafe</p>
         </div>
       </div>
 

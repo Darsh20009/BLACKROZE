@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import LocationDistanceMap from "@/components/location-distance-map";
 import type { Employee } from "@shared/schema";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface AttendanceStatus {
   hasCheckedIn: boolean;
@@ -352,7 +353,7 @@ export default function EmployeeAttendance() {
   });
 
   return (
-    <div className="min-h-screen bg-background p-4" dir="rtl">
+    <div className="min-h-screen bg-background p-4 pb-20 sm:pb-4" dir="rtl">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -652,6 +653,7 @@ export default function EmployeeAttendance() {
           </Button>
         </div>
       </div>
+      <MobileBottomNav employeeRole={employee?.role} />
     </div>
   );
 }

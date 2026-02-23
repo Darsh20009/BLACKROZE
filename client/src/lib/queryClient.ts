@@ -1,16 +1,47 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+async function tryRestoreSession(): Promise<boolean> {
+  const stored = localStorage.getItem("currentEmployee");
+  const restoreKey = localStorage.getItem("cluny-restore-key");
+  if (!stored || !restoreKey) return false;
+  
+  try {
+    const employee = JSON.parse(stored);
+    const res = await fetch("/api/employees/restore-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ employeeId: employee.id, restoreKey }),
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem("currentEmployee", JSON.stringify(data.employee));
+      if (data.restoreKey) {
+        localStorage.setItem("cluny-restore-key", data.restoreKey);
+      }
+      return true;
+    }
+  } catch (e) {}
+  
+  localStorage.removeItem("currentEmployee");
+  localStorage.removeItem("cluny-restore-key");
+  return false;
+}
+
+let isRestoringSession = false;
+let restorePromise: Promise<boolean> | null = null;
+
 async function throwIfResNotOk(res: Response) {
  if (!res.ok) {
  const text = (await res.text()) || res.statusText;
- 
+ let errorMessage = text;
  try {
  const json = JSON.parse(text);
- const errorMessage = json.error || json.message || text;
- throw new Error(errorMessage);
+ errorMessage = json.error || json.message || text;
  } catch {
- throw new Error(text);
  }
+ throw new Error(errorMessage);
  }
 }
 
@@ -18,6 +49,7 @@ export async function apiRequest(
  method: string,
  url: string,
  data?: unknown | undefined,
+ isRetry: boolean = false,
 ): Promise<Response> {
  const res = await fetch(url, {
  method,
@@ -25,6 +57,21 @@ export async function apiRequest(
  body: data ? JSON.stringify(data) : undefined,
  credentials: "include",
  });
+
+ if (res.status === 401 && !isRetry) {
+   if (!isRestoringSession) {
+     isRestoringSession = true;
+     restorePromise = tryRestoreSession().finally(() => {
+       isRestoringSession = false;
+       restorePromise = null;
+     });
+   }
+   
+   const restored = await (restorePromise || tryRestoreSession());
+   if (restored) {
+     return apiRequest(method, url, data, true);
+   }
+ }
 
  await throwIfResNotOk(res);
  return res;
@@ -36,9 +83,24 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
  ({ on401: unauthorizedBehavior }) =>
  async ({ queryKey }) => {
- const res = await fetch(queryKey.join("/") as string, {
+ const url = queryKey.join("/") as string;
+ let res = await fetch(url, {
  credentials: "include",
  });
+
+ if (res.status === 401 && unauthorizedBehavior !== "returnNull") {
+   if (!isRestoringSession) {
+     isRestoringSession = true;
+     restorePromise = tryRestoreSession().finally(() => {
+       isRestoringSession = false;
+       restorePromise = null;
+     });
+   }
+   const restored = await (restorePromise || tryRestoreSession());
+   if (restored) {
+     res = await fetch(url, { credentials: "include" });
+   }
+ }
 
  if (unauthorizedBehavior === "returnNull" && res.status === 401) {
  return null;

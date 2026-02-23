@@ -90,6 +90,7 @@ export const DELIVERY_TYPES = {
   PICKUP: 'pickup',
   DELIVERY: 'delivery',
   DINE_IN: 'dine-in',
+  CAR_PICKUP: 'car_pickup',
 } as const;
 
 export type DeliveryType = typeof DELIVERY_TYPES[keyof typeof DELIVERY_TYPES];
@@ -117,6 +118,12 @@ export const DELIVERY_TYPE_CONFIG: Record<DeliveryType, {
     labelEn: 'Dine-in',
     icon: 'MapPin',
     color: 'bg-green-500/20 text-green-400 border-green-500/50',
+  },
+  'car_pickup': {
+    labelAr: 'استلام من السيارة',
+    labelEn: 'Car Pickup',
+    icon: 'Car',
+    color: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
   },
 };
 

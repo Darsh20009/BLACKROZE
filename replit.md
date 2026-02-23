@@ -1,8 +1,6 @@
-# BLACK ROSE – Digital Coffee Shop Management System
-
 ## Overview
 
-BLACK ROSE is a comprehensive digital management system designed to streamline operations for coffee shops. It caters to both customers through the BLACK ROSE portal and employees via the BLACK ROSE SYSTEMS portal. The system aims to modernize coffee shop management, enhance customer experience, and improve operational efficiency. Key capabilities include integrated ERP accounting, ZATCA-compliant invoicing, robust delivery management, employee shift and geofencing, and a customer loyalty program.
+CLUNY CAFE is a comprehensive digital management system designed to streamline operations for coffee shops, catering to both customers through the CLUNY CAFE portal and employees via the CLUNY SYSTEMS portal. The system aims to modernize coffee shop management, enhance customer experience, and improve operational efficiency. Key capabilities include integrated ERP accounting, ZATCA-compliant invoicing, robust delivery management, employee shift and geofencing, and a customer loyalty program. The project's vision is to provide a complete digital solution for coffee shop operations, enhancing customer engagement and optimizing internal processes.
 
 ## User Preferences
 
@@ -13,36 +11,39 @@ BLACK ROSE is a comprehensive digital management system designed to streamline o
 
 ## System Architecture
 
-### Design System (BLACK ROSE)
+### Design System (CLUNY)
 
-The system employs a modern, clean design inspired by Noon Food, featuring a vibrant teal green primary color (`#2D9B6E`) and ocean blue accent (`#2196F3`) against a pure white background. Typography uses Playfair Display for headings and Inter for body text, with Cairo as a fallback for Arabic.
-
-**Core Design Elements:**
-- **Color Palette:** Muted Sage (`#9FB2B3`), Rich Coffee Brown (`#B58B5A`).
-- **Typography:** Playfair Display (headings), Inter (body), Tajawal/IBM Plex Sans Arabic (Arabic).
-- **Layouts:** Four distinct role-based layouts (Customer, POS, Kitchen, Manager).
-- **States:** Unified components for loading (skeletons), empty, and error states.
+The system employs a modern, clean design inspired by Noon Food, featuring a vibrant teal green primary color (`#2D9B6E`) and ocean blue accent (`#2196F3`) against a pure white background. Typography uses Playfair Display for headings and Inter for body text, with Cairo as a fallback for Arabic. Core design elements include a muted sage and rich coffee brown color palette, and distinct role-based layouts (Customer, POS, Kitchen, Manager) with unified components for loading, empty, and error states.
 
 ### Technical Implementations
 
-- **POS Order Alerts & Management:** Real-time order alerts with notification sounds via WebSocket, sound/alert toggles with persistence, new orders badge counter, split-screen view toggle, enhanced live orders dialog with details panel, color-coded status borders, and order actions (start, ready, complete, cancel).
-- **Business Mode System:** Supports configurable "cafe only," "restaurant only," or "both" modes, with dynamic menu filtering and real-time status indicators.
-- **ERP Accounting System:** Features a professional Chart of Accounts following Saudi standards, double-entry bookkeeping, journal entry management, and financial reports (Trial Balance, Income Statement, Balance Sheet). Includes expense management with approval workflows and vendor management.
-- **ZATCA Professional Invoicing:** Generates ZATCA-compliant invoices with TLV encoded QR codes containing mandatory fields, integrated into order creation and standalone invoice generation.
-- **Financial Reports Dashboard:** Interactive visualizations for revenue vs. expenses, asset/liability distribution, and income statement breakdowns using `recharts`.
-- **Kitchen Display System (KDS):** Enhanced with SLA status tracking, priority badges, station routing, allergen warnings, prep time countdowns, and estimated total prep times.
-- **Loyalty Program:** Tier progress visualization (Bronze, Silver, Gold, Platinum) with progress bars and upgrade information. Unified `useLoyaltyCard` hook for consistent data management and offline sync.
-- **Menu Page Redesign:** Interactive menu with group filtering, search functionality, featured items slider, and PWA installation support. Products are now grouped by `groupId` for proper variant handling.
-- **Promotional Offers System:** Bundle/combo offers with original and discounted pricing, displayed prominently in "عروضنا" section. Supports time-based activation with start/end dates.
-- **Enhanced Addons System:** Supports both general addons (available for all products) and specific addons (linked to individual products via `CoffeeItemAddon`). The add-to-cart modal displays specific addons first, then general addons.
-- **Table Reservation System:** Time-based table occupancy, with reservations activating 30 minutes before and expiring 5 minutes after scheduled time. Staff can extend reservations.
-- **Checkout Page:** Includes discount code input, order confirmation dialog with accurate totals, and split payment options.
-- **Delivery System:** Manages external delivery platform integrations, geospatial delivery zones (polygon/radius-based), driver tracking, and order status tracking with ETA.
-- **Driver Portal & Tracking:** Driver login with phone-based authentication, order queue management, status updates, customer tracking page with real-time updates via WebSockets.
-- **Branch Geofencing:** Configurable `geofenceRadius` and `geofenceBoundary` (polygon-based) for precise attendance and location-based management. Includes manager notifications for employee alerts.
-- **Shift Management:** Supports flexible shift scheduling, including overnight shifts, and employee assignment to shifts.
-- **Employee Permissions (RBAC):** Granular, page-level access control using `allowedPages` in employee profiles and a `PageGuard` component.
-- **PWA Configuration:** Dynamic manifest switching between BLACK ROSE (customer) and BLACK ROSE SYSTEMS (employee) based on the route.
+The system features real-time POS order alerts and management via WebSockets, supporting configurable business modes (cafe, restaurant, both), and an ERP Accounting System with a professional Chart of Accounts following Saudi standards, double-entry bookkeeping, and financial reports. It includes ZATCA-compliant invoicing with TLV encoded QR codes, a Kitchen Display System (KDS) with SLA tracking and allergen warnings, and a points-based Loyalty Program with tier progression and personalized offers.
+
+Other key features include a referral system, an interactive Menu Page redesign with group filtering and PWA support, promotional offers (bundles/combos), an enhanced addons system for both general and specific items, and a Table Reservation System with time-based occupancy. The Checkout Page supports discount codes and split payments. A comprehensive Delivery System manages external platform integrations, geospatial delivery zones, and driver tracking. Employee management includes branch geofencing, flexible shift management, and granular Role-Based Access Control (RBAC) with page-level permissions. PWA configurations dynamically switch manifests between customer and employee portals.
+
+The system also includes:
+- **Admin-Configurable Loyalty & Offers System**: Admin can control points-per-SAR ratio, min points for redemption, and loyalty program toggle. Dynamic offers for first order, comeback, frequent customer, special drink, and points redemption are configurable.
+- **Discount Codes Management**: Full CRUD for discount codes with type/value/max uses.
+- **Dynamic Cluny Card**: Points-per-SAR ratio in customer card page driven by admin config.
+- **Rich Push Notification System**: Professional lock-screen notifications for Android/iOS with real-time updates for orders, customer details, and status. Supports contextual actions and RTL.
+- **PWA Background Push Notifications**: Service Worker handles push events, background sync for offline orders, and notifications even when the app is closed.
+- **Auto Push Subscription**: `useNotifications` hook manages VAPID key exchange and server registration for employees and customers.
+- **Employee-Specific PWA**: Dedicated `employee-manifest.json` for tailored staff portal experience.
+- **Payment Gateway Management System**: Admin can select NeoLeap or Geidea, enter encrypted credentials, and toggle payment methods.
+- **Secure Online Payment Flow**: PCI compliant checkout using hosted redirects and server-side verification.
+- **Config-Driven Payment Methods**: `/api/payment-methods` endpoint returns enabled methods dynamically based on admin configuration.
+- **Loyalty Points Redemption Security**: Email verification codes required for points redemption.
+- **Complete i18n Translation System**: All customer menu text uses i18n keys for Arabic and English, with dynamic switching for categories, banners, and UI labels.
+- **Independent Food/Drinks Management**: Employee menu management filters items by type (drinks/food) with separate sidebar links and category selectors.
+- **Menu Categories Employee-Managed**: Category add/delete moved to admin settings; categories have a `department` field for drinks/food management.
+- **Account Creation Enhancement**: Parent account selector for nested account hierarchy.
+- **Enhanced Customer Profile Page**: Profile editing for name and email; phone number display.
+- **Fixed Inventory Deduction Bug**: Proper inventory deduction and accounting for `costOfGoods`.
+- **Accounting Journal Entries for Purchases**: Automatic double-entry journal entries for inventory receipts.
+- **Dynamic Menu Categories**: Custom menu categories/sections with CRUD and tenant scoping.
+- **Drink Grouping by First Arabic Word**: Menu groups drinks by the first Arabic word.
+- **Drink Addon System**: Drinks can be linked as addons with display in add-to-cart modal.
+- **Cart Display Enhancement**: Cart badges show linked drink names and icons.
 
 ### Technical Stack
 
@@ -52,8 +53,8 @@ The system employs a modern, clean design inspired by Noon Food, featuring a vib
 
 ## External Dependencies
 
-- **Database:** MongoDB Atlas (BLACK ROSE-CAFE Project)
-- **Mapping/Geospatial:** `turf.js` for polygon-based geofencing.
-- **Charting:** `recharts` for financial dashboards.
+- **Database:** MongoDB Atlas (CLUNY-CAFE Project)
+- **Mapping/Geospatial:** `turf.js`
+- **Charting:** `recharts`
 - **Delivery Platforms (Integrations):** Noon Food, Hunger Station, Keeta, Marsool, Careem.
 - **QR Code Generation:** `zatca-utils.ts` (custom utility module).

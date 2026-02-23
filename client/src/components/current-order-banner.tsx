@@ -3,27 +3,52 @@ import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Coffee, ArrowLeft, X } from "lucide-react";
+import { Coffee, ArrowLeft, X, Truck } from "lucide-react";
 import OrderTracker from "./order-tracker";
 import type { Order } from "@shared/schema";
 import { useState, useEffect } from "react";
+import { useCustomer } from "@/contexts/CustomerContext";
 
 export default function CurrentOrderBanner() {
  const [, setLocation] = useLocation();
- const [customerId, setCustomerId] = useState("");
+ const { customer } = useCustomer();
  const [dismissed, setDismissed] = useState(false);
+ const [customerPhone, setCustomerPhone] = useState("");
 
  useEffect(() => {
- const savedCustomerId = localStorage.getItem("customer-id");
- if (savedCustomerId) {
- setCustomerId(savedCustomerId);
- }
- }, []);
+   // Get phone from customer context or localStorage (check multiple known keys)
+   if (customer?.phone) {
+     setCustomerPhone(customer.phone);
+   } else {
+     // Try multiple storage keys used in the app
+     const keysToCheck = ["qahwa-customer-profile", "qahwa-customer", "currentCustomer"];
+     for (const key of keysToCheck) {
+       const saved = localStorage.getItem(key);
+       if (saved) {
+         try {
+           const profile = JSON.parse(saved);
+           if (profile?.phone) {
+             setCustomerPhone(profile.phone);
+             break;
+           }
+         } catch (e) {}
+       }
+     }
+   }
+   // Reset dismissed state when phone changes
+   setDismissed(false);
+ }, [customer]);
 
  const { data: orders = [] } = useQuery<Order[]>({
- queryKey: ["/api/customers", customerId, "orders"],
- enabled: !!customerId && !dismissed,
- refetchInterval: 5000, // Refresh every 5 seconds
+   queryKey: ["/api/orders/customer", customerPhone],
+   enabled: !!customerPhone && !dismissed,
+   refetchInterval: 10000,
+   queryFn: async () => {
+     if (!customerPhone) return [];
+     const res = await fetch(`/api/orders/customer/${encodeURIComponent(customerPhone)}`);
+     if (!res.ok) return [];
+     return res.json();
+   }
  });
 
  // Get the most recent active order (not completed or cancelled)

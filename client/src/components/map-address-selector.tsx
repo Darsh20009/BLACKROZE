@@ -250,7 +250,7 @@ export default function MapAddressSelector({
         orderType: "delivery",
       });
     } else if (selectedOrderType === "pickup" && pickupInfo?.nearestBranch) {
-      const branchId = (pickupInfo.nearestBranch as any)._id?.toString() || "";
+      const branchId = (pickupInfo.nearestBranch as any).id?.toString() || "";
       const fullAddress = address || `استلام من فرع ${pickupInfo.nearestBranch.nameAr}`;
       onAddressSelected({
         fullAddress,
@@ -414,7 +414,7 @@ export default function MapAddressSelector({
             .filter((b) => b.location?.latitude && b.location?.longitude)
             .map((branch) => (
               <Circle
-                key={`circle-${(branch as any)._id || branch.nameAr}`}
+                key={`circle-${(branch as any).id || branch.nameAr}`}
                 center={[branch.location!.latitude, branch.location!.longitude]}
                 radius={PICKUP_RADIUS_METERS}
                 pathOptions={{
@@ -438,7 +438,7 @@ export default function MapAddressSelector({
             .filter((b) => b.location?.latitude && b.location?.longitude)
             .map((branch) => (
               <Marker
-                key={`marker-${(branch as any)._id || branch.nameAr}`}
+                key={`marker-${(branch as any).id || branch.nameAr}`}
                 position={[branch.location!.latitude, branch.location!.longitude]}
                 icon={branchIcon}
               >

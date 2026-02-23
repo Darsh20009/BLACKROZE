@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,9 @@ export default function ForgotPassword() {
 
  // Set SEO metadata
  useEffect(() => {
-   document.title = "نسيت كلمة المرور - BLACK ROSE | إعادة تعيين";
+   document.title = "نسيت كلمة المرور - CLUNY CAFE | إعادة تعيين";
    const metaDesc = document.querySelector('meta[name="description"]');
-   if (metaDesc) metaDesc.setAttribute('content', 'نسيت كلمة المرور؟ أعد تعيين كلمة مرورك على BLACK ROSE بسهولة');
+   if (metaDesc) metaDesc.setAttribute('content', 'نسيت كلمة المرور؟ أعد تعيين كلمة مرورك على CLUNY CAFE بسهولة');
  }, []);
 
  const handleEmailSubmit = async (e: React.FormEvent) => {

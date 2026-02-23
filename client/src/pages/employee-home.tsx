@@ -3,8 +3,9 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Coffee, LogOut, ArrowLeft, ShoppingCart, ClipboardList, User, Award, ChefHat, Wallet, Warehouse, Eye, Calendar, FileText, BarChart3, Settings, Lock, Clock } from "lucide-react";
+import { Coffee, LogOut, ArrowLeft, ShoppingCart, ClipboardList, User, Award, ChefHat, Wallet, Warehouse, Eye, Calendar, FileText, BarChart3, Settings, Lock, Clock, Utensils } from "lucide-react";
 import type { Employee } from "@shared/schema";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function EmployeeHome() {
   const [, setLocation] = useLocation();
@@ -96,6 +97,14 @@ export default function EmployeeHome() {
       testId: "button-menu-mgmt"
     },
     {
+      title: "إدارة المأكولات",
+      description: "إضافة وتعديل المأكولات",
+      icon: Utensils,
+      path: "/employee/menu-management?type=food",
+      color: "from-orange-500 to-orange-600",
+      testId: "button-food-mgmt"
+    },
+    {
       title: "إدارة المكونات",
       description: "المواد الخام والمخزون",
       icon: Warehouse,
@@ -130,17 +139,17 @@ export default function EmployeeHome() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
+    <div className="min-h-screen pb-16 sm:pb-0 bg-gradient-to-br from-background via-primary/5 to-background">
       {/* Header */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center flex-shrink-0">
-                <Coffee className="w-8 h-8 text-white" />
+              <div className="w-10 h-10 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center flex-shrink-0">
+                <Coffee className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-accent">لوحة التحكم</h1>
+                <h1 className="text-xl sm:text-3xl font-bold text-accent">لوحة التحكم</h1>
                 <p className="text-gray-400 text-sm">مرحباً {employee.fullName}</p>
               </div>
             </div>
@@ -150,8 +159,8 @@ export default function EmployeeHome() {
               onClick={handleLogout}
               data-testid="button-logout"
             >
-              <LogOut className="w-4 h-4 ml-2" />
-              تسجيل الخروج
+              <LogOut className="w-4 h-4 sm:ml-2" />
+              <span className="hidden sm:inline">تسجيل الخروج</span>
             </Button>
           </div>
 
@@ -244,6 +253,7 @@ export default function EmployeeHome() {
           </div>
         )}
       </div>
+      <MobileBottomNav employeeRole={employee?.role} onLogout={handleLogout} />
     </div>
   );
 }

@@ -1,13 +1,15 @@
 import { WebSocket, WebSocketServer } from "ws";
 import type { Server } from "http";
+import { sendPushToEmployee, sendPushToCustomer } from "./push-service";
 
 interface WSClient {
   ws: WebSocket;
-  type: "kitchen" | "display" | "order-tracking" | "pos" | "inventory" | "delivery-driver" | "delivery-tracking";
+  type: "kitchen" | "display" | "order-tracking" | "pos" | "inventory" | "delivery-driver" | "delivery-tracking" | "customer";
   orderId?: string;
   branchId?: string;
   driverId?: string;
   deliveryOrderId?: string;
+  customerId?: string;
   lastPing: number;
   isAlive: boolean;
 }
@@ -114,6 +116,7 @@ class OrderWebSocketManager {
           client.branchId = message.branchId;
           client.driverId = message.driverId;
           client.deliveryOrderId = message.deliveryOrderId;
+          client.customerId = message.customerId;
         }
         console.log(`[WS] Client subscribed as ${message.clientType}`);
         ws.send(JSON.stringify({ type: "subscribed", clientType: message.clientType }));
@@ -181,6 +184,7 @@ class OrderWebSocketManager {
       timestamp: Date.now(),
     });
 
+    // Send to connected WS clients
     this.clients.forEach((client, ws) => {
       if (ws.readyState === WebSocket.OPEN) {
         if (client.type === "kitchen" || client.type === "display" || client.type === "pos") {
@@ -191,6 +195,37 @@ class OrderWebSocketManager {
           }
         }
       }
+    });
+
+    // Also trigger a background push notification for PWA
+    const isOnline = order.orderType === 'delivery' || order.orderType === 'takeaway' || !order.employeeId;
+    this.sendPushNotification({
+      title: isOnline ? "طلب جديد أونلاين 🌐" : "طلب جديد ☕",
+      body: `طلب رقم #${order.orderNumber} بقيمة ${order.totalAmount} ر.س`,
+      url: "/employee/orders",
+      orderId: order.id,
+      sound: true,
+      isOnlineOrder: isOnline
+    });
+  }
+
+  private async sendPushNotification(payload: any) {
+    try {
+      const branchId = payload.branchId || 'all';
+      await sendPushToEmployee(branchId, {
+        title: payload.title,
+        body: payload.body,
+        url: payload.url || '/employee/orders',
+        tag: 'new-order'
+      });
+    } catch (error) {
+      console.error("[PUSH] Error sending push notification:", error);
+    }
+
+    this.broadcastToBranch("all", {
+      type: "push_alert",
+      ...payload,
+      timestamp: Date.now()
     });
   }
 
@@ -356,6 +391,54 @@ class OrderWebSocketManager {
             } catch (e) {
               this.clients.delete(ws);
             }
+          }
+        }
+      }
+    });
+  }
+
+  broadcastToBranch(branchId: string, data: any) {
+    if (!this.wss) return;
+    this.cleanupStaleClients();
+
+    const normalizedBranchId = branchId && branchId !== 'all' ? String(branchId) : "";
+    const message = JSON.stringify({
+      ...data,
+      timestamp: Date.now(),
+    });
+
+    this.clients.forEach((client, ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        const branchMatches = !normalizedBranchId || 
+          (client.branchId && client.branchId === normalizedBranchId);
+        if (branchMatches) {
+          try {
+            ws.send(message);
+          } catch (e) {
+            this.clients.delete(ws);
+          }
+        }
+      }
+    });
+  }
+
+  broadcastToCustomer(customerId: string, data: any) {
+    if (!this.wss) return;
+    this.cleanupStaleClients();
+
+    const normalizedCustomerId = String(customerId);
+    const message = JSON.stringify({
+      ...data,
+      timestamp: Date.now(),
+    });
+
+    this.clients.forEach((client, ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        if (client.type === "customer" && client.customerId === normalizedCustomerId) {
+          try {
+            ws.send(message);
+          } catch (e) {
+            this.clients.delete(ws);
           }
         }
       }

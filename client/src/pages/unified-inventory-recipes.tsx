@@ -282,7 +282,7 @@ export default function UnifiedInventoryRecipesPage() {
             <SelectContent>
               <SelectItem value="all">جميع الفروع</SelectItem>
               {branches.map((branch) => (
-                <SelectItem key={branch.id || branch._id} value={branch.id || branch._id || ""}>
+                <SelectItem key={branch.id} value={branch.id || ""}>
                   {branch.nameAr}
                 </SelectItem>
               ))}
@@ -387,7 +387,7 @@ export default function UnifiedInventoryRecipesPage() {
                     {lowStockItems.slice(0, 6).map((item) => {
                       const stockStatus = getStockStatus(item);
                       return (
-                        <div key={item.id || item._id} className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <div key={item.id} className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <p className="font-medium">{item.nameAr}</p>
@@ -434,7 +434,7 @@ export default function UnifiedInventoryRecipesPage() {
                     </TableHeader>
                     <TableBody>
                       {branchFilteredIngredients.slice(0, 5).map((item) => (
-                        <TableRow key={item.id || item._id}>
+                        <TableRow key={item.id}>
                           <TableCell className="font-medium">{item.nameAr}</TableCell>
                           <TableCell>{item.currentStock} {unitLabels[item.unit]}</TableCell>
                           <TableCell>{item.unitCost.toFixed(2)} ر.س</TableCell>
@@ -463,7 +463,7 @@ export default function UnifiedInventoryRecipesPage() {
                     </TableHeader>
                     <TableBody>
                       {branchFilteredRecipes.slice(0, 5).map((recipe) => (
-                        <TableRow key={recipe.id || recipe._id}>
+                        <TableRow key={recipe.id}>
                           <TableCell className="font-medium">{recipe.nameAr}</TableCell>
                           <TableCell>{recipe.coffeeItemName || '-'}</TableCell>
                           <TableCell>{(recipe.totalCost || 0).toFixed(2)} ر.س</TableCell>
@@ -509,7 +509,7 @@ export default function UnifiedInventoryRecipesPage() {
                         const stockStatus = getStockStatus(item);
                         const CategoryIcon = categoryLabels[item.category || 'other']?.icon || Package;
                         return (
-                          <TableRow key={item.id || item._id}>
+                          <TableRow key={item.id}>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <CategoryIcon className={`w-4 h-4 ${categoryLabels[item.category || 'other']?.color}`} />
@@ -597,7 +597,7 @@ export default function UnifiedInventoryRecipesPage() {
                     </TableHeader>
                     <TableBody>
                       {branchFilteredRecipes.map((recipe) => (
-                        <TableRow key={recipe.id || recipe._id}>
+                        <TableRow key={recipe.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <ChefHat className="w-4 h-4 text-accent" />
@@ -677,7 +677,7 @@ export default function UnifiedInventoryRecipesPage() {
                     {lowStockItems.map((item) => {
                       const stockStatus = getStockStatus(item);
                       return (
-                        <div key={item.id || item._id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <div key={item.id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                           <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-full ${stockStatus.status === 'critical' ? 'bg-red-100 dark:bg-red-900' : 'bg-primary dark:bg-primary'}`}>
                               <AlertTriangle className={`w-6 h-6 ${stockStatus.status === 'critical' ? 'text-red-600' : 'text-accent'}`} />

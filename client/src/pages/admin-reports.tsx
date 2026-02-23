@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ArrowUp, Download, Filter } from 'lucide-react';
+import { ArrowUp, Download, Filter, Printer } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -17,6 +19,7 @@ const COLORS = ['#f97316', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa', '#f472b6'
 
 export default function AdminReports() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [timePeriod, setTimePeriod] = useState('month');
   const [reportType, setReportType] = useState('revenue');
 
@@ -160,6 +163,35 @@ export default function AdminReports() {
     </Card>
   );
 
+  const { data: businessConfig, refetch: refetchConfig } = useQuery({
+    queryKey: ['/api/business-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/business-config');
+      return res.json();
+    }
+  });
+
+  const updateConfigMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      const res = await apiRequest('PATCH', '/api/business-config', updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchConfig();
+      toast({ title: "تم تحديث الإعدادات" });
+    }
+  });
+
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+
+  const handleBulkPrint = async () => {
+    if (selectedOrders.length === 0) return;
+    const res = await apiRequest('POST', '/api/orders/bulk-print-employee', { orderIds: selectedOrders });
+    const orders = await res.json();
+    const { printBulkEmployeeInvoices } = await import('@/lib/print-utils');
+    printBulkEmployeeInvoices(orders);
+  };
+
   return (
     <div className="p-6 space-y-8 bg-white dark:bg-background min-h-screen">
       {/* Header */}
@@ -169,12 +201,33 @@ export default function AdminReports() {
           <p className="text-muted-foreground mt-1">تحليل شامل لأداء المبيعات والعمليات</p>
         </div>
         <div className="flex gap-3">
+          <Card className="flex items-center gap-4 px-4 py-2">
+            <span className="text-sm font-medium">فاتورة الموظف (ملخص)</span>
+            <input 
+              type="checkbox" 
+              checked={businessConfig?.employeeInvoiceEnabled || false} 
+              onChange={(e) => updateConfigMutation.mutate({ employeeInvoiceEnabled: e.target.checked })}
+              className="w-4 h-4 cursor-pointer"
+            />
+          </Card>
           <Button variant="outline" data-testid="button-export-report">
             <Download className="w-4 h-4 ml-2" />
             تصدير
           </Button>
         </div>
       </div>
+
+      {/* Bulk Print Actions */}
+      {selectedOrders.length > 0 && (
+        <Card className="p-4 bg-primary/5 border-primary/20 flex justify-between items-center">
+          <span className="font-medium">{selectedOrders.length} طلبات مختارة</span>
+          <Button onClick={handleBulkPrint} size="sm">
+            <Printer className="w-4 h-4 ml-2" />
+            طباعة فواتير الموظفين
+          </Button>
+        </Card>
+      )}
+
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
@@ -351,6 +404,7 @@ export default function AdminReports() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b-2 border-accent dark:border-accent/30">
+                  <th className="p-4 w-10"></th>
                   <th className="text-right p-4 font-semibold">رقم الطلب</th>
                   <th className="text-right p-4 font-semibold">العميل</th>
                   <th className="text-right p-4 font-semibold">الموظف</th>
@@ -363,6 +417,17 @@ export default function AdminReports() {
                   const emp = employees.find((e: any) => e.id === order.employeeId);
                   return (
                     <tr key={order.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="p-4">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedOrders.includes(order.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedOrders([...selectedOrders, order.id]);
+                            else setSelectedOrders(selectedOrders.filter(id => id !== order.id));
+                          }}
+                          className="w-4 h-4"
+                        />
+                      </td>
                       <td className="p-4">{order.orderNumber}</td>
                       <td className="p-4 text-muted-foreground">{order.customerInfo?.name || 'زائر'}</td>
                       <td className="p-4">{emp?.fullName || '-'}</td>

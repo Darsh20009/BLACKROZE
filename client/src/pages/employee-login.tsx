@@ -8,10 +8,10 @@ import { User, Lock, Loader2, Eye, EyeOff, QrCode, Download } from "lucide-react
 import { apiRequest } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import blackroseLogoStaff from "@/assets/images/logo.png";
+import clunyLogoStaff from "@assets/cluny-logo-staff.png";
 
 export default function EmployeeLogin() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +24,7 @@ export default function EmployeeLogin() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    document.title = "تسجيل دخول الموظفين - BLACK ROSE SYSTEMS";
+    document.title = "تسجيل دخول الموظفين - CLUNY SYSTEMS";
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -38,7 +38,7 @@ export default function EmployeeLogin() {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed && (parsed.id || parsed._id)) {
+        if (parsed && parsed.id) {
            window.location.href = "/employee/dashboard";
            return;
         }
@@ -68,10 +68,12 @@ export default function EmployeeLogin() {
       
       return response.json() as Promise<Employee>;
     },
-    onSuccess: (employee) => {
-      // Persistence: currentEmployee is used by AuthGuard
+    onSuccess: (employee: any) => {
+      if (employee.restoreKey) {
+        localStorage.setItem("cluny-restore-key", employee.restoreKey);
+        delete employee.restoreKey;
+      }
       localStorage.setItem("currentEmployee", JSON.stringify(employee));
-      // Force reload to ensure session is active
       window.location.href = "/employee/dashboard";
     },
     onError: () => {
@@ -89,7 +91,8 @@ export default function EmployeeLogin() {
       return;
     }
 
-    loginMutation.mutate({ username, password });
+    const normalizedUsername = username.trim().toLowerCase();
+    loginMutation.mutate({ username: normalizedUsername, password });
   };
 
   useEffect(() => {
@@ -104,19 +107,22 @@ export default function EmployeeLogin() {
     scanner.render(
       (decodedText) => {
         try {
-          const scannedEmployeeId = decodedText.trim();
-          if (scannedEmployeeId) {
+          const scannedId = decodedText.trim();
+          if (scannedId) {
             setError("");
             scanner.clear();
             setShowQRScanner(false);
+            
+            // Try to login with scanned ID (handling both employeeId and username formats)
             loginMutation.mutate({
-              employeeId: scannedEmployeeId,
+              employeeId: scannedId,
+              username: scannedId, // Some scanners might return username as barcode
             });
           } else {
-            setError("صيغة QR غير صحيحة");
+            setError("صيغة الباركود غير صحيحة");
           }
         } catch (err) {
-          setError("خطأ في قراءة QR الكود");
+          setError("خطأ في قراءة الباركود");
         }
       },
       (error) => {
@@ -143,9 +149,9 @@ export default function EmployeeLogin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-40 h-28 mb-4">
-            <img src={blackroseLogoStaff} alt="BLACK ROSE SYSTEMS" className="w-full h-full object-contain" />
+            <img src={clunyLogoStaff} alt="CLUNY SYSTEMS" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">BLACK ROSE SYSTEMS</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2 font-playfair">CLUNY SYSTEMS</h1>
           <p className="text-muted-foreground font-cairo">تسجيل دخول الموظف</p>
         </div>
 

@@ -10,7 +10,7 @@ import { ArrowRight, Calendar, FileText, Clock, AlertCircle, CheckCircle2 } from
 import { Badge } from "@/components/ui/badge";
 
 interface LeaveRequest {
-  _id: string;
+  id: string;
   startDate: string;
   endDate: string;
   reason: string;
@@ -264,9 +264,9 @@ export default function LeaveRequestPage() {
               <div className="space-y-3">
                 {requests.map((request) => (
                   <div
-                    key={request._id}
+                    key={request.id}
                     className="bg-primary/20 border border-primary/20 rounded-lg p-4"
-                    data-testid={`card-leave-request-${request._id}`}
+                    data-testid={`card-leave-request-${request.id}`}
                   >
                     {/* Status Badge */}
                     <div className="flex items-start justify-between mb-3">

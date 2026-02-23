@@ -19,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
 type CheckoutStep = 'review' | 'delivery' | 'payment' | 'confirmation' | 'success';
-type DeliveryType = 'pickup' | 'delivery' | null;
+type DeliveryType = 'pickup' | 'delivery' | 'curbside' | null;
 
 const CheckoutModal = memo(() => {
  const [, navigate] = useLocation();
@@ -40,6 +40,11 @@ const CheckoutModal = memo(() => {
  // State for customer form fields
  const [customerName, setCustomerName] = useState(customer?.name || "");
  const [customerPhone, setCustomerPhone] = useState(customer?.phone || "");
+
+ // Vehicle info state
+ const [carType, setCarType] = useState(customer?.carType || "");
+ const [carColor, setCarColor] = useState(customer?.carColor || "");
+ const [carPlate, setCarPlate] = useState("");
 
  // Delivery/Pickup state
  const [deliveryType, setDeliveryType] = useState<DeliveryType>(null);
@@ -108,6 +113,10 @@ const CheckoutModal = memo(() => {
  toast({ variant: "destructive", title: "يرجى إدخال عنوان التوصيل" });
  return;
  }
+ if (deliveryType === 'curbside' && (!carType.trim() || !carColor.trim() || !carPlate.trim())) {
+   toast({ variant: "destructive", title: "يرجى إدخال بيانات السيارة كاملة" });
+   return;
+ }
  setCurrentStep('payment');
  };
 
@@ -139,7 +148,17 @@ const CheckoutModal = memo(() => {
       customerId: customer?.id || null,
       customerInfo: { name: customerName, phone: customerPhone },
       deliveryType: deliveryType,
-      branchId: deliveryType === 'pickup' ? selectedBranch : null,
+      carPickup: deliveryType === 'curbside' || deliveryType === 'car-pickup',
+      carInfo: (deliveryType === 'curbside' || deliveryType === 'car-pickup') ? {
+        carType: carType,
+        carColor: carColor,
+        plateNumber: carPlate
+      } : null,
+      carType: (deliveryType === 'curbside' || deliveryType === 'car-pickup') ? carType : null,
+      carColor: (deliveryType === 'curbside' || deliveryType === 'car-pickup') ? carColor : null,
+      carPlate: (deliveryType === 'curbside' || deliveryType === 'car-pickup') ? carPlate : null,
+      plateNumber: (deliveryType === 'curbside' || deliveryType === 'car-pickup') ? carPlate : null,
+      branchId: (deliveryType === 'pickup' || deliveryType === 'curbside' || deliveryType === 'car-pickup') ? selectedBranch : null,
       deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
       deliveryNotes: deliveryNotes || null,
       paymentReceiptUrl: receiptPreview || null,
@@ -148,26 +167,36 @@ const CheckoutModal = memo(() => {
  createOrderMutation.mutate(orderData);
  };
 
- const handlePaymentConfirmed = async (order: any) => {
- try {
- const pdfBlob = await generatePDF(order, cartItems as any, selectedPaymentMethod as any);
- const url = URL.createObjectURL(pdfBlob);
- const link = document.createElement('a');
- link.href = url;
- link.download = `invoice-${order.orderNumber}.pdf`;
- link.click();
- URL.revokeObjectURL(url);
- setCurrentStep('success');
- toast({ title: "تم إنشاء الطلب بنجاح!" });
- setTimeout(() => {
- clearCart();
- hideCheckout();
- navigate(customer ? "/my-orders" : `/tracking?order=${order.orderNumber}`);
- }, 2000);
- } catch (error) {
- toast({ variant: "destructive", title: "خطأ في توليد الفاتورة" });
- }
- };
+  const handlePaymentConfirmed = async (order: any) => {
+   try {
+     // Check for business config for employee invoice
+     const configRes = await fetch("/api/business-config");
+     const config = configRes.ok ? await configRes.json() : null;
+     
+     if (config?.employeeInvoiceEnabled) {
+       const { printEmployeeInvoice } = await import("@/lib/print-utils");
+       await printEmployeeInvoice(order);
+     } else {
+       const pdfBlob = await generatePDF(order, cartItems as any, selectedPaymentMethod as any);
+       const url = URL.createObjectURL(pdfBlob);
+       const link = document.createElement('a');
+       link.href = url;
+       link.download = `invoice-${order.orderNumber}.pdf`;
+       link.click();
+       URL.revokeObjectURL(url);
+     }
+     
+     setCurrentStep('success');
+     toast({ title: "تم إنشاء الطلب بنجاح!" });
+     setTimeout(() => {
+       clearCart();
+       hideCheckout();
+       navigate(customer ? "/my-orders" : `/tracking?order=${order.orderNumber}`);
+     }, 2000);
+   } catch (error) {
+     toast({ variant: "destructive", title: "خطأ في توليد الفاتورة" });
+   }
+  };
 
  const handleClose = () => {
  hideCheckout();
@@ -269,8 +298,50 @@ const CheckoutModal = memo(() => {
  </div>
  )}
  </div>
- </div>
- </RadioGroup>
+                   <div className={`p-4 rounded-lg border-2 ${deliveryType === 'curbside' ? 'border-primary bg-primary/10' : 'border-border'}`} onClick={() => setDeliveryType('curbside')}>
+                    <div className="flex items-center space-x-3 space-x-reverse">
+                      <RadioGroupItem value="curbside" id="curbside" />
+                      <Label htmlFor="curbside" className="font-semibold flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4" />
+                        استلام من السيارة
+                      </Label>
+                    </div>
+                    {deliveryType === 'curbside' && (
+                      <div className="mt-4 space-y-4 border-t pt-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>نوع السيارة</Label>
+                            <Input 
+                              value={carType} 
+                              onChange={(e) => setCarType(e.target.value)} 
+                              placeholder="مثال: تويوتا كامري" 
+                              dir="rtl" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>لون السيارة</Label>
+                            <Input 
+                              value={carColor} 
+                              onChange={(e) => setCarColor(e.target.value)} 
+                              placeholder="مثال: أبيض" 
+                              dir="rtl" 
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>رقم اللوحة</Label>
+                          <Input 
+                            value={carPlate} 
+                            onChange={(e) => setCarPlate(e.target.value)} 
+                            placeholder="مثال: أ ب ج 1234" 
+                            dir="rtl" 
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </RadioGroup>
  </div>
  <div className="flex gap-3"><Button variant="outline" onClick={() => setCurrentStep('review')} className="flex-1">رجوع</Button><Button onClick={handleProceedDelivery} className="flex-1">متابعة</Button></div>
  </div>

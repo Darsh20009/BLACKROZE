@@ -16,7 +16,6 @@ export function Toaster() {
 
   useEffect(() => {
     if (toasts.length > 0) {
-      /* Sound disabled per user request
       const lastToast = toasts[toasts.length - 1];
       const title = lastToast.title?.toString().toLowerCase() || "";
       const description = lastToast.description?.toString().toLowerCase() || "";
@@ -26,7 +25,6 @@ export function Toaster() {
       } else {
         playSound('notification');
       }
-      */
     }
   }, [toasts, playSound]);
 

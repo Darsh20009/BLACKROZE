@@ -90,7 +90,6 @@ interface RawItem {
 
 interface Branch {
   id?: string;
-  _id?: string;
   nameAr: string;
 }
 
@@ -200,6 +199,7 @@ export default function InventoryStockPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/stock"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/movements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/accounting/journal-entries"] });
       setIsNewBatchOpen(false);
       setNewBatchData({
         branchId: "",
@@ -210,7 +210,7 @@ export default function InventoryStockPage() {
       });
       toast({ 
         title: "تمت إضافة الدفعة بنجاح",
-        description: "تم تحديث المخزون بالكمية الجديدة"
+        description: "تم تحديث المخزون والقيود المحاسبية بالكمية الجديدة"
       });
     },
     onError: (error: any) => {
@@ -279,7 +279,7 @@ export default function InventoryStockPage() {
     });
   };
 
-  const getBranchName = (id: string) => branches.find(b => (b.id || b._id) === id)?.nameAr || id;
+  const getBranchName = (id: string) => branches.find(b => b.id === id)?.nameAr || id;
 
   const getStockStatus = (stock: BranchStock) => {
     const minLevel = stock.rawItem?.minStockLevel || 0;
@@ -543,7 +543,7 @@ export default function InventoryStockPage() {
                   <SelectContent>
                     <SelectItem value="all">كل الفروع</SelectItem>
                     {branches.map((branch) => (
-                      <SelectItem key={branch.id || branch._id} value={(branch.id || branch._id) as string}>
+                      <SelectItem key={branch.id} value={branch.id as string}>
                         {branch.nameAr}
                       </SelectItem>
                     ))}
@@ -631,6 +631,14 @@ export default function InventoryStockPage() {
                               <span>الحد الأدنى: {stock.rawItem?.minStockLevel || 0}</span>
                               <span>{getBranchName(stock.branchId)}</span>
                             </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-sm bg-muted/50 rounded-lg p-2">
+                            <div className="flex items-center gap-1">
+                              <Target className="h-3 w-3 text-accent" />
+                              <span className="text-muted-foreground">المخزون الحصري:</span>
+                            </div>
+                            <span className="font-bold font-mono">{stock.currentQuantity} {unitLabels[stock.rawItem?.unit || ""]}</span>
                           </div>
 
                           <div className="flex items-center justify-between text-sm bg-muted/50 rounded-lg p-2">
@@ -836,7 +844,7 @@ export default function InventoryStockPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {branches.map((branch) => (
-                        <SelectItem key={branch.id || branch._id} value={(branch.id || branch._id) as string}>
+                        <SelectItem key={branch.id} value={branch.id as string}>
                           {branch.nameAr}
                         </SelectItem>
                       ))}

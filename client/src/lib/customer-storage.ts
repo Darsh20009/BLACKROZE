@@ -47,6 +47,18 @@ export interface LocalOrder {
  createdAt: string;
 }
 
+// Active Offer Interface
+export interface ActiveOffer {
+  id: string;
+  title: string;
+  description: string;
+  discount: number;
+  type: 'loyalty' | 'comeback' | 'birthday' | 'frequent' | 'new' | 'percentage' | 'fixed';
+  coffeeItemId?: string;
+  appliedAt: string;
+  expiresAt?: string;
+}
+
 // Local Storage Keys
 const STORAGE_KEYS = {
  CUSTOMER_PROFILE: 'qahwa-customer-profile',
@@ -54,7 +66,8 @@ const STORAGE_KEYS = {
  CARD_NUMBERS_POOL: 'qahwa-card-numbers-pool',
  GUEST_MODE: 'qahwa-guest-mode',
  CARD_DESIGN: 'qahwa-card-design',
- CARD_PASSWORD: 'qahwa-card-password'
+ CARD_PASSWORD: 'qahwa-card-password',
+ ACTIVE_OFFER: 'qahwa-active-offer'
 };
 
 // Pre-generated card numbers pool (10% discount cards)
@@ -267,5 +280,30 @@ export const customerStorage = {
  return { success: true, newBalance, shortfall: 0 };
  }
  return { success: false, newBalance: balance, shortfall: amount - balance };
- }
+ },
+
+  setActiveOffer(offer: Omit<ActiveOffer, 'appliedAt'>): void {
+    const activeOffer: ActiveOffer = {
+      ...offer,
+      appliedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_OFFER, JSON.stringify(activeOffer));
+  },
+
+  getActiveOffer(): ActiveOffer | null {
+    const stored = localStorage.getItem(STORAGE_KEYS.ACTIVE_OFFER);
+    if (!stored) return null;
+    const offer = safeJsonParse<ActiveOffer | null>(stored, null);
+    if (!offer) return null;
+    
+    if (offer.expiresAt && new Date(offer.expiresAt) < new Date()) {
+      this.clearActiveOffer();
+      return null;
+    }
+    return offer;
+  },
+
+  clearActiveOffer(): void {
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_OFFER);
+  }
 };

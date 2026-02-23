@@ -23,9 +23,9 @@ export default function ResetPassword() {
 
  // Set SEO metadata
  useEffect(() => {
-   document.title = "إعادة تعيين كلمة المرور - BLACK ROSE";
+   document.title = "إعادة تعيين كلمة المرور - CLUNY CAFE";
    const metaDesc = document.querySelector('meta[name="description"]');
-   if (metaDesc) metaDesc.setAttribute('content', 'إعادة تعيين كلمة المرور على BLACK ROSE - أدخل كلمة مرور جديدة آمنة');
+   if (metaDesc) metaDesc.setAttribute('content', 'إعادة تعيين كلمة المرور على CLUNY CAFE - أدخل كلمة مرور جديدة آمنة');
  }, []);
 
  useEffect(() => {

@@ -17,8 +17,7 @@ import {
 } from "lucide-react";
 
 interface DeliveryOrder {
-  _id: string;
-  id?: string;
+  id: string;
   orderId: string;
   orderNumber?: string;
   status: string;
@@ -39,8 +38,7 @@ interface DeliveryOrder {
 }
 
 interface Driver {
-  _id: string;
-  id?: string;
+  id: string;
   fullName: string;
   phone: string;
   status: string;
@@ -72,7 +70,7 @@ export default function DriverPortal() {
   const { toast } = useToast();
 
   useEffect(() => {
-    document.title = "بوابة المندوب - BLACK ROSE SYSTEMS";
+    document.title = "بوابة المندوب - CLUNY SYSTEMS";
     const storedDriver = localStorage.getItem("currentDriver");
     if (storedDriver) {
       const driverData = JSON.parse(storedDriver);
@@ -82,7 +80,7 @@ export default function DriverPortal() {
   }, []);
 
   const { data: ordersData, isLoading: loadingOrders, refetch: refetchOrders } = useQuery({
-    queryKey: ['/api/delivery/orders/driver', driver?._id || driver?.id],
+    queryKey: ['/api/delivery/orders/driver', driver?.id],
     enabled: !!driver,
   });
 
@@ -102,7 +100,7 @@ export default function DriverPortal() {
 
   const toggleOnlineMutation = useMutation({
     mutationFn: async (status: string) => {
-      const driverId = driver?._id || driver?.id;
+      const driverId = driver?.id;
       return apiRequest('PATCH', `/api/delivery/drivers/${driverId}/status`, { status });
     },
     onSuccess: (_, status) => {
@@ -257,7 +255,7 @@ export default function DriverPortal() {
             ) : (
               activeOrders.map((order: DeliveryOrder) => (
                 <OrderCard 
-                  key={order._id || order.id} 
+                  key={order.id} 
                   order={order} 
                   onStatusChange={handleStatusChange}
                   isPending={updateStatusMutation.isPending}
@@ -272,7 +270,7 @@ export default function DriverPortal() {
             ) : (
               completedOrders.slice(0, 20).map((order: DeliveryOrder) => (
                 <OrderCard 
-                  key={order._id || order.id} 
+                  key={order.id} 
                   order={order} 
                   onStatusChange={handleStatusChange}
                   isPending={updateStatusMutation.isPending}
@@ -298,7 +296,7 @@ function OrderCard({
   isPending: boolean;
   isCompleted?: boolean;
 }) {
-  const orderId = order._id || order.id || "";
+  const orderId = order.id || "";
   const statusInfo = ORDER_STATUS_LABELS[order.status] || { label: order.status, color: "bg-gray-500" };
 
   const getNextStatus = (currentStatus: string): string | null => {

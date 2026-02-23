@@ -64,9 +64,9 @@ export default function ManagerDashboard() {
 
  // Set SEO metadata
  useEffect(() => {
-   document.title = "لوحة تحكم المدير - BLACK ROSE | إدارة المبيعات والعمليات";
+   document.title = "لوحة تحكم المدير - CLUNY CAFE | إدارة المبيعات والعمليات";
    const metaDesc = document.querySelector('meta[name="description"]');
-   if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم المدير في BLACK ROSE - إدارة شاملة للمبيعات والموظفين والفروع والمخزون');
+   if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم المدير في CLUNY CAFE - إدارة شاملة للمبيعات والموظفين والفروع والمخزون');
  }, []);
  const [isAddBranchOpen, setIsAddBranchOpen] = useState(false);
  const [isEditBranchOpen, setIsEditBranchOpen] = useState(false);
@@ -210,7 +210,7 @@ export default function ManagerDashboard() {
  const { data: allOrders = [] } = useQuery<Order[]>({
  queryKey: ["/api/orders"],
  enabled: !!manager,
- refetchInterval: !!manager ? 5000 : false,
+ refetchInterval: !!manager ? 15000 : false,
  });
 
  const orders = isAdmin ? allOrders : allOrders.filter(order => order.branchId === managerBranchId);
@@ -220,7 +220,7 @@ export default function ManagerDashboard() {
  enabled: !!manager,
  });
 
- const branches = isAdmin ? allBranches : allBranches.filter(branch => branch.id === managerBranchId || branch._id === managerBranchId);
+ const branches = isAdmin ? allBranches : allBranches.filter(branch => branch.id === managerBranchId);
 
  const availableManagers = allEmployees.filter(emp => 
  emp.role === "manager" || emp.role === "admin"
@@ -425,7 +425,7 @@ export default function ManagerDashboard() {
  }
  
  updateBranchMutation.mutate({
- id: editingBranch._id || editingBranch.id,
+ id: editingBranch.id,
  data: branchForm
  });
  };
@@ -449,7 +449,7 @@ export default function ManagerDashboard() {
  const handleExportData = () => {
  try {
  const ordersData = filteredOrders.map(order => {
- const employee = employees.find(e => e._id === order.employeeId);
+ const employee = employees.find(e => e.id === order.employeeId);
  return {
  'رقم الطلب': order.orderNumber,
  'التاريخ ': order.createdAt ? new Date(order.createdAt).toLocaleString('ar-SA') : '',
@@ -576,7 +576,7 @@ export default function ManagerDashboard() {
  const todayRevenue = todayOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0);
 
  const employeesWithStats: EmployeeWithStats[] = employees.map(emp => {
- const empId = emp._id?.toString() || emp.id?.toString();
+ const empId = emp.id?.toString();
  const empOrders = filteredOrders.filter(o => {
  const orderEmpId = o.employeeId?.toString();
  return orderEmpId === empId;
@@ -645,83 +645,72 @@ export default function ManagerDashboard() {
  .slice(0, 10);
  })();
 
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--accent))', 'hsl(var(--secondary))'];
-  
-  const growthRate = (() => {
-    if (dateFilter === "today" || dateFilter === "all") return 0;
-    const now = new Date();
-    const periodStart = dateFilter === "week" ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) :
-    dateFilter === "month" ? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) : null;
-    if (!periodStart) return 0;
-    
-    const periodOrders = orders.filter(o => {
-      if (!o.createdAt) return false;
-      const date = new Date(o.createdAt);
-      return !isNaN(date.getTime()) && date >= periodStart;
-    });
-    
-    const prevPeriodEnd = periodStart;
-    const prevPeriodStart = dateFilter === "week" ? new Date(periodStart.getTime() - 7 * 24 * 60 * 60 * 1000) :
-    new Date(periodStart.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const prevPeriodOrders = orders.filter(o => {
-      if (!o.createdAt) return false;
-      const date = new Date(o.createdAt);
-      return !isNaN(date.getTime()) && date >= prevPeriodStart && date < prevPeriodEnd;
-    });
-    
-    const currentRevenue = periodOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-    const previousRevenue = prevPeriodOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-    
-    if (previousRevenue === 0) return currentRevenue > 0 ? 100 : 0;
-    return Number((((currentRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1));
-  })();
+ const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--accent))', 'hsl(var(--secondary))'];
+ 
+ const growthRate = (() => {
+ if (dateFilter === "today" || dateFilter === "all") return 0;
+ const now = new Date();
+ const periodStart = dateFilter === "week" ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) :
+ dateFilter === "month" ? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) : null;
+ if (!periodStart) return 0;
+ 
+ const periodOrders = orders.filter(o => {
+ if (!o.createdAt) return false;
+ const date = new Date(o.createdAt);
+ return !isNaN(date.getTime()) && date >= periodStart;
+ });
+ 
+ const prevPeriodEnd = periodStart;
+ const prevPeriodStart = dateFilter === "week" ? new Date(periodStart.getTime() - 7 * 24 * 60 * 60 * 1000) :
+ new Date(periodStart.getTime() - 30 * 24 * 60 * 60 * 1000);
+ const prevPeriodOrders = orders.filter(o => {
+ if (!o.createdAt) return false;
+ const date = new Date(o.createdAt);
+ return !isNaN(date.getTime()) && date >= prevPeriodStart && date < prevPeriodEnd;
+ });
+ 
+ const currentRevenue = periodOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+ const previousRevenue = prevPeriodOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+ 
+ if (previousRevenue === 0) return currentRevenue > 0 ? 100 : 0;
+ return Number((((currentRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1));
+ })();
 
-  // Dashboard Arabic translations fallback
-  const dashboardTranslations: Record<string, string> = {
-    "manager.dashboard": "لوحة تحكم المدير",
-    "manager.welcome": "مرحباً",
-    "common.logout": "تسجيل الخروج",
-    "common.back": "رجوع",
-    "manager.export": "تصدير البيانات"
-  };
-
-  const tFallback = (key: string) => dashboardTranslations[key] || key;
-
-  return (
-    <div className="min-h-screen bg-background p-6" dir="rtl">
-      <div className="max-w-7xl mx-auto">
-        <header className="bg-card backdrop-blur-sm rounded-2xl border border-border p-6 mb-6">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center shadow-lg">
-                <Coffee className="w-7 h-7 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-primary">
-                  {tFallback("manager.dashboard")}
-                </h1>
-                <p className="text-muted-foreground text-sm">{tFallback("manager.welcome")}، {manager.fullName}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                data-testid="button-logout"
-              >
-                {tFallback("common.logout")}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/employee/dashboard")}
-                data-testid="button-back"
-              >
-                <ArrowLeft className="w-4 h-4 ml-2" />
-                {tFallback("common.back")}
-              </Button>
-            </div>
-          </div>
-        </header>
+ return (
+ <div className="min-h-screen bg-background p-6" dir="rtl">
+ <div className="max-w-7xl mx-auto">
+ <header className="bg-card backdrop-blur-sm rounded-2xl border border-border p-6 mb-6">
+ <div className="flex items-center justify-between gap-4 flex-wrap">
+ <div className="flex items-center gap-4">
+ <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center shadow-lg">
+ <Coffee className="w-7 h-7 text-primary-foreground" />
+ </div>
+ <div>
+ <h1 className="text-2xl font-bold text-primary">
+ لوحة تحكم المدير
+ </h1>
+ <p className="text-muted-foreground text-sm">مرحباً، {manager.fullName}</p>
+ </div>
+ </div>
+ <div className="flex items-center gap-3 flex-wrap">
+ <Button
+ variant="outline"
+ onClick={handleLogout}
+ data-testid="button-logout"
+ >
+ تسجيل الخروج
+ </Button>
+ <Button
+ variant="outline"
+ onClick={() => setLocation("/employee/dashboard")}
+ data-testid="button-back"
+ >
+ <ArrowLeft className="w-4 h-4 ml-2" />
+ رجوع
+ </Button>
+ </div>
+ </div>
+ </header>
 
  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
  <Button
@@ -896,9 +885,9 @@ export default function ManagerDashboard() {
  <EmptyState title="لا يوجد طلبات" description="لم يتم العثور على طلبات في هذه الفترة" />
  ) : (
  filteredOrders.slice(0, 10).map((order) => {
- const employee = employees.find(e => e._id === order.employeeId);
+ const employee = employees.find(e => e.id === order.employeeId);
  return (
- <div key={order._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border rounded-xl bg-muted/30 gap-4">
+ <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border rounded-xl bg-muted/30 gap-4">
  <div className="flex items-center gap-4">
  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
  <Receipt className="w-6 h-6 text-primary" />
@@ -919,7 +908,7 @@ export default function ManagerDashboard() {
  {order.status}
  </Badge>
  </div>
- <Button variant="ghost" size="icon" onClick={() => setLocation(`/order-receipt/${order._id}`)}>
+ <Button variant="ghost" size="icon" onClick={() => setLocation(`/order-receipt/${order.id}`)}>
  <ExternalLink className="w-4 h-4" />
  </Button>
  </div>
@@ -1017,7 +1006,7 @@ export default function ManagerDashboard() {
  <CardContent>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  {employeesWithStats.map((emp) => {
- const empId = emp._id?.toString() || emp.id?.toString();
+ const empId = emp.id?.toString();
  return (
  <div key={empId} className="p-4 border border-border rounded-xl bg-muted/30">
  <div className="flex items-center gap-3 mb-4">
@@ -1165,7 +1154,7 @@ export default function ManagerDashboard() {
  <SelectItem value="none" disabled>لا يوجد مديرون متاحون</SelectItem>
  ) : (
  availableManagers.map((emp) => (
- <SelectItem key={emp._id || emp.id} value={emp._id || emp.id || ""}>
+ <SelectItem key={emp.id} value={emp.id || ""}>
  {emp.fullName} - {emp.role === "admin" ? "مدير عام" : "مدير"}
  </SelectItem>
  ))
@@ -1443,7 +1432,7 @@ export default function ManagerDashboard() {
  <EmptyState title="لا يوجد فروع" description="لم يتم العثور على فروع مسجلة" />
  ) : (
  branches.map((branch) => (
- <Card key={branch._id || branch.id} className="border-border/50 hover:border-primary/50 transition-colors">
+ <Card key={branch.id} className="border-border/50 hover:border-primary/50 transition-colors">
  <CardContent className="p-4">
  <div className="flex justify-between items-start mb-4">
  <div className="flex items-center gap-3">
@@ -1492,7 +1481,7 @@ export default function ManagerDashboard() {
  className="flex-1"
  onClick={() => {
  if (confirm('هل أنت متأكد من حذف هذا الفرع؟')) {
- deleteBranchMutation.mutate(branch._id || branch.id);
+ deleteBranchMutation.mutate(branch.id);
  }
  }}
  disabled={deleteBranchMutation.isPending}
@@ -1523,7 +1512,7 @@ export default function ManagerDashboard() {
  </div>
  </CardHeader>
  <CardContent>
- <CouponManagement employeeId={manager?._id || manager?.id || ''} />
+ <CouponManagement employeeId={manager?.id || ''} />
  </CardContent>
  </Card>
  </TabsContent>

@@ -1,34 +1,41 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCartStore } from "@/lib/cart-store";
-import { Trash2, Plus, Minus, ShoppingCart, ArrowLeft, ArrowRight } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingCart, ArrowLeft, ArrowRight, Coffee } from "lucide-react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import type { IProductAddon, CoffeeItem } from "@shared/schema";
 
 export default function CartPage() {
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { cartItems, updateQuantity, removeFromCart, getTotalPrice } = useCartStore();
 
-  const isAr = true;
+  // Fetch addons for display
+  const { data: allAddons = [] } = useQuery<IProductAddon[]>({
+    queryKey: ["/api/product-addons"],
+  });
 
-  const t = (key: string) => {
-    const translations: Record<string, string> = {
-      "cart.empty_title": "سلتك فارغة",
-      "cart.empty_desc": "ابدأ بإضافة بعض المشروبات اللذيذة لسلتك",
-      "cart.continue_shopping": "استمر في التسوق",
-      "cart.title": "سلة التسوق",
-      "cart.item_size": "الحجم",
-      "cart.item_addons": "الإضافات",
-      "cart.total": "الإجمالي",
-      "cart.checkout": "الدفع",
-      "currency": "ر.س"
-    };
-    return translations[key] || key;
+  // Fetch coffee items for linked drink addons
+  const { data: allCoffeeItems = [] } = useQuery<CoffeeItem[]>({
+    queryKey: ["/api/coffee-items"],
+  });
+
+  // Get addon info by ID
+  const getAddonInfo = (addonId: string) => {
+    const addon = allAddons.find(a => a.id === addonId);
+    if (!addon) return null;
+    const linkedDrink = addon.linkedCoffeeItemId 
+      ? allCoffeeItems.find(item => item.id === addon.linkedCoffeeItemId)
+      : null;
+    return { addon, linkedDrink };
   };
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4" data-testid="page-cart-empty" dir="rtl">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4" data-testid="page-cart-empty" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <ShoppingCart className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
@@ -44,7 +51,7 @@ export default function CartPage() {
               className="bg-primary text-accent-foreground gap-2" 
               data-testid="button-continue-shopping"
             >
-              <ArrowRight className="w-4 h-4" />
+              {i18n.language === 'ar' ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
               {t("cart.continue_shopping")}
             </Button>
           </CardContent>
@@ -54,18 +61,18 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-4 sm:py-6 md:py-8" data-testid="page-cart" dir="rtl">
+    <div className="min-h-screen bg-background py-4 sm:py-6 md:py-8" data-testid="page-cart" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <Card>
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="flex items-center text-lg sm:text-xl md:text-2xl font-bold text-foreground" data-testid="text-cart-title">
-              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 ml-2" />
+              <ShoppingCart className={`w-5 h-5 sm:w-6 sm:h-6 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
               {t("cart.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 sm:space-y-4">
             {cartItems.map((item) => {
-              const currentName = item.coffeeItem?.nameAr;
+              const currentName = i18n.language === 'ar' ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn || item.coffeeItem?.nameAr;
               return (
                 <div 
                   key={item.id} 
@@ -83,9 +90,31 @@ export default function CartPage() {
                         </Badge>
                       )}
                       {item.selectedAddons && item.selectedAddons.length > 0 && (
-                        <Badge variant="secondary" className="text-[10px] py-0 h-4">
-                          {t("cart.item_addons")}: {item.selectedAddons.length}
-                        </Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {item.selectedAddons.map((addonId) => {
+                            const info = getAddonInfo(addonId);
+                            if (!info) return (
+                              <Badge key={addonId} variant="outline" className="text-[10px] py-0 h-5 opacity-50">
+                                {t("cart.loading")}...
+                              </Badge>
+                            );
+                            const { addon, linkedDrink } = info;
+                            const displayName = addon.isAddonDrink && linkedDrink 
+                              ? `${addon.nameAr} (${linkedDrink.nameAr})`
+                              : addon.nameAr;
+                            return (
+                              <Badge 
+                                key={addonId} 
+                                variant={addon.isAddonDrink ? "default" : "secondary"} 
+                                className={`text-[10px] py-0 h-5 flex items-center gap-1 ${addon.isAddonDrink ? "bg-primary/20 text-primary border-primary/30" : ""}`}
+                              >
+                                {addon.isAddonDrink && <Coffee className="w-3 h-3" />}
+                                {displayName}
+                                <span className="opacity-70">+{addon.price}</span>
+                              </Badge>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1" data-testid={`text-item-details-${item.id}`}>
@@ -99,7 +128,7 @@ export default function CartPage() {
                       })()} {t("currency")} × {item.quantity}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end gap-2">
+                  <div className={`flex items-center justify-between sm:justify-end gap-2`}>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"

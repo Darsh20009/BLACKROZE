@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { useLoyaltyCard, type LoyaltyCard } from "@/hooks/useLoyaltyCard";
+import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
 
 interface PaymentMethodsProps {
  paymentMethods: PaymentMethodInfo[];
@@ -29,7 +29,7 @@ export default function PaymentMethods({
   const [searchCardNumber, setSearchCardNumber] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isAddingCard, setIsAddingCard] = useState(false);
-  const { card: autoCard, isLoading: isLoadingCard, updateCardInCache } = useLoyaltyCard(propCustomerPhone);
+  const { card: autoCard, updateCardInCache } = useLoyaltyCard(propCustomerPhone);
   
   const foundCard = autoCard || initialLoyaltyCard;
 
@@ -107,20 +107,25 @@ export default function PaymentMethods({
      <h3 className="text-lg font-semibold text-foreground mb-4">اختر طريقة الدفع</h3>
      <div className="space-y-4">
      {paymentMethods.map((method) => {
-    const isQahwaCard = (method.id as string) === 'qahwa-card' || (method.id as string) === 'loyalty-card';
+    const isQahwaCard = (method.id as string) === 'qahwa-card';
     const isNeoLeap = (method.id as string) === 'neoleap' || (method.id as string) === 'neoleap-apple-pay' || (method.id as string) === 'apple_pay';
     const isApplePay = (method.id as string) === 'apple_pay' || (method.id as string) === 'neoleap-apple-pay';
+    const isLoyaltyCard = (method.id as string) === 'loyalty-card';
     const isSelected = selectedMethod === method.id;
 
-    // Only show Apple Pay on iOS/iPhone
-    const [isIOS, setIsIOS] = useState(false);
-    useEffect(() => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      const iosDevices = ['iphone', 'ipad', 'ipod'];
-      setIsIOS(iosDevices.some(device => userAgent.includes(device)));
-    }, []);
+    // Filter for POS: Only Cash, Network (pos), and Cluny Card (qahwa-card)
+    const allowedPosMethods = ['cash', 'pos', 'qahwa-card'];
+    const isPosRoute = window.location.pathname.includes('/employee/pos');
+    if (isPosRoute && !allowedPosMethods.includes(method.id as string)) {
+      return null;
+    }
+
+    const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent.toLowerCase() : '';
+    const iosDevices = ['iphone', 'ipad', 'ipod'];
+    const isIOS = iosDevices.some(device => userAgent.includes(device));
 
     if (isApplePay && !isIOS) return null;
+    if (isLoyaltyCard) return null; // Always hide loyalty card from customer checkout
 
     return (
       <div key={method.id} className="relative group">
@@ -165,7 +170,7 @@ export default function PaymentMethods({
                  <div className="relative flex flex-col justify-between text-white h-full py-8 px-8">
                    <div className="flex justify-between items-start flex-shrink-0">
                      <div className="space-y-1">
-                       <p className="text-xs uppercase tracking-widest opacity-75">BLACK ROSE</p>
+                       <p className="text-xs uppercase tracking-widest opacity-75">CLUNY CAFE</p>
                        <h4 className="text-2xl font-black">{isNeoLeap ? (method.id === 'neoleap-apple-pay' ? 'Apple Pay' : 'بطاقة بنكية') : 'بطاقة الولاء'}</h4>
                      </div>
                      <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
@@ -195,12 +200,12 @@ export default function PaymentMethods({
                                   onSelectMethod(method.id);
                                   toast({
                                     title: "تم اختيار الدفع بالبطاقة",
-                                    description: "سيتم خصم قيمة الطلب من رصيد بطاقة بلاك روز الخاصة بك",
+                                    description: "سيتم خصم قيمة الطلب من رصيد بطاقة كلوني كافيه الخاصة بك",
                                   });
                                 }}
                               >
                                 <Zap className="w-4 h-4 ml-2" />
-                                ادفع ببطاقة بلاك روز
+                                ادفع ببطاقة كلوني كافيه (كوبي)
                               </Button>
                                {foundCard && (
                               <Button 
@@ -360,7 +365,7 @@ export default function PaymentMethods({
           </CardContent>
          </Card>
        </div>
-     );
+    );
      })}
      </div>
    </div>

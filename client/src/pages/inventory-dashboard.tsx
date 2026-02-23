@@ -113,7 +113,6 @@ interface BranchStock {
 
 interface Branch {
   id?: string;
-  _id?: string;
   nameAr: string;
 }
 
@@ -300,7 +299,7 @@ export default function InventoryDashboardPage() {
             <SelectContent>
               <SelectItem value="all">جميع الفروع</SelectItem>
               {branches.map((branch) => (
-                <SelectItem key={branch.id || branch._id} value={branch.id || branch._id || ""}>
+                <SelectItem key={branch.id} value={branch.id || ""}>
                   {branch.nameAr}
                 </SelectItem>
               ))}

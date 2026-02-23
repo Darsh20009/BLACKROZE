@@ -4,16 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Coffee, LogOut, ShoppingCart, ClipboardList, User, Award, Gift, Sparkles, Download, IdCard, Settings, BarChart3, Table, Lock, Clock, MonitorSmartphone, ChefHat, Wallet, Warehouse, Eye, Bell, CheckCircle, AlertCircle, Calendar, FileText, MapPin } from "lucide-react";
+import { Coffee, LogOut, ShoppingCart, ClipboardList, User, Award, Gift, Sparkles, Download, IdCard, Settings, BarChart3, Table, Lock, Clock, MonitorSmartphone, ChefHat, Wallet, Warehouse, Eye, Bell, CheckCircle, AlertCircle, Calendar, FileText, MapPin, X, Wifi, WifiOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import { EmployeeSidebar } from "@/components/employee-sidebar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import html2canvas from "html2canvas";
-import blackroseLogoStaff from "@/assets/images/logo.png";
+import clunyLogoStaff from "@assets/cluny-logo-staff.png";
 import type { Employee } from "@shared/schema";
+import { useOrderWebSocket } from "@/lib/websocket";
+import { queryClient } from "@/lib/queryClient";
 
 interface LeaveRequest {
-  _id: string;
+  id: string;
   startDate: string;
   endDate: string;
   reason: string;
@@ -24,7 +27,7 @@ interface LeaveRequest {
 }
 
 interface Order {
-  _id: string;
+  id: string;
   orderNumber: string;
   status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
   items?: number;
@@ -51,14 +54,15 @@ export default function EmployeeDashboard() {
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = "لوحة تحكم الموظف - BLACK ROSE SYSTEMS | إدارة الطلبات";
+    document.title = "لوحة تحكم الموظف - CLUNY SYSTEMS | إدارة الطلبات";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الموظفين في BLACK ROSE SYSTEMS - تتبع الطلبات والإجازات والإشعارات');
+    if (metaDesc) metaDesc.setAttribute('content', 'لوحة تحكم الموظفين في CLUNY SYSTEMS - تتبع الطلبات والإجازات والإشعارات');
   }, []);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [kitchenOrders, setKitchenOrders] = useState<Order[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [newOrderAlert, setNewOrderAlert] = useState<{ orderNumber?: string; orderType?: string; timestamp: Date } | null>(null);
   const [caféAddress, setCaféAddress] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Array<{ name: string; lat: string; lon: string }>>([]);
@@ -66,6 +70,35 @@ export default function EmployeeDashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // WebSocket hook for real-time order notifications
+  const { isConnected: wsConnected } = useOrderWebSocket({
+    clientType: "pos",
+    branchId: employee?.branchId?.toString(),
+    onNewOrder: (order) => {
+      fetchPendingOrders();
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      setNewOrderAlert({
+        orderNumber: order?.orderNumber || order?.id,
+        orderType: order?.orderType,
+        timestamp: new Date(),
+      });
+      setTimeout(() => setNewOrderAlert(null), 15000);
+      import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
+        const isOnline = order?.orderType === 'delivery' || order?.orderType === 'takeaway' || !order?.employeeId;
+        if (isOnline) {
+          playNotificationSound('onlineOrderVoice', 1.0);
+        } else {
+          playNotificationSound('newOrder', 1.0);
+        }
+      });
+    },
+    onOrderUpdated: () => {
+      fetchPendingOrders();
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    },
+    enabled: !!employee,
+  });
 
   useEffect(() => {
     const storedEmployee = localStorage.getItem("currentEmployee");
@@ -212,7 +245,7 @@ export default function EmployeeDashboard() {
       // Leave request notifications
       leaveRequests.forEach((request) => {
         allNotifications.push({
-          id: request._id,
+          id: request.id,
           type: 'leave',
           title: 'طلب إجازة',
           message: `${request.status === 'pending' ? 'قيد الانتظار' : request.status === 'approved' ? 'تمت الموافقة على' : 'تم رفض'} طلب الإجازة من ${new Date(request.startDate).toLocaleDateString('ar-SA')} إلى ${new Date(request.endDate).toLocaleDateString('ar-SA')}`,
@@ -344,21 +377,86 @@ export default function EmployeeDashboard() {
   return (
     <div dir="rtl" className="flex h-screen bg-background">
       <EmployeeSidebar employee={employee} onLogout={handleLogout} />
-      <main className="flex-1 overflow-auto">
-        <div className="min-h-screen bg-background p-6">
-          <div className="max-w-6xl mx-auto space-y-6">
+      <main className="flex-1 overflow-auto pb-16 sm:pb-0">
+        <div className="flex sm:hidden items-center justify-between px-4 py-3 border-b bg-background sticky top-0 z-40">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold">لوحة التحكم</h1>
+            <span
+              className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full ${wsConnected ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'}`}
+              data-testid="badge-ws-status-mobile"
+            >
+              <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {pendingOrders.length > 0 && (
+              <Badge variant="destructive" className="text-xs" data-testid="badge-pending-orders-mobile">
+                {pendingOrders.length}
+              </Badge>
+            )}
+            <span className="text-sm text-muted-foreground">{employee?.fullName}</span>
+          </div>
+        </div>
+
+        {newOrderAlert && (
+          <div className="mx-3 sm:mx-6 mt-3 animate-in slide-in-from-top duration-300" data-testid="alert-new-order">
+            <Card className="border-green-500 dark:border-green-600 bg-green-50 dark:bg-green-950/50 relative overflow-visible">
+              <div className="absolute inset-0 rounded-md border-2 border-green-400 dark:border-green-500 animate-pulse pointer-events-none" />
+              <CardContent className="flex items-center justify-between gap-3 py-3 px-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                    <ShoppingCart className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-green-800 dark:text-green-300">طلب جديد وارد!</p>
+                    <p className="text-sm text-green-700 dark:text-green-400">
+                      {newOrderAlert.orderNumber ? `طلب #${newOrderAlert.orderNumber}` : 'طلب جديد'}
+                      {newOrderAlert.orderType === 'delivery' ? ' - توصيل' : newOrderAlert.orderType === 'takeaway' ? ' - استلام' : ''}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setNewOrderAlert(null)}
+                  data-testid="button-dismiss-alert"
+                >
+                  <X className="w-4 h-4 text-green-700 dark:text-green-400" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        <div className="min-h-screen bg-background p-3 sm:p-6">
+          <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">لوحة تحكم الموظف</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">لوحة تحكم الموظف</h1>
                 <h2 className="text-primary mt-1">أهلاً {employee?.fullName}</h2>
+              </div>
+              <div className="hidden sm:flex items-center gap-3">
+                <span
+                  className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${wsConnected ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'}`}
+                  data-testid="badge-ws-status"
+                >
+                  {wsConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                  {wsConnected ? 'متصل' : 'غير متصل'}
+                </span>
+                {pendingOrders.length > 0 && (
+                  <Badge variant="destructive" data-testid="badge-pending-orders-count">
+                    <ShoppingCart className="w-3 h-3 ml-1" />
+                    {pendingOrders.length} طلب معلق
+                  </Badge>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-1">
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-muted">
+            <TabsList className="grid w-full grid-cols-2 bg-muted overflow-x-auto">
               <TabsTrigger value="profile" data-testid="tab-profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <User className="w-4 h-4 ml-2" />
                 الملف الشخصي
@@ -423,10 +521,10 @@ export default function EmployeeDashboard() {
                     <div className="bg-gradient-to-r from-primary via-primary to-primary/80 p-6 relative">
                       <div className="flex items-center justify-center gap-4 mb-2">
                         <div className="w-20 h-20 flex items-center justify-center shadow-lg rounded-lg">
-                          <img src={blackroseLogoStaff} alt="BLACK ROSE SYSTEMS Logo" className="w-full h-full object-contain rounded-lg" />
+                          <img src={clunyLogoStaff} alt="CLUNY SYSTEMS Logo" className="w-full h-full object-contain rounded-lg" />
                         </div>
                         <div className="text-white text-right">
-                          <h3 className="text-2xl font-bold">BLACK ROSE SYSTEMS</h3>
+                          <h3 className="text-2xl font-bold">CLUNY SYSTEMS</h3>
                           <p className="text-white/80 text-xs">Staff Portal</p>
                         </div>
                       </div>
@@ -554,7 +652,7 @@ export default function EmployeeDashboard() {
                       </div>
 
                       <div className="border-t-2 border-primary/20 pt-6 mt-6 space-y-2 text-right">
-                        <p className="text-primary/90 text-xs"><span className="font-bold">الموقع:</span> BLACKROSE.com.sa</p>
+                        <p className="text-primary/90 text-xs"><span className="font-bold">الموقع:</span> cluny.ma3k.online</p>
                         <p className="text-primary/60 text-xs">جميع الحقوق محفوظة © 2025</p>
                       </div>
                     </div>
@@ -580,7 +678,7 @@ export default function EmployeeDashboard() {
             <CardHeader>
               <CardTitle className="text-primary text-right">الخدمات المتاحة</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <Button
                 size="lg"
                 className="h-32 flex flex-col items-center justify-center gap-3"
@@ -718,10 +816,24 @@ export default function EmployeeDashboard() {
                       <div className="text-sm opacity-90">إحصائيات شاملة</div>
                     </div>
                   </Button>
-                  
+
                   <Button
                     size="lg"
                     variant="secondary"
+                    className="h-32 flex flex-col items-center justify-center gap-3"
+                    onClick={() => setLocation("/admin/settings")}
+                    data-testid="button-admin-settings"
+                  >
+                    <Settings className="w-10 h-10 text-accent" />
+                    <div className="text-center">
+                      <div className="font-bold text-lg">إدارة النظام</div>
+                      <div className="text-sm opacity-90">تخصيص كامل للهوية</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    size="lg"
+                    variant="outline"
                     className="h-32 flex flex-col items-center justify-center gap-3"
                     onClick={() => setLocation("/manager/employees")}
                     data-testid="button-manager-employees"
@@ -931,6 +1043,7 @@ export default function EmployeeDashboard() {
           </div>
         </div>
       </main>
+      <MobileBottomNav employeeRole={employee?.role} onLogout={handleLogout} />
     </div>
   );
 }

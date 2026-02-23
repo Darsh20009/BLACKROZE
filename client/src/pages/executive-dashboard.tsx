@@ -186,14 +186,14 @@ export default function ExecutiveDashboard() {
     const previousOrders = getPreviousPeriodOrders();
     
     branches.forEach((branch: any) => {
-      const branchOrders = filteredOrders.filter((o: any) => o.branchId === branch._id);
-      const prevBranchOrders = previousOrders.filter((o: any) => o.branchId === branch._id);
+      const branchOrders = filteredOrders.filter((o: any) => o.branchId === branch.id);
+      const prevBranchOrders = previousOrders.filter((o: any) => o.branchId === branch.id);
       const revenue = branchOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
       const prevRevenue = prevBranchOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
       const orderCount = branchOrders.length;
       const growth = prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0;
       
-      analytics[branch._id] = {
+      analytics[branch.id] = {
         name: branch.name || branch.nameAr || 'فرع',
         revenue,
         orders: orderCount,
@@ -273,7 +273,7 @@ export default function ExecutiveDashboard() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-accent title-executive">
-                BLACK ROSE Enterprise
+                CLUNY CAFE Enterprise
               </h1>
               <p className="text-sm text-slate-400">
                 مرحباً، {manager.fullName}
@@ -750,7 +750,7 @@ export default function ExecutiveDashboard() {
       <footer className="border-t border-border mt-12 py-6">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-sm text-muted-foreground">
-            BLACK ROSE Enterprise &copy; {new Date().getFullYear()} - نظام إدارة المقاهي المتكامل
+            CLUNY CAFE Enterprise &copy; {new Date().getFullYear()} - نظام إدارة المقاهي المتكامل
           </p>
         </div>
       </footer>

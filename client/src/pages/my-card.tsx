@@ -1,364 +1,411 @@
-import { useState, useEffect, useRef } from "react";
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Coffee, LogOut, ShoppingBag, CreditCard, Gift, Download, Loader2, ArrowRight } from "lucide-react";
-import { useCustomer } from "@/contexts/CustomerContext";
-import { customerStorage, type CustomerProfile } from "@/lib/customer-storage";
-import { useToast } from "@/hooks/use-toast";
-import QRCode from "qrcode";
-import { useQuery } from "@tanstack/react-query";
-import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { CustomerLayout } from "@/components/layouts/CustomerLayout";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { CreditCard, History, Gift, ArrowUpRight, Wallet, Send, ArrowDownRight, Clock, CheckCircle2, QrCode, ArrowRight, ArrowLeft } from "lucide-react";
+import { useCustomer } from "@/contexts/CustomerContext";
+import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import QRCodeLib from "qrcode";
 
 export default function MyCardPage() {
+  const { t, i18n } = useTranslation();
+  const { customer } = useCustomer();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { customer, logout } = useCustomer();
-  const [profile, setProfile] = useState<CustomerProfile | null>(null);
-  const [cardQrUrl, setCardQrUrl] = useState<string>("");
-  const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
+  
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [transferPoints, setTransferPoints] = useState("");
+  const [pin, setPin] = useState("");
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [showQrDialog, setShowQrDialog] = useState(false);
 
-  const { card: loyaltyCard, isLoading: isLoadingCard } = useLoyaltyCard();
+  const { data: businessConfig } = useQuery<any>({
+    queryKey: ["/api/business-config"],
+  });
 
-  const { data: serverOrders = [], isLoading: isLoadingOrders } = useQuery<any[]>({
-    queryKey: ["/api/orders/customer", customer?.phone],
-    enabled: !!customer?.phone,
-    queryFn: async () => {
-      const res = await fetch(`/api/orders/customer/${customer?.phone}`);
-      if (!res.ok) return [];
-      return res.json();
+  const POINTS_PER_SAR = businessConfig?.loyaltyConfig?.pointsPerSar ?? 20;
+  
+  const { data: loyaltyCards, isLoading: isLoadingCards } = useQuery<any[]>({
+    queryKey: ['/api/customer/loyalty-cards'],
+    enabled: !!customer
+  });
+
+  const { data: transactions, isLoading: isLoadingTransactions } = useQuery<any[]>({
+    queryKey: ['/api/customer/loyalty-transactions'],
+    enabled: !!customer
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: async (data: { recipientPhone: string; points: number; pin: string }) => {
+      const response = await apiRequest("POST", "/api/customer/transfer-points", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: t("card.transfer_success") || "تم التحويل بنجاح",
+        description: t("card.transfer_success_desc", { points: transferPoints, name: data.recipientName }) || `تم تحويل ${transferPoints} نقطة إلى ${data.recipientName}`,
+      });
+      setTransferDialogOpen(false);
+      setRecipientPhone("");
+      setTransferPoints("");
+      setPin("");
+      queryClient.invalidateQueries({ queryKey: ['/api/customer/loyalty-cards'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/customer/loyalty-transactions'] });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: t("card.transfer_failed") || "فشل التحويل",
+        description: error.message || t("card.transfer_error") || "حدث خطأ أثناء التحويل",
+      });
     }
   });
+
+  const activeCard = loyaltyCards?.[0];
+  const points = activeCard?.points ?? (customer as any)?.points ?? 0;
+  const pendingPoints = activeCard?.pendingPoints ?? (customer as any)?.pendingPoints ?? 0;
+  const sarValue = (points / POINTS_PER_SAR).toFixed(2);
 
   useEffect(() => {
-    const loadedProfile = customerStorage.getProfile();
-    if (!loadedProfile && !customer) {
-      setLocation("/auth");
+    if (activeCard?.qrToken || activeCard?.cardNumber) {
+      const qrData = activeCard.qrToken || activeCard.cardNumber;
+      QRCodeLib.toDataURL(qrData, {
+        width: 200,
+        margin: 2,
+        color: { dark: '#2D9B6E', light: '#FFFFFF' }
+      }).then(setQrCodeUrl).catch(console.error);
+    }
+  }, [activeCard]);
+
+  if (!customer && !isLoadingCards && !isLoadingTransactions) {
+    return (
+      <CustomerLayout>
+        <div className="container max-w-lg mx-auto p-4 flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+          <p className="font-ibm-arabic text-muted-foreground">{t("card.login_required") || "يجب تسجيل الدخول لعرض البطاقة"}</p>
+          <Button onClick={() => setLocation("/auth")} data-testid="button-login">{t("auth.login") || "تسجيل الدخول"}</Button>
+        </div>
+      </CustomerLayout>
+    );
+  }
+
+  if (isLoadingCards || isLoadingTransactions) {
+    return (
+      <CustomerLayout>
+        <div className="container max-w-lg mx-auto p-4 flex items-center justify-center min-h-[50vh]">
+          <p className="font-ibm-arabic">{t("common.loading") || "جاري التحميل..."}</p>
+        </div>
+      </CustomerLayout>
+    );
+  }
+
+  const handleTransfer = () => {
+    if (!recipientPhone || !transferPoints || Number(transferPoints) <= 0) {
+      toast({ variant: "destructive", title: t("card.fill_all_fields") || "يرجى ملء جميع الحقول" });
       return;
     }
-    
-    const baseProfile = loadedProfile || (customer as unknown as CustomerProfile);
-    const activeProfile = {
-      ...baseProfile,
-      cardNumber: loyaltyCard?.cardNumber || baseProfile.cardNumber,
-      stamps: loyaltyCard?.stamps ?? baseProfile.stamps ?? 0,
-      freeDrinks: loyaltyCard ? Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0)) : (baseProfile.freeDrinks ?? 0),
-    };
-    console.log("Loyalty Card sync debug:", { loyaltyCard, activeProfile });
-    setProfile(activeProfile);
-
-    const cardData = loyaltyCard?.qrToken || JSON.stringify({
-      cardNumber: activeProfile.cardNumber,
-      name: activeProfile.name,
-      phone: activeProfile.phone
-    });
-    QRCode.toDataURL(cardData, { 
-      width: 200, 
-      margin: 1,
-      color: {
-        dark: "#2D9B6E",
-        light: "#FFFFFF",
-      }
-    }).then(setCardQrUrl);
-  }, [setLocation, customer, loyaltyCard]);
-
-  const handleLogout = () => {
-    logout();
-    toast({
-      title: t("auth.logged_out"),
-      description: t("auth.see_you_soon")
-    });
-    setLocation("/auth");
-  };
-
-  const handleDownloadCard = () => {
-    if (!cardQrUrl) return;
-    const link = document.createElement('a');
-    link.download = `qahwa-card-${profile?.cardNumber}.png`;
-    link.href = cardQrUrl;
-    link.click();
-    toast({
-      title: t("card.downloaded"),
-      description: t("card.download_success")
-    });
-  };
-
-  if (!profile) return null;
-
-  const localOrders = customerStorage.getOrders();
-  const allOrders = [...serverOrders];
-  localOrders.forEach(local => {
-    if (!allOrders.find(s => s.orderNumber === local.orderNumber)) {
-      allOrders.push(local);
+    if (Number(transferPoints) > points) {
+      toast({ variant: "destructive", title: t("card.insufficient_points") || "رصيد النقاط غير كافي" });
+      return;
     }
-  });
-  allOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const isRtl = i18n.language === 'ar';
+    transferMutation.mutate({
+      recipientPhone,
+      points: Number(transferPoints),
+      pin
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-20" dir={isRtl ? "rtl" : "ltr"}>
-      {/* Header */}
-      <div className="bg-primary p-4 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLocation("/menu")}
-              className="text-white hover:bg-white/20"
+    <CustomerLayout>
+      <div className="container max-w-lg mx-auto p-4 space-y-6 pb-24" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setLocation("/")}
+              data-testid="button-back"
             >
-              <ArrowRight className={`h-5 w-5 ${isRtl ? "" : "rotate-180"}`} />
+              {i18n.language === 'ar' ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
             </Button>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Coffee className="w-5 h-5" />
-              {t("app.name")}
-            </h1>
+            <h1 className="text-2xl font-bold font-amiri text-primary" data-testid="text-page-title">{t("card.title") || "محفظتي"}</h1>
           </div>
-          <Button
-            onClick={handleLogout}
-            variant="ghost"
-            size="sm"
-            className="text-white hover:bg-white/20"
-          >
-            <LogOut className={`${isRtl ? "ml-2" : "mr-2"} w-4 h-4`} />
-            {t("nav.logout") || "تسجيل خروج"}
-          </Button>
+          {qrCodeUrl && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setShowQrDialog(true)}
+              data-testid="button-show-qr"
+            >
+              <QrCode className="w-5 h-5" />
+            </Button>
+          )}
         </div>
-      </div>
 
-      <div className="container mx-auto p-4 max-w-4xl">
-        {/* Profile Card Summary */}
-        <Card className="mb-6 bg-white border-border shadow-sm">
-          <CardHeader className="py-4">
-            <CardTitle className="text-lg text-foreground">{t("profile.welcome", { name: profile.name }) || `مرحباً، ${profile.name}`}</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">{profile.phone}</CardDescription>
+        <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-none shadow-xl overflow-hidden relative" data-testid="card-wallet">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12 blur-xl" />
+          <CardHeader className="relative z-10">
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <CardTitle className="text-xl opacity-90 font-amiri">{t("card.card_title") || "بطاقة كلووني"}</CardTitle>
+                <p className="text-sm opacity-75 font-ibm-arabic">{customer?.name || t("card.default_customer_name") || 'عميل كلووني'}</p>
+              </div>
+              <Wallet className="w-8 h-8 opacity-50" />
+            </div>
           </CardHeader>
+          <CardContent className="space-y-6 relative z-10">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-xs opacity-75 font-medium font-ibm-arabic">{t("card.points_balance") || "رصيد النقاط"}</p>
+                <h2 className="text-3xl font-bold font-ibm-arabic" data-testid="text-points-balance">{points}</h2>
+                <p className="text-sm opacity-75 font-ibm-arabic">= {sarValue} {t("currency") || "ريال"}</p>
+              </div>
+              <div className="space-y-1 text-left">
+                <p className="text-xs opacity-75 font-medium font-ibm-arabic">{t("card.pending_points") || "نقاط معلقة"}</p>
+                <h2 className="text-2xl font-bold font-ibm-arabic text-yellow-200" data-testid="text-pending-points">{pendingPoints}</h2>
+                <p className="text-xs opacity-60 font-ibm-arabic">{t("card.pending_desc") || "تضاف عند اكتمال الطلب"}</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-end">
+              <div className="space-y-1">
+                <p className="text-[10px] opacity-75 uppercase tracking-wider font-ibm-arabic">{t("card.card_number") || "رقم البطاقة"}</p>
+                <p className="font-mono text-lg tracking-widest" data-testid="text-card-number">
+                  {activeCard?.cardNumber?.replace(/(.{4})/g, '$1 ') || '**** **** ****'}
+                </p>
+              </div>
+              <Badge variant="secondary" className="bg-white/20 text-white border-none text-[10px] font-ibm-arabic">
+                {t("card.active") || "نشطة"}
+              </Badge>
+            </div>
+          </CardContent>
         </Card>
 
-        {/* Unified Interface Tabs */}
-        <Tabs defaultValue="card" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-secondary border border-border p-1 h-12">
-            <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white h-full">
-              <ShoppingBag className={`${isRtl ? "ml-2" : "mr-2"} w-4 h-4`} />
-              {t("profile.my_orders") || "طلباتي"}
-            </TabsTrigger>
-            <TabsTrigger value="card" className="data-[state=active]:bg-primary data-[state=active]:text-white h-full">
-              <CreditCard className={`${isRtl ? "ml-2" : "mr-2"} w-4 h-4`} />
-              {t("nav.my_card") || "بطاقاتي"}
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Orders Tab Content */}
-          <TabsContent value="orders" className="mt-4 space-y-4">
-            {isLoadingOrders ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800" data-testid="card-points-info">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-lg">
+                  <Gift className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold font-ibm-arabic text-amber-800 dark:text-amber-200">{t("card.loyalty_system") || "نظام النقاط"}</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-ibm-arabic">{t("card.loyalty_desc") || "10 نقاط لكل مشروب • 100 نقطة = 5 ريال"}</p>
+                </div>
               </div>
-            ) : allOrders.length === 0 ? (
-              <Card className="bg-white border-border shadow-sm">
-                <CardContent className="p-12 text-center text-muted-foreground">
-                  <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                  <p>{t("profile.no_orders") || "لا توجد طلبات سابقة"}</p>
-                </CardContent>
-              </Card>
-            ) : (
-              allOrders.map((order) => (
-                <Card key={order.id || order.orderNumber} className="bg-white border-border shadow-sm">
-                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                    <div>
-                      <CardTitle className="text-base text-foreground">
-                        {t("order.number", { id: order.orderNumber }) || `طلب #${order.orderNumber}`}
-                      </CardTitle>
-                      <CardDescription className="text-xs text-muted-foreground">
-                        {new Date(order.createdAt).toLocaleString(isRtl ? 'ar-SA' : 'en-US')}
-                      </CardDescription>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-3">
+              <Button 
+                variant="ghost" 
+                size="lg" 
+                className="w-full flex flex-col gap-1"
+                onClick={() => setTransferDialogOpen(true)}
+                data-testid="button-transfer-points"
+              >
+                <Send className="w-5 h-5 text-primary" />
+                <span className="text-sm font-ibm-arabic">{t("card.transfer_points") || "تحويل نقاط"}</span>
+              </Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3">
+              <Button 
+                variant="ghost" 
+                size="lg" 
+                className="w-full flex flex-col gap-1"
+                onClick={() => setLocation("/my-orders")}
+                data-testid="button-my-orders"
+              >
+                <History className="w-5 h-5 text-primary" />
+                <span className="text-sm font-ibm-arabic">{t("nav.my_orders") || "طلباتي"}</span>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center px-1">
+            <h3 className="font-bold text-lg font-amiri">{t("card.recent_transactions") || "آخر العمليات"}</h3>
+          </div>
+          
+          <div className="space-y-3">
+            {transactions && transactions.length > 0 ? (
+              transactions.slice(0, 5).map((tx: any, idx: number) => (
+                <Card key={tx.id || idx} className="bg-card/30 border-none shadow-sm hover:bg-card/50 transition-colors" data-testid={`card-transaction-${idx}`}>
+                  <CardContent className="p-3 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-full ${
+                        tx.type === 'earn' || tx.type === 'transfer_in' 
+                          ? 'bg-green-500/10 text-green-600' 
+                          : tx.type === 'pending' 
+                            ? 'bg-yellow-500/10 text-yellow-600'
+                            : 'bg-primary/10 text-primary'
+                      }`}>
+                        {tx.type === 'earn' || tx.type === 'transfer_in' ? (
+                          <ArrowDownRight className="w-4 h-4" />
+                        ) : tx.type === 'pending' ? (
+                          <Clock className="w-4 h-4" />
+                        ) : (
+                          <ArrowUpRight className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold font-ibm-arabic">{i18n.language === 'ar' ? (tx.descriptionAr || (tx.type === 'earn' ? 'كسب نقاط' : tx.type === 'transfer_in' ? 'استلام نقاط' : tx.type === 'transfer_out' ? 'تحويل نقاط' : 'استبدال نقاط')) : (tx.descriptionEn || tx.descriptionAr || tx.type)}</p>
+                        <p className="text-[10px] text-muted-foreground font-ibm-arabic">
+                          {new Date(tx.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge className="bg-primary text-white">
-                        {order.totalAmount} {t("currency")}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] py-0 h-5">
-                        {order.status === 'completed' ? (t("status.completed") || 'مكتمل') : 
-                         order.status === 'pending' ? (t("status.pending") || 'قيد الانتظار') :
-                         (t(`status.${order.status}`) || order.status)}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-1">
-                      {(Array.isArray(order.items) ? order.items : []).map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between text-xs text-foreground">
-                          <span>{item.nameAr || item.coffeeItem?.nameAr} × {item.quantity}</span>
-                          <span className="text-muted-foreground">{(item.price * item.quantity).toFixed(2)} {t("currency")}</span>
-                        </div>
-                      ))}
+                    <div className={`font-bold font-ibm-arabic ${
+                      tx.type === 'earn' || tx.type === 'transfer_in' 
+                        ? 'text-green-600' 
+                        : tx.type === 'pending'
+                          ? 'text-yellow-600'
+                          : 'text-primary'
+                    }`}>
+                      {tx.type === 'earn' || tx.type === 'transfer_in' ? '+' : '-'}{Math.abs(tx.points)}
                     </div>
                   </CardContent>
                 </Card>
               ))
+            ) : (
+              <div className="text-center py-10 opacity-50">
+                <History className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                <p className="text-sm font-ibm-arabic">{t("card.no_transactions") || "لا توجد عمليات سابقة"}</p>
+              </div>
             )}
-          </TabsContent>
+          </div>
+        </div>
+      </div>
 
-          {/* Card Tab Content - The Professional Loyalty Card UI */}
-          <TabsContent value="card" className="mt-4 space-y-6">
-            <div className="perspective-1000">
-              <motion.div 
-                whileHover={{ scale: 1.02 }}
-                className="relative h-56 w-full max-w-sm mx-auto rounded-2xl shadow-2xl overflow-hidden"
-                style={{
-                  background: 'linear-gradient(135deg, #2D9B6E 0%, #1e6b4c 100%)'
-                }}
-              >
-                {/* Card Pattern Overlay */}
-                <div className="absolute inset-0 opacity-10">
-                  <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                        <circle cx="15" cy="15" r="1" fill="white"/>
-                      </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#grid)" />
-                  </svg>
-                </div>
-                
-                {/* EMV Chip */}
-                <div className="absolute top-8 left-6">
-                  <div className="w-12 h-9 bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-500 rounded-md shadow-lg border border-yellow-600/30" />
-                </div>
-                
-                {/* Brand Logo */}
-                <div className="absolute top-6 right-6">
-                  <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm p-1.5 border border-white/30">
-                    <Coffee className="w-full h-full text-white" />
-                  </div>
-                </div>
-
-                {/* Card Number */}
-                <div className="absolute top-[55%] left-6 right-6">
-                  <p className="text-[20px] font-mono tracking-[0.2em] text-white text-center">
-                    {profile?.cardNumber ? profile.cardNumber.match(/.{1,4}/g)?.join(' ') : '•••• •••• •••• ••••'}
-                  </p>
-                </div>
-
-                {/* Card Details */}
-                <div className="absolute bottom-5 left-6 right-6 flex justify-between items-end">
-                  <div className="space-y-0.5">
-                    <p className="text-[8px] text-white/50 uppercase tracking-widest">{t("card.holder") || "CARD HOLDER"}</p>
-                    <p className="text-sm font-semibold text-white uppercase">{profile?.name || 'Customer'}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[8px] text-white/50 uppercase tracking-widest">{t("card.member_since") || "MEMBER SINCE"}</p>
-                    <p className="text-sm font-semibold text-white">2026</p>
-                  </div>
-                </div>
-
-                {/* Brand Name Center Bottom */}
-                <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
-                  <p className="text-[10px] text-white/70 font-bold tracking-[0.3em]">{t("app.name").toUpperCase()}</p>
-                </div>
-              </motion.div>
+      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+        <DialogContent className="max-w-md" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} data-testid="dialog-transfer-points">
+          <DialogHeader>
+            <DialogTitle className="font-amiri text-xl flex items-center gap-2">
+              <Send className="w-5 h-5" />
+              {t("card.transfer_points") || "تحويل نقاط"}
+            </DialogTitle>
+            <DialogDescription className="font-ibm-arabic">
+              {t("card.transfer_desc") || "أدخل رقم جوال المستلم وعدد النقاط المراد تحويلها"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="font-ibm-arabic">{t("card.recipient_phone") || "رقم جوال المستلم"}</Label>
+              <Input
+                type="tel"
+                placeholder="05xxxxxxxx"
+                value={recipientPhone}
+                onChange={(e) => setRecipientPhone(e.target.value)}
+                dir="ltr"
+                data-testid="input-recipient-phone"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-ibm-arabic">{t("card.points_amount") || "عدد النقاط"}</Label>
+              <Input
+                type="number"
+                placeholder="100"
+                value={transferPoints}
+                onChange={(e) => setTransferPoints(e.target.value)}
+                min="1"
+                max={points}
+                data-testid="input-transfer-points"
+              />
+              <p className="text-xs text-muted-foreground font-ibm-arabic">
+                {t("card.available_balance", { points }) || `الرصيد المتاح: ${points} نقطة`}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-ibm-arabic">{t("card.pin") || "الرقم السري (اختياري)"}</Label>
+              <Input
+                type="password"
+                placeholder="****"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                data-testid="input-pin"
+              />
             </div>
             
-            {/* QR Code Section */}
-            {cardQrUrl && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center gap-2"
-              >
-                <div className="bg-white p-3 rounded-2xl shadow-md border border-border">
-                  <img src={cardQrUrl} alt="QR Code" className="w-32 h-32" />
-                </div>
-                <p className="text-xs text-muted-foreground">{t("card.scan_message") || "امسح الكود للحصول على نقاطك"}</p>
-              </motion.div>
+            {transferPoints && Number(transferPoints) > 0 && (
+              <Card className="bg-muted/50">
+                <CardContent className="p-3 text-center">
+                  <p className="text-sm font-ibm-arabic text-muted-foreground">{t("card.will_transfer") || "سيتم تحويل"}</p>
+                  <p className="text-2xl font-bold text-primary">{transferPoints} {t("card.points") || "نقطة"}</p>
+                  <p className="text-xs text-muted-foreground font-ibm-arabic">
+                    = {(Number(transferPoints) / POINTS_PER_SAR).toFixed(2)} {t("currency") || "ريال"}
+                  </p>
+                </CardContent>
+              </Card>
             )}
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setTransferDialogOpen(false)} data-testid="button-cancel-transfer">
+              {t("common.cancel") || "إلغاء"}
+            </Button>
+            <Button 
+              onClick={handleTransfer} 
+              disabled={transferMutation.isPending}
+              data-testid="button-confirm-transfer"
+            >
+              {transferMutation.isPending ? t("card.transferring") || "جاري التحويل..." : t("card.confirm_transfer") || "تأكيد التحويل"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            {/* Loyalty Progress */}
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">{t("card.loyalty_status") || "حالة الولاء"}</CardTitle>
-                <Coffee className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                    <p className="text-3xl font-bold text-primary">{profile.stamps} / 6</p>
-                    <p className="text-xs text-muted-foreground">{t("card.current_stamps") || "عدد الطوابع الحالية"}</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    {t("card.stamps_remaining", { count: 6 - profile.stamps }) || `${6 - profile.stamps} طوابع متبقية`}
-                  </Badge>
-                </div>
-                
-                {/* Stamp Visualization */}
-                <div className="flex justify-center items-center gap-3">
-                  {[1, 2, 3, 4, 5, 6].map((s) => (
-                    <div 
-                      key={s}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                        s <= profile.stamps 
-                          ? 'bg-primary border-primary text-white shadow-md' 
-                          : 'bg-secondary border-dashed border-border text-muted-foreground'
-                      }`}
-                    >
-                      {s === 6 ? <Gift className="w-5 h-5" /> : <Coffee className="w-5 h-5" />}
-                    </div>
-                  ))}
-                </div>
-                
-                <p className="text-center text-xs text-muted-foreground">
-                  {t("card.loyalty_goal") || "اجمع 6 طوابع واحصل على مشروب مجاني"}
-                </p>
-
-                {profile.freeDrinks > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
-                    <div className="bg-green-100 p-2 rounded-lg">
-                      <Gift className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-green-600">
-                        {t("card.free_drinks_count", { count: profile.freeDrinks }) || `لديك ${profile.freeDrinks} مشروب مجاني!`}
-                      </p>
-                      <p className="text-[10px] text-green-600/70">
-                        {t("card.use_next_order") || "استخدمه عند طلبك القادم"}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                onClick={handleDownloadCard}
-                className="bg-accent hover:bg-accent/90 text-white h-12 rounded-xl shadow-md"
-              >
-                <Download className={`${isRtl ? "ml-2" : "mr-2"} w-4 h-4`} />
-                {t("card.download") || "تحميل البطاقة"}
-              </Button>
-              <div className="flex items-center justify-center bg-primary/5 rounded-xl border border-primary/20 px-3 text-center">
-                <span className="text-[10px] text-primary font-bold leading-tight">
-                  {t("card.perks_discount") || "خصم 10% دائم لكافة الطلبات"}
-                </span>
+      <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
+        <DialogContent className="max-w-sm" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} data-testid="dialog-qr-code">
+          <DialogHeader>
+            <DialogTitle className="font-amiri text-xl flex items-center gap-2 justify-center">
+              <QrCode className="w-5 h-5" />
+              {t("card.qr_title") || "رمز البطاقة"}
+            </DialogTitle>
+            <DialogDescription className="font-ibm-arabic text-center">
+              {t("card.qr_desc") || "اعرض هذا الرمز للكاشير لكسب النقاط"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center py-6">
+            {qrCodeUrl && (
+              <div className="bg-white p-4 rounded-xl shadow-lg">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR Code" 
+                  className="w-48 h-48"
+                  data-testid="img-qr-code"
+                />
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <Button
-          onClick={() => setLocation("/menu")}
-          variant="outline"
-          className="w-full mt-8 h-12 border-primary text-primary hover:bg-primary/5 rounded-xl font-bold"
-        >
-          {t("menu.back") || "العودة للقائمة"}
-        </Button>
-      </div>
-    </div>
+            )}
+            <p className="text-sm text-muted-foreground mt-4 font-mono" data-testid="text-card-number-qr">
+              {activeCard?.cardNumber || ''}
+            </p>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQrDialog(false)} className="w-full" data-testid="button-close-qr">
+              {t("common.close") || "إغلاق"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </CustomerLayout>
   );
 }

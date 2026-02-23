@@ -6,44 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/cart-store";
 import { getCoffeeImage } from "@/lib/coffee-data-clean";
 import { ArrowRight, ShoppingCart, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 export default function CartPage() {
+  const translation = useTranslation();
+  const t = translation?.t || ((key: string) => key);
+  const i18n = translation?.i18n || { language: 'ar' };
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCartStore();
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
 
-  const isAr = true;
-
-  // Translation helpers since useTranslation was causing crashes
-  const t = (key: string, options?: any) => {
-    const translations: any = {
-      "product.back": "رجوع",
-      "cart.title": "سلة التسوق",
-      "cart.empty_title": "سلتك فارغة",
-      "cart.empty_desc": "ابدأ بإضافة بعض المشروبات اللذيذة لسلتك",
-      "welcome.explore": "استكشف القائمة",
-      "cart.selected_items": "العناصر المختارة",
-      "currency": "ر.س",
-      "checkout.order_summary": "ملخص الطلب",
-      "cart.items_count": "عدد العناصر",
-      "cart.items_pcs": `${options?.count || 0} قطعة`,
-      "cart.total_price": "الإجمالي الكلي",
-      "cart.checkout_now": "إتمام الطلب الآن",
-      "cart.total": "الإجمالي",
-      "cart.checkout": "الدفع"
-    };
-    return translations[key] || key;
-  };
+  const isAr = i18n.language === 'ar';
 
   // Set SEO metadata
   useEffect(() => {
-    document.title = isAr ? "سلة التسوق - BLACK ROSE | اكتمل طلبك" : "Shopping Cart - BLACK ROSE";
+    document.title = isAr ? "سلة التسوق - CLUNY CAFE | اكتمل طلبك" : "Shopping Cart - CLUNY CAFE";
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
       metaDesc.setAttribute('content', isAr 
-        ? 'سلة التسوق الخاصة بك في BLACK ROSE - أضف المزيد من القهوة المفضلة وانتقل للدفع' 
-        : 'Your shopping cart at BLACK ROSE - add more of your favorite coffee and proceed to checkout');
+        ? 'سلة التسوق الخاصة بك في CLUNY CAFE - أضف المزيد من القهوة المفضلة وانتقل للدفع' 
+        : 'Your shopping cart at CLUNY CAFE - add more of your favorite coffee and proceed to checkout');
     }
   }, [isAr]);
 

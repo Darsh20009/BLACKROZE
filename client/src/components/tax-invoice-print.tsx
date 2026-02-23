@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
-import blackroseLogo from "@/assets/images/logo.png";
+import clunyLogo from "@assets/cluny-logo-customer.png";
 
 interface OrderItem {
   coffeeItem: {
@@ -37,11 +37,12 @@ interface TaxInvoiceProps {
 
 const TAX_RATE = 0.15;
 const VAT_NUMBER = "311234567890003";
-const COMPANY_NAME = "BLACK ROSE";
-const COMPANY_NAME_EN = "BLACK ROSE";
-const COMPANY_CR = "1010XXXXXX";
-const DEFAULT_BRANCH = "الفرع الرئيسي";
-const DEFAULT_ADDRESS = "الرياض، المملكة العربية السعودية";
+const COMPANY_NAME = "كلاوني كافيه";
+const COMPANY_NAME_EN = "CLUNY CAFE";
+const COMPANY_CR = "1010123456";
+const COMPANY_VAT_NAME = "شركة كلاوني للخدمات الغذائية"; // Added for ZATCA compliance
+const DEFAULT_BRANCH = "فرع الرباط"; // Default branch
+const DEFAULT_ADDRESS = "حي الرياض، الرباط، المملكة المغربية"; // Default address
 
 function generateZATCAQRCode(data: {
   sellerName: string;
@@ -185,41 +186,15 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
       }
     }, [orderNumber]);
 
-    useEffect(() => {
-      const generateTrackingQR = async () => {
-        try {
-          const trackingUrl = `https://BLACKROSE.com.sa/tracking?order=${orderNumber}`;
-          const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
-            width: 200,
-            margin: 1,
-            color: {
-              dark: '#000000',
-              light: '#FFFFFF'
-            },
-            errorCorrectionLevel: 'M'
-          });
-          setTrackingQrUrl(qrDataUrl);
-        } catch (error) {
-          console.error("Error generating tracking QR code:", error);
-        }
-      };
-
-      if (orderNumber) {
-        generateTrackingQR();
-      }
-    }, [orderNumber]);
-
     return (
       <div ref={ref} className="hidden print:block">
         <div className="max-w-[80mm] mx-auto bg-white text-black p-3 font-sans" dir="rtl">
           <div className="text-center mb-4 pb-4 border-b-2 border-dashed border-gray-800">
-            <div className="w-20 h-20 mx-auto mb-2">
-              <img src={blackroseLogo} alt="BLACK ROSE" className="w-full h-full object-contain" />
-            </div>
             <h1 className="text-2xl font-bold text-gray-900">{COMPANY_NAME}</h1>
             <p className="text-sm text-gray-600 font-medium">{COMPANY_NAME_EN}</p>
             <p className="text-xs text-gray-500 mt-1">{displayBranchName}</p>
             <p className="text-xs text-gray-400">{displayBranchAddress}</p>
+            <p className="text-xs font-bold text-amber-700 mt-1">www.cluny.cafe</p>
             <div className="mt-3 pt-3 border-t border-gray-300">
               <p className="text-lg font-bold text-gray-900">فاتورة ضريبية مبسطة</p>
               <p className="text-xs text-gray-500">Simplified Tax Invoice</p>
@@ -378,23 +353,6 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
           </div>
 
           <div className="text-center mb-4">
-            <p className="text-xs font-bold text-gray-700 mb-1">امسح للتتبع</p>
-            <p className="text-[10px] text-gray-500 mb-2">Scan to Track Order</p>
-            {trackingQrUrl && (
-              <div className="inline-block p-2 bg-white border border-gray-200 rounded-lg">
-                <img 
-                  src={trackingQrUrl} 
-                  alt="Order Tracking QR" 
-                  className="w-24 h-24 mx-auto"
-                />
-              </div>
-            )}
-            <p className="text-[9px] text-gray-400 mt-1">
-              امسح الرمز لتتبع حالة طلبك
-            </p>
-          </div>
-
-          <div className="text-center mb-4">
             <p className="text-xs font-bold text-gray-700 mb-1">رقم الطلب</p>
             <p className="text-[10px] text-gray-500 mb-2">Order Number</p>
             {barcodeUrl && (
@@ -406,6 +364,22 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
                 />
               </div>
             )}
+          </div>
+
+          <div className="mb-4 pt-4 border-t-2 border-dashed border-gray-800 text-center">
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs font-bold text-gray-600 mb-1">ملخص الطلب السريع</p>
+              <p className="text-3xl font-black text-gray-900 mb-2">
+                #{orderNumber.includes('-') ? orderNumber.split('-').pop() : orderNumber}
+              </p>
+              <div className="text-right space-y-1">
+                {items.map((item, idx) => (
+                  <p key={idx} className="text-[11px] font-bold text-gray-800">
+                    {item.quantity} x {item.coffeeItem.nameAr}
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="text-center mb-4">
@@ -432,11 +406,12 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
             <div className="bg-gray-100 rounded-lg p-2 mb-3 text-xs">
               <p className="text-gray-600">جميع الأسعار شاملة ضريبة القيمة المضافة 15%</p>
               <p className="text-gray-500">All prices include 15% VAT</p>
+              <p className="font-bold text-amber-700 mt-1">www.cluny.cafe</p>
             </div>
             
             <div className="text-xs text-gray-500">
               <p>تابعونا على وسائل التواصل الاجتماعي</p>
-              <p className="font-mono font-bold text-amber-700">@BLACK ROSE</p>
+              <p className="font-mono font-bold text-amber-700">@CLUNY CAFE</p>
             </div>
             
             <div className="mt-3 pt-2 border-t border-gray-300 text-[9px] text-gray-400">

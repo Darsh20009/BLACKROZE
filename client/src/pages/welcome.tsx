@@ -1,19 +1,34 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
-import { Coffee, Star, MapPin, ChevronLeft, ChevronRight, LogOut, Sparkles } from "lucide-react";
-import blackroseLogo from "@/assets/images/logo.png";
-import bannerImage1 from "/hero-cafe.png";
-import bannerImage2 from "/hero-cafe.png";
+import { motion, AnimatePresence } from "framer-motion";
+import { Coffee, Star, MapPin, ChevronLeft, ChevronRight, LogOut, Sparkles, User, KeyRound, X as XIcon } from "lucide-react";
+import clunyLogo from "@assets/cluny-logo-customer.png";
+import bannerImage1 from "@assets/banner-coffee-1.png";
+import bannerImage2 from "@assets/banner-coffee-2.png";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useTranslation } from "react-i18next";
+import CurrentOrderBanner from "@/components/current-order-banner";
+import { useOrderWebSocket } from "@/lib/websocket";
+import { useState } from "react";
 
-import Screenshot_2026_01_28_125936 from "@assets/Screenshot 2026-01-28 125936.png";
+import { CustomerFooter } from "@/components/customer-footer";
 
 export default function WelcomePage() {
   const [, setLocation] = useLocation();
   const { customer, isAuthenticated, logout } = useCustomer();
   const { t, i18n } = useTranslation();
+  const [verificationCode, setVerificationCode] = useState<any>(null);
+
+  useOrderWebSocket({
+    clientType: 'customer',
+    customerId: customer?.id,
+    onPointsVerificationCode: (data) => {
+      setVerificationCode(data);
+      // Auto-hide after 5 minutes or based on expiry
+      setTimeout(() => setVerificationCode(null), 5 * 60 * 1000);
+    },
+    enabled: !!customer?.id
+  });
 
   const features = [
     { icon: Coffee, title: t("welcome.specialty"), desc: t("welcome.specialty_desc"), color: "from-primary to-primary/70" },
@@ -45,21 +60,68 @@ export default function WelcomePage() {
         <header className="relative z-20 flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xl p-1 border border-white/30">
-              <img src={Screenshot_2026_01_28_125936} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
-            <span className="text-white font-bold text-lg tracking-wide">BLACK ROSE</span>
+            <span className="text-white font-bold text-lg tracking-wide">CLUNY</span>
           </div>
-          {isAuthenticated && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => logout()}
+
+          <div className="flex items-center gap-2">
+            <AnimatePresence>
+              {verificationCode && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, x: 20 }}
+                  className="bg-accent/90 backdrop-blur-md border border-white/20 rounded-xl p-2 px-3 flex items-center gap-3 shadow-xl"
+                >
+                  <div className="bg-white/20 p-1.5 rounded-lg">
+                    <KeyRound className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-white/70 leading-none">رمز التحقق</span>
+                    <span className="text-lg font-bold text-white leading-none tracking-widest">{verificationCode.code}</span>
+                  </div>
+                  <button 
+                    onClick={() => setVerificationCode(null)}
+                    className="text-white/50 hover:text-white p-1"
+                  >
+                    <XIcon className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => logout()}
+                className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => {
+                const storedCustomer = localStorage.getItem("qahwa-customer") || localStorage.getItem("currentCustomer");
+                if (isAuthenticated || customer || storedCustomer) {
+                  setLocation("/profile");
+                } else {
+                  setLocation("/auth");
+                }
+              }} 
               className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20"
+              data-testid="button-user-profile"
             >
-              <LogOut className="w-5 h-5" />
+              <User className="w-5 h-5 text-white" />
             </Button>
-          )}
+          </div>
         </header>
+
+          <div className="absolute top-4 left-4 z-30">
+            <CurrentOrderBanner />
+          </div>
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-20">
@@ -75,7 +137,7 @@ export default function WelcomePage() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-xl p-2 border border-white/20 shadow-xl bg-[#a7b0b1]/30"
             >
-              <img src={Screenshot_2026_01_28_125936} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
+              <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
             </motion.div>
 
             <motion.div
@@ -225,14 +287,7 @@ export default function WelcomePage() {
         </div>
       </section>
       {/* Footer */}
-      <footer className="py-10 px-6 bg-white border-t border-border">
-        <div className="max-w-4xl mx-auto flex flex-col items-center">
-          <img src={blackroseLogo} alt="Logo" className="w-12 h-12 mb-4 rounded-2xl" />
-          <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} BLACK ROSE. {t("legal.rights")}
-          </p>
-        </div>
-      </footer>
+      <CustomerFooter />
     </div>
   );
 }

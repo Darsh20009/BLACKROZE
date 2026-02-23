@@ -11,6 +11,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useNotifications } from "@/hooks/use-notifications";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -43,6 +44,7 @@ const getNotificationLabel = (type: string) => {
 };
 
 export default function NotificationsPage() {
+  const { sendNotification } = useNotifications();
   const { data: notifications, isLoading } = useQuery({
     queryKey: ["/api/notifications"],
     queryFn: async () => {

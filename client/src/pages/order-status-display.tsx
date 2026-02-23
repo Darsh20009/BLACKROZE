@@ -33,8 +33,12 @@ interface Order {
 }
 
 const getLastThreeDigits = (orderNumber: string): string => {
+  if (!orderNumber) return "000";
+  if (orderNumber.includes('-')) {
+    return orderNumber.split('-').pop() || "000";
+  }
   const digits = orderNumber.replace(/\D/g, '');
-  return digits.slice(-3).padStart(3, '0');
+  return digits.slice(-4).padStart(4, '0');
 };
 
 const getOrderTypeDisplay = (order: Order) => {

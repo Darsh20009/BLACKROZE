@@ -9,11 +9,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useCartStore } from '@/lib/cart-store';
 import { useToast } from '@/hooks/use-toast';
-import { Store, MapPin, ArrowRight, Phone, Map, Coffee, AlertCircle, Loader2, Navigation, Clock, Check } from 'lucide-react';
+import { Store, MapPin, ArrowRight, Phone, Map, Coffee, AlertCircle, Loader2, Navigation, Clock, Check, Car, Bookmark, Palette } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 interface Branch {
-  _id: string;
+  id: string;
   nameAr: string;
   nameEn?: string;
   address: string;
@@ -28,8 +29,7 @@ interface Branch {
 }
 
 interface Table {
-  id?: string;
-  _id?: string;
+  id: string;
   tableNumber: string;
   capacity: number;
   branchId: string;
@@ -39,59 +39,34 @@ interface Table {
 }
 
 export default function DeliverySelectionPage() {
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { setDeliveryInfo, cartItems } = useCartStore();
   const { toast } = useToast();
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
 
-  const isAr = true;
-
-  // Translation helpers
-  const t = (key: string, options?: any) => {
-    const translations: any = {
-      "nav.branch_selection": "اختيار الفرع",
-      "delivery.subtitle": "اختر الفرع الأقرب إليك",
-      "delivery.title": "خدمة التوصيل والاستلام",
-      "delivery.select_branch": "اختر الفرع",
-      "delivery.loading_branches": "جاري تحميل الفروع...",
-      "delivery.no_branches": "لا توجد فروع متاحة",
-      "delivery.address": "العنوان",
-      "delivery.phone": "الهاتف",
-      "delivery.check_location": "جاري التحقق من موقعك...",
-      "delivery.location_error": "خطأ في تحديد الموقع",
-      "delivery.update_location": "تحديث الموقع",
-      "delivery.browser_error": "متصفحك لا يدعم تحديد الموقع",
-      "delivery.view_on_map": "عرض على الخريطة",
-      "delivery.google_maps": "خرائط جوجل",
-      "delivery.dine_in": "تناول في الفرع",
-      "delivery.dine_in_desc": "احجز طاولتك الآن",
-      "delivery.loading_tables": "جاري تحميل الطاولات...",
-      "delivery.no_tables": "لا توجد طاولات متاحة",
-      "delivery.select_table": "اختر الطاولة",
-      "delivery.available": "متاح",
-      "delivery.occupied": "مشغول",
-      "delivery.table_label": `طاولة {number} (سعة {capacity} أشخاص)`,
-      "product.error": "خطأ",
-      "delivery.select_branch_error": "الرجاء اختيار فرع",
-      "delivery.location_warning": "تعذر التحقق من موقعك",
-      "delivery.select_table_error": "الرجاء اختيار طاولة",
-      "delivery.select_arrival_error": "الرجاء اختيار وقت الوصول",
-      "product.saved": "تم الحفظ",
-      "delivery.booking_success": "تم حجز الطاولة بنجاح",
-      "cart.empty_title": "السلة فارغة",
-      "cart.empty_desc": "أضف عناصر للسلة أولاً",
-      "delivery.update": "تحديث",
-      "delivery.within_range": "أنت ضمن نطاق التوصيل ({distance} كم)",
-      "delivery.out_of_range": "أنت خارج نطاق التوصيل ({distance} كم)"
-    };
-    return translations[key] || key;
-  };
-
   // Set SEO metadata
   useEffect(() => {
-    document.title = `${t("nav.branch_selection")} - BLACK ROSE`;
-  }, []);
+    document.title = `${t("nav.branch_selection")} - CLUNY CAFE`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', t("delivery.subtitle"));
+  }, [t]);
   const [dineIn, setDineIn] = useState<boolean>(false);
+  const [carPickup, setCarPickup] = useState<boolean>(false);
+  const [saveCarInfo, setSaveCarInfo] = useState<boolean>(false);
+  const [carInfo, setCarInfo] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cluny_saved_car');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { model: parsed.model || '', color: parsed.color || '', plateNumber: parsed.plateNumber || '' };
+      }
+    } catch {}
+    return { model: '', color: '', plateNumber: '' };
+  });
+  const [hasSavedCar] = useState(() => {
+    try { return !!localStorage.getItem('cluny_saved_car'); } catch { return false; }
+  });
   const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);
   const [locationError, setLocationError] = useState<string>('');
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
@@ -172,12 +147,11 @@ export default function DeliverySelectionPage() {
         const actualData = t._doc || t;
         
         // Ensure id is present
-        const id = actualData.id || actualData._id || (t._id ? t._id.toString() : null);
+        const id = actualData.id;
         
         return {
           ...actualData,
           id: id,
-          _id: id,
           // Use isAvailable from server (computed correctly from isOccupied)
           // Server returns isAvailable=true if table is not occupied
           isAvailable: actualData.isAvailable !== undefined ? actualData.isAvailable : (actualData.isOccupied === 0),
@@ -323,8 +297,24 @@ export default function DeliverySelectionPage() {
       });
     }
     
-    const branch = branches.find(b => b._id === selectedBranchId);
+    const branch = branches.find(b => b.id === selectedBranchId);
     if (!branch) return;
+
+    if (carPickup) {
+      if (!carInfo.model || !carInfo.color || !carInfo.plateNumber) {
+        toast({
+          title: t("product.error"),
+          description: "يرجى إدخال جميع بيانات السيارة",
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (saveCarInfo) {
+        try { localStorage.setItem('cluny_saved_car', JSON.stringify(carInfo)); } catch {}
+      } else {
+        try { localStorage.removeItem('cluny_saved_car'); } catch {}
+      }
+    }
 
     // Validate dine-in reservation if selected
     if (dineIn) {
@@ -351,11 +341,20 @@ export default function DeliverySelectionPage() {
     }
 
     setDeliveryInfo({
-      type: dineIn ? 'dine-in' : 'pickup',
-      branchId: branch._id,
+      type: carPickup ? 'car-pickup' : (dineIn ? 'dine-in' : 'pickup'),
+      branchId: branch.id,
       branchName: branch.nameAr,
       branchAddress: branch.address,
       dineIn: dineIn,
+      carPickup: carPickup,
+      carInfo: carPickup ? {
+        carType: carInfo.model,
+        carColor: carInfo.color,
+        plateNumber: carInfo.plateNumber
+      } : undefined,
+      carType: carPickup ? carInfo.model : undefined,
+      carColor: carPickup ? carInfo.color : undefined,
+      plateNumber: carPickup ? carInfo.plateNumber : undefined,
       tableId: selectedTableId || undefined,
       tableNumber: bookedTable?.tableNumber || undefined,
       arrivalTime: arrivalTime || undefined,
@@ -395,7 +394,7 @@ export default function DeliverySelectionPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {branches.map((branch) => (
-                        <SelectItem key={branch._id} value={branch._id}>
+                        <SelectItem key={branch.id} value={branch.id}>
                           <div className="flex flex-col items-start gap-1" dir="rtl">
                             <span className="font-semibold">{branch.nameAr}</span>
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -414,7 +413,7 @@ export default function DeliverySelectionPage() {
                   
                   {/* Selected Branch Details */}
                   {selectedBranchId && (() => {
-                    const selectedBranch = branches.find(b => b._id === selectedBranchId);
+                    const selectedBranch = branches.find(b => b.id === selectedBranchId);
                     if (!selectedBranch) return null;
                     
                     return (
@@ -506,7 +505,8 @@ export default function DeliverySelectionPage() {
                           </a>
                         )}
 
-                        {/* Dine-In Option */}
+
+                          {/* Dine-In Option */}
                         <Card className="bg-accent/5">
                           <CardContent className="p-4 space-y-4">
                             <div className="flex items-center justify-between gap-3">
@@ -526,7 +526,10 @@ export default function DeliverySelectionPage() {
                               <Checkbox 
                                 id="dine-in"
                                 checked={dineIn} 
-                                onCheckedChange={(checked) => setDineIn(checked as boolean)}
+                                onCheckedChange={(checked) => {
+                                  setDineIn(checked as boolean);
+                                  if (checked) setCarPickup(false);
+                                }}
                                 data-testid="checkbox-dine-in"
                                 className="ml-2"
                               />
@@ -562,7 +565,7 @@ export default function DeliverySelectionPage() {
                                         </SelectTrigger>
                                         <SelectContent>
                                           {availableTables.map((table) => {
-                                            const tableId = table.id || table._id;
+                                            const tableId = table.id;
                                             if (!tableId) {
                                               console.error('[ERROR] Table missing id:', table);
                                               return null;
@@ -608,6 +611,177 @@ export default function DeliverySelectionPage() {
                                       </Alert>
                                     )}
                                   </>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Car Pickup Option */}
+                        <Card 
+                          className={`cursor-pointer transition-all duration-200 ${carPickup ? 'border-purple-500 bg-purple-500/5 ring-1 ring-purple-500/30' : 'bg-accent/5 hover-elevate'}`}
+                          onClick={() => { setCarPickup(!carPickup); if (!carPickup) setDineIn(false); }}
+                          data-testid="card-car-pickup"
+                        >
+                          <CardContent className="p-4 space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className={`p-3 rounded-xl shrink-0 transition-colors ${carPickup ? 'bg-purple-500/20' : 'bg-muted'}`}>
+                                  <Car className={`w-6 h-6 ${carPickup ? 'text-purple-500' : 'text-muted-foreground'}`} />
+                                </div>
+                                <div className="flex-1">
+                                  <p className={`text-base font-bold ${carPickup ? 'text-purple-600 dark:text-purple-400' : ''}`}>
+                                    استلام من السيارة
+                                  </p>
+                                  <p className="text-sm text-muted-foreground mt-0.5">
+                                    استلم طلبك وأنت في سيارتك دون الحاجة للنزول
+                                  </p>
+                                  {hasSavedCar && !carPickup && (
+                                    <p className="text-xs text-purple-500 mt-1 flex items-center gap-1">
+                                      <Bookmark className="w-3 h-3" />
+                                      لديك سيارة محفوظة
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${carPickup ? 'border-purple-500 bg-purple-500' : 'border-muted-foreground/30'}`}>
+                                {carPickup && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                            </div>
+
+                            {carPickup && (
+                              <div className="space-y-4 pt-4 border-t border-purple-500/20" onClick={(e) => e.stopPropagation()}>
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-semibold flex items-center gap-1.5">
+                                    <Car className="w-3.5 h-3.5 text-purple-500" />
+                                    نوع السيارة
+                                  </Label>
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {['تويوتا', 'هيونداي', 'نيسان', 'كيا', 'شيفروليه', 'فورد', 'هوندا', 'مرسيدس'].map((brand) => (
+                                      <button
+                                        key={brand}
+                                        type="button"
+                                        onClick={() => setCarInfo({ ...carInfo, model: brand })}
+                                        className={`p-2 rounded-lg text-xs font-medium text-center border transition-all ${
+                                          carInfo.model === brand 
+                                            ? 'border-purple-500 bg-purple-500/15 text-purple-600 dark:text-purple-400' 
+                                            : 'border-border bg-background hover-elevate'
+                                        }`}
+                                        data-testid={`btn-car-brand-${brand}`}
+                                      >
+                                        {brand}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <Input
+                                    value={carInfo.model}
+                                    onChange={(e) => setCarInfo({ ...carInfo, model: e.target.value })}
+                                    placeholder="أو اكتب نوع السيارة..."
+                                    data-testid="input-car-model"
+                                    className="mt-1"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-semibold flex items-center gap-1.5">
+                                    <Palette className="w-3.5 h-3.5 text-purple-500" />
+                                    لون السيارة
+                                  </Label>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {[
+                                      { name: 'أبيض', hex: '#FFFFFF', border: true },
+                                      { name: 'أسود', hex: '#1a1a1a', border: false },
+                                      { name: 'فضي', hex: '#C0C0C0', border: true },
+                                      { name: 'رمادي', hex: '#808080', border: false },
+                                      { name: 'أحمر', hex: '#DC2626', border: false },
+                                      { name: 'أزرق', hex: '#2563EB', border: false },
+                                      { name: 'بني', hex: '#92400E', border: false },
+                                      { name: 'ذهبي', hex: '#D4A017', border: false },
+                                    ].map((color) => (
+                                      <button
+                                        key={color.name}
+                                        type="button"
+                                        onClick={() => setCarInfo({ ...carInfo, color: color.name })}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                                          carInfo.color === color.name 
+                                            ? 'border-purple-500 ring-1 ring-purple-500/30' 
+                                            : 'border-border hover-elevate'
+                                        }`}
+                                        data-testid={`btn-car-color-${color.name}`}
+                                      >
+                                        <span 
+                                          className={`w-3.5 h-3.5 rounded-full shrink-0 ${color.border ? 'border border-border' : ''}`}
+                                          style={{ backgroundColor: color.hex }}
+                                        />
+                                        {color.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <Input
+                                    value={carInfo.color}
+                                    onChange={(e) => setCarInfo({ ...carInfo, color: e.target.value })}
+                                    placeholder="أو اكتب اللون..."
+                                    data-testid="input-car-color"
+                                    className="mt-1"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="car-plate" className="text-sm font-semibold">
+                                    رقم اللوحة
+                                  </Label>
+                                  <Input
+                                    id="car-plate"
+                                    placeholder="مثال: أ ب ج 1234"
+                                    value={carInfo.plateNumber}
+                                    onChange={(e) => setCarInfo({ ...carInfo, plateNumber: e.target.value })}
+                                    data-testid="input-car-plate"
+                                    className="text-center font-mono text-lg tracking-widest"
+                                    dir="ltr"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="arrival-time-car" className="text-sm font-semibold flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-purple-500" />
+                                    وقت الوصول المتوقع
+                                  </Label>
+                                  <Input
+                                    id="arrival-time-car"
+                                    type="time"
+                                    value={arrivalTime}
+                                    onChange={(e) => setArrivalTime(e.target.value)}
+                                    data-testid="input-arrival-time-car"
+                                  />
+                                </div>
+
+                                <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                                  <Checkbox
+                                    id="save-car-info"
+                                    checked={saveCarInfo}
+                                    onCheckedChange={(checked) => setSaveCarInfo(checked as boolean)}
+                                    data-testid="checkbox-save-car"
+                                    className="border-purple-500/50"
+                                  />
+                                  <Label htmlFor="save-car-info" className="text-sm cursor-pointer flex items-center gap-1.5 flex-1">
+                                    <Bookmark className="w-3.5 h-3.5 text-purple-500" />
+                                    حفظ بيانات السيارة للطلبات القادمة
+                                  </Label>
+                                </div>
+
+                                {carInfo.model && carInfo.color && carInfo.plateNumber && (
+                                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                                    <p className="text-xs text-muted-foreground mb-2">ملخص السيارة:</p>
+                                    <div className="flex items-center gap-3">
+                                      <div className="p-2 rounded-lg bg-purple-500/20">
+                                        <Car className="w-5 h-5 text-purple-500" />
+                                      </div>
+                                      <div>
+                                        <p className="font-bold text-sm">{carInfo.model} - {carInfo.color}</p>
+                                        <p className="text-xs text-muted-foreground font-mono tracking-wider" dir="ltr">{carInfo.plateNumber}</p>
+                                      </div>
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             )}

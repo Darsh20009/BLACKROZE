@@ -6,17 +6,45 @@ import { Badge } from "@/components/ui/badge";
 import { PWAInstallButton } from "@/components/pwa-install";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLocation } from "wouter";
-import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search, QrCode, ChevronLeft, ChevronRight, MapPin, Clock, Utensils } from "lucide-react";
+import { 
+  Coffee, 
+  ShoppingCart, 
+  Flame, 
+  Snowflake, 
+  Star, 
+  Cake, 
+  User, 
+  Plus, 
+  Search, 
+  QrCode, 
+  ChevronLeft, 
+  ChevronRight, 
+  MapPin, 
+  Clock, 
+  Utensils, 
+  Sparkles,
+  Tag,
+  Gift,
+  Languages
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import blackroseLogo from "@/assets/images/logo.png";
-import bannerImage1 from "@assets/banner-coffee-1.png";
-import bannerImage2 from "@assets/banner-coffee-2.png";
+import banner1 from "@assets/banner-coffee-1.png";
+import banner2 from "@assets/banner-coffee-2.png";
+import clunyLogo from "@assets/cluny-logo-customer.png";
 import type { CoffeeItem, IProductAddon, IPromoOffer } from "@shared/schema";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
-import { Tag, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Languages } from "lucide-react";
+
+interface MenuCategory {
+  id: string;
+  nameAr: string;
+  nameEn?: string;
+  icon?: string;
+  department?: 'drinks' | 'food';
+  orderIndex: number;
+  isSystem?: boolean;
+}
 
 export default function MenuPage() {
   const { cartItems, addToCart } = useCartStore();
@@ -32,27 +60,73 @@ export default function MenuPage() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const bannerRef = useRef<HTMLDivElement>(null);
 
-  const bannerSlides = [
-    {
-      image: "/assets/images/banner_1.png",
-      badge: t("menu.featured") || "مميز",
-      title: "بلاك روز كافيه",
-      subtitle: "استمتع بأجود أنواع القهوة المختصة والحلويات الفاخرة",
-    },
-    {
-      image: "/assets/images/banner_2.png",
-      badge: t("menu.offers") || "عروض",
-      title: "تجربة فريدة",
-      subtitle: "أجواء رائعة وخدمة متميزة في قلب الرياض",
-    }
-  ];
+  const { data: customBanners = [] } = useQuery<any[]>({
+    queryKey: ["/api/custom-banners"],
+  });
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentBannerIndex((prev) => (prev + 1) % bannerSlides.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [bannerSlides.length]);
+  const isStoreOpen = () => {
+    if (!businessConfig) return true;
+    if (businessConfig.isEmergencyClosed) return false;
+
+    const storeHours = businessConfig.storeHours || {};
+    const isAlwaysOpenGlobal = Object.values(storeHours).every((h: any) => h?.isAlwaysOpen || (h?.open === "00:00" && h?.close === "23:59"));
+    
+    if (isAlwaysOpenGlobal) return true;
+
+    const now = new Date();
+    // Saudi Time is UTC+3
+    const riyadhTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Riyadh',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      weekday: 'long'
+    }).formatToParts(now);
+
+    const currentDay = riyadhTime.find(p => p.type === 'weekday')?.value.toLowerCase() || 'monday';
+    const currentHour = parseInt(riyadhTime.find(p => p.type === 'hour')?.value || '0');
+    const currentMinute = parseInt(riyadhTime.find(p => p.type === 'minute')?.value || '0');
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+    const hours = businessConfig.storeHours?.[currentDay];
+
+    if (!hours || !hours.isOpen) return false;
+    if (hours.isAlwaysOpen || (hours.open === '00:00' && hours.close === '23:59')) return true;
+
+    const [openH, openM] = (hours.open || '06:00').split(':').map(Number);
+    const [closeH, closeM] = (hours.close || '03:00').split(':').map(Number);
+
+    const openMinutes = openH * 60 + openM;
+    let closeMinutes = closeH * 60 + closeM;
+
+    // Handle overnight hours (e.g., 6 AM to 3 AM next day)
+    if (closeMinutes <= openMinutes) {
+      if (currentTimeInMinutes >= openMinutes || currentTimeInMinutes <= closeMinutes) return true;
+    } else {
+      if (currentTimeInMinutes >= openMinutes && currentTimeInMinutes <= closeMinutes) return true;
+    }
+
+    return false;
+  };
+
+  const getStatusMessage = () => {
+    if (!businessConfig) return null;
+    if (businessConfig.isEmergencyClosed) return "نعتذر، الكافيه مغلق حالياً لظروف طارئة";
+    
+    const isOpen = isStoreOpen();
+    if (isOpen) return null;
+
+    const nextOpening = businessConfig.currentStatus?.nextOpeningTime;
+    if (nextOpening) {
+      const { hours, minutes } = nextOpening;
+      let timeStr = "";
+      if (hours > 0) timeStr += `${hours} ساعة `;
+      if (minutes > 0) timeStr += `${minutes} دقيقة`;
+      return `الكافيه مغلق حالياً، يفتح بعد ${timeStr}`;
+    }
+
+    return "الكافيه مغلق حالياً";
+  };
 
   const { data: coffeeItems = [], isLoading } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
@@ -66,55 +140,298 @@ export default function MenuPage() {
     queryKey: ["/api/promo-offers"],
   });
 
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const { data: dynamicCategories = [] } = useQuery<MenuCategory[]>({
+    queryKey: ["/api/menu-categories"],
+  });
 
   const { data: businessConfig } = useQuery<any>({
     queryKey: ["/api/business-config"],
   });
 
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
   const isBothModes = businessConfig?.activityType === "both";
   const [activeMode, setActiveMode] = useState<"drinks" | "food">("drinks");
+  const [initModeSet, setInitModeSet] = useState(false);
 
-  const categories = [
-    { id: "all", name: t("menu.categories.all"), icon: Coffee },
-    { id: "hot", name: t("menu.categories.hot"), icon: Flame },
-    { id: "cold", name: t("menu.categories.cold"), icon: Snowflake },
-    { id: "specialty", name: t("menu.categories.specialty"), icon: Star },
-    { id: "desserts", name: t("menu.categories.desserts"), icon: Cake },
-    ...(isBothModes ? [{ id: "food", name: t("menu.categories.food") || "المأكولات", icon: Utensils }] : []),
+  useEffect(() => {
+    if (businessConfig?.activityType === "both" && !initModeSet) {
+      setActiveMode("drinks"); // Keep drinks as primary but show food more prominently
+      setInitModeSet(true);
+    }
+  }, [businessConfig, initModeSet]);
+
+  // Construct dynamic banners
+  const bannerSlides = (() => {
+    const slides: any[] = [];
+
+    // 1. Add custom admin banners first
+    if (customBanners.length > 0) {
+      customBanners.forEach((banner: any) => {
+        slides.push({
+          image: banner.imageUrl,
+          title: i18n.language === 'ar' ? banner.titleAr : (banner.titleEn || banner.titleAr),
+          subtitle: i18n.language === 'ar' ? banner.subtitleAr : (banner.subtitleEn || banner.subtitleAr),
+          badge: i18n.language === 'ar' ? banner.badgeAr : (banner.badgeEn || banner.badgeAr),
+          linkType: banner.linkType,
+          linkId: banner.linkId,
+          externalUrl: banner.externalUrl,
+          couponCode: banner.couponCode,
+          couponImageUrl: banner.couponImageUrl
+        });
+      });
+    }
+
+    // 2. Add fixed banner slides
+    slides.push({
+      image: banner1,
+      badge: t("menu.banner.default1.badge"),
+      title: t("menu.banner.default1.title"),
+      subtitle: t("menu.banner.default1.subtitle"),
+      linkType: "offer",
+      couponCode: undefined,
+      couponImageUrl: undefined
+    });
+    slides.push({
+      image: banner2,
+      badge: t("menu.banner.default2.badge"),
+      title: t("menu.banner.default2.title"),
+      subtitle: t("menu.banner.default2.subtitle"),
+      linkType: "offer",
+      couponCode: undefined,
+      couponImageUrl: undefined
+    });
+
+    // 3. Add dynamic "Smart" slides based on inventory/products
+    if (coffeeItems.length > 0) {
+      // Find cheapest drink
+      const sortedByPrice = [...coffeeItems].sort((a, b) => {
+        const priceA = typeof a.price === 'number' ? a.price : parseFloat(String(a.price));
+        const priceB = typeof b.price === 'number' ? b.price : parseFloat(String(b.price));
+        return priceA - priceB;
+      });
+      const cheapest = sortedByPrice[0];
+      const cheapestName = i18n.language === 'ar' ? cheapest?.nameAr : (cheapest?.nameEn || cheapest?.nameAr);
+      if (cheapest) {
+        slides.push({
+          image: cheapest.imageUrl || banner1,
+          title: t("menu.banner.smart.cheapest_title", { name: cheapestName }),
+          subtitle: t("menu.banner.smart.cheapest_subtitle"),
+          badge: t("menu.banner.smart.cheapest_badge"),
+          linkType: 'product',
+          linkId: (cheapest as any).id,
+          externalUrl: undefined,
+          couponCode: undefined,
+          couponImageUrl: undefined
+        });
+      }
+
+      const newest = [...coffeeItems].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0];
+      const newestName = i18n.language === 'ar' ? newest?.nameAr : (newest?.nameEn || newest?.nameAr);
+      if (newest && (newest as any).id !== (cheapest as any).id) {
+        slides.push({
+          image: newest.imageUrl || banner2,
+          title: t("menu.banner.smart.newest_title"),
+          subtitle: t("menu.banner.smart.newest_subtitle", { name: newestName }),
+          badge: t("menu.banner.smart.newest_badge"),
+          linkType: 'product',
+          linkId: (newest as any).id,
+          externalUrl: undefined,
+          couponCode: undefined,
+          couponImageUrl: undefined
+        });
+      }
+    }
+
+    // 4. Fallback to default slides if nothing else
+    if (slides.length === 0) {
+      slides.push(
+        {
+          image: banner1,
+          title: t("banner.1.title"),
+          subtitle: t("banner.1.subtitle"),
+          badge: t("banner.1.badge"),
+          linkType: 'product',
+          linkId: "matcha-latte",
+          externalUrl: undefined,
+          couponCode: undefined,
+          couponImageUrl: undefined
+        },
+        {
+          image: banner2,
+          title: t("banner.2.title"),
+          subtitle: t("banner.2.subtitle"),
+          badge: t("banner.2.badge"),
+          linkType: 'product',
+          linkId: "vanilla-latte",
+          externalUrl: undefined,
+          couponCode: undefined,
+          couponImageUrl: undefined
+        }
+      );
+    }
+
+    return slides;
+  })();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % bannerSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [bannerSlides.length]);
+
+  const iconMap: Record<string, any> = {
+    Coffee, Flame, Snowflake, Star, Cake, Utensils, Sparkles
+  };
+
+  const drinkSystemCategories = [
+    { id: "all", name: t("menu.categories.all"), icon: Coffee, isSystem: true },
+    { id: "hot", name: t("menu.categories.hot"), icon: Flame, isSystem: true },
+    { id: "cold", name: t("menu.categories.cold"), icon: Snowflake, isSystem: true },
+    { id: "specialty", name: t("menu.categories.specialty"), icon: Star, isSystem: true },
+    { id: "drinks", name: t("menu.categories.drinks") || "المشروبات", icon: Coffee, isSystem: true },
+    { id: "additional_drinks", name: "مشروبات إضافية", icon: Plus, isSystem: true },
+    { id: "desserts", name: t("menu.categories.desserts"), icon: Cake, isSystem: true },
   ];
 
-  // Group items by groupId if exists, otherwise treat as individual items
+  const foodSystemCategories = [
+    { id: "all", name: t("menu.categories.all"), icon: Utensils, isSystem: true },
+    { id: "food", name: t("menu.categories.food"), icon: Utensils, isSystem: true },
+    { id: "sandwiches", name: "السندوتشات", icon: Utensils, isSystem: true },
+    { id: "bakery", name: t("menu.categories.bakery"), icon: Cake, isSystem: true },
+    { id: "croissant", name: "الكرواسون", icon: Cake, isSystem: true },
+    { id: "cake", name: "الكيك", icon: Cake, isSystem: true },
+    { id: "desserts", name: t("menu.categories.desserts"), icon: Star, isSystem: true },
+  ];
+
+  const systemCategories = isBothModes
+    ? (activeMode === "food" ? foodSystemCategories : drinkSystemCategories)
+    : drinkSystemCategories;
+
+  const customCategories = dynamicCategories
+    .filter(c => {
+      if (c.isSystem) return false;
+      if (isBothModes) {
+        return !c.department || c.department === activeMode;
+      }
+      return true;
+    })
+    .map(c => ({
+      id: c.id,
+      name: i18n.language === 'ar' ? c.nameAr : (c.nameEn || c.nameAr),
+      icon: iconMap[c.icon || 'Coffee'] || Coffee,
+      isSystem: false
+    }));
+
+  const categories = [...systemCategories, ...customCategories];
+
+  const bestSellers = coffeeItems
+    .filter(item => (item as any).isBestSeller || (item as any).salesCount > 10 || item.category === 'food' || item.category === 'bakery')
+    .sort((a, b) => {
+      // Prioritize food in best sellers if it matches
+      const aIsFood = a.category === 'food' || a.category === 'bakery';
+      const bIsFood = b.category === 'food' || b.category === 'bakery';
+      if (aIsFood && !bIsFood) return -1;
+      if (!aIsFood && bIsFood) return 1;
+      return ((b as any).salesCount || 0) - ((a as any).salesCount || 0);
+    })
+    .slice(0, 8);
+
+
+  const getGroupingKey = (item: CoffeeItem): string => {
+    // 1. Explicit groupId has highest priority
+    if ((item as any).groupId) return (item as any).groupId;
+
+    const nameAr = item.nameAr || "";
+    if (!nameAr || typeof nameAr !== 'string') return 'unknown';
+
+    // Remove common prefixes and diacritics to help grouping
+    const cleaned = nameAr.trim()
+      .replace(/^[\u064B-\u0652]+/, '') // Remove leading diacritics
+      .replace(/^(بارد|حار)\s+/i, ''); // Remove temperature prefixes
+
+    // We want to group items that are truly variants of each other.
+    // Usually, variants share most of the name but differ at the end.
+    // For now, let's use the first two words if they exist, to differentiate 
+    // "Matcha Latte" from "Matcha Latte Strawberry"
+    const words = cleaned.split(/\s+/);
+    if (words.length >= 2) {
+      return `${words[0]} ${words[1]}`;
+    }
+    return words[0] || 'unknown';
+  };
+
   const groupedItems = coffeeItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
-    const groupKey = (item as any).groupId || `single_${(item as any).id || (item as any)._id}`;
+    const groupKey = getGroupingKey(item);
+    
     if (!acc[groupKey]) acc[groupKey] = [];
     acc[groupKey].push(item);
     return acc;
   }, {});
 
-  const representativeItems = Object.values(groupedItems).map(group => group[0]);
+  const representativeItems = Object.values(groupedItems).map(group => {
+    // Find the primary variant or just use the first one
+    return group[0];
+  });
 
-  const drinkCategories = ['basic', 'hot', 'cold', 'specialty', 'desserts'];
-  const foodCategoryIds = ['appetizers', 'main_courses', 'sandwiches', 'salads', 'breakfast', 'pastries'];
+  const drinkCategoryIds = ['basic', 'hot', 'cold', 'specialty', 'drinks'];
+  const foodCategoryIds = ['food', 'bakery', 'desserts'];
 
   const filteredItems = representativeItems.filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
     const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const itemMenuType = (item as any).menuType || 'drinks';
+    const drinkIds = [...drinkCategoryIds, ...dynamicCategories.filter(c => c.department === 'drinks').map(c => c.id)];
+    const foodIds = [...foodCategoryIds, ...dynamicCategories.filter(c => c.department === 'food').map(c => c.id)];
+
     const matchesMode = !isBothModes || (
-      activeMode === "drinks" 
-        ? (itemMenuType === 'drinks' || drinkCategories.includes(item.category))
-        : (itemMenuType === 'food' || foodCategoryIds.includes(item.category))
+      selectedCategory !== "all" 
+        ? (activeMode === "drinks" ? drinkIds.includes(item.category) : foodIds.includes(item.category))
+        : true // Show all when "all" is selected
     );
     
     return matchesCategory && matchesSearch && matchesMode;
   });
 
+  // Re-order filteredItems if both modes are active and "all" is selected
+  // to show items from the active mode first
+  const sortedFilteredItems = [...filteredItems].sort((a, b) => {
+    if (!isBothModes || selectedCategory !== "all") return 0;
+    
+    const drinkIds = [...drinkCategoryIds, ...dynamicCategories.filter(c => c.department === 'drinks').map(c => c.id)];
+    const foodIds = [...foodCategoryIds, ...dynamicCategories.filter(c => c.department === 'food').map(c => c.id)];
+    
+    const aMatchesMode = activeMode === "drinks" ? drinkIds.includes(a.category) : foodIds.includes(a.category);
+    const bMatchesMode = activeMode === "drinks" ? drinkIds.includes(b.category) : foodIds.includes(b.category);
+    
+    if (aMatchesMode && !bMatchesMode) return -1;
+    if (!aMatchesMode && bMatchesMode) return 1;
+    return 0;
+  });
+
   const handleAddToCartDirect = (item: CoffeeItem) => {
+    if (!isStoreOpen()) {
+      toast({
+        title: "المتجر مغلق",
+        description: "نعتذر، لا يمكن إضافة الطلبات حالياً بسبب إغلاق المتجر.",
+        variant: "destructive"
+      });
+      return;
+    }
+    const isAvailable = item.isAvailable !== 0 && (item.availabilityStatus === 'available' || item.availabilityStatus === 'new' || !item.availabilityStatus);
+    if (!isAvailable) {
+      toast({
+        title: "غير متوفر",
+        description: "نعتذر، هذا المنتج غير متوفر حالياً",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
-    const groupKey = (item as any).groupId || `single_${(item as any).id || (item as any)._id}`;
+    const groupKey = getGroupingKey(item);
     const group = groupedItems[groupKey] || [item];
     const hasMultipleVariants = group.length > 1;
     const hasSizes = item.availableSizes && item.availableSizes.length > 0;
@@ -124,7 +441,7 @@ export default function MenuPage() {
       setSelectedItem(item);
       setIsModalOpen(true);
     } else {
-      addToCart((item as any).id || (item as any)._id, 1, "default", []);
+      addToCart((item as any).id, 1, "default", []);
       toast({
         title: t("menu.added_to_cart"),
         description: t("menu.added_to_cart_desc", { name }),
@@ -160,48 +477,52 @@ export default function MenuPage() {
   }
 
   return (
-    <div dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} className="min-h-screen bg-background pb-24 font-sans overflow-x-hidden text-foreground">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-xl px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-background" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+      <header className="fixed top-0 inset-x-0 z-[60] h-16 bg-primary/40 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <img src={blackroseLogo} className="w-10 h-10 rounded-2xl border-2 border-white/30 shadow-lg backdrop-blur-xl bg-[#a7b0b1]/30" alt="Logo" />
+          <div className="w-10 h-10 rounded-2xl bg-white/10 p-1.5 flex items-center justify-center">
+            <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
           </div>
-          <div>
-            <h1 className="text-lg font-bold leading-none text-white drop-shadow-md">{t("app.name")}</h1>
-            <span className="text-[9px] text-white/80 font-medium uppercase tracking-wider">{t("app.tagline")}</span>
+          <div className="flex flex-col">
+            <h1 className="text-base font-black text-white leading-tight">CLUNY</h1>
+            <span className="text-[10px] font-bold text-white/60 tracking-wider uppercase">CAFE</span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <PWAInstallButton />
+          {isAuthenticated && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setLocation("/profile")}
+              className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10"
+              title={t("menu.loyalty_card") || "بطاقتي"}
+            >
+              <QrCode className="w-4 h-4" />
+            </Button>
+          )}
+
+          {isAuthenticated && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setLocation("/my-offers")}
+              className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10"
+              title={t("menu.discover_offers")}
+            >
+              <Sparkles className="w-4 h-4" />
+            </Button>
+          )}
+
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={toggleLanguage} 
-            className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20"
+            onClick={() => i18n.changeLanguage(i18n.language === 'ar' ? 'en' : 'ar')}
+            className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10"
           >
-            <Languages className="w-4 h-4 text-white" />
+            <Languages className="w-4 h-4" />
           </Button>
-          {isAuthenticated && (
-            <Button variant="ghost" size="icon" onClick={() => setLocation("/my-card")} className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20">
-              <QrCode className="w-4 h-4 text-white" />
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/cart")} className="relative h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20">
-            <ShoppingCart className="w-4 h-4 text-white" />
-            <AnimatePresence>
-              {totalItems > 0 && (
-                <motion.span 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-primary rounded-full border-2 border-white/50"
-                >
-                  {totalItems}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </Button>
+
           <Button 
             variant="ghost" 
             size="icon" 
@@ -213,73 +534,100 @@ export default function MenuPage() {
                 setLocation("/auth");
               }
             }} 
-            className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/20"
-            data-testid="button-user-profile"
+            className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10"
           >
-            <User className="w-4 h-4 text-white" />
+            <User className="w-4 h-4" />
           </Button>
         </div>
       </header>
 
-      <main className="space-y-6">
-        <div ref={bannerRef} className="relative w-full overflow-hidden">
-          <div className="relative h-[280px] sm:h-[320px] md:h-[380px]">
+      <main className="pt-16 space-y-6 pb-24 relative z-0">
+        <div ref={bannerRef} className="w-full -mt-16">
+          <div className="relative h-[320px] sm:h-[400px] overflow-hidden shadow-lg border-b border-border/50">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentBannerIndex}
-                initial={{ opacity: 0, x: i18n.language === 'ar' ? 100 : -100 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: i18n.language === 'ar' ? -100 : 100 }}
-                transition={{ duration: 0.5 }}
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
                 className="absolute inset-0"
               >
-                <div className="relative h-full w-full">
-                  <img 
-                    src={bannerSlides[currentBannerIndex].image} 
-                    alt={bannerSlides[currentBannerIndex].title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                  
-                  <div className={`absolute bottom-0 ${i18n.language === 'ar' ? 'right-0' : 'left-0'} left-0 right-0 p-6 text-white`}>
-                    <Badge className="mb-3 bg-accent text-white border-0 px-3 py-1">
-                      {bannerSlides[currentBannerIndex].badge}
-                    </Badge>
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-2">
-                      {bannerSlides[currentBannerIndex].title}
-                    </h2>
-                    <p className="text-sm sm:text-base opacity-90 max-w-md">
-                      {bannerSlides[currentBannerIndex].subtitle}
-                    </p>
+                  <div className="relative h-full w-full">
+                    <img 
+                      src={bannerSlides[currentBannerIndex].couponImageUrl || bannerSlides[currentBannerIndex].image} 
+                      alt={bannerSlides[currentBannerIndex].title}
+                      className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    
+                    {bannerSlides[currentBannerIndex].couponCode && (
+                      <div className="absolute top-4 right-4 z-20">
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ scale: 1.1 }}
+                          onClick={() => {
+                            navigator.clipboard.writeText(bannerSlides[currentBannerIndex].couponCode!);
+                            toast({ title: t("checkout.coupon_copied") || "تم نسخ الكود", description: bannerSlides[currentBannerIndex].couponCode });
+                          }}
+                          className="bg-primary/90 backdrop-blur-md text-white px-4 py-2 rounded-2xl border-2 border-white/30 shadow-2xl flex items-center gap-2 cursor-pointer group transition-all"
+                        >
+                          <Tag className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                          <span className="text-sm font-black tracking-widest uppercase">{bannerSlides[currentBannerIndex].couponCode}</span>
+                        </motion.div>
+                      </div>
+                    )}
+
+                    <div className={`absolute bottom-0 inset-x-0 p-8 text-white flex flex-col items-start gap-4`}>
+                      <div className="space-y-1">
+                        <Badge className="bg-accent/90 text-white border-0 px-3 py-1 font-bold text-[10px] uppercase tracking-wider animate-pulse">
+                          {bannerSlides[currentBannerIndex].badge}
+                        </Badge>
+                        <h2 className="text-2xl sm:text-4xl font-black tracking-tight drop-shadow-2xl">
+                          {bannerSlides[currentBannerIndex].title}
+                        </h2>
+                        <p className="text-sm sm:text-lg text-white/90 font-medium max-w-md line-clamp-2 drop-shadow-xl">
+                          {bannerSlides[currentBannerIndex].subtitle}
+                        </p>
+                      </div>
+                      
+                      <Button
+                        disabled={!isStoreOpen()}
+                        onClick={() => {
+                          const slide = bannerSlides[currentBannerIndex];
+                          if (slide.linkType === 'product' && slide.linkId) {
+                            const product = coffeeItems.find(p => p.id === slide.linkId);
+                            if (product) {
+                              setSelectedItem(product);
+                              setIsModalOpen(true);
+                            }
+                          } else if (slide.linkType === 'category' && slide.linkId) {
+                            setSelectedCategory(slide.linkId);
+                          } else if (slide.linkType === 'offer') {
+                            setLocation("/my-offers");
+                          } else if (slide.linkType === 'external' && slide.externalUrl) {
+                            window.open(slide.externalUrl, '_blank');
+                          }
+                        }}
+                        className="bg-white hover:bg-white/90 text-primary rounded-2xl px-8 h-12 text-base font-black shadow-2xl flex items-center gap-3 transition-all active:scale-95 group overflow-visible"
+                      >
+                        <span>{t("menu.add_to_cart")}</span>
+                        <ChevronLeft className={`w-5 h-5 transition-transform ${i18n.language === 'ar' ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1 rotate-180'}`} />
+                      </Button>
+                    </div>
                   </div>
-                </div>
               </motion.div>
             </AnimatePresence>
 
-            <button 
-              onClick={prevBanner}
-              className={`absolute ${i18n.language === 'ar' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors`}
-              data-testid="button-prev-banner"
-            >
-              {i18n.language === 'ar' ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-            </button>
-            <button 
-              onClick={nextBanner}
-              className={`absolute ${i18n.language === 'ar' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors`}
-              data-testid="button-next-banner"
-            >
-              {i18n.language === 'ar' ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-            </button>
-
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+            <div className="absolute bottom-6 right-6 flex gap-1.5 z-30">
               {bannerSlides.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentBannerIndex(idx)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    idx === currentBannerIndex ? "w-6 bg-white" : "bg-white/50"
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    idx === currentBannerIndex ? "w-8 bg-white" : "w-1.5 bg-white/40"
                   }`}
-                  data-testid={`button-banner-dot-${idx}`}
                 />
               ))}
             </div>
@@ -290,22 +638,24 @@ export default function MenuPage() {
           {isBothModes && (
             <div className="flex p-1 bg-secondary/30 rounded-2xl">
               <button
-                onClick={() => setActiveMode("drinks")}
+                onClick={() => { setActiveMode("drinks"); setSelectedCategory("all"); }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
                   activeMode === "drinks" ? "bg-primary text-white shadow-lg" : "text-muted-foreground"
                 }`}
+                data-testid="button-mode-drinks"
               >
                 <Coffee className="w-4 h-4" />
-                <span>{t("menu.mode.drinks") || "المشروبات"}</span>
+                <span>{t("menu.mode.drinks")}</span>
               </button>
               <button
-                onClick={() => setActiveMode("food")}
+                onClick={() => { setActiveMode("food"); setSelectedCategory("all"); }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
                   activeMode === "food" ? "bg-primary text-white shadow-lg" : "text-muted-foreground"
                 }`}
+                data-testid="button-mode-food"
               >
                 <Utensils className="w-4 h-4" />
-                <span>{t("menu.mode.food") || "المأكولات"}</span>
+                <span>{t("menu.mode.food")}</span>
               </button>
             </div>
           )}
@@ -316,17 +666,43 @@ export default function MenuPage() {
               <span className="text-sm font-medium">{t("location.riyadh")}</span>
             </div>
             <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="w-4 h-4 text-accent" />
-              <span className="text-sm font-medium">{t("status.open")}</span>
-            </div>
+            {!isStoreOpen() ? (
+              <div className="flex items-center gap-2 text-red-500">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm font-bold">{i18n.language === 'ar' ? "المتجر مغلق حالياً" : "Store Closed"}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="w-4 h-4 text-accent" />
+                <span className="text-sm font-medium">{t("status.open")}</span>
+              </div>
+            )}
           </div>
+
+          {isAuthenticated && (
+            <button
+              onClick={() => setLocation("/my-offers")}
+              className="w-full flex items-center justify-between bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-4 border border-primary/20 group hover:border-primary/40 transition-all"
+              data-testid="button-my-offers-banner"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div className={i18n.language === 'ar' ? 'text-right' : 'text-left'}>
+                  <p className="font-bold text-foreground">{t("menu.discover_offers")}</p>
+                  <p className="text-xs text-muted-foreground">{t("menu.personalized_offers")}</p>
+                </div>
+              </div>
+              <ChevronLeft className="w-5 h-5 text-primary group-hover:translate-x-[-4px] transition-transform" />
+            </button>
+          )}
 
           {promoOffers.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center gap-2">
                 <Gift className="w-5 h-5 text-accent" />
-                <h2 className="text-xl font-bold text-foreground">{t("menu.offers") || "عروضنا"}</h2>
+                <h2 className="text-xl font-bold text-foreground">{t("menu.offers")}</h2>
               </div>
               <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-2">
                 {promoOffers.map((offer) => (
@@ -340,7 +716,7 @@ export default function MenuPage() {
                     <div className="absolute top-2 left-2 z-10">
                       <Badge className="bg-accent text-white border-0 px-2 py-0.5 text-[10px]">
                         <Tag className="w-3 h-3 ml-1" />
-                        {t("menu.offer_badge") || "عرض"}
+                        {t("menu.offer_badge")}
                       </Badge>
                     </div>
                     {offer.imageUrl && (
@@ -372,7 +748,7 @@ export default function MenuPage() {
             <Search className={`absolute ${i18n.language === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors`} />
             <input 
               type="text"
-              placeholder={t("menu.search_placeholder")}
+              placeholder={isBothModes && activeMode === 'food' ? t("menu.search_placeholder_food") : t("menu.search_placeholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full h-12 ${i18n.language === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'} bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm`}
@@ -384,7 +760,10 @@ export default function MenuPage() {
             {categories.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedCategory(cat.id);
+                }}
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
                   selectedCategory === cat.id 
                     ? "bg-primary text-primary-foreground border-primary shadow-md" 
@@ -393,7 +772,7 @@ export default function MenuPage() {
                 data-testid={`button-category-${cat.id}`}
               >
                 <cat.icon className={`w-4 h-4 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
-                {cat.name}
+                <span>{cat.name}</span>
               </button>
             ))}
           </div>
@@ -440,10 +819,15 @@ export default function MenuPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-bold text-foreground">{t("menu.all_items")}</h2>
+            <h2 className="text-xl font-bold text-foreground">
+              {isBothModes 
+                ? (activeMode === 'food' ? t("menu.all_items_food") : t("menu.all_items_drinks"))
+                : t("menu.all_items")
+              }
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <AnimatePresence mode="popLayout">
-                {filteredItems.map((item) => (
+                {sortedFilteredItems.map((item) => (
                   <motion.div 
                     key={item.id}
                     layout
@@ -469,6 +853,7 @@ export default function MenuPage() {
                     <div className="flex-1 min-w-0 py-1">
                       <h3 className="text-base font-semibold truncate text-foreground mb-1">{i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}</h3>
                       <p className="text-xs text-muted-foreground truncate mb-2">{item.description || t("menu.default_desc")}</p>
+
                       <div className="flex items-center justify-between">
                         <span className="text-primary font-bold text-lg">{item.price} <small className="text-xs font-normal text-muted-foreground">{t("currency")}</small></span>
                         <Button 
@@ -496,7 +881,7 @@ export default function MenuPage() {
         item={selectedItem}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        variants={selectedItem ? (groupedItems[(selectedItem as any).groupId || `single_${(selectedItem as any).id || (selectedItem as any)._id}`] || [selectedItem]) : []}
+        variants={selectedItem ? (groupedItems[getGroupingKey(selectedItem)] || [selectedItem]) : []}
         onAddToCart={(data) => {
           addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons);
           setIsModalOpen(false);
@@ -561,6 +946,7 @@ export default function MenuPage() {
           </Button>
         </motion.div>
       )}
+
     </div>
   );
 }

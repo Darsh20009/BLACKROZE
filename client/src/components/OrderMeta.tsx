@@ -6,7 +6,7 @@ import { Truck, Store, Receipt, Eye, Coffee } from "lucide-react";
 import { PaymentReceiptDialog } from "@/components/PaymentReceiptDialog";
 
 interface Branch {
-  _id: string;
+  id: string;
   nameAr: string;
   address?: string;
 }
@@ -44,7 +44,7 @@ export function OrderMeta({
 
   const getBranchName = () => {
     if (!branchId || !branches.length) return null;
-    const branch = branches.find(b => b._id === branchId);
+    const branch = branches.find(b => b.id === branchId);
     return branch?.nameAr;
   };
 

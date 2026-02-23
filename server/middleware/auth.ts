@@ -156,9 +156,45 @@ export function filterByBranch<T extends { branchId?: string }>(
     return data;
   }
 
+  // For managers, if branchId is not in session, they should still see orders
+  // for their assigned branch. However, filterByBranch is a synchronous helper.
+  // We'll trust that the session has the branchId, or if it doesn't, we return data
+  // but let the route handle the DB lookup if needed.
+  // To fix the issue where managers see nothing, if they have no branchId,
+  // we might want to return all data if we can't filter, or specific logic.
+  
   if (employee.branchId) {
     return data.filter(item => item.branchId === employee.branchId);
   }
 
+  // If it's a manager but no branchId is set, return all for now to avoid empty screen
+  // while the branch assignment is being fixed/synced
+  if (employee.role === "manager") {
+    return data;
+  }
+
   return [];
+}
+
+// Customer authentication request interface
+export interface CustomerAuthRequest extends Request {
+  customer?: {
+    id: string;
+    name: string;
+    phone: string;
+    email?: string;
+    points?: number;
+    pendingPoints?: number;
+    cardPassword?: string;
+  };
+}
+
+// Customer authentication middleware
+export function requireCustomerAuth(req: CustomerAuthRequest, res: Response, next: NextFunction) {
+  if (!req.session.customer) {
+    return res.status(401).json({ error: "يرجى تسجيل الدخول" });
+  }
+
+  req.customer = req.session.customer;
+  next();
 }

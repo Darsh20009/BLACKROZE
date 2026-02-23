@@ -77,7 +77,6 @@ interface RawItem {
 
 interface Branch {
   id?: string;
-  _id?: string;
   nameAr: string;
 }
 
@@ -224,7 +223,7 @@ export default function InventoryTransfersPage() {
 
   const getRawItemName = (id: string) => rawItems.find(r => r.id === id)?.nameAr || id;
   const getRawItemUnit = (id: string) => rawItems.find(r => r.id === id)?.unit || '';
-  const getBranchName = (id: string) => branches.find(b => (b.id || b._id) === id)?.nameAr || id;
+  const getBranchName = (id: string) => branches.find(b => b.id === id)?.nameAr || id;
 
   if (isLoading) {
     return (
@@ -430,7 +429,7 @@ export default function InventoryTransfersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {branches.map((branch) => (
-                      <SelectItem key={branch.id || branch._id} value={(branch.id || branch._id) as string}>
+                      <SelectItem key={branch.id} value={branch.id as string}>
                         {branch.nameAr}
                       </SelectItem>
                     ))}
@@ -448,9 +447,9 @@ export default function InventoryTransfersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {branches
-                      .filter(b => (b.id || b._id) !== formData.fromBranchId)
+                      .filter(b => b.id !== formData.fromBranchId)
                       .map((branch) => (
-                        <SelectItem key={branch.id || branch._id} value={(branch.id || branch._id) as string}>
+                        <SelectItem key={branch.id} value={branch.id as string}>
                           {branch.nameAr}
                         </SelectItem>
                       ))}

@@ -61,7 +61,6 @@ interface StockMovement {
 
 interface Branch {
   id?: string;
-  _id?: string;
   nameAr: string;
 }
 
@@ -98,7 +97,7 @@ export default function InventoryMovementsPage() {
     queryKey: ["/api/branches"],
   });
 
-  const getBranchName = (id: string) => branches.find(b => (b.id || b._id) === id)?.nameAr || id;
+  const getBranchName = (id: string) => branches.find(b => b.id === id)?.nameAr || id;
 
   const filteredMovements = movements.filter((movement) => {
     const matchesSearch = 
@@ -210,7 +209,7 @@ export default function InventoryMovementsPage() {
               <SelectContent>
                 <SelectItem value="all">جميع الفروع</SelectItem>
                 {branches.map((branch) => (
-                  <SelectItem key={branch.id || branch._id} value={(branch.id || branch._id) as string}>
+                  <SelectItem key={branch.id} value={branch.id as string}>
                     {branch.nameAr}
                   </SelectItem>
                 ))}

@@ -142,7 +142,7 @@ export function exportToPDF(
 
         <div class="info">
           <p>Generated on ${new Date().toLocaleString()}</p>
-          <p>BLACK ROSE Operating System - Automated Report</p>
+          <p>CLUNY CAFE Operating System - Automated Report</p>
         </div>
       </body>
     </html>

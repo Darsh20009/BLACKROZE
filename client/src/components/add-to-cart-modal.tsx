@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import type { CoffeeItem, IProductAddon } from "@shared/schema";
 
 interface AddToCartModalProps {
@@ -33,6 +34,8 @@ export function AddToCartModal({
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const { toast } = useToast();
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
 
   const resetModal = useCallback(() => {
     setQuantity(1);
@@ -53,29 +56,40 @@ export function AddToCartModal({
 
   const activeItem = selectedVariant || item;
 
-  // Fetch all general addons
   const { data: allAddons = [] } = useQuery<IProductAddon[]>({
     queryKey: ["/api/product-addons"],
     enabled: isOpen && !!activeItem,
   });
 
-  // Fetch product-specific addons
   const { data: specificAddons = [] } = useQuery<IProductAddon[]>({
     queryKey: ["/api/coffee-items", (activeItem as any)?.id, "addons"],
     enabled: isOpen && !!activeItem && !!(activeItem as any)?.id,
   });
 
-  // General addons (available to all products)
+  const { data: allCoffeeItems = [] } = useQuery<CoffeeItem[]>({
+    queryKey: ["/api/coffee-items"],
+    enabled: isOpen && !!activeItem,
+  });
+
   const generalAddons = useMemo(() => {
     if (!activeItem) return [];
-    return allAddons.filter(addon => addon.isAvailable === 1);
+    return allAddons.filter(addon => addon.isAvailable === 1 && !addon.isAddonDrink);
   }, [activeItem, allAddons]);
 
-  // Combined addons: specific first, then general (without duplicates)
+  const drinkAddons = useMemo(() => {
+    if (!activeItem) return [];
+    return allAddons.filter(addon => addon.isAvailable === 1 && addon.isAddonDrink && addon.linkedCoffeeItemId);
+  }, [activeItem, allAddons]);
+
+  const getLinkedDrinkInfo = (addon: IProductAddon) => {
+    if (!addon.linkedCoffeeItemId) return null;
+    return allCoffeeItems.find(item => item.id === addon.linkedCoffeeItemId);
+  };
+
   const itemAddons = useMemo(() => {
     const specificIds = new Set(specificAddons.map(a => a.id));
     const uniqueGeneralAddons = generalAddons.filter(a => !specificIds.has(a.id));
-    return [...specificAddons, ...uniqueGeneralAddons];
+    return [...specificAddons, ...uniqueGeneralAddons].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
   }, [specificAddons, generalAddons]);
 
   const handleAddToCart = () => {
@@ -83,8 +97,8 @@ export function AddToCartModal({
 
     if (activeItem.availableSizes && activeItem.availableSizes.length > 0 && !selectedSize) {
       toast({
-        title: "تنبيه",
-        description: "يرجى اختيار حجم المشروب",
+        title: isAr ? "تنبيه" : "Notice",
+        description: isAr ? "يرجى اختيار حجم المشروب" : "Please select a drink size",
         variant: "destructive",
       });
       return;
@@ -96,6 +110,15 @@ export function AddToCartModal({
       selectedSize: selectedSize || "default",
       selectedAddons: selectedAddons,
     };
+
+    if (activeItem.isAvailable === 0 || (activeItem.availabilityStatus !== 'available' && activeItem.availabilityStatus !== 'new' && !!activeItem.availabilityStatus)) {
+      toast({
+        title: isAr ? "غير متوفر" : "Unavailable",
+        description: isAr ? "نعتذر، هذا المنتج غير متوفر للطلب حالياً" : "Sorry, this product is currently unavailable",
+        variant: "destructive",
+      });
+      return;
+    }
 
     onAddToCart(cartItem);
     resetModal();
@@ -120,7 +143,7 @@ export function AddToCartModal({
           {activeItem.imageUrl && (
             <img 
               src={activeItem.imageUrl.startsWith('/') ? activeItem.imageUrl : `/${activeItem.imageUrl}`} 
-              alt={activeItem.nameAr} 
+              alt={isAr ? activeItem.nameAr : activeItem.nameEn || activeItem.nameAr} 
               className="w-24 h-24 rounded-xl object-cover border-4 border-background shadow-lg"
             />
           )}
@@ -129,7 +152,7 @@ export function AddToCartModal({
         <div className="px-4 pb-4 space-y-4">
           <DialogHeader className="pt-2">
             <DialogTitle className="text-xl font-bold text-center text-foreground">
-              {activeItem.nameAr}
+              {isAr ? activeItem.nameAr : activeItem.nameEn || activeItem.nameAr}
             </DialogTitle>
             {activeItem.description && (
               <p className="text-xs text-muted-foreground text-center line-clamp-2 mt-1">
@@ -140,31 +163,37 @@ export function AddToCartModal({
 
           {variants.length > 1 && (
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">اختر النوع</Label>
+              <Label className="text-sm font-semibold text-foreground">{isAr ? "اختر النوع" : "Select Type"}</Label>
               <div className="flex flex-wrap gap-3">
-                {variants.map((variant) => (
-                  <button
-                    key={variant.id}
-                    onClick={() => {
-                      setSelectedVariant(variant);
-                      setSelectedSize(null);
-                    }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                      selectedVariant?.id === variant.id 
-                        ? "bg-primary text-white shadow-md border-2 border-primary" 
-                        : "bg-secondary text-foreground border-2 border-border hover:border-primary/50"
-                    }`}
-                  >
-                    {variant.nameAr}
-                  </button>
-                ))}
+                {variants.map((variant) => {
+                  const displayName = isAr 
+                    ? (variant.nameAr.replace(activeItem.nameAr, '').trim() || variant.nameAr)
+                    : ((variant.nameEn || variant.nameAr).replace(activeItem.nameEn || activeItem.nameAr, '').trim() || variant.nameEn || variant.nameAr);
+                  
+                  return (
+                    <button
+                      key={variant.id}
+                      onClick={() => {
+                        setSelectedVariant(variant);
+                        setSelectedSize(null);
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                        selectedVariant?.id === variant.id 
+                          ? "bg-primary text-white shadow-md border-2 border-primary" 
+                          : "bg-secondary text-foreground border-2 border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {isAr ? variant.nameAr : variant.nameEn || variant.nameAr}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {activeItem.availableSizes && activeItem.availableSizes.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">اختر الحجم</Label>
+              <Label className="text-sm font-semibold text-foreground">{isAr ? "اختر الحجم" : "Select Size"}</Label>
               <div className="grid grid-cols-3 gap-2">
                 {activeItem.availableSizes.map((size) => (
                   <button
@@ -176,9 +205,9 @@ export function AddToCartModal({
                         : "bg-secondary border border-border hover:border-primary/50"
                     }`}
                   >
-                    <div className="text-xs font-semibold">{size.nameAr}</div>
+                    <div className="text-xs font-semibold">{isAr ? size.nameAr : (size as any).nameEn || size.nameAr}</div>
                     <div className={`text-xs mt-0.5 ${selectedSize === size.nameAr ? "text-white/80" : "text-primary font-bold"}`}>
-                      {size.price} ر.س
+                      {size.price} {isAr ? "ر.س" : "SAR"}
                     </div>
                   </button>
                 ))}
@@ -188,7 +217,7 @@ export function AddToCartModal({
 
           {specificAddons.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">إضافات خاصة</Label>
+              <Label className="text-sm font-semibold text-foreground">{isAr ? "إضافات خاصة" : "Special Addons"}</Label>
               <div className="flex flex-wrap gap-2">
                 {specificAddons.map((addon) => (
                   <button
@@ -206,7 +235,7 @@ export function AddToCartModal({
                         : "bg-secondary text-foreground border border-border hover:border-primary/50"
                     }`}
                   >
-                    {addon.nameAr}
+                    {isAr ? addon.nameAr : addon.nameEn || addon.nameAr}
                     <span className={selectedAddons.includes(addon.id) ? "text-white/80" : "text-primary"}>
                       +{addon.price}
                     </span>
@@ -218,7 +247,7 @@ export function AddToCartModal({
 
           {generalAddons.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">{specificAddons.length > 0 ? "إضافات عامة" : "إضافات"}</Label>
+              <Label className="text-sm font-semibold text-foreground">{specificAddons.length > 0 ? (isAr ? "إضافات عامة" : "General Addons") : (isAr ? "إضافات" : "Addons")}</Label>
               <div className="flex flex-wrap gap-2">
                 {generalAddons.slice(0, 6).map((addon) => (
                   <button
@@ -236,7 +265,7 @@ export function AddToCartModal({
                         : "bg-secondary text-foreground border border-border hover:border-accent/50"
                     }`}
                   >
-                    {addon.nameAr}
+                    {isAr ? addon.nameAr : addon.nameEn || addon.nameAr}
                     <span className={selectedAddons.includes(addon.id) ? "text-white/80" : "text-accent"}>
                       +{addon.price}
                     </span>
@@ -246,8 +275,48 @@ export function AddToCartModal({
             </div>
           )}
 
+          {drinkAddons.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">{isAr ? "إضافة مشروب" : "Add Drink"}</Label>
+              <div className="flex flex-wrap gap-2">
+                {drinkAddons.map((addon) => {
+                  const linkedDrink = getLinkedDrinkInfo(addon);
+                  return (
+                    <button
+                      key={addon.id}
+                      onClick={() => {
+                        setSelectedAddons((prev) =>
+                          prev.includes(addon.id)
+                            ? prev.filter((id) => id !== addon.id)
+                            : [...prev, addon.id]
+                        );
+                      }}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${
+                        selectedAddons.includes(addon.id)
+                          ? "bg-primary text-white shadow-md ring-2 ring-primary/50"
+                          : "bg-secondary text-foreground border border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {linkedDrink?.imageUrl && (
+                        <img 
+                          src={linkedDrink.imageUrl.startsWith('/') ? linkedDrink.imageUrl : `/${linkedDrink.imageUrl}`}
+                          alt={isAr ? addon.nameAr : addon.nameEn || addon.nameAr}
+                          className="w-6 h-6 rounded object-cover"
+                        />
+                      )}
+                      <span>{isAr ? addon.nameAr : addon.nameEn || addon.nameAr}</span>
+                      <span className={selectedAddons.includes(addon.id) ? "text-white/80" : "text-primary font-bold"}>
+                        +{addon.price}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between bg-secondary/50 rounded-xl p-3">
-            <Label className="text-sm font-semibold text-foreground">الكمية</Label>
+            <Label className="text-sm font-semibold text-foreground">{isAr ? "الكمية" : "Quantity"}</Label>
             <div className="flex items-center gap-3">
               <Button
                 size="icon"
@@ -273,9 +342,9 @@ export function AddToCartModal({
 
           <div className="flex items-center justify-between pt-2">
             <div>
-              <span className="text-xs text-muted-foreground">الإجمالي</span>
+              <span className="text-xs text-muted-foreground">{isAr ? "الإجمالي" : "Total"}</span>
               <div className="text-2xl font-bold text-primary">
-                {totalPrice.toFixed(2)} <span className="text-sm">ر.س</span>
+                {totalPrice.toFixed(2)} <span className="text-sm">{isAr ? "ر.س" : "SAR"}</span>
               </div>
             </div>
             <Button
@@ -284,7 +353,7 @@ export function AddToCartModal({
               data-testid="button-add-to-cart"
             >
               <ShoppingCart className="w-4 h-4 ml-2" />
-              إضافة
+              {isAr ? "إضافة" : "Add"}
             </Button>
           </div>
         </div>

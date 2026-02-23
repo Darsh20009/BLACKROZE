@@ -62,14 +62,50 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
     ? Math.min(...selectedVariant.availableSizes!.map(s => Number(s.price)))
     : selectedVariant.price;
 
+  const getStatusOverlay = () => {
+    if (selectedVariant.availabilityStatus === 'out_of_stock') {
+      return (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-20">
+          <Badge className="bg-red-600 text-white text-base py-2 px-6 rounded-full shadow-2xl border-2 border-white/20">
+            نفذت الكمية
+          </Badge>
+        </div>
+      );
+    }
+    if (selectedVariant.availabilityStatus === 'coming_soon') {
+      return (
+        <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px] flex items-center justify-center z-20">
+          <Badge className="bg-blue-600 text-white text-base py-2 px-6 rounded-full shadow-2xl border-2 border-white/20">
+            قريباً
+          </Badge>
+        </div>
+      );
+    }
+    if (selectedVariant.availabilityStatus === 'temporarily_unavailable' || selectedVariant.isAvailable === 0) {
+      if (selectedVariant.availabilityStatus === 'available' || selectedVariant.availabilityStatus === 'new') {
+         // If isAvailable is 0 but status says available, it's effectively unavailable
+      } else {
+        return (
+          <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-[1px] flex items-center justify-center z-20">
+            <Badge className="bg-orange-600 text-white text-base py-2 px-6 rounded-full shadow-2xl border-2 border-white/20">
+              غير متوفر حالياً
+            </Badge>
+          </div>
+        );
+      }
+    }
+    return null;
+  };
+
   return (
     <Card 
-      className="bg-gradient-to-br from-card/95 to-card/85 backdrop-blur-sm rounded-xl sm:rounded-2xl card-hover cursor-pointer overflow-hidden group transform transition-all duration-500 hover:scale-105 hover:shadow-xl sm:hover:shadow-2xl hover:shadow-primary/20 border border-card-border/50 hover:border-primary/30"
+      className={`bg-gradient-to-br from-card/95 to-card/85 backdrop-blur-sm rounded-xl sm:rounded-2xl card-hover cursor-pointer overflow-hidden group transform transition-all duration-500 hover:scale-105 hover:shadow-xl sm:hover:shadow-2xl hover:shadow-primary/20 border border-card-border/50 hover:border-primary/30 ${selectedVariant.isAvailable === 0 ? 'grayscale-[0.5]' : ''}`}
       onClick={handleViewDetails}
       data-testid={`card-coffee-${selectedVariant.id}`}
     >
       <CardContent className="p-0">
         <div className="relative overflow-hidden">
+          {getStatusOverlay()}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
           <img 
             src={selectedVariant.imageUrl ? (selectedVariant.imageUrl.startsWith('/') ? selectedVariant.imageUrl : `/${selectedVariant.imageUrl}`) : getCoffeeImage(selectedVariant.id)}
@@ -78,12 +114,17 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
             loading="lazy"
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;
-              target.src = "@/assets/images/logo.png";
+              target.src = "/logo.png";
             }}
             data-testid={`img-coffee-${selectedVariant.id}`}
           />
 
-          <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex flex-col gap-1.5 sm:gap-2">
+          <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex flex-col gap-1.5 sm:gap-2 z-30">
+            {selectedVariant.availabilityStatus === 'new' && (
+              <Badge className="bg-purple-600 text-white border-purple-400 animate-pulse shadow-lg">
+                جديد
+              </Badge>
+            )}
             {allVariants.length > 1 && (
               <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
                 {allVariants.length} خيارات
@@ -176,7 +217,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
             <Button
               onClick={handleAddToCart}
               size="sm"
-              disabled={selectedVariant.isAvailable === 0 || Boolean(selectedVariant.availabilityStatus && selectedVariant.availabilityStatus !== 'available')}
+              disabled={selectedVariant.isAvailable === 0 || (selectedVariant.availabilityStatus !== 'available' && selectedVariant.availabilityStatus !== 'new' && !!selectedVariant.availabilityStatus)}
               className={`bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:from-primary/90 hover:to-primary transition-all duration-300 transform hover:scale-110 shadow-md sm:shadow-lg hover:shadow-primary/30 rounded-full px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-semibold btn-primary disabled:opacity-50 disabled:cursor-not-allowed ${
                 isAnimating ? 'add-to-cart-animation glow-effect' : ''
               }`}
@@ -184,14 +225,14 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
             >
               <Plus className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
               <span className="hidden sm:inline">
-                {selectedVariant.availabilityStatus === 'out_of_stock' ? ' نفذ' :
+                {selectedVariant.availabilityStatus === 'out_of_stock' ? ' نفذت الكمية' :
                 selectedVariant.availabilityStatus === 'coming_soon' ? ' قريباً' :
-                selectedVariant.availabilityStatus === 'temporarily_unavailable' ? '⏸ غير متوفر' :
+                selectedVariant.availabilityStatus === 'temporarily_unavailable' ? ' غير متوفر' :
                 isAnimating ? ' تم الإضافة ' : 'تخصيص'}
               </span>
               <span className="sm:hidden">
-                {selectedVariant.availabilityStatus === 'out_of_stock' ? '' :
-                selectedVariant.availabilityStatus === 'coming_soon' ? '' :
+                {selectedVariant.availabilityStatus === 'out_of_stock' ? 'نفذ' :
+                selectedVariant.availabilityStatus === 'coming_soon' ? 'قريباً' :
                 selectedVariant.availabilityStatus === 'temporarily_unavailable' ? '⏸' :
                 isAnimating ? '' : 'تخصيص'}
               </span>

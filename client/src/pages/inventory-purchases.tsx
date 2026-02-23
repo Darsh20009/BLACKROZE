@@ -89,7 +89,6 @@ interface Supplier {
 
 interface Branch {
   id?: string;
-  _id?: string;
   nameAr: string;
 }
 
@@ -167,7 +166,8 @@ export default function InventoryPurchasesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/purchases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/stock"] });
-      toast({ title: "تم استلام الفاتورة وتحديث المخزون" });
+      queryClient.invalidateQueries({ queryKey: ["/api/accounting/journal-entries"] });
+      toast({ title: "تم استلام الفاتورة وتحديث المخزون والقيود المحاسبية" });
     },
     onError: (error: any) => {
       toast({ title: error.message || "فشل في استلام الفاتورة", variant: "destructive" });
@@ -300,7 +300,7 @@ export default function InventoryPurchasesPage() {
 
   const getRawItemName = (id: string) => rawItems.find(r => r.id === id)?.nameAr || id;
   const getSupplierName = (id: string) => suppliers.find(s => s.id === id)?.nameAr || id;
-  const getBranchName = (id: string) => branches.find(b => (b.id || b._id) === id)?.nameAr || id;
+  const getBranchName = (id: string) => branches.find(b => b.id === id)?.nameAr || id;
 
   if (isLoading) {
     return (
@@ -532,7 +532,7 @@ export default function InventoryPurchasesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {branches.map((branch) => (
-                      <SelectItem key={branch.id || branch._id} value={(branch.id || branch._id) as string}>
+                      <SelectItem key={branch.id} value={branch.id as string}>
                         {branch.nameAr}
                       </SelectItem>
                     ))}

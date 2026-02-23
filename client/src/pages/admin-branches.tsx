@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, MapPin, Phone, User, Store, ArrowRight, Loader2, Edit2, Trash2, Pentagon, Info } from 'lucide-react';
+import { Plus, MapPin, Phone, User, Store, ArrowRight, Loader2, Edit2, Trash2, Pentagon } from 'lucide-react';
 import BranchPolygonPicker from '@/components/branch-polygon-picker';
 import {
   AlertDialog,
@@ -29,8 +29,7 @@ import {
 import { useLocation } from 'wouter';
 
 interface Branch {
-  id?: string;
-  _id?: string;
+  id: string;
   nameAr: string;
   nameEn?: string;
   address?: string;
@@ -71,8 +70,6 @@ export default function AdminBranches() {
   const { data: branches = [], isLoading } = useQuery<Branch[]>({
     queryKey: ['/api/branches'],
   });
-
-  const canAddBranch = !isLoading && branches.length === 0;
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/branches', data),
@@ -160,14 +157,14 @@ export default function AdminBranches() {
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBranch) return;
-    const branchId = selectedBranch.id || selectedBranch._id;
+    const branchId = selectedBranch.id;
     if (!branchId) return;
     updateMutation.mutate({ id: branchId, updates: prepareSubmitData() });
   };
 
   const confirmDelete = () => {
     if (!selectedBranch) return;
-    const branchId = selectedBranch.id || selectedBranch._id;
+    const branchId = selectedBranch.id;
     if (!branchId) return;
     deleteMutation.mutate(branchId);
   };
@@ -219,6 +216,8 @@ export default function AdminBranches() {
       return;
     }
     createMutation.mutate(prepareSubmitData());
+    setIsAddDialogOpen(false);
+    resetFormData();
   };
 
   return (
@@ -233,20 +232,13 @@ export default function AdminBranches() {
             <p className="text-muted-foreground mt-1">إضافة وتعديل فروع المقهى</p>
           </div>
         </div>
-        {canAddBranch ? (
-          <Button 
-            onClick={() => setIsAddDialogOpen(true)}
-            className="bg-accent hover:bg-accent"
-          >
-            <Plus className="w-4 h-4 ml-2" />
-            إضافة فرع جديد
-          </Button>
-        ) : (
-          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg border border-amber-200">
-            <Info className="w-4 h-4" />
-            <span className="text-sm font-medium">النظام مقيد بفرع واحد فقط</span>
-          </div>
-        )}
+        <Button 
+          onClick={() => setIsAddDialogOpen(true)}
+          className="bg-accent hover:bg-accent"
+        >
+          <Plus className="w-4 h-4 ml-2" />
+          إضافة فرع جديد
+        </Button>
       </div>
 
       {/* Add Branch Dialog */}
@@ -425,7 +417,7 @@ export default function AdminBranches() {
           </div>
         ) : branches && branches.length > 0 ? (
           branches.map((branch) => {
-            const branchId = branch.id || branch._id;
+            const branchId = branch.id;
             return (
               <Card key={branchId} className="hover:shadow-md transition-shadow border-orange-100 dark:border-orange-900/30">
                 <CardHeader className="pb-2">

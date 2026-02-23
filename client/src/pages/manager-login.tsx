@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import type { Employee } from "@shared/schema";
-import blackroseLogoStaff from "@/assets/images/logo.png";
+import clunyLogoStaff from "@assets/cluny-logo-staff.png";
 
 export default function ManagerLogin() {
   const [, setLocation] = useLocation();
@@ -30,13 +30,17 @@ export default function ManagerLogin() {
 
       return response.json() as Promise<Employee>;
     },
-    onSuccess: (employee) => {
+    onSuccess: (employee: any) => {
       if (employee.role !== "manager" && employee.role !== "admin") {
         setError("هذا الحساب ليس حساب مدير");
         setPassword("");
         return;
       }
 
+      if (employee.restoreKey) {
+        localStorage.setItem("cluny-restore-key", employee.restoreKey);
+        delete employee.restoreKey;
+      }
       localStorage.setItem("currentEmployee", JSON.stringify(employee));
       setLocation("/manager/dashboard");
     },
@@ -63,9 +67,9 @@ export default function ManagerLogin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-40 h-28 mb-4">
-            <img src={blackroseLogoStaff} alt="BLACK ROSE SYSTEMS" className="w-full h-full object-contain" />
+            <img src={clunyLogoStaff} alt="CLUNY SYSTEMS" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold font-playfair text-foreground mb-2">BLACK ROSE</h1>
+          <h1 className="text-3xl font-bold font-playfair text-foreground mb-2">CLUNY CAFE</h1>
           <p className="text-muted-foreground font-cairo">تسجيل دخول المدير</p>
         </div>
 

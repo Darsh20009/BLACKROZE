@@ -47,7 +47,7 @@ export default function InventoryDashboard() {
                 </TableHeader>
                 <TableBody>
                   {alerts?.map((item: any) => (
-                    <TableRow key={item._id}>
+                    <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.nameAr}</TableCell>
                       <TableCell className="text-destructive font-bold">{item.currentStock} {item.unit}</TableCell>
                       <TableCell>{item.minStockThreshold} {item.unit}</TableCell>
@@ -85,7 +85,7 @@ export default function InventoryDashboard() {
                 </TableHeader>
                 <TableBody>
                   {movements?.map((m: any) => (
-                    <TableRow key={m._id}>
+                    <TableRow key={m.id}>
                       <TableCell>
                         {m.type === 'in' ? (
                           <Badge variant="secondary" className="bg-green-100 text-green-800"><ArrowUpCircle className="w-3 h-3 ml-1" /> توريد</Badge>

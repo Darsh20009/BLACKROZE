@@ -31,7 +31,7 @@ interface ICoffeeItem {
 }
 
 interface ITable {
-  _id: string;
+  id: string;
   tableNumber: string;
   qrToken: string;
   isActive: number;
@@ -147,7 +147,7 @@ export default function TableMenu() {
         description: "سيتم التواصل معك قريباً للدفع",
       });
       // Navigate to order tracking
-      navigate(`/table-order-tracking/${order._id}`);
+      navigate(`/table-order-tracking/${order.id}`);
     },
     onError: () => {
       toast({
@@ -228,7 +228,7 @@ export default function TableMenu() {
       status: "pending",
       orderType: "table",
       tableNumber: table?.tableNumber,
-      tableId: table?._id,
+      tableId: table?.id,
       tableStatus: "pending",
       customerInfo: {
         name: customerName.trim(),
@@ -272,7 +272,7 @@ export default function TableMenu() {
       <div className="sticky top-0 z-50 bg-background border-b p-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">BLACK ROSE</h1>
+            <h1 className="text-2xl font-bold">CLUNY CAFE</h1>
             <p className="text-sm text-muted-foreground">
               طاولة {table.tableNumber}
             </p>

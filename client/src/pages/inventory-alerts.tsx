@@ -59,7 +59,6 @@ interface StockAlert {
 
 interface Branch {
   id?: string;
-  _id?: string;
   nameAr: string;
 }
 
@@ -147,7 +146,7 @@ export default function InventoryAlertsPage() {
     },
   });
 
-  const getBranchName = (id: string) => branches.find(b => (b.id || b._id) === id)?.nameAr || id;
+  const getBranchName = (id: string) => branches.find(b => b.id === id)?.nameAr || id;
 
   const filteredAlerts = alerts.filter((alert) => {
     const matchesBranch = branchFilter === "all" || alert.branchId === branchFilter;
@@ -274,7 +273,7 @@ export default function InventoryAlertsPage() {
               <SelectContent>
                 <SelectItem value="all">جميع الفروع</SelectItem>
                 {branches.map((branch) => (
-                  <SelectItem key={branch.id || branch._id} value={(branch.id || branch._id) as string}>
+                  <SelectItem key={branch.id} value={branch.id as string}>
                     {branch.nameAr}
                   </SelectItem>
                 ))}

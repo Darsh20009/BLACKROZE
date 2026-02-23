@@ -5,12 +5,15 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, Sprout, Zap, User, ArrowLeft, AlertCircle } from "lucide-react";
-import { COFFEE_STRENGTH_CONFIG, getCoffeeStrengthConfig, filterCoffeeByStrength, type CoffeeStrengthType } from "@/lib/utils";
-import type { CoffeeItem } from "@shared/schema";
+import { Coffee, ShoppingCart, Flame, Snowflake, Star, Cake, User, Plus, Search, ChevronLeft, MapPin, Clock, Utensils, Sparkles, AlertCircle } from "lucide-react";
+import type { CoffeeItem, IProductAddon } from "@shared/schema";
+import { AddToCartModal } from "@/components/add-to-cart-modal";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import clunyLogo from "@assets/cluny-logo-customer.png";
 
 interface ITable {
-  _id: string;
+  id: string;
   tableNumber: string;
   qrToken: string;
   branchId: string;
@@ -44,42 +47,47 @@ interface CartItem {
   selectedAddons?: string[];
 }
 
+interface MenuCategory {
+  id: string;
+  nameAr: string;
+  nameEn?: string;
+  icon?: string;
+  department?: 'drinks' | 'food';
+  orderIndex: number;
+  isSystem?: boolean;
+}
+
 export default function TableMenuNew() {
   const [, navigate] = useLocation();
   const [match, params] = useRoute("/table-menu/:qrToken");
   const { toast } = useToast();
-  
+  const { t, i18n } = useTranslation();
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedStrength, setSelectedStrength] = useState<CoffeeStrengthType | "all">("all");
   const [reservationPhoneVerified, setReservationPhoneVerified] = useState(false);
   const [reservationPhoneInput, setReservationPhoneInput] = useState("");
   const [reservationStatus, setReservationStatus] = useState<"valid" | "before_window" | "after_window" | null>(null);
+  const [selectedItem, setSelectedItem] = useState<CoffeeItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const qrToken = params?.qrToken;
 
-  // Helper function to check reservation time window
   const checkReservationWindow = (reservationTime: string | undefined) => {
     if (!reservationTime) return "valid";
-
     const reservation = new Date(reservationTime);
     const now = new Date();
     const diffMinutes = (reservation.getTime() - now.getTime()) / (1000 * 60);
-
-    // Window: -30 minutes before to +5 minutes after
-    if (diffMinutes >= -30 && diffMinutes <= 5) {
-      return "valid";
-    } else if (diffMinutes < -30) {
-      return "after_window"; // More than 30 mins have passed
-    } else {
-      return "before_window"; // Reservation is more than 30 mins in future
-    }
+    if (diffMinutes >= -30 && diffMinutes <= 5) return "valid";
+    if (diffMinutes < -30) return "after_window";
+    return "before_window";
   };
 
-  // Fetch table info
-  const { data: table, isLoading: tableLoading } = useQuery<ITable>({
+  const { data: table, isLoading: tableLoading, isError: tableError } = useQuery<ITable>({
     queryKey: ["/api/tables/qr", qrToken],
     enabled: !!qrToken,
+    retry: 1,
     queryFn: async () => {
       const response = await fetch(`/api/tables/qr/${qrToken}`);
       if (!response.ok) throw new Error("الطاولة غير موجودة");
@@ -87,7 +95,6 @@ export default function TableMenuNew() {
     },
   });
 
-  // Check reservation window status when table data loads
   useEffect(() => {
     if (table?.reservedFor?.reservationTime) {
       const status = checkReservationWindow(table.reservedFor.reservationTime);
@@ -95,9 +102,8 @@ export default function TableMenuNew() {
     }
   }, [table]);
 
-  // Fetch pending order if table has currentOrderId
   const { data: pendingOrder } = useQuery<IPendingOrder>({
-    queryKey: ["/api/orders", table?._id],
+    queryKey: ["/api/orders", table?.id],
     enabled: !!table?.currentOrderId,
     queryFn: async () => {
       const response = await fetch(`/api/orders/${table?.currentOrderId}`);
@@ -106,61 +112,165 @@ export default function TableMenuNew() {
     },
   });
 
-  // Fetch menu items
   const { data: coffeeItems = [], isLoading: menuLoading } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
   });
 
+  const { data: dynamicCategories = [] } = useQuery<MenuCategory[]>({
+    queryKey: ["/api/menu-categories"],
+  });
+
+  const { data: businessConfig } = useQuery<any>({
+    queryKey: ["/api/business-config"],
+  });
+
+  const { data: allAddons = [] } = useQuery<IProductAddon[]>({
+    queryKey: ["/api/product-addons"],
+  });
+
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const categories = [
-    { id: "all", nameAr: "الكل", nameEn: "All", icon: Coffee },
-    { id: "basic", nameAr: "قهوة أساسية", nameEn: "Basic Coffee", icon: Coffee },
-    { id: "hot", nameAr: "قهوة ساخنة", nameEn: "Hot Coffee", icon: Flame },
-    { id: "cold", nameAr: "قهوة باردة", nameEn: "Cold Coffee", icon: Snowflake },
-    { id: "specialty", nameAr: "المشروبات الإضافية", nameEn: "Specialty Drinks", icon: Star },
-    { id: "desserts", nameAr: "الحلويات", nameEn: "Desserts", icon: Cake },
-  ];
+  const isBothModes = businessConfig?.activityType === "both";
+  const [activeMode, setActiveMode] = useState<"drinks" | "food">("drinks");
+  const [initModeSet, setInitModeSet] = useState(false);
 
-  const strengthOptions = [
-    { id: "all" as const, labelAr: "جميع الأنواع", icon: Star },
-    { id: "mild" as const, labelAr: "خفيف (1-4)", icon: Sprout },
-    { id: "medium" as const, labelAr: "متوسط (4-8)", icon: Zap },
-    { id: "strong" as const, labelAr: "قوي (8-12)", icon: Flame },
-    { id: "classic" as const, labelAr: "العادي/الكلاسيك", icon: Coffee },
-  ];
-
-  // Filter by both category and strength
-  let filteredItems = selectedCategory === "all" 
-    ? coffeeItems 
-    : coffeeItems.filter(item => item.category === selectedCategory);
-  
-  filteredItems = filterCoffeeByStrength(filteredItems, selectedStrength);
-
-  // Load cart from session storage on mount
   useEffect(() => {
-    if (table?._id) {
-      const sId = `table-${table._id}`;
-      const savedCart = sessionStorage.getItem(`cart_${table._id}`);
+    if (businessConfig?.activityType === "both" && !initModeSet) {
+      setActiveMode("drinks");
+      setInitModeSet(true);
+    }
+  }, [businessConfig, initModeSet]);
+
+  const iconMap: Record<string, any> = {
+    Coffee, Flame, Snowflake, Star, Cake, Utensils, Sparkles
+  };
+
+  const drinkSystemCategories = [
+    { id: "all", name: t("menu.categories.all"), icon: Coffee, isSystem: true },
+    { id: "hot", name: t("menu.categories.hot"), icon: Flame, isSystem: true },
+    { id: "cold", name: t("menu.categories.cold"), icon: Snowflake, isSystem: true },
+    { id: "specialty", name: t("menu.categories.specialty"), icon: Star, isSystem: true },
+    { id: "drinks", name: t("menu.categories.drinks") || "المشروبات", icon: Coffee, isSystem: true },
+    { id: "additional_drinks", name: "مشروبات إضافية", icon: Plus, isSystem: true },
+    { id: "desserts", name: t("menu.categories.desserts"), icon: Cake, isSystem: true },
+  ];
+
+  const foodSystemCategories = [
+    { id: "all", name: t("menu.categories.all"), icon: Utensils, isSystem: true },
+    { id: "food", name: t("menu.categories.food"), icon: Utensils, isSystem: true },
+    { id: "sandwiches", name: "السندوتشات", icon: Utensils, isSystem: true },
+    { id: "bakery", name: t("menu.categories.bakery"), icon: Cake, isSystem: true },
+    { id: "croissant", name: "الكرواسون", icon: Cake, isSystem: true },
+    { id: "cake", name: "الكيك", icon: Cake, isSystem: true },
+    { id: "desserts", name: t("menu.categories.desserts"), icon: Star, isSystem: true },
+  ];
+
+  const systemCategories = isBothModes
+    ? (activeMode === "food" ? foodSystemCategories : drinkSystemCategories)
+    : drinkSystemCategories;
+
+  const customCategories = dynamicCategories
+    .filter(c => {
+      if (c.isSystem) return false;
+      if (isBothModes) {
+        return !c.department || c.department === activeMode;
+      }
+      return true;
+    })
+    .map(c => ({
+      id: c.id,
+      name: i18n.language === 'ar' ? c.nameAr : (c.nameEn || c.nameAr),
+      icon: iconMap[c.icon || 'Coffee'] || Coffee,
+      isSystem: false
+    }));
+
+  const categories = [...systemCategories, ...customCategories];
+
+  const getGroupingKey = (item: CoffeeItem): string => {
+    if ((item as any).groupId) return (item as any).groupId;
+    const nameAr = item.nameAr || "";
+    if (!nameAr || typeof nameAr !== 'string') return 'unknown';
+    const cleaned = nameAr.trim()
+      .replace(/^[\u064B-\u0652]+/, '')
+      .replace(/^(بارد|حار)\s+/i, '');
+    const words = cleaned.split(/\s+/);
+    if (words.length >= 2) return `${words[0]} ${words[1]}`;
+    return words[0] || 'unknown';
+  };
+
+  const groupedItems = coffeeItems.reduce((acc: Record<string, CoffeeItem[]>, item) => {
+    const groupKey = getGroupingKey(item);
+    if (!acc[groupKey]) acc[groupKey] = [];
+    acc[groupKey].push(item);
+    return acc;
+  }, {});
+
+  const representativeItems = Object.values(groupedItems).map(group => group[0]);
+
+  const drinkCategoryIds = ['basic', 'hot', 'cold', 'specialty', 'drinks'];
+  const foodCategoryIds = ['food', 'bakery', 'desserts'];
+
+  const filteredItems = representativeItems.filter(item => {
+    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+    const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const drinkIds = [...drinkCategoryIds, ...dynamicCategories.filter(c => c.department === 'drinks').map(c => c.id)];
+    const foodIds = [...foodCategoryIds, ...dynamicCategories.filter(c => c.department === 'food').map(c => c.id)];
+
+    const matchesMode = !isBothModes || (
+      selectedCategory !== "all"
+        ? (activeMode === "drinks" ? drinkIds.includes(item.category) : foodIds.includes(item.category))
+        : true
+    );
+
+    return matchesCategory && matchesSearch && matchesMode;
+  });
+
+  const sortedFilteredItems = [...filteredItems].sort((a, b) => {
+    if (!isBothModes || selectedCategory !== "all") return 0;
+    const drinkIds = [...drinkCategoryIds, ...dynamicCategories.filter(c => c.department === 'drinks').map(c => c.id)];
+    const foodIds = [...foodCategoryIds, ...dynamicCategories.filter(c => c.department === 'food').map(c => c.id)];
+    const aMatchesMode = activeMode === "drinks" ? drinkIds.includes(a.category) : foodIds.includes(a.category);
+    const bMatchesMode = activeMode === "drinks" ? drinkIds.includes(b.category) : foodIds.includes(b.category);
+    if (aMatchesMode && !bMatchesMode) return -1;
+    if (!aMatchesMode && bMatchesMode) return 1;
+    return 0;
+  });
+
+  useEffect(() => {
+    if (table?.id) {
+      const savedCart = sessionStorage.getItem(`cart_${table.id}`);
       if (savedCart) {
         try {
           const parsedCart = JSON.parse(savedCart);
-          setCart(parsedCart);
-          // Sync with backend on load if needed
+          const normalizedCart = parsedCart.map((ci: any) => {
+            if (ci.item) return ci;
+            if (ci.coffeeItem) {
+              return {
+                id: ci.id,
+                item: ci.coffeeItem,
+                quantity: ci.quantity,
+                selectedSize: ci.selectedSize,
+                selectedAddons: ci.selectedAddons || [],
+              };
+            }
+            return ci;
+          }).filter((ci: any) => ci.item);
+          setCart(normalizedCart);
         } catch (e) {
           console.error("Error parsing saved cart:", e);
         }
       }
     }
-  }, [table?._id]);
+  }, [table?.id]);
 
   const addToCart = async (item: CoffeeItem, selectedSize?: string, selectedAddons: string[] = []) => {
     const sizeName = selectedSize || "default";
     const cartItemId = `${item.id}-${sizeName}-${selectedAddons.sort().join(",")}`;
-    const sId = table?._id ? `table-${table._id}` : "guest";
+    const sId = table?.id ? `table-${table.id}` : "guest";
 
     try {
-      // 1. Optimistic update
       setCart((prev) => {
         const existing = prev.find((ci) => ci.id === cartItemId);
         let updatedCart;
@@ -171,11 +281,10 @@ export default function TableMenuNew() {
         } else {
           updatedCart = [...prev, { id: cartItemId, item, quantity: 1, selectedSize: sizeName, selectedAddons }];
         }
-        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+        sessionStorage.setItem(`cart_${table?.id}`, JSON.stringify(updatedCart));
         return updatedCart;
       });
 
-      // 2. Sync with backend
       await apiRequest("POST", "/api/cart", {
         sessionId: sId,
         coffeeItemId: item.id,
@@ -184,20 +293,12 @@ export default function TableMenuNew() {
         selectedAddons
       });
 
-      // 3. Force re-fetch and clear cache to ensure sync
-      await queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
-      
-      // Explicitly fetch and set cart to ensure immediate UI update
-      const response = await fetch(`/api/cart/${sId}`);
-      if (response.ok) {
-        const serverCart = await response.json();
-        setCart(serverCart);
-        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(serverCart));
-      }
+      queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
 
+      const name = i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr;
       toast({
-        title: "تمت الإضافة للسلة",
-        description: `تم إضافة ${item.nameAr} إلى سلتك`,
+        title: t("menu.added_to_cart"),
+        description: t("menu.added_to_cart_desc", { name }),
       });
     } catch (error) {
       console.error("Add to cart error:", error);
@@ -210,13 +311,11 @@ export default function TableMenuNew() {
   };
 
   const removeFromCart = async (cartItemId: string) => {
-    const sId = table?._id ? `table-${table._id}` : "guest";
-    
+    const sId = table?.id ? `table-${table.id}` : "guest";
     try {
       const existingItem = cart.find(ci => ci.id === cartItemId);
       if (!existingItem) return;
 
-      // 1. Optimistic update
       setCart((prev) => {
         let updatedCart;
         if (existingItem.quantity > 1) {
@@ -226,11 +325,10 @@ export default function TableMenuNew() {
         } else {
           updatedCart = prev.filter((ci) => ci.id !== cartItemId);
         }
-        sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(updatedCart));
+        sessionStorage.setItem(`cart_${table?.id}`, JSON.stringify(updatedCart));
         return updatedCart;
       });
 
-      // 2. Sync with backend
       if (existingItem.quantity > 1) {
         await apiRequest("PUT", `/api/cart/${sId}/${cartItemId}`, {
           quantity: existingItem.quantity - 1
@@ -238,8 +336,7 @@ export default function TableMenuNew() {
       } else {
         await apiRequest("DELETE", `/api/cart/${sId}/${cartItemId}`);
       }
-      
-      // 3. Force re-fetch and clear cache
+
       queryClient.invalidateQueries({ queryKey: [`/api/cart/${sId}`] });
     } catch (error) {
       console.error("Remove from cart error:", error);
@@ -248,10 +345,8 @@ export default function TableMenuNew() {
 
   const getTotalPrice = () => {
     return cart.reduce((total, ci) => {
-      // Calculate item price based on size if needed
       let itemPrice = ci.item.price;
       const sizes = (ci.item as any).sizes;
-      // We check for sizeName because ci.selectedSize might be normalized
       const sizeToMatch = ci.selectedSize || "default";
       if (sizeToMatch !== "default" && sizes) {
         const sizeInfo = sizes.find((s: any) => s.nameAr === sizeToMatch);
@@ -261,11 +356,10 @@ export default function TableMenuNew() {
     }, 0);
   };
 
-  // دالة تمديد الحجز
   const handleExtendReservation = async () => {
-    if (!table?._id) return;
+    if (!table?.id) return;
     try {
-      const response = await fetch(`/api/tables/${table._id}/extend-reservation`, {
+      const response = await fetch(`/api/tables/${table.id}/extend-reservation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });
@@ -273,9 +367,7 @@ export default function TableMenuNew() {
         toast({
           title: "تم التمديد",
           description: "تم تمديد الحجز لمدة ساعة إضافية",
-          className: "bg-green-600 text-white border-green-700"
         });
-        // Refresh table data
         queryClient.invalidateQueries({ queryKey: ["/api/tables/qr", qrToken] });
       }
     } catch (error) {
@@ -297,7 +389,6 @@ export default function TableMenuNew() {
       return;
     }
 
-    // If table is reserved, check time window and verify phone
     if (table?.reservedFor?.customerName) {
       if (reservationStatus === "after_window") {
         toast({
@@ -305,7 +396,6 @@ export default function TableMenuNew() {
           description: "آسفون، فترة الحجز قد انتهت. يمكنك عمل طلب عادي جديد.",
           variant: "destructive",
         });
-        // Clear reservation and allow normal order
         return;
       }
 
@@ -314,12 +404,10 @@ export default function TableMenuNew() {
           title: "الحجز في وقت لاحق",
           description: "الحجز لم يبدأ بعد. يمكنك عمل طلب عادي الآن.",
         });
-        // Allow normal order without reservation verification
         setReservationPhoneVerified(true);
         return;
       }
 
-      // For "valid" window, verify phone number
       if (!reservationPhoneVerified) {
         const phoneToVerify = reservationPhoneInput.trim();
         if (!phoneToVerify) {
@@ -331,10 +419,9 @@ export default function TableMenuNew() {
           return;
         }
 
-        // Verify against reservation phone
         const reservationPhone = table.reservedFor.customerPhone.replace(/^0/, "");
         const inputPhone = phoneToVerify.replace(/^0/, "");
-        
+
         if (reservationPhone !== inputPhone && reservationPhone !== phoneToVerify) {
           toast({
             title: "خطأ في التحقق",
@@ -343,16 +430,15 @@ export default function TableMenuNew() {
           });
           return;
         }
-        
+
         setReservationPhoneVerified(true);
         return;
       }
     }
 
-    // Update table occupancy when checking out
-    if (table?._id) {
+    if (table?.id) {
       try {
-        await fetch(`/api/tables/${table._id}/occupancy`, {
+        await fetch(`/api/tables/${table.id}/occupancy`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ isOccupied: 1 }),
@@ -362,31 +448,45 @@ export default function TableMenuNew() {
       }
     }
 
-    sessionStorage.setItem(`cart_${table?._id}`, JSON.stringify(cart));
-    sessionStorage.setItem(`branchId_${table?._id}`, table?.branchId || "");
-    navigate(`/table-checkout/${table?._id}/${table?.tableNumber}`);
+    sessionStorage.setItem(`cart_${table?.id}`, JSON.stringify(cart));
+    sessionStorage.setItem(`branchId_${table?.id}`, table?.branchId || "");
+    navigate(`/table-checkout/${table?.id}/${table?.tableNumber}`);
   };
 
+  const handleAddToCartDirect = (item: CoffeeItem) => {
+    const isAvailable = item.isAvailable !== 0 && (item.availabilityStatus === 'available' || item.availabilityStatus === 'new' || !item.availabilityStatus);
+    if (!isAvailable) {
+      toast({
+        title: "غير متوفر",
+        description: "نعتذر، هذا المنتج غير متوفر حالياً",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  if (tableLoading || menuLoading) {
+    const groupKey = getGroupingKey(item);
+    const group = groupedItems[groupKey] || [item];
+    const hasMultipleVariants = group.length > 1;
+    const hasSizes = item.availableSizes && item.availableSizes.length > 0;
+    const hasAddons = allAddons.filter(a => a.isAvailable === 1).length > 0;
+
+    if (hasMultipleVariants || hasSizes || hasAddons) {
+      setSelectedItem(item);
+      setIsModalOpen(true);
+    } else {
+      addToCart(item);
+    }
+  };
+
+  if ((tableLoading && !tableError) || menuLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-secondary/15 rounded-full blur-2xl animate-pulse" style={{animationDelay: '0.8s'}}></div>
-        </div>
-        
-        <div className="text-center relative z-10">
-          <div className="relative mb-8">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse"></div>
-            <Coffee className="w-20 h-20 text-primary mx-auto relative z-10 coffee-steam" />
-          </div>
-          
-          <h3 className="font-amiri text-3xl font-bold text-primary mb-4 golden-gradient">
-            جاري تحضير المنيو
-          </h3>
-          <p className="text-muted-foreground text-xl">أفضل ما لدينا من القهوة الطازجة</p>
-        </div>
+      <div dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Coffee className="w-10 h-10 text-primary" />
+        </motion.div>
       </div>
     );
   }
@@ -404,340 +504,386 @@ export default function TableMenuNew() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-primary/5 to-yellow-50">
-      {/* Clean Header */}
-      <header className="sticky top-0 bg-white border-b-2 border-primary z-40 shadow-md" dir="rtl">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-2 sm:space-x-4 space-x-reverse">
-              <Coffee className="w-6 h-6 sm:w-8 sm:h-8 text-slate-600" />
-              <div>
-                <h1 className="font-amiri text-lg sm:text-2xl font-bold text-slate-700">
-                  BLACK ROSE
-                </h1>
-                <p className="text-xs text-slate-500">طاولة {table.tableNumber}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button 
-                onClick={handleCheckout}
-                variant="default"
-                size="sm"
-                disabled={cart.length === 0}
-                className="relative bg-slate-600 hover:bg-slate-700 text-white transition-all duration-300 px-3 sm:px-6 py-1.5 sm:py-3 text-sm sm:text-lg font-semibold shadow-md hover:shadow-lg rounded-lg"
-              >
-                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 sm:ml-2" />
-                <span className="hidden sm:inline">السلة</span>
-                {totalItems > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1.5 sm:-top-2 -left-1.5 sm:-left-2 h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center p-0 text-xs sm:text-sm font-bold bg-blue-500"
-                  >
-                    {totalItems}
-                  </Badge>
-                )}
-              </Button>
-            </div>
+    <div className="min-h-screen bg-background" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+      <header className="fixed top-0 inset-x-0 z-[60] h-16 bg-primary/40 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-white/10 p-1.5 flex items-center justify-center">
+            <img src={clunyLogo} alt="Logo" className="w-full h-full object-contain" />
           </div>
+          <div className="flex flex-col">
+            <h1 className="text-base font-black text-white leading-tight">CLUNY</h1>
+            <span className="text-[10px] font-bold text-white/60 tracking-wider uppercase">CAFE</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge className="bg-white/20 text-white border-white/10 px-3 py-1">
+            <MapPin className="w-3 h-3 ml-1" />
+            طاولة {table.tableNumber}
+          </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCheckout}
+            className="h-9 w-9 rounded-xl bg-white/10 text-white border border-white/10 relative"
+            data-testid="button-cart"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </Button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12 relative z-10">
-        {/* Reservation Info and Extension */}
-        {table?.reservedFor?.status === 'pending' && (
-          <div className="mb-8 p-5 bg-blue-50 border-2 border-blue-300 rounded-lg shadow-md" dir="rtl">
-            <div className="flex justify-between items-start gap-3">
-              <div className="flex-1">
-                <h3 className="font-bold text-blue-900 mb-2">معلومات الحجز</h3>
-                <p className="text-sm text-blue-800">
-                  الحجز باسم: <strong>{table.reservedFor.customerName}</strong>
-                </p>
-                {table.reservedFor.autoExpiryTime && (
-                  <p className="text-sm text-blue-800 mt-1">
-                    ينتهي الحجز في: <strong>{new Date(table.reservedFor.autoExpiryTime).toLocaleTimeString('ar')}</strong>
+      <main className="pt-16 space-y-6 pb-24 relative z-0">
+        <div className="px-4 space-y-6 pt-4">
+          <div className="flex items-center gap-4 bg-secondary/50 rounded-xl p-3">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">طاولة {table.tableNumber}</span>
+            </div>
+            <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="w-4 h-4 text-accent" />
+              <span className="text-sm font-medium">{t("status.open") || "مفتوح"}</span>
+            </div>
+          </div>
+
+          {table?.reservedFor?.status === 'pending' && (
+            <div className="bg-card rounded-2xl border border-border p-4 shadow-sm" dir="rtl">
+              <div className="flex justify-between items-start gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-foreground">معلومات الحجز</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    الحجز باسم: <strong className="text-foreground">{table.reservedFor.customerName}</strong>
                   </p>
-                )}
-                {table.reservedFor.extensionCount === 0 && (
-                  <Button
-                    onClick={handleExtendReservation}
-                    size="sm"
-                    className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
-                    data-testid="button-extend-reservation"
-                  >
-                    تمديد الحجز ساعة إضافية
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Pending Order Alert */}
-        {pendingOrder && pendingOrder.status !== 'completed' && (
-          <div className="mb-8 p-5 bg-background border-2 border-primary rounded-lg shadow-md">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-bold text-lg text-accent mb-2">لديك طلب معلق!</h3>
-                <p className="text-sm text-accent mb-3">
-                  لديك طلب تم طلبه سابقاً من هذه الطاولة ولا يزال في الانتظار. يمكنك متابعة الطلب أو إنشاء طلب جديد.
-                </p>
-                <Button
-                  onClick={() => {
-                    navigate(`/table-order-tracking/${table?.currentOrderId}`);
-                  }}
-                  className="bg-primary hover:bg-primary text-white"
-                  data-testid="button-view-pending-order"
-                >
-                  متابعة الطلب السابق
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Reservation Status - Show appropriate message based on time window */}
-        {table?.reservedFor?.customerName && (
-          <div className="mb-8 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
-            {reservationStatus === "after_window" ? (
-              <>
-                <h3 className="font-bold text-lg mb-3 text-red-900">⏰ انتهت فترة الحجز</h3>
-                <p className="text-sm text-red-800 mb-3">
-                  الحجز لـ: <strong>{table.reservedFor.customerName}</strong> قد انتهت فترته.
-                </p>
-                <p className="text-sm text-red-700">يمكنك تقديم طلب عادي جديد.</p>
-              </>
-            ) : reservationStatus === "before_window" ? (
-              <>
-                <h3 className="font-bold text-lg mb-3 text-accent">ℹ️ الحجز لم يبدأ بعد</h3>
-                <p className="text-sm text-accent mb-3">
-                  هناك حجز باسم: <strong>{table.reservedFor.customerName}</strong>
-                </p>
-                <p className="text-sm text-accent">يمكنك تقديم طلب عادي حالياً.</p>
-              </>
-            ) : (
-              <>
-                <h3 className="font-bold text-lg mb-3 text-blue-900">التحقق من الحجز</h3>
-                <p className="text-sm text-blue-800 mb-3">هذه الطاولة محجوزة باسم: <strong>{table.reservedFor.customerName}</strong></p>
-                {!reservationPhoneVerified && (
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      placeholder="أدخل رقم الجوال المسجل في الحجز"
-                      value={reservationPhoneInput}
-                      onChange={(e) => setReservationPhoneInput(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-blue-300 rounded-lg"
-                      maxLength={9}
-                    />
-                    <Button
-                      onClick={() => {
-                        const phoneToVerify = reservationPhoneInput.trim();
-                        const reservationPhone = table.reservedFor!.customerPhone.replace(/^0/, "");
-                        const inputPhone = phoneToVerify.replace(/^0/, "");
-                        
-                        if (reservationPhone === inputPhone || reservationPhone === phoneToVerify) {
-                          setReservationPhoneVerified(true);
-                          toast({
-                            title: "تم التحقق",
-                            description: "تم التحقق من الحجز بنجاح",
-                          });
-                        } else {
-                          toast({
-                            title: "خطأ",
-                            description: "رقم الجوال غير مطابق",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      تحقق
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Menu Section */}
-        <section className="mb-12 sm:mb-16 md:mb-20">
-          <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-in fade-in-0 slide-in-from-bottom-10 duration-1000">
-            <div className="relative inline-block mb-4 sm:mb-6">
-              <h2 className="font-amiri text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-700 mb-2 sm:mb-4">
-                منيو BLACK ROSE
-              </h2>
-              <div className="absolute -bottom-1 sm:-bottom-2 left-1/2 transform -translate-x-1/2 w-16 sm:w-20 md:w-24 h-0.5 sm:h-1 bg-slate-300 rounded-full"></div>
-            </div>
-            
-            <p className="text-sm sm:text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed px-4">
-              انطلق في رحلة قهوة استثنائية مع تشكيلتنا المختارة بعناية من أجود حبوب القهوة العربية الأصيلة
-            </p>
-            
-            <div className="flex justify-center space-x-4 mt-6">
-              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
-            </div>
-          </div>
-
-          {/* Category Filter */}
-          <div className="mb-8 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 sm:gap-3 min-w-max px-2 sm:justify-center">
-              {categories.map((category) => (
-                <Button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
-                  size="sm"
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium whitespace-nowrap transition-all duration-300 ${
-                    selectedCategory === category.id
-                      ? "bg-slate-600 text-white shadow-lg scale-105"
-                      : "bg-white text-slate-700 hover:bg-slate-100 border-slate-200 shadow-sm hover:shadow-md"
-                  }`}
-                  data-testid={`button-category-${category.id}`}
-                >
-                  <category.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="text-xs sm:text-sm">{category.nameAr}</span>
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Strength Filter */}
-          <div className="mb-8 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 min-w-max px-2 sm:justify-center">
-              {strengthOptions.map((option) => (
-                <Button
-                  key={option.id}
-                  onClick={() => setSelectedStrength(option.id)}
-                  variant={selectedStrength === option.id ? "default" : "outline"}
-                  size="sm"
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full font-medium whitespace-nowrap transition-all duration-300 ${
-                    selectedStrength === option.id
-                      ? "bg-indigo-500 text-white shadow-md scale-105"
-                      : "bg-white text-slate-700 hover:bg-indigo-50 border-indigo-200/50 shadow-sm"
-                  }`}
-                  data-testid={`button-strength-${option.id}`}
-                >
-                  <option.icon className="w-3.5 h-3.5" />
-                  <span className="text-xs">{option.labelAr}</span>
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredItems.map((item) => {
-              const itemInCart = cart.find((ci) => ci.item.id === item.id && ci.selectedSize === "default");
-              const quantity = itemInCart?.quantity || 0;
-              
-              return (
-                <div
-                  key={item.id}
-                  className="group relative bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100"
-                >
-                  {item.imageUrl && (
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.nameAr}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    </div>
+                  {table.reservedFor.autoExpiryTime && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      ينتهي الحجز في: <strong className="text-foreground">{new Date(table.reservedFor.autoExpiryTime).toLocaleTimeString('ar')}</strong>
+                    </p>
                   )}
-                  
-                  <div className="p-4 space-y-3">
-                    <h3 className="font-bold text-lg text-slate-800">{item.nameAr}</h3>
-                    <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>
-                    
-                    {/* Size Selection Section */}
-                    {(item as any).sizes && (item as any).sizes.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4 border-t pt-3">
-                        <p className="w-full text-[10px] text-slate-400 mb-1 font-bold">الأحجام المتوفرة:</p>
-                        {(item as any).sizes.map((size: any) => {
-                          const sizeCartItemId = `${item.id}-${size.nameAr}-`;
-                          const sizeInCart = cart.find((ci) => ci.id.startsWith(sizeCartItemId));
-                          const sizeQty = sizeInCart?.quantity || 0;
-
-                          return (
-                            <div key={size.nameAr} className="flex items-center gap-1 bg-slate-50 rounded-lg p-1 border border-slate-100">
-                              <Button
-                                size="sm"
-                                variant={sizeQty > 0 ? "default" : "outline"}
-                                className={`h-8 text-[10px] sm:text-xs rounded-md ${sizeQty > 0 ? "bg-slate-600 border-transparent shadow-sm" : "bg-white border-slate-200"}`}
-                                onClick={() => addToCart(item, size.nameAr)}
-                              >
-                                {size.nameAr} ({size.price} ر.س)
-                                {sizeQty > 0 && <Badge className="mr-1 h-4 w-4 p-0 flex items-center justify-center bg-blue-500 text-[8px] border-none">{sizeQty}</Badge>}
-                              </Button>
-                              {sizeQty > 0 && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
-                                  onClick={() => removeFromCart(sizeInCart!.id)}
-                                >
-                                  -
-                                </Button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold text-slate-800">{item.price} ر.س</span>
-                      </div>
-                      
-                      {quantity > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => removeFromCart(itemInCart!.id)}
-                          >
-                            -
-                          </Button>
-                          <span className="text-lg font-medium w-8 text-center">{quantity}</span>
-                          <Button
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => addToCart(item)}
-                          >
-                            +
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          onClick={() => addToCart(item)}
-                          className="bg-slate-600 hover:bg-slate-700 text-white"
-                        >
-                          إضافة للسلة
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                  {table.reservedFor.extensionCount === 0 && (
+                    <Button
+                      onClick={handleExtendReservation}
+                      size="sm"
+                      className="mt-3"
+                      data-testid="button-extend-reservation"
+                    >
+                      تمديد الحجز ساعة إضافية
+                    </Button>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-
-          {filteredItems.length === 0 && (
-            <div className="text-center py-12">
-              <Coffee className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground text-lg">
-                لا توجد منتجات في هذه الفئة
-              </p>
+              </div>
             </div>
           )}
-        </section>
+
+          {pendingOrder && pendingOrder.status !== 'completed' && (
+            <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-bold text-foreground mb-1">لديك طلب معلق!</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    لديك طلب تم طلبه سابقاً من هذه الطاولة ولا يزال في الانتظار.
+                  </p>
+                  <Button
+                    onClick={() => navigate(`/table-order-tracking/${table?.currentOrderId}`)}
+                    size="sm"
+                    data-testid="button-view-pending-order"
+                  >
+                    متابعة الطلب السابق
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {table?.reservedFor?.customerName && (
+            <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+              {reservationStatus === "after_window" ? (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-5 h-5 text-destructive" />
+                    <h3 className="font-bold text-foreground">انتهت فترة الحجز</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    الحجز لـ: <strong className="text-foreground">{table.reservedFor.customerName}</strong> قد انتهت فترته.
+                  </p>
+                  <p className="text-sm text-muted-foreground">يمكنك تقديم طلب عادي جديد.</p>
+                </>
+              ) : reservationStatus === "before_window" ? (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-foreground">الحجز لم يبدأ بعد</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    هناك حجز باسم: <strong className="text-foreground">{table.reservedFor.customerName}</strong>
+                  </p>
+                  <p className="text-sm text-muted-foreground">يمكنك تقديم طلب عادي حالياً.</p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-foreground">التحقق من الحجز</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    هذه الطاولة محجوزة باسم: <strong className="text-foreground">{table.reservedFor.customerName}</strong>
+                  </p>
+                  {!reservationPhoneVerified && (
+                    <div className="flex gap-2">
+                      <input
+                        type="tel"
+                        placeholder="أدخل رقم الجوال المسجل في الحجز"
+                        value={reservationPhoneInput}
+                        onChange={(e) => setReservationPhoneInput(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        maxLength={9}
+                        data-testid="input-reservation-phone"
+                      />
+                      <Button
+                        onClick={() => {
+                          const phoneToVerify = reservationPhoneInput.trim();
+                          const reservationPhone = table.reservedFor!.customerPhone.replace(/^0/, "");
+                          const inputPhone = phoneToVerify.replace(/^0/, "");
+
+                          if (reservationPhone === inputPhone || reservationPhone === phoneToVerify) {
+                            setReservationPhoneVerified(true);
+                            toast({
+                              title: "تم التحقق",
+                              description: "تم التحقق من الحجز بنجاح",
+                            });
+                          } else {
+                            toast({
+                              title: "خطأ",
+                              description: "رقم الجوال غير مطابق",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        data-testid="button-verify-phone"
+                      >
+                        تحقق
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {isBothModes && (
+            <div className="flex p-1 bg-secondary/30 rounded-2xl">
+              <button
+                onClick={() => { setActiveMode("drinks"); setSelectedCategory("all"); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                  activeMode === "drinks" ? "bg-primary text-white shadow-lg" : "text-muted-foreground"
+                }`}
+                data-testid="button-mode-drinks"
+              >
+                <Coffee className="w-4 h-4" />
+                <span>{t("menu.mode.drinks")}</span>
+              </button>
+              <button
+                onClick={() => { setActiveMode("food"); setSelectedCategory("all"); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                  activeMode === "food" ? "bg-primary text-white shadow-lg" : "text-muted-foreground"
+                }`}
+                data-testid="button-mode-food"
+              >
+                <Utensils className="w-4 h-4" />
+                <span>{t("menu.mode.food")}</span>
+              </button>
+            </div>
+          )}
+
+          <div className="relative group">
+            <Search className={`absolute ${i18n.language === 'ar' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors`} />
+            <input
+              type="text"
+              placeholder={isBothModes && activeMode === 'food' ? t("menu.search_placeholder_food") : t("menu.search_placeholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full h-12 ${i18n.language === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'} bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm`}
+              data-testid="input-search"
+            />
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedCategory(cat.id);
+                }}
+                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                  selectedCategory === cat.id
+                    ? "bg-primary text-primary-foreground border-primary shadow-md"
+                    : "bg-card text-foreground border-border hover:border-primary/30 hover:bg-secondary/50"
+                }`}
+                data-testid={`button-category-${cat.id}`}
+              >
+                <cat.icon className={`w-4 h-4 ${selectedCategory === cat.id ? "text-primary-foreground" : "text-primary"}`} />
+                <span>{cat.name}</span>
+              </button>
+            ))}
+          </div>
+
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-foreground">{t("menu.featured")}</h2>
+            </div>
+            <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-2">
+              {representativeItems.slice(0, 6).map((item) => (
+                <motion.div
+                  key={item.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-shrink-0 w-[140px] snap-start bg-card rounded-2xl border border-border p-3 space-y-3 shadow-sm cursor-pointer group"
+                  onClick={() => handleAddToCartDirect(item)}
+                  data-testid={`card-featured-${item.id}`}
+                >
+                  <div className="aspect-square rounded-xl overflow-hidden bg-secondary">
+                    <img
+                      src={item.imageUrl}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      alt={i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-sm font-semibold truncate text-foreground">{i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-primary font-bold">{item.price} <small className="text-xs font-normal text-muted-foreground">{t("currency")}</small></span>
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
+                        <Plus className="w-4 h-4 text-primary group-hover:text-white transition-colors" />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-foreground">
+              {isBothModes
+                ? (activeMode === 'food' ? t("menu.all_items_food") : t("menu.all_items_drinks"))
+                : t("menu.all_items")
+              }
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <AnimatePresence mode="popLayout">
+                {sortedFilteredItems.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="bg-card rounded-2xl border border-border p-3 flex gap-4 items-center shadow-sm cursor-pointer group"
+                    onClick={() => handleAddToCartDirect(item)}
+                    data-testid={`card-menu-${item.id}`}
+                  >
+                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-secondary flex-shrink-0">
+                      <img
+                        src={item.imageUrl}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        alt={i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 py-1">
+                      <h3 className="text-base font-semibold truncate text-foreground mb-1">{i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}</h3>
+                      <p className="text-xs text-muted-foreground truncate mb-2">{item.description || t("menu.default_desc")}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-primary font-bold text-lg">{item.price} <small className="text-xs font-normal text-muted-foreground">{t("currency")}</small></span>
+                        <Button
+                          size="sm"
+                          className="h-8 w-8 p-0 rounded-lg bg-primary hover:bg-primary/90"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCartDirect(item);
+                          }}
+                          data-testid={`button-add-${item.id}`}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {sortedFilteredItems.length === 0 && (
+              <div className="text-center py-12">
+                <Coffee className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground text-lg">
+                  لا توجد منتجات في هذه الفئة
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
       </main>
 
+      <AddToCartModal
+        item={selectedItem}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        variants={selectedItem ? (groupedItems[getGroupingKey(selectedItem)] || [selectedItem]) : []}
+        onAddToCart={(data) => {
+          const itemToAdd = coffeeItems.find(ci => ci.id === data.coffeeItemId);
+          if (itemToAdd) {
+            addToCart(itemToAdd, data.selectedSize, data.selectedAddons);
+          }
+          setIsModalOpen(false);
+        }}
+      />
+
+      {totalItems > 0 && (
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed bottom-6 inset-x-4 z-50"
+        >
+          <Button
+            onClick={handleCheckout}
+            className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-lg flex items-center justify-between px-5"
+            data-testid="button-checkout"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-xl">
+                <ShoppingCart className="w-5 h-5" />
+              </div>
+              <div className={i18n.language === 'ar' ? 'text-right' : 'text-left'}>
+                <p className="text-xs font-medium opacity-80">{t("menu.view_cart") || "عرض السلة"}</p>
+                <p className="text-sm font-bold">{t("menu.items_count", { count: totalItems }) || `${totalItems} عنصر`}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold">
+                {getTotalPrice().toFixed(2)} {t("currency")}
+              </span>
+            </div>
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 }

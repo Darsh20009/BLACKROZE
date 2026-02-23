@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Coffee, Plus, User, Phone, Clock, Percent, LogOut, Edit, Upload, X, MapPin, Shield } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Employee } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 interface Branch {
- _id: string;
+ id: string;
  nameAr: string;
  nameEn?: string;
 }
 
 export default function ManagerEmployees() {
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -120,21 +122,19 @@ export default function ManagerEmployees() {
     retry: 1
   });
 
-  // Derived state for filtered employees
-  const displayEmployees = Array.isArray(employees) 
-    ? (isAdminOrOwner ? employees : employees.filter(emp => emp && emp.branchId === managerBranchId))
-    : [];
-
-  if (isError) {
-    console.error("Failed to fetch employees:", error);
-  }
-
-  // Get branches for admin to assign employees
-  const { data: branches = [] } = useQuery<Branch[]>({
+  const branchesData = useQuery<Branch[]>({
     queryKey: ["/api/branches"],
     enabled: !!currentManager && isAdminOrOwner,
-    select: (data) => data || [],
   });
+  const branches = branchesData.data || [];
+
+  // Derived state for filtered employees
+  const displayEmployees = useMemo(() => {
+    if (!Array.isArray(employees)) return [];
+    return isAdminOrOwner 
+      ? employees 
+      : employees.filter(emp => emp && emp.branchId === managerBranchId);
+  }, [employees, isAdminOrOwner, managerBranchId]);
 
  const createEmployeeMutation = useMutation({
  mutationFn: async (data: any) => {
@@ -326,7 +326,7 @@ export default function ManagerEmployees() {
  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -334,8 +334,8 @@ export default function ManagerEmployees() {
               <Coffee className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-accent">إدارة الموظفين</h1>
-              <p className="text-gray-400 text-sm">لوحة التحكم</p>
+              <h1 className="text-2xl font-bold text-accent">{t("manager.employees")}</h1>
+              <p className="text-gray-400 text-sm">{t("manager.dashboard")}</p>
             </div>
           </div>
  <div className="flex gap-2">
@@ -460,7 +460,7 @@ export default function ManagerEmployees() {
  </SelectTrigger>
  <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
  {branches.map((branch) => (
- <SelectItem key={branch._id} value={branch._id}>
+ <SelectItem key={branch.id} value={branch.id}>
  {branch.nameAr}
  </SelectItem>
  ))}
@@ -669,13 +669,13 @@ export default function ManagerEmployees() {
         <div className="text-center text-accent py-12">جاري تحميل الموظفين...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(displayEmployees || []).map((employee: Employee) => (
+          {(employees || []).map((employee) => (
             <Card
               key={employee.id}
-              className="bg-[#2d1f1a]/80 backdrop-blur-sm border-primary/20 overflow-hidden group hover:border-primary/50 transition-all duration-300"
+              className="bg-gradient-to-br from-background to-background border-primary/20 overflow-hidden hover-elevate"
               data-testid={`card-employee-${employee.id}`}
             >
-              <CardHeader className="bg-gradient-to-r from-amber-500/20 to-amber-700/20">
+ <CardHeader className="bg-gradient-to-r from-amber-500/20 to-amber-700/20">
  <div className="flex items-center justify-between">
  <CardTitle className="text-accent flex items-center gap-2">
  {employee.imageUrl ? (

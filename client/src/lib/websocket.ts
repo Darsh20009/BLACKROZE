@@ -10,12 +10,14 @@ interface WSMessage {
 }
 
 interface UseOrderWebSocketOptions {
-  clientType: WSClientType;
+  clientType: WSClientType | "customer";
   orderId?: string;
   branchId?: string;
+  customerId?: string;
   onNewOrder?: (order: any) => void;
   onOrderUpdated?: (order: any) => void;
   onOrderReady?: (order: any) => void;
+  onPointsVerificationCode?: (data: any) => void;
   enabled?: boolean;
 }
 
@@ -23,9 +25,11 @@ export function useOrderWebSocket({
   clientType,
   orderId,
   branchId,
+  customerId,
   onNewOrder,
   onOrderUpdated,
   onOrderReady,
+  onPointsVerificationCode,
   enabled = true,
 }: UseOrderWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -56,6 +60,7 @@ export function useOrderWebSocket({
           clientType,
           orderId,
           branchId,
+          customerId,
         })
       );
     }
@@ -81,7 +86,8 @@ export function useOrderWebSocket({
     }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws/orders`;
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws/orders`;
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -116,12 +122,64 @@ export function useOrderWebSocket({
           switch (message.type) {
             case "new_order":
               onNewOrder?.(message.order);
+              // Play notification sound
+              import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
+                const isOnline = message.order?.orderType === 'delivery' || message.order?.orderType === 'takeaway' || !message.order?.employeeId;
+                if (isOnline) {
+                  playNotificationSound('onlineOrderVoice', 1.0);
+                } else {
+                  playNotificationSound('newOrder', 1.0);
+                }
+              });
+              // Trigger local notification if in foreground but not looking at orders
+              if (Notification.permission === 'granted' && window.location.pathname !== '/employee/orders') {
+                const n = new Notification(message.title || 'طلب جديد', {
+                  body: message.body || `طلب جديد بقيمة ${message.order?.totalAmount} ر.س`,
+                  icon: '/logo.png',
+                  tag: 'new-order',
+                  requireInteraction: true,
+                  data: {
+                    isOnlineOrder: message.order?.orderType === 'delivery' || message.order?.orderType === 'takeaway' || !message.order?.employeeId
+                  }
+                });
+                n.onclick = () => {
+                  window.focus();
+                  window.location.href = '/employee/orders';
+                };
+              }
+              break;
+            case "push_alert":
+              if (message.sound) {
+                // Play notification sound if requested
+                import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
+                  if (message.isOnlineOrder) {
+                    playNotificationSound('onlineOrderVoice', 1.0);
+                  } else {
+                    playNotificationSound('newOrder', 1.0);
+                  }
+                });
+              }
+              if (Notification.permission === 'granted') {
+                const n = new Notification(message.title, {
+                  body: message.body,
+                  icon: '/logo.png',
+                  tag: 'remote-alert',
+                  requireInteraction: true
+                });
+                n.onclick = () => {
+                  window.focus();
+                  window.location.href = message.url || '/employee/orders';
+                };
+              }
               break;
             case "order_updated":
               onOrderUpdated?.(message.order);
               break;
             case "order_ready":
               onOrderReady?.(message.order);
+              break;
+            case "points_verification_code":
+              onPointsVerificationCode?.(message);
               break;
             case "welcome":
               sendSubscribe(ws);

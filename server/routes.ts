@@ -1,15 +1,53 @@
+import crypto from "crypto";
 import mongoose from "mongoose";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertOrderSchema, insertCartItemSchema, insertEmployeeSchema, type PaymentMethod, insertTaxInvoiceSchema, RecipeItemModel, BranchStockModel, RawItemModel, StockMovementModel, OrderModel, BranchModel, CoffeeItemModel, CoffeeItemAddonModel, ProductReviewModel, ReferralModel, NotificationModel, CustomerModel, TableModel, CafeModel, AccountingSnapshotModel, insertAccountingSnapshotSchema, ProductAddonModel, WarehouseModel, WarehouseStockModel, WarehouseTransferModel, DeliveryIntegrationModel, CartItemModel, KitchenDepartmentModel, CategoryModel } from "@shared/schema";
+import { 
+  insertOrderSchema, 
+  insertCartItemSchema, 
+  insertEmployeeSchema, 
+  type PaymentMethod, 
+  insertTaxInvoiceSchema, 
+  RecipeItemModel, 
+  BranchStockModel, 
+  RawItemModel, 
+  StockMovementModel, 
+  OrderModel, 
+  BranchModel, 
+  CoffeeItemModel, 
+  CoffeeItemAddonModel, 
+  ProductReviewModel, 
+  ReferralModel, 
+  NotificationModel, 
+  CustomerModel, 
+  TableModel, 
+  CafeModel, 
+  AccountingSnapshotModel, 
+  insertAccountingSnapshotSchema, 
+  ProductAddonModel, 
+  WarehouseModel, 
+  WarehouseStockModel, 
+  WarehouseTransferModel, 
+  DeliveryIntegrationModel, 
+  CartItemModel,
+  EmployeeModel,
+  BusinessConfigModel,
+  CustomBannerModel,
+  PromoOfferModel,
+  MenuCategoryModel,
+  AccountModel,
+  JournalEntryModel,
+  ExpenseErpModel,
+  VendorModel
+} from "@shared/schema";
 import { RecipeEngine } from "./recipe-engine";
 import { UnitsEngine } from "./units-engine";
 import { InventoryEngine } from "./inventory-engine";
 import { AccountingEngine } from "./accounting-engine";
 import { ErpAccountingService } from "./erp-accounting-service";
 import { deliveryService } from "./delivery-service";
-import { requireAuth, requireManager, requireAdmin, filterByBranch, requireKitchenAccess, requireCashierAccess, requireDeliveryAccess, requirePermission, type AuthRequest } from "./middleware/auth";
+import { requireAuth, requireManager, requireAdmin, filterByBranch, requireKitchenAccess, requireCashierAccess, requireDeliveryAccess, requirePermission, requireCustomerAuth, type AuthRequest, type CustomerAuthRequest } from "./middleware/auth";
 import { PermissionsEngine, PERMISSIONS } from "./permissions-engine";
 import { requireTenant, getTenantIdFromRequest } from "./middleware/tenant";
 import { wsManager } from "./websocket";
@@ -18,7 +56,9 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { Types } from "mongoose";
 import { nanoid } from "nanoid";
+const isValidObjectId = (id: string) => Types.ObjectId.isValid(id);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,8 +71,11 @@ import {
   sendWelcomeEmail,
   sendAbandonedCartEmail,
   testEmailConnection,
+  sendPointsVerificationEmail,
 } from "./mail-service";
 import { appendOrderToSheet } from "./google-sheets";
+import { getVapidPublicKey, saveSubscription, removeSubscription, sendPushToEmployee, sendPushToCustomer } from "./push-service";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
   // Ensure upload directories exist
   const uploadDirs = [
@@ -54,6 +97,11 @@ function serializeDoc(doc: any): any {
   if (!doc) return null;
   const obj = doc.toObject ? doc.toObject() : doc;
   
+  // Convert any remaining Map objects to plain objects
+  if (obj.storeHours instanceof Map) {
+    obj.storeHours = Object.fromEntries(obj.storeHours);
+  }
+
   // Only set id from _id if there's no existing id field
   if (obj._id && !obj.id) {
     obj.id = obj._id.toString();
@@ -131,7 +179,7 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
       return { success: false, costOfGoods: 0, deductionDetails: [], warnings: [], error: 'No valid branchId' };
     }
 
-    const order = await OrderModel.findById(orderId);
+    const order = await OrderModel.findOne({ id: orderId }) || await OrderModel.findById(orderId).catch(() => null);
     if (!order) {
       return { success: false, costOfGoods: 0, deductionDetails: [], warnings: [], error: 'Order not found' };
     }
@@ -174,22 +222,93 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
       })) || []
     }));
 
-    // Use storage method for consistent deduction logic (prevents negative deduction)
-    const result = await storage.deductInventoryForOrder(
-      orderId,
-      branchId,
-      orderItems,
-      order.employeeId || 'system'
-    );
+    // Reward points for order items (10 points per drink)
+    const totalPointsToAward = orderItems.reduce((acc: any, item: any) => acc + (item.quantity * 10), 0);
+    
+    // Update customer pending points
+    if (order.customerId) {
+      await CustomerModel.findByIdAndUpdate(order.customerId, {
+        $inc: { 
+          points: totalPointsToAward,
+          pendingPoints: -totalPointsToAward 
+        }
+      });
+      
+      // Also award stamps/points to loyalty card if exists
+      try {
+        const loyaltyCard = await mongoose.model('LoyaltyCard').findOne({ customerId: order.customerId });
+        if (loyaltyCard) {
+          loyaltyCard.points = (loyaltyCard.points || 0) + totalPointsToAward;
+          loyaltyCard.stamps = (loyaltyCard.stamps || 0) + orderItems.length;
+          await loyaltyCard.save();
+        }
+      } catch (e) {
+        console.error("[LOYALTY] Failed to update loyalty card:", e);
+      }
+    }
+
+    // Call storage method to deduct inventory for order
+    const result = await storage.deductInventoryForOrder(orderId, branchId, orderItems, employeeId);
+
+    // Update order with inventory deduction info
+    await OrderModel.findOneAndUpdate({ id: orderId }, {
+      inventoryDeducted: result.success ? 1 : 0,
+      costOfGoods: result.costOfGoods,
+      inventoryDeductionDetails: result.deductionDetails
+    });
 
     // Log warnings if any
     if (result.warnings.length > 0) {
       console.warn(`[INVENTORY] Order ${order.orderNumber} warnings:`, result.warnings);
     }
 
-    // Log summary
-    if (result.success) {
-    } else {
+    // Auto-create COGS journal entry for accounting (only on full success, with idempotency)
+    if (result.success && result.costOfGoods > 0) {
+      try {
+        const tenantId = order.tenantId || 'demo-tenant';
+        const { JournalEntryModel } = await import("@shared/schema");
+        const existingEntry = await JournalEntryModel.findOne({ tenantId, referenceType: 'order_cogs', referenceId: orderId });
+        
+        if (!existingEntry) {
+          const cogsAccount = await AccountModel.findOne({ tenantId, accountNumber: "5100" });
+          const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
+          
+          if (cogsAccount && inventoryAccount) {
+            await ErpAccountingService.createJournalEntry({
+              tenantId,
+              entryDate: new Date(),
+              description: `تكلفة البضاعة المباعة - طلب رقم ${order.orderNumber}`,
+              lines: [
+                {
+                  accountId: cogsAccount.id,
+                  accountNumber: cogsAccount.accountNumber,
+                  accountName: cogsAccount.nameAr,
+                  debit: result.costOfGoods,
+                  credit: 0,
+                  description: `تكلفة البضاعة المباعة - طلب ${order.orderNumber}`,
+                  branchId,
+                },
+                {
+                  accountId: inventoryAccount.id,
+                  accountNumber: inventoryAccount.accountNumber,
+                  accountName: inventoryAccount.nameAr,
+                  debit: 0,
+                  credit: result.costOfGoods,
+                  description: `خصم مخزون - طلب ${order.orderNumber}`,
+                  branchId,
+                },
+              ],
+              referenceType: 'order_cogs',
+              referenceId: orderId,
+              createdBy: employeeId,
+              autoPost: true,
+            });
+            console.log(`[ACCOUNTING] COGS journal entry created for order ${order.orderNumber}: ${result.costOfGoods} SAR`);
+          }
+        }
+      } catch (accountingError) {
+        console.error(`[ACCOUNTING] Failed to create COGS journal entry for order ${order.orderNumber}:`, accountingError);
+      }
     }
 
     return { 
@@ -227,7 +346,7 @@ function getOrderStatusMessage(status: string, orderNumber: string): string {
 // Maileroo Email Configuration - DISABLED IN FAVOR OF TURBOSMTP
 /*
 const mailerooApiKey = process.env.MAILEROO_API_KEY;
-const mailerooUser = process.env.MAILEROO_USER || 'blackrose@qirox.online';
+const mailerooUser = process.env.MAILEROO_USER || 'cluny@qirox.online';
 */
 
 // Set transporter to null to satisfy the rest of the code that might reference it
@@ -269,7 +388,7 @@ function generateInvoiceHTML(invoiceNumber: string, data: any): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>BLACK ROSE</h1>
+          <h1>CLUNY CAFE</h1>
           <p>فاتورة ضريبية</p>
         </div>
         
@@ -306,8 +425,8 @@ function generateInvoiceHTML(invoiceNumber: string, data: any): string {
         </div>
 
         <div class="footer">
-          <p>شكراً لتعاملك معنا | تم إصدار هذه الفاتورة من نظام BLACK ROSE</p>
-          <p>© 2025 BLACK ROSE - جميع الحقوق محفوظة</p>
+          <p>شكراً لتعاملك معنا | تم إصدار هذه الفاتورة من نظام CLUNY CAFE</p>
+          <p>© 2025 CLUNY CAFE - جميع الحقوق محفوظة</p>
         </div>
       </div>
     </body>
@@ -367,26 +486,740 @@ const upload = multer({
 // Simple POS device status tracker
 let posDeviceStatus = { connected: false, lastCheck: Date.now() };
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // --- OPERATING SYSTEM CORE API ROUTES ---
+import { BusinessConfigModel, AppointmentModel } from "./models";
 
-  // Warehouse Management
-  app.get("/api/warehouses", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'default';
-    const warehouses = await WarehouseModel.find({ tenantId });
-    res.json(warehouses.map(serializeDoc));
+export async function registerRoutes(app: Express): Promise<Server> {
+  registerObjectStorageRoutes(app);
+
+  // Send manual email to customer
+  app.post("/api/admin/send-email", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { customerId, subject, message } = req.body;
+      const customer = await CustomerModel.findById(customerId);
+      if (!customer || !customer.email) {
+        return res.status(404).json({ error: "Customer not found or has no email" });
+      }
+
+      const { sendPromotionEmail } = await import("./mail-service");
+      const success = await sendPromotionEmail(customer.email, customer.name || "عميل", subject, message);
+
+      if (success) {
+        res.json({ message: "Email sent successfully" });
+      } else {
+        res.status(500).json({ error: "Failed to send email" });
+      }
+    } catch (error) {
+      console.error("Error sending manual email:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
-  app.post("/api/warehouses", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'default';
-    const warehouse = await WarehouseModel.create({ ...req.body, tenantId });
-    res.json(serializeDoc(warehouse));
+  // Get all customers for email selection
+  app.get("/api/admin/customers-list", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const customers = await CustomerModel.find({ tenantId, email: { $exists: true, $ne: "" } });
+      res.json(customers.map(serializeDoc));
+    } catch (error) {
+      console.error("Error fetching customers list:", error);
+      res.status(500).json({ error: "Failed to fetch customers" });
+    }
+  });
+
+  // --- PUSH NOTIFICATIONS API ---
+  app.get("/api/push/vapid-key", (req, res) => {
+    res.json({ publicKey: getVapidPublicKey() });
+  });
+
+  app.post("/api/push/subscribe", async (req, res) => {
+    try {
+      const { subscription, userType, userId, branchId } = req.body;
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      console.log(`[PUSH] Subscribing ${userType} user=${userId} branch=${branchId} tenant=${tenantId}`);
+      await saveSubscription(subscription, userType, userId, branchId, tenantId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Push subscribe error:", error);
+      res.status(500).json({ error: "Failed to save subscription" });
+    }
+  });
+
+  app.post("/api/push/unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body;
+      await removeSubscription(endpoint);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove subscription" });
+    }
+  });
+
+    // --- ORDERS API ---
+  app.get("/api/orders/live", async (req: any, res) => {
+    try {
+      const branchId = req.query.branchId as string;
+      const orders = await storage.getOrders(200, 0);
+      const liveOrders = orders.filter((o: any) => {
+        const isLive = ['pending', 'in_progress', 'ready', 'payment_confirmed', 'confirmed'].includes(o.status);
+        if (branchId && o.branchId) return isLive && o.branchId === branchId;
+        return isLive;
+      });
+      res.json(liveOrders);
+    } catch (error) {
+      console.error("Error fetching live orders:", error);
+      res.status(500).json({ error: "Failed to fetch live orders" });
+    }
+  });
+
+  app.post("/api/orders", async (req, res) => {
+    try {
+      const body = req.body;
+      
+      // Map payment method aliases
+      const paymentMethodMap: Record<string, string> = {
+        'cash': 'cash',
+        'card': 'pos',
+        'apple_pay': 'apple_pay',
+        'stc_pay': 'stc-pay',
+        'qahwa-card': 'qahwa-card',
+        'pos': 'pos',
+        'pos-network': 'pos-network',
+        'mada': 'mada',
+      };
+
+      const tenantId = body.tenantId || getTenantIdFromRequest(req) || 'demo-tenant';
+
+      const orderData = {
+        ...body,
+        tenantId,
+        totalAmount: body.totalAmount || body.total || 0,
+        paymentMethod: paymentMethodMap[body.paymentMethod] || body.paymentMethod || 'cash',
+        customerInfo: body.customerInfo || {
+          customerName: body.customerName,
+          customerPhone: body.customerPhone,
+          email: body.customerEmail,
+        },
+      };
+      
+      // Remove redundant 'total' field if present
+      delete orderData.total;
+
+      const order = await storage.createOrder(orderData);
+      
+      // Notify via WebSocket
+      wsManager.broadcastToBranch(order.branchId, {
+        type: "NEW_ORDER",
+        order: serializeDoc(order)
+      });
+
+      res.status(201).json(serializeDoc(order));
+
+      try {
+        const orderItems = Array.isArray(order.items)
+          ? order.items.map((item: any) => ({
+              name: item.nameAr || item.name || item.coffeeItem?.nameAr || 'منتج',
+              quantity: item.quantity || 1
+            }))
+          : [];
+
+        sendPushToEmployee(order.branchId || 'all', {
+          title: `🔔 طلب جديد #${order.orderNumber || order.dailyNumber}`,
+          body: `${order.customerName || 'عميل'} • ${orderItems.length} منتجات`,
+          url: '/employee/pos',
+          tag: `new-order-${order.orderNumber}`,
+          type: 'new_order',
+          orderNumber: order.orderNumber || order.dailyNumber,
+          orderStatus: 'pending',
+          totalAmount: order.totalAmount,
+          itemCount: orderItems.length,
+          items: orderItems.slice(0, 5),
+          customerName: order.customerName || order.customerInfo?.customerName || 'عميل',
+          orderType: order.orderType,
+        }).catch(err => console.error('[PUSH] Employee new order notification error:', err));
+
+        const custId = order.customerId || order.customerInfo?.customerId;
+        if (custId) {
+          console.log(`[PUSH] Sending order confirmation push to customer ${custId}`);
+          sendPushToCustomer(custId, {
+            title: `✅ تم استلام طلبك #${order.orderNumber || order.dailyNumber}`,
+            body: `${orderItems.length} ${orderItems.length > 1 ? 'منتجات' : 'منتج'} • ${Number(order.totalAmount).toFixed(2)} ر.س`,
+            url: '/my-orders',
+            tag: `order-confirmed-${order.orderNumber}`,
+            type: 'order_status',
+            orderNumber: order.orderNumber || order.dailyNumber,
+            orderStatus: 'pending',
+            totalAmount: order.totalAmount,
+            itemCount: orderItems.length,
+            items: orderItems.slice(0, 5),
+            orderType: order.orderType,
+          }).catch(err => console.error('[PUSH] Customer order confirmation error:', err));
+        }
+      } catch (pushErr) {
+        console.error('[PUSH] Error sending push for new order:', pushErr);
+      }
+    } catch (error) {
+      console.error("Order creation error:", error);
+      res.status(500).json({ error: "Failed to create order" });
+    }
+  });
+  app.get("/api/appointments", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const branchId = req.query.branchId as string;
+      const appointments = await storage.getAppointments(tenantId, branchId);
+      res.json(appointments.map(serializeDoc));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch appointments" });
+    }
+  });
+
+  app.post("/api/appointments", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const appointment = await storage.createAppointment({
+        ...req.body,
+        tenantId,
+        appointmentDate: new RegExp(/^\d{4}-\d{2}-\d{2}/).test(req.body.appointmentDate) 
+          ? new Date(req.body.appointmentDate) 
+          : new Date(),
+      });
+      res.json(serializeDoc(appointment));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create appointment" });
+    }
+  });
+
+  app.patch("/api/appointments/:id", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const updated = await storage.updateAppointment(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Appointment not found" });
+      res.json(serializeDoc(updated));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update appointment" });
+    }
+  });
+
+  app.delete("/api/appointments/:id", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const success = await storage.deleteAppointment(req.params.id);
+      res.json({ success });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete appointment" });
+    }
+  });
+
+  // --- OPERATING SYSTEM CORE API ROUTES ---
+
+  // Business Config Management
+  // Business Config Management
+  app.get("/api/business-config", async (req, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      let config = await BusinessConfigModel.findOne({ tenantId });
+      
+      if (!config) {
+        config = await BusinessConfigModel.create({
+          tenantId,
+          tradeNameAr: "كلاوني كافيه",
+          tradeNameEn: "Cluny Cafe",
+          activityType: "both",
+          isFoodEnabled: true,
+          isDrinksEnabled: true,
+          vatPercentage: 15,
+          currency: "SAR",
+          timezone: "Asia/Riyadh",
+          storeHours: {
+            monday: { open: "00:00", close: "23:59", isOpen: true, isAlwaysOpen: true },
+            tuesday: { open: "00:00", close: "23:59", isOpen: true, isAlwaysOpen: true },
+            wednesday: { open: "00:00", close: "23:59", isOpen: true, isAlwaysOpen: true },
+            thursday: { open: "00:00", close: "23:59", isOpen: true, isAlwaysOpen: true },
+            friday: { open: "00:00", close: "23:59", isOpen: true, isAlwaysOpen: true },
+            saturday: { open: "00:00", close: "23:59", isOpen: true, isAlwaysOpen: true },
+            sunday: { open: "00:00", close: "23:59", isOpen: true, isAlwaysOpen: true }
+          }
+        });
+      }
+
+      const storeHoursRaw = config.storeHours;
+      const storeHours = storeHoursRaw instanceof Map ? Object.fromEntries(storeHoursRaw) : (storeHoursRaw || {});
+      const isAlwaysOpen = Object.values(storeHours).every((h: any) => h?.isAlwaysOpen || (h?.open === "00:00" && h?.close === "23:59"));
+      
+      let isOpen = true;
+      if (config.isEmergencyClosed) {
+        isOpen = false;
+      } else if (!isAlwaysOpen) {
+        const now = new Date();
+        const riyadhTime = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Riyadh",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          weekday: "long"
+        }).formatToParts(now);
+
+        const currentDay = riyadhTime.find(p => p.type === "weekday")?.value.toLowerCase() || "monday";
+        const currentHour = parseInt(riyadhTime.find(p => p.type === "hour")?.value || "0");
+        const currentMinute = parseInt(riyadhTime.find(p => p.type === "minute")?.value || "0");
+        const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+        const todayHours = (storeHours as any)[currentDay];
+
+        if (todayHours?.isOpen) {
+          const [openH, openM] = (todayHours.open || "06:00").split(":").map(Number);
+          const [closeH, closeM] = (todayHours.close || "03:00").split(":").map(Number);
+          const openMinutes = openH * 60 + openM;
+          let closeMinutes = closeH * 60 + closeM;
+
+          // Handle overnight hours (e.g., 6 AM to 3 AM next day)
+          if (closeMinutes <= openMinutes) {
+            isOpen = currentTimeInMinutes >= openMinutes || currentTimeInMinutes <= closeMinutes;
+          } else {
+            isOpen = currentTimeInMinutes >= openMinutes && currentTimeInMinutes <= closeMinutes;
+          }
+        } else {
+          isOpen = false;
+        }
+      }
+
+      res.json({ ...serializeDoc(config), isOpen });
+    } catch (error) {
+      console.error("Error fetching business config:", error);
+      res.status(500).json({ error: "Failed to fetch business config" });
+    }
+  });
+
+  app.patch("/api/business-config", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const updates = req.body;
+      console.log(`[CONFIG] Updating business config for tenant: ${tenantId}`, JSON.stringify(updates));
+      
+      let config = await BusinessConfigModel.findOne({ tenantId });
+      if (!config) {
+        config = new BusinessConfigModel({ tenantId, tradeNameAr: "كلاوني كافيه" });
+      }
+      
+      for (const [key, value] of Object.entries(updates)) {
+        (config as any)[key] = value;
+      }
+      
+      if (updates.storeHours) {
+        config.markModified('storeHours');
+      }
+      if (updates.socialLinks) {
+        config.markModified('socialLinks');
+      }
+      if (updates.paymentGateway) {
+        config.markModified('paymentGateway');
+      }
+      if (updates.loyaltyConfig) {
+        config.markModified('loyaltyConfig');
+      }
+      if (updates.offersConfig) {
+        config.markModified('offersConfig');
+      }
+      
+      config.updatedAt = new Date();
+      await config.save();
+      
+      console.log(`[CONFIG] Successfully updated business config for tenant: ${tenantId}`);
+      res.json(serializeDoc(config));
+    } catch (error) {
+      console.error("[CONFIG] Error updating business config:", error);
+      res.status(500).json({ error: "Failed to update business config" });
+    }
+  });
+
+  // Bulk print employee invoices
+  app.post("/api/orders/bulk-print-employee", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { orderIds } = req.body;
+      if (!Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ error: "Invalid order IDs" });
+      }
+      const orders = await OrderModel.find({ id: { $in: orderIds } });
+      res.json(orders.map(serializeDoc));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch orders for bulk print" });
+    }
+  });
+
+  // Update order status
+  app.patch("/api/orders/:id/status", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { status, cancellationReason } = req.body;
+      const orderId = req.params.id;
+      const employee = req.employee;
+      
+      const order = await OrderModel.findOne({ id: orderId }) || await OrderModel.findById(orderId).catch(() => null);
+      if (!order) return res.status(404).json({ error: "Order not found" });
+
+      const oldStatus = order.status;
+      order.status = status;
+      if (cancellationReason) (order as any).cancellationReason = cancellationReason;
+      if (req.body.paymentMethod) order.paymentMethod = req.body.paymentMethod;
+      order.updatedAt = new Date();
+      await order.save();
+
+      const serializedOrder = serializeDoc(order);
+
+      // Send email on status change
+      try {
+        if (order.customerId) {
+          const customer = await CustomerModel.findById(order.customerId);
+          if (customer && customer.email) {
+            const { sendOrderNotificationEmail } = await import("./mail-service");
+            await sendOrderNotificationEmail(
+              customer.email,
+              customer.name || "عميل",
+              order.orderNumber || orderId,
+              status,
+              order.totalAmount || 0,
+              order
+            );
+          }
+        }
+      } catch (emailErr) {
+        console.error("[EMAIL-AUTO] Failed to send status update email:", emailErr);
+      }
+      
+      // Auto-deduct inventory when moved to 'in_progress', 'completed', or 'payment_confirmed'
+      if ((status === 'in_progress' || status === 'completed' || status === 'payment_confirmed') && 
+          !['in_progress', 'completed', 'payment_confirmed'].includes(oldStatus)) {
+        
+        // If payment is confirmed, also send to kitchen by setting to in_progress if it was payment_confirmed
+        let finalStatus = status;
+        if (status === 'payment_confirmed') {
+          // After processing payment confirmation logic, we can auto-advance if business rules allow
+          // For now, we ensure payment status is updated via storage
+        }
+
+        const branchId = order.branchId || employee?.branchId;
+        if (branchId) {
+          deductInventoryForOrder(orderId, branchId, employee?.id || 'system').catch(err => 
+            console.error(`[INVENTORY] Auto-deduction failed for order ${order.orderNumber}:`, err)
+          );
+        }
+      }
+
+      // Notify via WebSocket
+      wsManager.broadcastOrderUpdate(serializedOrder);
+      
+      // Broadcast as new order for kitchen/POS when moving to active statuses
+      if (status === 'payment_confirmed' || status === 'confirmed' || status === 'in_progress') {
+        wsManager.broadcastNewOrder(serializedOrder);
+      }
+      
+      res.json(serializedOrder);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      res.status(500).json({ error: "Failed to update order status" });
+    }
+  });
+
+  // Cancel all open orders
+  app.post("/api/orders/cancel-all", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'default';
+      const branchId = req.employee?.branchId;
+      
+      const query: any = { 
+        tenantId, 
+        status: { $in: ['pending', 'in_progress', 'ready'] } 
+      };
+      if (branchId) query.branchId = branchId;
+      
+      const result = await OrderModel.updateMany(query, { 
+        $set: { 
+          status: 'cancelled',
+          updatedAt: new Date()
+        } 
+      });
+      
+      // Notify via WebSocket
+      wsManager.broadcastToBranch(branchId || 'all', {
+        type: 'orders_updated',
+        tenantId
+      });
+      
+      res.json({ success: true, count: result.modifiedCount });
+    } catch (error) {
+      console.error("Error cancelling all orders:", error);
+      res.status(500).json({ error: "Failed to cancel orders" });
+    }
+  });
+
+  // Get all tables
+  app.get("/api/tables", async (req, res) => {
+    try {
+      // Use a consistent tenantId detection
+      const branchId = req.query.branchId as string;
+      const tenantId = req.headers['x-tenant-id'] as string || getTenantIdFromRequest(req) || 'demo-tenant';
+      let query: any = { tenantId };
+      if (branchId && branchId !== 'none' && branchId !== 'undefined' && branchId !== 'null' && branchId !== '') {
+        query.branchId = branchId;
+      }
+      
+      console.log(`[GET /api/tables] Querying with:`, JSON.stringify(query));
+      const tables = await TableModel.find(query).sort({ tableNumber: 1 });
+      // Debug log to see what tables are being returned
+      console.log(`[GET /api/tables] Found ${tables.length} tables for query:`, JSON.stringify(query));
+      res.json(tables.map(serializeDoc));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tables" });
+    }
+  });
+
+  // Create a new table
+  app.post("/api/tables", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { tableNumber, branchId } = req.body;
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      
+      const existing = await TableModel.findOne({ tableNumber, branchId, tenantId });
+      if (existing) return res.status(400).json({ error: "رقم الطاولة موجود مسبقاً في هذا الفرع" });
+
+      const tableId = nanoid(10);
+      const tableData = {
+        id: tableId,
+        tableNumber: String(tableNumber),
+        branchId,
+        tenantId,
+        qrToken: nanoid(12),
+        isActive: 1,
+        isOccupied: 0
+      };
+      console.log("[DEBUG] Creating single table:", JSON.stringify(tableData));
+      const table = await TableModel.create(tableData);
+
+      res.json(serializeDoc(table));
+    } catch (error) {
+      console.error("Error creating table:", error);
+      res.status(500).json({ error: "Failed to create table" });
+    }
+  });
+
+  // Bulk create tables
+  app.post("/api/tables/bulk-create", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { count, branchId } = req.body;
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const numCount = parseInt(count);
+
+      if (isNaN(numCount) || numCount < 1 || numCount > 100) {
+        return res.status(400).json({ error: "عدد غير صالح (1-100)" });
+      }
+
+      const branch = await storage.getBranch(branchId);
+      if (!branch) return res.status(404).json({ error: "الفرع غير موجود" });
+
+      // Get all existing table numbers for this branch to avoid duplicates
+      const existingTables = await TableModel.find({ branchId }, { tableNumber: 1 });
+      const existingNumbers = new Set(existingTables.map(t => {
+        const num = parseInt(t.tableNumber);
+        return isNaN(num) ? t.tableNumber : num;
+      }));
+
+      const lastTable = await TableModel.findOne({ branchId }).sort({ tableNumber: -1 });
+      
+      let startNum = 1;
+      if (lastTable && !isNaN(parseInt(lastTable.tableNumber))) {
+        startNum = parseInt(lastTable.tableNumber) + 1;
+      }
+
+      const tables = [];
+      let currentNum = 1; // Start from 1 to find gaps
+      let createdCount = 0;
+      
+      while (createdCount < numCount) {
+        if (!existingNumbers.has(currentNum) && !existingNumbers.has(String(currentNum))) {
+          const tableId = nanoid(10);
+          const tableData = {
+            id: tableId,
+            tableNumber: String(currentNum),
+            branchId,
+            tenantId,
+            qrToken: nanoid(12),
+            isActive: 1,
+            isOccupied: 0
+          };
+          console.log("[DEBUG] Adding table to bulk insert:", JSON.stringify(tableData));
+          tables.push(tableData);
+          existingNumbers.add(currentNum);
+          createdCount++;
+        }
+        currentNum++;
+      }
+
+      console.log(`[DEBUG] Attempting to insertMany ${tables.length} tables for branch ${branchId}`);
+      // Use Model.insertMany for performance, ensuring tenantId is present
+      const created = await TableModel.insertMany(tables);
+      console.log(`[DEBUG] Successfully created ${created.length} tables`);
+      res.json({ results: { created: created.map(serializeDoc) } });
+    } catch (error) {
+      console.error("Error bulk creating tables:", error);
+      res.status(500).json({ error: "Failed to bulk create tables" });
+    }
+  });
+
+  // Get QR code for a table
+  app.get("/api/tables/:id/qr-code", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const table = await storage.getTable(id);
+      if (!table) {
+        return res.status(404).json({ error: "الطاولة غير موجودة" });
+      }
+
+      const branch = await storage.getBranch(table.branchId);
+      const branchName = branch ? branch.nameAr : "فرع غير معروف";
+
+      // Use a fixed domain for QR codes as per requirement in TableQRCard
+      const tableUrl = `${req.protocol}://${req.get('host')}/table-menu/${table.qrToken}`;
+
+      res.json({
+        qrToken: table.qrToken,
+        branchName: branchName,
+        tableUrl: tableUrl
+      });
+    } catch (error) {
+      console.error("Error getting table QR code:", error);
+      res.status(500).json({ error: "Failed to get QR code" });
+    }
+  });
+
+
+  // Delete table
+  // Delete all tables for a branch
+  app.delete("/api/tables/branch/:branchId", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { branchId } = req.params;
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      
+      const result = await TableModel.deleteMany({ branchId, tenantId });
+      res.json({ message: "تم حذف جميع الطاولات بنجاح", count: result.deletedCount });
+    } catch (error) {
+      console.error("Error deleting all tables:", error);
+      res.status(500).json({ error: "فشل في حذف الطاولات" });
+    }
+  });
+
+  app.delete("/api/tables/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const result = await TableModel.findOneAndDelete({ 
+        $or: [
+          { id: id },
+          { _id: isValidObjectId(id) ? id : null }
+        ].filter(q => q._id !== null || q.id !== undefined)
+      });
+      if (!result) return res.status(404).json({ error: "الطاولة غير موجودة" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete table" });
+    }
+  });
+
+  // Toggle table active status
+  app.patch("/api/tables/:id/toggle-active", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const table = await TableModel.findOne({
+        $or: [
+          { id: id },
+          { _id: isValidObjectId(id) ? id : null }
+        ].filter(q => q._id !== null || q.id !== undefined)
+      });
+      if (!table) return res.status(404).json({ error: "الطاولة غير موجودة" });
+      
+      table.isActive = table.isActive === 1 ? 0 : 1;
+      await table.save();
+      res.json(serializeDoc(table));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to toggle status" });
+    }
+  });
+
+  // Empty table
+  app.post("/api/tables/:id/empty", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const table = await TableModel.findOne({
+        $or: [
+          { id: id },
+          { _id: isValidObjectId(id) ? id : null }
+        ].filter(q => q._id !== null || q.id !== undefined)
+      });
+      if (!table) return res.status(404).json({ error: "الطاولة غير موجودة" });
+      
+      table.isOccupied = 0;
+      table.currentOrderId = undefined;
+      await table.save();
+      res.json(serializeDoc(table));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to empty table" });
+    }
   });
 
   app.get("/api/warehouses/:id/stock", requireAuth, async (req: AuthRequest, res) => {
     const tenantId = getTenantIdFromRequest(req) || 'default';
     const stock = await WarehouseStockModel.find({ tenantId, warehouseId: req.params.id });
     res.json(stock.map(serializeDoc));
+  });
+
+  // Custom Banners Management
+  app.get("/api/custom-banners", async (req, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const banners = await CustomBannerModel.find({ tenantId, isActive: true }).sort({ orderIndex: 1 });
+      res.json(banners.map(serializeDoc));
+    } catch (error) {
+      console.error("Error fetching custom banners:", error);
+      res.status(500).json({ error: "Failed to fetch banners" });
+    }
+  });
+
+  app.post("/api/custom-banners", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const bannerData = {
+        ...req.body,
+        id: nanoid(10),
+        tenantId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      const banner = await CustomBannerModel.create(bannerData);
+      res.json(serializeDoc(banner));
+    } catch (error) {
+      console.error("Error creating banner:", error);
+      res.status(500).json({ error: "Failed to create banner" });
+    }
+  });
+
+  app.patch("/api/custom-banners/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const updates = { ...req.body, updatedAt: new Date() };
+      const banner = await CustomBannerModel.findOneAndUpdate({ id }, updates, { new: true });
+      if (!banner) return res.status(404).json({ error: "Banner not found" });
+      res.json(serializeDoc(banner));
+    } catch (error) {
+      console.error("Error updating banner:", error);
+      res.status(500).json({ error: "Failed to update banner" });
+    }
+  });
+
+  app.delete("/api/custom-banners/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const result = await CustomBannerModel.deleteOne({ id });
+      if (result.deletedCount === 0) return res.status(404).json({ error: "Banner not found" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting banner:", error);
+      res.status(500).json({ error: "Failed to delete banner" });
+    }
   });
 
   // Delivery Integrations
@@ -409,15 +1242,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(200).json({ received: true, provider });
   });
 
-  // Business Config
+  // Helper to ensure single branch operation for managers
+  app.get("/api/verify-session", async (req, res) => {
+    try {
+      if (!req.session.employee) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const employee = req.session.employee;
+      res.json({ success: true, employee });
+    } catch (error) {
+      res.status(500).json({ error: "Internal error" });
+    }
+  });
+
+  app.delete("/api/admin/clear-all-data", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      
+      // Delete orders
+      await OrderModel.deleteMany({ tenantId });
+      
+      // Delete notifications
+      await NotificationModel.deleteMany({ tenantId });
+      
+      // Delete cart items
+      await CartItemModel.deleteMany({ tenantId });
+      
+      console.log(`[ADMIN] Data cleared for tenant ${tenantId}`);
+      res.json({ message: "تم تنظيف جميع البيانات بنجاح" });
+    } catch (error) {
+      console.error("Error clearing data:", error);
+      res.status(500).json({ error: "Failed to clear data" });
+    }
+  });
   app.get("/api/config", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'black-rose-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
     const config = await storage.getBusinessConfig(tenantId);
     res.json(config || {});
   });
 
   app.patch("/api/config", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'black-rose-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
     const updated = await storage.updateBusinessConfig(tenantId, req.body);
     res.json(updated);
   });
@@ -427,7 +1293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/settings/order-suspension", async (req, res) => {
     try {
-      const tenantId = (req as any).employee?.tenantId || 'black-rose-tenant';
+      const tenantId = (req as any).employee?.tenantId || 'demo-tenant';
       const branchId = (req as any).query?.branchId || (req as any).employee?.branchId;
       
       const status = orderSuspensionStore[tenantId] || { suspended: false };
@@ -461,7 +1327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/settings/order-suspension", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
-      const tenantId = req.employee?.tenantId || 'black-rose-tenant';
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
       const { suspended, reason } = req.body;
       
       orderSuspensionStore[tenantId] = {
@@ -480,13 +1346,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Ingredient Management
   app.get("/api/ingredients", requireAuth, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'black-rose-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
     const ingredients = await storage.getIngredientItems(tenantId);
     res.json(ingredients);
   });
 
   app.post("/api/ingredients", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    const tenantId = getTenantIdFromRequest(req) || 'black-rose-tenant';
+    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
     const newItem = await storage.createIngredientItem({ ...req.body, tenantId });
     res.json(newItem);
   });
@@ -622,11 +1488,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(warehouse);
   });
 
-  app.get("/api/warehouses/:id/stock", requireAuth, async (req: AuthRequest, res) => {
-    const stock = await WarehouseStockModel.find({ warehouseId: req.params.id }).lean();
-    res.json(stock);
-  });
-
   app.post("/api/warehouses/transfer", requireAuth, requireManager, async (req: AuthRequest, res) => {
     const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
     const transfer = await WarehouseTransferModel.create({
@@ -672,53 +1533,486 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get payment method details
-  app.post("/api/orders/complete-all", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    try {
-      const branchId = req.employee?.branchId || "main-branch";
-      const { OrderModel } = await import("@shared/schema");
-      
-      const result = await OrderModel.updateMany(
-        { 
-          branchId, 
-          status: { $nin: ['completed', 'cancelled'] } 
-        },
-        { $set: { status: 'completed' } }
-      );
-      
-      res.json({ success: true, count: result.modifiedCount });
-    } catch (error) {
-      console.error("Error completing all orders:", error);
-      res.status(500).json({ error: "Failed to complete orders" });
-    }
-  });
-
-  // Simplified payment methods with auto-validation
+  // Get payment method details - config-driven
   app.get("/api/payment-methods", async (req, res) => {
     try {
-      const methods = [
-        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', autoConfirm: true },
-        { id: 'card', nameAr: 'بطاقة كلوني', nameEn: 'Klony Card', details: 'الدفع عبر بطاقة كلوني', icon: 'fas fa-credit-card', autoConfirm: true },
-        { id: 'mada', nameAr: 'مدى', nameEn: 'Mada', details: 'الدفع عبر مدى', icon: 'fas fa-credit-card', autoConfirm: true },
-        { id: 'apple_pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fab fa-apple-pay', autoConfirm: true },
-      ];
-      res.json(methods);
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const pg = config?.paymentGateway;
+
+      const allMethods: any[] = [];
+
+      if (!pg || pg.cashEnabled !== false) {
+        allMethods.push({ id: 'cash', nameAr: 'كاش', nameEn: 'Cash', details: 'الدفع نقداً عند الاستلام', icon: 'fas fa-money-bill-wave' });
+      }
+
+      if (!pg || pg.qahwaCardEnabled !== false) {
+        allMethods.push({ id: 'qahwa-card', nameAr: 'بطاقة كلوني كافيه', nameEn: 'Cluny Card', details: 'ادفع ببطاقة الولاء', icon: 'fas fa-gift' });
+      }
+
+      if (pg?.stcPayEnabled) {
+        allMethods.push({ id: 'stc-pay', nameAr: 'STC Pay', nameEn: 'STC Pay', details: 'الدفع عبر محفظة STC', icon: 'fas fa-mobile-alt' });
+      }
+
+      if (pg?.bankTransferEnabled) {
+        allMethods.push({ id: 'mada', nameAr: 'تحويل بنكي', nameEn: 'Bank Transfer', details: 'تحويل مباشر', icon: 'fas fa-university' });
+      }
+
+      if (pg?.provider === 'neoleap') {
+        const hasCredentials = !!(pg.neoleap?.clientId && pg.neoleap?.clientSecret);
+        if (hasCredentials) {
+          allMethods.push({ id: 'neoleap', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد عبر NeoLeap', icon: 'fas fa-credit-card', gateway: 'neoleap' });
+          allMethods.push({ id: 'neoleap-apple-pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fas fa-mobile-alt', gateway: 'neoleap' });
+        }
+      } else if (pg?.provider === 'geidea') {
+        const hasCredentials = !!(pg.geidea?.publicKey && pg.geidea?.apiPassword);
+        if (hasCredentials) {
+          allMethods.push({ id: 'geidea', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد عبر جيديا', icon: 'fas fa-credit-card', gateway: 'geidea' });
+          allMethods.push({ id: 'apple_pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fas fa-mobile-alt', gateway: 'geidea' });
+        }
+      }
+
+      allMethods.push({ id: 'loyalty-card', nameAr: 'بطاقة كوبي (رقم العميل)', nameEn: 'Loyalty Card', details: 'خصم تلقائي ودفع بالنقاط', icon: 'fas fa-gift' });
+
+      res.json(allMethods);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch payment methods" });
     }
   });
 
-  // Geidea Payment Initializer
-  app.post("/api/payments/geidea/init", requireAuth, async (req: AuthRequest, res) => {
+  // Get payment gateway config (masked for admin UI)
+  app.get("/api/payment-gateway/config", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { amount, orderId } = req.body;
+      if (!req.employee || !['admin', 'owner', 'manager'].includes(req.employee.role)) {
+        return res.status(403).json({ error: "غير مصرح" });
+      }
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const pg = config?.paymentGateway;
+      if (!pg) {
+        return res.json({
+          provider: 'none',
+          enabledMethods: ['cash'],
+          cashEnabled: true,
+          posEnabled: true,
+          qahwaCardEnabled: true,
+          bankTransferEnabled: false,
+          stcPayEnabled: false,
+          neoleap: { configured: false },
+          geidea: { configured: false },
+        });
+      }
+
+      const maskSecret = (val?: string) => val ? `****${val.slice(-4)}` : '';
+
       res.json({
-        success: true,
-        sessionId: `geidea_${nanoid()}`,
-        paymentUrl: `https://geidea.com/pay/simulated_${orderId}`
+        provider: pg.provider,
+        enabledMethods: pg.enabledMethods,
+        cashEnabled: pg.cashEnabled,
+        posEnabled: pg.posEnabled,
+        qahwaCardEnabled: pg.qahwaCardEnabled,
+        bankTransferEnabled: pg.bankTransferEnabled,
+        stcPayEnabled: pg.stcPayEnabled,
+        neoleap: {
+          configured: !!(pg.neoleap?.clientId && pg.neoleap?.clientSecret),
+          clientId: maskSecret(pg.neoleap?.clientId),
+          merchantId: pg.neoleap?.merchantId || '',
+          baseUrl: pg.neoleap?.baseUrl || 'https://api.neoleap.com.sa',
+          callbackUrl: pg.neoleap?.callbackUrl || '',
+        },
+        geidea: {
+          configured: !!(pg.geidea?.publicKey && pg.geidea?.apiPassword),
+          publicKey: maskSecret(pg.geidea?.publicKey),
+          baseUrl: pg.geidea?.baseUrl || 'https://api.merchant.geidea.net',
+          callbackUrl: pg.geidea?.callbackUrl || '',
+        },
       });
     } catch (error) {
+      res.status(500).json({ error: "فشل في جلب إعدادات الدفع" });
+    }
+  });
+
+  // Save payment gateway config
+  app.patch("/api/payment-gateway/config", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (!req.employee || !['admin', 'owner', 'manager'].includes(req.employee.role)) {
+        return res.status(403).json({ error: "غير مصرح" });
+      }
+
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const updates: any = {};
+      const body = req.body;
+
+      if (body.provider !== undefined) updates['paymentGateway.provider'] = body.provider;
+      if (body.enabledMethods !== undefined) updates['paymentGateway.enabledMethods'] = body.enabledMethods;
+      if (body.cashEnabled !== undefined) updates['paymentGateway.cashEnabled'] = body.cashEnabled;
+      if (body.posEnabled !== undefined) updates['paymentGateway.posEnabled'] = body.posEnabled;
+      if (body.qahwaCardEnabled !== undefined) updates['paymentGateway.qahwaCardEnabled'] = body.qahwaCardEnabled;
+      if (body.bankTransferEnabled !== undefined) updates['paymentGateway.bankTransferEnabled'] = body.bankTransferEnabled;
+      if (body.stcPayEnabled !== undefined) updates['paymentGateway.stcPayEnabled'] = body.stcPayEnabled;
+
+      if (body.neoleapClientId) updates['paymentGateway.neoleap.clientId'] = body.neoleapClientId;
+      if (body.neoleapClientSecret) updates['paymentGateway.neoleap.clientSecret'] = body.neoleapClientSecret;
+      if (body.neoleapMerchantId) updates['paymentGateway.neoleap.merchantId'] = body.neoleapMerchantId;
+      if (body.neoleapBaseUrl) updates['paymentGateway.neoleap.baseUrl'] = body.neoleapBaseUrl;
+      if (body.neoleapCallbackUrl) updates['paymentGateway.neoleap.callbackUrl'] = body.neoleapCallbackUrl;
+
+      if (body.geideaPublicKey) updates['paymentGateway.geidea.publicKey'] = body.geideaPublicKey;
+      if (body.geideaApiPassword) updates['paymentGateway.geidea.apiPassword'] = body.geideaApiPassword;
+      if (body.geideaBaseUrl) updates['paymentGateway.geidea.baseUrl'] = body.geideaBaseUrl;
+      if (body.geideaCallbackUrl) updates['paymentGateway.geidea.callbackUrl'] = body.geideaCallbackUrl;
+
+      updates['updatedAt'] = new Date();
+
+      const config = await BusinessConfigModel.findOneAndUpdate(
+        { tenantId },
+        { $set: updates },
+        { new: true, upsert: true }
+      );
+
+      res.json({ success: true, message: "تم حفظ إعدادات الدفع بنجاح" });
+    } catch (error) {
+      res.status(500).json({ error: "فشل في حفظ إعدادات الدفع" });
+    }
+  });
+
+  // Initialize payment session (gateway-agnostic)
+  app.post("/api/payments/init", async (req, res) => {
+    try {
+      const { amount, orderId, currency = 'SAR', customerEmail, customerPhone, returnUrl } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "المبلغ مطلوب" });
+      }
+
+      const tenantId = 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const pg = config?.paymentGateway;
+
+      if (!pg || pg.provider === 'none') {
+        return res.status(400).json({ error: "لم يتم تكوين بوابة دفع إلكتروني" });
+      }
+
+      const sessionId = nanoid();
+
+      if (pg.provider === 'geidea') {
+        const publicKey = pg.geidea?.publicKey;
+        const apiPassword = pg.geidea?.apiPassword;
+        const baseUrl = pg.geidea?.baseUrl || 'https://api.merchant.geidea.net';
+
+        if (!publicKey || !apiPassword) {
+          return res.status(400).json({ error: "بيانات اعتماد جيديا غير مكتملة" });
+        }
+
+        try {
+          const credentials = Buffer.from(`${publicKey}:${apiPassword}`).toString('base64');
+          const geideaResponse = await fetch(`${baseUrl}/payment-intent/api/v1/direct/eInvoice`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${credentials}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              amount,
+              currency,
+              customer: {
+                email: customerEmail || undefined,
+                phoneNumber: customerPhone || undefined,
+              },
+              returnUrl: returnUrl || pg.geidea?.callbackUrl,
+            }),
+          });
+
+          const geideaData = await geideaResponse.json() as any;
+          if (geideaResponse.ok && geideaData.paymentUrl) {
+            return res.json({
+              success: true,
+              sessionId,
+              redirectUrl: geideaData.paymentUrl,
+              paymentUrl: geideaData.paymentUrl,
+              provider: 'geidea',
+              externalId: geideaData.eInvoiceId || geideaData.orderId,
+            });
+          } else {
+            console.error('[Geidea] Payment init failed:', geideaData);
+            return res.status(400).json({
+              error: "فشل في إنشاء رابط الدفع عبر جيديا",
+              details: geideaData.detailedResponseMessage || geideaData.responseMessage || 'خطأ غير معروف',
+            });
+          }
+        } catch (geideaError: any) {
+          console.error('[Geidea] API error:', geideaError.message);
+          return res.status(500).json({ error: "خطأ في الاتصال بجيديا", details: geideaError.message });
+        }
+      }
+
+      if (pg.provider === 'neoleap') {
+        const clientId = pg.neoleap?.clientId;
+        const clientSecret = pg.neoleap?.clientSecret;
+        const baseUrl = pg.neoleap?.baseUrl || 'https://api.neoleap.com.sa';
+
+        if (!clientId || !clientSecret) {
+          return res.status(400).json({ error: "بيانات اعتماد نيو ليب غير مكتملة" });
+        }
+
+        try {
+          const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              grant_type: 'client_credentials',
+              client_id: clientId,
+              client_secret: clientSecret,
+            }).toString(),
+          });
+
+          const tokenData = await tokenResponse.json() as any;
+          if (!tokenResponse.ok || !tokenData.access_token) {
+            console.error('[NeoLeap] Token error:', tokenData);
+            return res.status(400).json({
+              error: "فشل في المصادقة مع نيو ليب",
+              details: tokenData.error_description || 'خطأ في بيانات الاعتماد',
+            });
+          }
+
+          const paymentResponse = await fetch(`${baseUrl}/api/v1/payments/session`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tokenData.access_token}`,
+            },
+            body: JSON.stringify({
+              amount,
+              currency,
+              merchantId: pg.neoleap?.merchantId,
+              orderId: orderId || sessionId,
+              callbackUrl: returnUrl || pg.neoleap?.callbackUrl,
+              customerEmail,
+              customerPhone,
+            }),
+          });
+
+          const paymentData = await paymentResponse.json() as any;
+          if (paymentResponse.ok && (paymentData.paymentUrl || paymentData.redirectUrl)) {
+            return res.json({
+              success: true,
+              sessionId,
+              redirectUrl: paymentData.paymentUrl || paymentData.redirectUrl,
+              paymentUrl: paymentData.paymentUrl || paymentData.redirectUrl,
+              provider: 'neoleap',
+              externalId: paymentData.sessionId || paymentData.paymentId,
+            });
+          } else {
+            console.error('[NeoLeap] Payment init failed:', paymentData);
+            return res.status(400).json({
+              error: "فشل في إنشاء جلسة الدفع عبر نيو ليب",
+              details: paymentData.message || 'خطأ غير معروف',
+            });
+          }
+        } catch (neoleapError: any) {
+          console.error('[NeoLeap] API error:', neoleapError.message);
+          return res.status(500).json({ error: "خطأ في الاتصال بنيو ليب", details: neoleapError.message });
+        }
+      }
+
+      return res.status(400).json({ error: "مزود الدفع غير مدعوم" });
+    } catch (error) {
+      console.error('[Payments] Init error:', error);
       res.status(500).json({ error: "فشل في بدء عملية الدفع" });
+    }
+  });
+
+  app.post("/api/payments/verify", async (req, res) => {
+    try {
+      const { sessionId, transactionId, provider: reqProvider } = req.body;
+      if (!sessionId) {
+        return res.status(400).json({ verified: false, error: "معرّف الجلسة مطلوب" });
+      }
+
+      const tenantId = 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const pg = config?.paymentGateway;
+      const provider = reqProvider || pg?.provider;
+
+      if (!provider || provider === 'none') {
+        return res.json({ verified: false, error: "لا يوجد مزود دفع مفعّل" });
+      }
+
+      if (provider === 'geidea') {
+        try {
+          const publicKey = pg?.geidea?.publicKey;
+          const apiPassword = pg?.geidea?.apiPassword;
+          const baseUrl = pg?.geidea?.baseUrl || 'https://api.merchant.geidea.net';
+
+          if (!publicKey || !apiPassword) {
+            return res.json({ verified: false, error: "بيانات اعتماد جيديا غير مكتملة" });
+          }
+
+          const credentials = Buffer.from(`${publicKey}:${apiPassword}`).toString('base64');
+          const verifyRes = await fetch(`${baseUrl}/payment-intent/api/v2/direct/session/${sessionId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Basic ${credentials}`,
+              'Accept': 'application/json',
+            },
+          });
+          const verifyData = await verifyRes.json() as any;
+          const isPaid = verifyData?.session?.status === 'PaymentSuccess' || verifyData?.status === 'Success';
+          console.log(`[Payment Verify] Geidea session ${sessionId}: ${isPaid ? 'PAID' : 'NOT PAID'}`, verifyData?.session?.status || verifyData?.status);
+          return res.json({
+            verified: isPaid,
+            transactionId: verifyData?.session?.paymentIntentId || transactionId,
+            provider: 'geidea',
+          });
+        } catch (err: any) {
+          console.error('[Payment Verify] Geidea error:', err.message);
+          return res.json({ verified: false, error: "فشل التحقق من جيديا" });
+        }
+      }
+
+      if (provider === 'neoleap') {
+        try {
+          const clientId = pg?.neoleap?.clientId;
+          const clientSecret = pg?.neoleap?.clientSecret;
+          const baseUrl = pg?.neoleap?.baseUrl || 'https://api.neoleap.com.sa';
+
+          if (!clientId || !clientSecret) {
+            return res.json({ verified: false, error: "بيانات اعتماد نيو ليب غير مكتملة" });
+          }
+
+          const tokenRes = await fetch(`${baseUrl}/oauth2/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `grant_type=client_credentials&client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}`,
+          });
+          const tokenData = await tokenRes.json() as any;
+
+          if (!tokenData.access_token) {
+            return res.json({ verified: false, error: "فشل مصادقة نيو ليب" });
+          }
+
+          const statusRes = await fetch(`${baseUrl}/api/v1/sessions/${sessionId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`,
+              'Accept': 'application/json',
+            },
+          });
+          const statusData = await statusRes.json() as any;
+          const isPaid = statusData?.status === 'COMPLETED' || statusData?.status === 'PAID';
+          console.log(`[Payment Verify] NeoLeap session ${sessionId}: ${isPaid ? 'PAID' : 'NOT PAID'}`, statusData?.status);
+          return res.json({
+            verified: isPaid,
+            transactionId: statusData?.transactionId || transactionId,
+            provider: 'neoleap',
+          });
+        } catch (err: any) {
+          console.error('[Payment Verify] NeoLeap error:', err.message);
+          return res.json({ verified: false, error: "فشل التحقق من نيو ليب" });
+        }
+      }
+
+      return res.json({ verified: false, error: "مزود غير مدعوم" });
+    } catch (error) {
+      console.error('[Payment Verify] Error:', error);
+      res.status(500).json({ verified: false, error: "خطأ في التحقق من الدفع" });
+    }
+  });
+
+  app.post("/api/payments/callback", async (req, res) => {
+    try {
+      const { orderId, status, provider, transactionId } = req.body;
+      console.log(`[Payment Callback] Provider: ${provider}, Order: ${orderId}, Status: ${status}, TxID: ${transactionId}`);
+
+      if (status === 'success' || status === 'paid') {
+        const order = await storage.getOrderByOrderNumber(orderId);
+        if (order) {
+          await storage.updateOrderStatus(order.id || order._id, 'payment_confirmed');
+        }
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('[Payment Callback] Error:', error);
+      res.status(500).json({ error: "Failed to process callback" });
+    }
+  });
+
+  // Test payment gateway connection
+  app.post("/api/payment-gateway/test", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      if (!req.employee || !['admin', 'owner', 'manager'].includes(req.employee.role)) {
+        return res.status(403).json({ error: "غير مصرح" });
+      }
+
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const pg = config?.paymentGateway;
+
+      if (!pg || pg.provider === 'none') {
+        return res.json({ success: false, message: "لم يتم اختيار مزود دفع" });
+      }
+
+      if (pg.provider === 'geidea') {
+        const publicKey = pg.geidea?.publicKey;
+        const apiPassword = pg.geidea?.apiPassword;
+        const baseUrl = pg.geidea?.baseUrl || 'https://api.merchant.geidea.net';
+
+        if (!publicKey || !apiPassword) {
+          return res.json({ success: false, message: "بيانات اعتماد جيديا غير مكتملة" });
+        }
+
+        try {
+          const credentials = Buffer.from(`${publicKey}:${apiPassword}`).toString('base64');
+          const testResponse = await fetch(`${baseUrl}/pgw/api/v1/config`, {
+            method: 'GET',
+            headers: { 'Authorization': `Basic ${credentials}`, 'Accept': 'application/json' },
+          });
+          if (testResponse.ok) {
+            return res.json({ success: true, message: "اتصال جيديا ناجح", provider: 'geidea' });
+          } else {
+            const errData = await testResponse.json().catch(() => ({}));
+            return res.json({ success: false, message: "فشل اتصال جيديا - تحقق من البيانات", details: (errData as any)?.responseMessage });
+          }
+        } catch (err: any) {
+          return res.json({ success: false, message: `خطأ في الاتصال: ${err.message}` });
+        }
+      }
+
+      if (pg.provider === 'neoleap') {
+        const clientId = pg.neoleap?.clientId;
+        const clientSecret = pg.neoleap?.clientSecret;
+        const baseUrl = pg.neoleap?.baseUrl || 'https://api.neoleap.com.sa';
+
+        if (!clientId || !clientSecret) {
+          return res.json({ success: false, message: "بيانات اعتماد نيو ليب غير مكتملة" });
+        }
+
+        try {
+          const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              grant_type: 'client_credentials',
+              client_id: clientId,
+              client_secret: clientSecret,
+            }).toString(),
+          });
+          if (tokenResponse.ok) {
+            return res.json({ success: true, message: "اتصال نيو ليب ناجح", provider: 'neoleap' });
+          } else {
+            const errData = await tokenResponse.json().catch(() => ({}));
+            return res.json({ success: false, message: "فشل مصادقة نيو ليب - تحقق من البيانات", details: (errData as any)?.error_description });
+          }
+        } catch (err: any) {
+          return res.json({ success: false, message: `خطأ في الاتصال: ${err.message}` });
+        }
+      }
+
+      res.json({ success: false, message: "مزود غير مدعوم" });
+    } catch (error) {
+      res.status(500).json({ error: "فشل في اختبار الاتصال" });
     }
   });
 
@@ -810,14 +2104,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // FILE UPLOAD ROUTES
   
   // Upload payment receipt
-  app.post("/api/upload-receipt", upload.single('file'), (req, res) => {
+  app.post("/api/upload-receipt", upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const fileUrl = `/attached_assets/receipts/${req.file.filename}`;
-      res.json({ url: fileUrl, filename: req.file.filename });
+      const { ObjectStorageService } = await import("./replit_integrations/object_storage");
+      const storageService = new ObjectStorageService();
+
+      try {
+        const uploadURL = await storageService.getObjectEntityUploadURL();
+        const objectPath = storageService.normalizeObjectEntityPath(uploadURL);
+
+        const fsModule = await import('fs');
+        const fileBuffer = fsModule.readFileSync(req.file.path);
+
+        const uploadResponse = await fetch(uploadURL, {
+          method: 'PUT',
+          body: fileBuffer,
+          headers: {
+            'Content-Type': req.file.mimetype || 'application/octet-stream',
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload to object storage');
+        }
+
+        fsModule.unlinkSync(req.file.path);
+        res.json({ url: objectPath, filename: req.file.filename });
+      } catch (storageError) {
+        console.log('[UPLOAD] Object storage not available, falling back to local storage');
+        const fileUrl = `/attached_assets/receipts/${req.file.filename}`;
+        res.json({ url: fileUrl, filename: req.file.filename });
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to upload file" });
     }
@@ -830,35 +2151,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { employeeId } = req.body;
 
-      if (!employeeId) {
-        return res.status(400).json({ error: "Employee ID required" });
+      console.log(`[AUTH-QR] Login attempt for: ${employeeId}`);
+      // Try to find by id or employmentNumber
+      let employee = await EmployeeModel.findOne({ id: employeeId });
+      if (!employee) {
+        employee = await EmployeeModel.findOne({ employmentNumber: employeeId });
       }
 
-      const employee = await storage.getEmployee(employeeId);
-
       if (!employee) {
+        console.log(`[AUTH-QR] Employee not found: ${employeeId}`);
         return res.status(401).json({ error: "Employee not found" });
       }
 
+      if (employee.isActivated === 0) {
+        return res.status(403).json({ error: "هذا الحساب غير مفعل" });
+      }
+
       // Create session (no password verification for QR)
-      // Create session
       req.session.employee = {
-        id: employee.id,
+        id: employee._id.toString(),
         username: employee.username,
         role: employee.role,
         branchId: employee.branchId,
         fullName: employee.fullName,
+        tenantId: employee.tenantId
       } as any;
+
+      const restoreKey = crypto.randomBytes(32).toString('hex');
+      req.session.restoreKey = restoreKey;
+      await EmployeeModel.findByIdAndUpdate(employee._id, { $set: { lastRestoreKey: restoreKey } });
 
       // Save session before responding
       req.session.save((err) => {
         if (err) {
+          console.error("[AUTH-QR] Session save error:", err);
           return res.status(500).json({ error: "Failed to create session" });
         }
 
+        console.log(`[AUTH-QR] Login successful: ${employee.username} (${employee.role})`);
         // Don't send password back
-        const { password: _, ...employeeData} = employee;
-        res.json(employeeData);
+        const employeeData = serializeDoc(employee);
+        delete employeeData.password;
+        delete employeeData.lastRestoreKey;
+        res.json({ ...employeeData, restoreKey });
       });
     } catch (error) {
       res.status(500).json({ error: "Login failed" });
@@ -871,43 +2206,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username, password } = req.body;
 
       if (!username || !password) {
-        return res.status(400).json({ error: "Username and password required" });
+        return res.status(400).json({ error: "الرجاء إدخال اسم المستخدم وكلمة المرور" });
       }
 
-      const employee = await storage.getEmployeeByUsername(username);
+      console.log(`[AUTH] Login attempt for: ${username}`);
+      const employee = await EmployeeModel.findOne({ username });
 
       if (!employee || !employee.password) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        console.log(`[AUTH] Employee not found or no password: ${username}`);
+        return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }
 
       // Verify password using bcrypt
       const isPasswordValid = await bcrypt.compare(password, employee.password);
 
       if (!isPasswordValid) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        console.log(`[AUTH] Invalid password for: ${username}`);
+        return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      }
+
+      if (employee.isActivated === 0) {
+        return res.status(403).json({ error: "هذا الحساب غير مفعل" });
       }
 
       // Create session
       req.session.employee = {
-        id: employee.id,
+        id: employee._id.toString(),
         username: employee.username,
         role: employee.role,
         branchId: employee.branchId,
         fullName: employee.fullName,
+        tenantId: employee.tenantId
       } as any;
+
+      const restoreKey = crypto.randomBytes(32).toString('hex');
+      req.session.restoreKey = restoreKey;
+      await EmployeeModel.findByIdAndUpdate(employee._id, { $set: { lastRestoreKey: restoreKey } });
 
       // Save session before responding
       req.session.save((err) => {
         if (err) {
-          return res.status(500).json({ error: "Failed to create session" });
+          console.error("[AUTH] Session save error:", err);
+          return res.status(500).json({ error: "فشل في إنشاء الجلسة" });
         }
 
+        console.log(`[AUTH] Login successful: ${username} (${employee.role})`);
         // Don't send password back
-        const { password: _, ...employeeData} = employee;
-        res.json(employeeData);
+        const employeeData = serializeDoc(employee);
+        delete employeeData.password;
+        delete employeeData.lastRestoreKey;
+        res.json({ ...employeeData, restoreKey });
       });
     } catch (error) {
-      res.status(500).json({ error: "Login failed" });
+      console.error("[AUTH] Login failed:", error);
+      res.status(500).json({ error: "حدث خطأ أثناء تسجيل الدخول" });
+    }
+  });
+
+  app.post("/api/employees/restore-session", async (req, res) => {
+    try {
+      const { employeeId, restoreKey } = req.body;
+      if (!employeeId || !restoreKey) {
+        return res.status(400).json({ error: "Employee ID and restore key required" });
+      }
+      
+      const employee = await EmployeeModel.findOne({ id: employeeId }) || await EmployeeModel.findById(employeeId).catch(() => null);
+      if (!employee || !employee.isActive) {
+        return res.status(404).json({ error: "Employee not found or inactive" });
+      }
+
+      const storedKey = (employee as any).lastRestoreKey;
+      if (!storedKey || storedKey !== restoreKey) {
+        console.log(`[AUTH-RESTORE] Invalid restore key for employee: ${employeeId}`);
+        return res.status(401).json({ error: "Invalid restore key" });
+      }
+      
+      const newRestoreKey = crypto.randomBytes(32).toString('hex');
+      await EmployeeModel.findByIdAndUpdate(employee._id, { $set: { lastRestoreKey: newRestoreKey } });
+
+      const sessionEmployee = {
+        id: employee.id || (employee as any)._id?.toString(),
+        username: employee.username,
+        fullName: employee.fullName,
+        role: employee.role,
+        branchId: employee.branchId,
+        tenantId: (employee as any).tenantId || 'default',
+        allowedPages: (employee as any).allowedPages || [],
+      };
+      
+      req.session.employee = sessionEmployee;
+      req.session.restoreKey = newRestoreKey;
+      
+      res.json({ success: true, employee: sessionEmployee, restoreKey: newRestoreKey });
+    } catch (error) {
+      console.error("Session restore error:", error);
+      res.status(500).json({ error: "Failed to restore session" });
     }
   });
 
@@ -927,6 +2320,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user (for AuthGuard fallback check)
+  app.get("/api/user", (req: AuthRequest, res) => {
+    try {
+      if (req.session.employee) {
+        return res.json({
+          type: 'employee',
+          ...req.session.employee
+        });
+      }
+      if (req.session.customer) {
+        return res.json({
+          type: 'customer',
+          ...req.session.customer
+        });
+      }
+      return res.status(401).json({ error: "Not authenticated" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+
   // Logout endpoint
   app.post("/api/employees/logout", (req: AuthRequest, res) => {
     try {
@@ -941,6 +2355,260 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Logout catch error:", error);
       res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  // Points to Wallet Conversion (100 points = 5 SAR)
+  app.post("/api/loyalty/convert", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { points, customerId } = req.body;
+      if (!points || points < 100 || points % 100 !== 0) {
+        return res.status(400).json({ error: "يجب أن تكون النقاط من مضاعفات 100" });
+      }
+
+      const customer = await CustomerModel.findById(customerId);
+      if (!customer || (customer.points || 0) < points) {
+        return res.status(400).json({ error: "النقاط غير كافية" });
+      }
+
+      const sarAmount = (points / 100) * 5;
+      customer.points = (customer.points || 0) - points;
+      customer.walletBalance = (customer.walletBalance || 0) + sarAmount;
+      
+      await customer.save();
+      res.json({ 
+        success: true, 
+        newBalance: customer.walletBalance, 
+        newPoints: customer.points,
+        convertedAmount: sarAmount 
+      });
+    } catch (error) {
+      res.status(500).json({ error: "فشل استبدال النقاط" });
+    }
+  });
+
+  // Peer-to-peer point transfer via phone number with PIN
+  app.post("/api/loyalty/transfer", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { toPhone, points, pin } = req.body;
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      
+      // Get sender (current customer/employee)
+      const fromId = (req as any).customer?.id || req.employee?.id;
+      if (!fromId) return res.status(401).json({ error: "غير مصرح لك" });
+
+      const fromCustomer = await CustomerModel.findById(fromId);
+      if (!fromCustomer) return res.status(404).json({ error: "حساب المرسل غير موجود" });
+
+      // Verify PIN
+      if (fromCustomer.walletPin !== pin) {
+        return res.status(401).json({ error: "الرقم السري غير صحيح" });
+      }
+
+      if ((fromCustomer.points || 0) < points) {
+        return res.status(400).json({ error: "النقاط غير كافية" });
+      }
+
+      const toCustomer = await CustomerModel.findOne({ phone: toPhone, tenantId });
+      if (!toCustomer) {
+        return res.status(404).json({ error: "المستلم غير موجود" });
+      }
+
+      // Execute transfer
+      fromCustomer.points = (fromCustomer.points || 0) - points;
+      toCustomer.points = (toCustomer.points || 0) + points;
+
+      await fromCustomer.save();
+      await toCustomer.save();
+
+      // Record transaction
+      await PointTransferModel.create({
+        tenantId,
+        fromCustomerId: fromCustomer.id,
+        toCustomerId: toCustomer.id,
+        points,
+        status: 'completed'
+      });
+
+      res.json({ 
+        success: true, 
+        fromName: fromCustomer.name,
+        toName: toCustomer.name,
+        transferredPoints: points 
+      });
+    } catch (error) {
+      console.error("Transfer error:", error);
+      res.status(500).json({ error: "فشل تحويل النقاط" });
+    }
+  });
+
+  // ============ Points Redemption Verification Code System ============
+  const pointsVerificationCodes = new Map<string, {
+    code: string;
+    points: number;
+    valueSAR: number;
+    cardId: string;
+    customerId: string;
+    expiresAt: Date;
+    verified: boolean;
+    requestedBy: string;
+    attempts: number;
+  }>();
+
+  setInterval(() => {
+    const now = new Date();
+    for (const [key, entry] of pointsVerificationCodes.entries()) {
+      if (entry.expiresAt < now) {
+        pointsVerificationCodes.delete(key);
+      }
+    }
+  }, 60000);
+
+  app.post("/api/loyalty/points/request-code", async (req, res) => {
+    try {
+      const { phone, points, requestedBy } = req.body;
+      if (!phone || !points || points <= 0) {
+        return res.status(400).json({ error: "رقم الهاتف وعدد النقاط مطلوب" });
+      }
+
+      const cleanPhone = phone.replace(/\D/g, '');
+      const pointsToSar = (pts: number) => (pts / 100) * 5;
+      const valueSAR = pointsToSar(points);
+
+      const loyaltyCard = await storage.getLoyaltyCardByPhone(cleanPhone);
+      if (!loyaltyCard) {
+        return res.status(404).json({ error: "بطاقة الولاء غير موجودة" });
+      }
+
+      const availablePoints = Number(loyaltyCard.points) || 0;
+      if (availablePoints < points) {
+        return res.status(400).json({ error: `النقاط غير كافية. الرصيد الحالي: ${availablePoints} نقطة` });
+      }
+
+      const existing = pointsVerificationCodes.get(cleanPhone);
+      if (existing && existing.expiresAt > new Date() && (new Date().getTime() - (existing.expiresAt.getTime() - 10 * 60 * 1000)) < 60000) {
+        return res.status(429).json({ error: "يرجى الانتظار قبل طلب رمز جديد" });
+      }
+
+      const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+      pointsVerificationCodes.set(cleanPhone, {
+        code,
+        points: Number(points),
+        valueSAR,
+        cardId: loyaltyCard.id,
+        customerId: loyaltyCard.customerId,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        verified: false,
+        requestedBy: requestedBy || 'customer',
+        attempts: 0,
+      });
+
+      const customer = await CustomerModel.findById(loyaltyCard.customerId);
+      const customerEmail = customer?.email;
+      const customerName = customer?.name || loyaltyCard.customerName || 'عميل';
+
+      let emailSent = false;
+      if (customerEmail) {
+        emailSent = await sendPointsVerificationEmail(customerEmail, customerName, code, points, valueSAR);
+      }
+
+      console.log(`[POINTS-VERIFY] Code generated for ${cleanPhone}: ${code} (${points} pts = ${valueSAR} SAR)`);
+
+      // Broadcast the code to the customer dashboard if they are connected via WebSocket
+      wsManager.broadcastToCustomer(loyaltyCard.customerId.toString(), {
+        type: 'points_verification_code',
+        code,
+        points: Number(points),
+        valueSAR,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+      });
+
+      res.json({
+        success: true,
+        message: emailSent ? "تم إرسال رمز التأكيد إلى بريدك الإلكتروني" : "تم إنشاء رمز التأكيد",
+        expiresIn: 600,
+        emailSent,
+        maskedEmail: customerEmail ? customerEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3') : null,
+        points: Number(points),
+        valueSAR,
+        ...((!emailSent) ? { devCode: code } : {}),
+      });
+    } catch (error) {
+      console.error("[POINTS-VERIFY] Error requesting code:", error);
+      res.status(500).json({ error: "حدث خطأ أثناء إنشاء رمز التأكيد" });
+    }
+  });
+
+  app.post("/api/loyalty/points/verify-code", async (req, res) => {
+    try {
+      const { phone, code } = req.body;
+      if (!phone || !code) {
+        return res.status(400).json({ error: "رقم الهاتف والرمز مطلوب" });
+      }
+
+      const cleanPhone = phone.replace(/\D/g, '');
+      const entry = pointsVerificationCodes.get(cleanPhone);
+
+      if (!entry) {
+        return res.status(404).json({ error: "لم يتم العثور على رمز تأكيد. يرجى طلب رمز جديد" });
+      }
+
+      if (entry.expiresAt < new Date()) {
+        pointsVerificationCodes.delete(cleanPhone);
+        return res.status(400).json({ error: "انتهت صلاحية الرمز. يرجى طلب رمز جديد" });
+      }
+
+      if (entry.attempts >= 5) {
+        pointsVerificationCodes.delete(cleanPhone);
+        return res.status(429).json({ error: "تم تجاوز عدد المحاولات. يرجى طلب رمز جديد" });
+      }
+
+      entry.attempts += 1;
+
+      if (entry.code !== code.toString().trim()) {
+        return res.status(400).json({ error: `الرمز غير صحيح. المحاولات المتبقية: ${5 - entry.attempts}` });
+      }
+
+      entry.verified = true;
+
+      const verificationToken = `pv_${cleanPhone}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      pointsVerificationCodes.set(cleanPhone, { ...entry, code: verificationToken });
+
+      console.log(`[POINTS-VERIFY] Code verified for ${cleanPhone}. Token: ${verificationToken}`);
+
+      res.json({
+        success: true,
+        verified: true,
+        verificationToken,
+        points: entry.points,
+        valueSAR: entry.valueSAR,
+        message: "تم التحقق بنجاح! يمكن الآن خصم النقاط",
+      });
+    } catch (error) {
+      console.error("[POINTS-VERIFY] Error verifying code:", error);
+      res.status(500).json({ error: "حدث خطأ أثناء التحقق من الرمز" });
+    }
+  });
+
+  // Wallet Payment Endpoint
+  app.post("/api/wallet/pay", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { customerId, amount } = req.body;
+      const customer = await CustomerModel.findById(customerId);
+      if (!customer) return res.status(404).json({ error: "العميل غير موجود" });
+      
+      if ((customer.walletBalance || 0) < amount) {
+        return res.status(400).json({ error: "الرصيد غير كافٍ" });
+      }
+
+      customer.walletBalance = (customer.walletBalance || 0) - amount;
+      await customer.save();
+
+      res.json({ success: true, balance: customer.walletBalance });
+    } catch (error) {
+      res.status(500).json({ error: "فشل عملية الدفع من المحفظة" });
     }
   });
 
@@ -1153,64 +2821,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create first admin/manager without authentication (bootstrap endpoint)
-  app.post("/api/employees/bootstrap-admin", async (req, res) => {
-    try {
-      const { EmployeeModel } = await import("@shared/schema");
-      
-      // Check if any admin/manager exists
-      const existingAdmin = await EmployeeModel.findOne({ 
-        role: { $in: ['admin', 'owner', 'manager'] } 
-      });
-      
-      if (existingAdmin) {
-        return res.status(400).json({ 
-          error: "يوجد مدير بالفعل في النظام. استخدم /api/employees للإضافة",
-          errorEn: "Admin already exists. Use /api/employees endpoint" 
-        });
-      }
-
-      const { username, password, fullName, phone, branchId } = req.body;
-
-      if (!username || !password || !fullName) {
-        return res.status(400).json({ error: "اسم المستخدم وكلمة المرور والاسم الكامل مطلوبة" });
-      }
-
-      // Check if username exists
-      const existingUser = await EmployeeModel.findOne({ username });
-      if (existingUser) {
-        return res.status(400).json({ error: "اسم المستخدم موجود بالفعل" });
-      }
-
-      // Hash password
-      const bcrypt = await import("bcryptjs");
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Create admin
-      const newAdmin = await EmployeeModel.create({
-        id: nanoid(),
-        tenantId: 'demo-tenant',
-        username,
-        password: hashedPassword,
-        fullName,
-        phone: phone || '',
-        role: 'admin',
-        branchId: branchId || null,
-        isActivated: 1,
-        permissions: ['*'],
-        allowedPages: ['*'],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-
-      const { password: _, ...adminData } = serializeDoc(newAdmin);
-      res.status(201).json(adminData);
-    } catch (error) {
-      console.error("Error creating bootstrap admin:", error);
-      res.status(500).json({ error: "Failed to create admin" });
-    }
-  });
-
   // Reset employee password by username
   app.post("/api/employees/reset-password-by-username", async (req, res) => {
     try {
@@ -1238,6 +2848,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DISCOUNT CODE ROUTES
+
+  // Get all discount codes
+  app.get("/api/discount-codes", async (req, res) => {
+    try {
+      const { DiscountCodeModel } = await import("@shared/schema");
+      const codes = await DiscountCodeModel.find({}).sort({ createdAt: -1 }).lean();
+      res.json(codes);
+    } catch (error) {
+      console.error("Failed to fetch discount codes:", error);
+      res.json([]);
+    }
+  });
 
   // Create discount code
   app.post("/api/discount-codes", async (req, res) => {
@@ -1352,13 +2974,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Validate discount code and return discount info
   app.post("/api/discount-codes/validate", async (req, res) => {
     try {
-      const { code, customerId } = req.body;
+      const { code, customerId, amount } = req.body;
 
       if (!code) {
-        return res.status(400).json({ error: "Discount code is required" });
+        return res.status(400).json({ error: "كود الخصم مطلوب" });
       }
 
-      const discountCode = await storage.getDiscountCodeByCode(code.trim());
+      const discountCode = await storage.getDiscountCodeByCode(code.trim().toUpperCase());
 
       if (!discountCode) {
         console.log(`[DISCOUNT] Code not found: ${code.trim()}`);
@@ -1368,16 +2990,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      const isActive = Number(discountCode.isActive);
+      if (isActive === 0) {
+        return res.status(400).json({ 
+          valid: false,
+          error: "كود الخصم غير فعال"
+        });
+      }
+
+      // Check expiry
+      if (discountCode.expiryDate && new Date(discountCode.expiryDate) < new Date()) {
+        return res.status(400).json({
+          valid: false,
+          error: "كود الخصم منتهي الصلاحية"
+        });
+      }
+
+      // Check usage limit
+      if (discountCode.usageLimit && (discountCode.usageCount || 0) >= discountCode.usageLimit) {
+        return res.status(400).json({
+          valid: false,
+          error: "تم تجاوز حد الاستخدام لهذا الكود"
+        });
+      }
+
+      // Check min purchase
+      if (discountCode.minPurchase && amount && Number(amount) < discountCode.minPurchase) {
+        return res.status(400).json({
+          valid: false,
+          error: `الحد الأدنى للشراء لاستخدام هذا الكود هو ${discountCode.minPurchase}`
+        });
+      }
+      
       // Check if it's a permanent loyalty discount (qahwa-card)
       if (discountCode.code === 'qahwa-card') {
         if (!customerId) {
           return res.status(400).json({ 
             valid: false,
-            error: "يجب تسجيل الدخول لاستخدام خصم بطاقة بلاك روز"
+            error: "يجب تسجيل الدخول لاستخدام خصم بطاقة كلوني"
           });
         }
         
-        // Lookup customer to verify loyalty status
         const customer = await storage.getCustomer(customerId);
         if (!customer) {
           return res.status(404).json({ 
@@ -1387,23 +3040,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log(`[DISCOUNT] Found code:`, JSON.stringify(discountCode));
-      
-      const isActive = Number(discountCode.isActive);
-      if (isActive === 0) {
-        console.log(`[DISCOUNT] Code inactive: ${discountCode.code}`);
-        return res.status(400).json({ 
-          valid: false,
-          error: "كود الخصم غير فعال"
-        });
-      }
-
       // SECURITY: Reject 100% discount codes from customer validation
-      // These codes require manager approval at checkout
       if (discountCode.discountPercentage >= 100) {
         return res.status(400).json({ 
           valid: false,
-          error: "كود الخصم 100% يتطلب موافقة المدير. يرجى التواصل مع الموظف المسؤول.",
+          error: "كود الخصم 100% يتطلب موافقة المدير.",
           requiresApproval: true
         });
       }
@@ -1416,6 +3057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: discountCode._id
       });
     } catch (error) {
+      console.error("Error validating discount code:", error);
       res.status(500).json({ error: "Failed to validate discount code" });
     }
   });
@@ -1487,7 +3129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customer registration - إنشاء حساب جديد
   app.post("/api/customers/register", async (req, res) => {
     try {
-      const { phone, email, name, password } = req.body;
+      const { phone, email, name, password, referralCode } = req.body;
 
       if (!phone || !email || !name || !password) {
         return res.status(400).json({ error: "الهاتف والبريد الإلكتروني والاسم وكلمة المرور مطلوبة" });
@@ -1552,13 +3194,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create loyalty card for new customer
+      let newLoyaltyCard: any = null;
       try {
-        await storage.createLoyaltyCard({ 
+        newLoyaltyCard = await storage.createLoyaltyCard({ 
           customerName: name.trim(), 
           phoneNumber: cleanPhone 
         });
       } catch (cardError) {
         // Don't fail registration if card creation fails
+      }
+
+      // Handle referral code - give 50 points to both referrer and new customer
+      if (referralCode && referralCode.trim()) {
+        try {
+          // Find referrer by phone number (referral code = phone number)
+          const referrerCard = await storage.getLoyaltyCardByPhone(referralCode.trim());
+          if (referrerCard && referrerCard.phoneNumber !== cleanPhone) {
+            // Add 50 points to referrer
+            const referrerPoints = Number(referrerCard.points) || 0;
+            await storage.updateLoyaltyCard(referrerCard.id, {
+              points: referrerPoints + 50
+            });
+            
+            // Create transaction for referrer
+            await storage.createLoyaltyTransaction({
+              cardId: referrerCard.id,
+              type: 'referral_bonus',
+              pointsChange: 50,
+              discountAmount: 0,
+              orderAmount: 0,
+              description: `مكافأة إحالة صديق جديد: ${name.trim()}`
+            });
+
+            // Add 50 points to new customer
+            if (newLoyaltyCard) {
+              await storage.updateLoyaltyCard(newLoyaltyCard.id, {
+                points: 50
+              });
+              
+              // Create transaction for new customer
+              await storage.createLoyaltyTransaction({
+                cardId: newLoyaltyCard.id,
+                type: 'referral_bonus',
+                pointsChange: 50,
+                discountAmount: 0,
+                orderAmount: 0,
+                description: `مكافأة التسجيل بكود إحالة`
+              });
+            }
+            
+            console.log(`[REFERRAL] Bonus applied: Referrer ${referralCode} and new customer ${cleanPhone} each got 50 points`);
+          }
+        } catch (referralError) {
+          console.error("[REFERRAL] Error processing referral code:", referralError);
+          // Don't fail registration if referral processing fails
+        }
       }
 
       // Serialize and don't send password back
@@ -1968,13 +3658,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get orders for a specific customer by phone
-  app.get("/api/orders/customer/:phone", async (req, res) => {
+  app.get("/api/orders/customer/:identifier", async (req, res) => {
     try {
-      const { phone } = req.params;
-      const { OrderModel } = await import("@shared/schema");
+      const { identifier } = req.params;
+      const { OrderModel, mongoose } = await import("@shared/schema");
       
       // Clean phone number for consistent matching
-      const cleanPhone = phone.trim().replace(/\s/g, '').replace(/^\+966/, '').replace(/^00966/, '');
+      const cleanPhone = identifier.trim().replace(/\s/g, '').replace(/^\+966/, '').replace(/^00966/, '');
+      
+      // Check if identifier looks like a MongoDB ObjectId
+      const isMongoId = mongoose?.Types?.ObjectId?.isValid?.(identifier) || 
+                        /^[a-f\d]{24}$/i.test(identifier);
       
       // Also try to find customer by phone to get customerId
       let customerId: string | null = null;
@@ -1987,32 +3681,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Continue without customerId
       }
       
+      // If identifier is a MongoDB ObjectId, use it directly as customerId too
+      if (isMongoId) {
+        customerId = identifier;
+      }
+      
       // Build query conditions - search in all possible phone fields
-      const phoneConditions = [
-        { "customerInfo.customerPhone": phone },
+      const queryConditions = [
+        { "customerInfo.customerPhone": identifier },
         { "customerInfo.customerPhone": cleanPhone },
-        { "customerInfo.phone": phone },
+        { "customerInfo.phone": identifier },
         { "customerInfo.phone": cleanPhone },
-        { "customerInfo.phoneNumber": phone },
+        { "customerInfo.phoneNumber": identifier },
         { "customerInfo.phoneNumber": cleanPhone },
-        { "phone": phone },
+        { "phone": identifier },
         { "phone": cleanPhone }
       ];
       
-      // Add customerId condition if found
+      // Add customerId conditions
       if (customerId) {
-        phoneConditions.push({ customerId: customerId });
+        queryConditions.push({ customerId: customerId });
+        queryConditions.push({ "customerId": customerId });
+      }
+      
+      // If it looks like a UUID, also search by id directly
+      if (identifier.includes('-') || isMongoId) {
+        queryConditions.push({ "customerId": identifier });
       }
       
       const orders = await OrderModel.find({
-        $or: phoneConditions
+        $or: queryConditions
       }).sort({ createdAt: -1 });
 
       const serializedOrders = orders.map(order => serializeDoc(order));
-      console.log(`[GET /api/orders/customer/:phone] Found ${serializedOrders.length} orders for phone ${phone}`);
+      console.log(`[GET /api/orders/customer/:identifier] Found ${serializedOrders.length} orders for identifier ${identifier}`);
       res.json(serializedOrders);
     } catch (error) {
-      console.error("[GET /api/orders/customer/:phone] Error:", error);
+      console.error("[GET /api/orders/customer/:identifier] Error:", error);
       res.status(500).json({ error: "Failed to fetch customer orders" });
     }
   });
@@ -2301,67 +4006,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get all coffee items - with branch availability info (optimized)
   // For customers: shows items in their branch + available branches only
-      // For managers: shows all items with full branch availability data
-      app.get("/api/coffee-items", async (req: any, res) => {
-        try {
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          
-          const requestedBranchId = (req.query.branchId as string);
-          const isEmployee = !!req.session?.employee;
-          
-          let tenantId = req.session?.employee?.tenantId || req.query.tenantId;
-          
-          // If employee is logged in but tenantId is missing, try to look it up from their branch
-          if (isEmployee && !tenantId && req.session?.employee?.branchId) {
-            const branch = await BranchModel.findById(req.session.employee.branchId).lean();
-            if (branch && (branch as any).tenantId) {
-              tenantId = (branch as any).tenantId;
-            } else if (branch) {
-              tenantId = `tenant-${req.session.employee.branchId}`;
-            }
-          }
-          
-          // For customers: look up tenant from branch if not in session
-          if (!tenantId && requestedBranchId) {
-            try {
-              const branch = await BranchModel.findOne({ id: requestedBranchId }).lean();
-              if (branch && (branch as any).tenantId) {
-                tenantId = (branch as any).tenantId;
-              } else if (branch) {
-                // If branch exists but has no tenantId, use the branch ID as fallback tenant
-                tenantId = `tenant-${requestedBranchId}`;
-              } else {
-                // If branch doesn't exist, use fallback
-                tenantId = `tenant-${requestedBranchId}`;
-              }
-            } catch {
-              // If lookup fails, use fallback
-              tenantId = `tenant-${requestedBranchId}`;
-            }
-          }
-          
-          // Fallback to demo-tenant if still no tenant found
-          tenantId = tenantId || 'demo-tenant';
-          if (tenantId === 'default') tenantId = 'demo-tenant';
-          
-          // Fetch all items for this tenant, with fallback to items without tenantId (legacy items)
-          // Also include items from ANY tenant if none match (for backward compatibility)
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          
-          let items = await CoffeeItemModel.find({ 
-            $or: [
-              { tenantId: tenantId },
-              { tenantId: 'demo-tenant' },
-              { tenantId: 'default' },
-              { tenantId: 'default-branch' },
-              { tenantId: { $exists: false } },
-              { tenantId: null }
-            ]
-          }).lean().exec();
+  // For managers: shows all items with full branch availability data
+  app.get("/api/coffee-items", async (req: any, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      const requestedBranchId = (req.query.branchId as string);
+      const isEmployee = !!req.session?.employee;
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      
+      const query: any = { tenantId };
+      if (requestedBranchId && requestedBranchId !== 'all' && requestedBranchId !== 'undefined' && requestedBranchId !== 'null') {
+        query.$or = [
+          { publishedBranches: requestedBranchId },
+          { createdByBranchId: requestedBranchId },
+          { branchId: requestedBranchId }
+        ];
+      }
+      
+      let items = await CoffeeItemModel.find(query).lean().exec();
+
+      // If no items found for tenant with specific branch filter, try fallback
+      if (items.length === 0) {
+        items = await CoffeeItemModel.find({ 
+          $or: [
+            { tenantId: tenantId },
+            { tenantId: 'demo-tenant' },
+            { tenantId: 'default' },
+            { tenantId: 'default-branch' },
+            { tenantId: { $exists: false } },
+            { tenantId: null }
+          ]
+        }).lean().exec();
+      }
 
       // Standardize response by serializing MongoDB documents
       items = items.map(serializeDoc);
@@ -2483,7 +4162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get tenantId from employee or fallback to branch
       let tenantId = req.employee.tenantId;
       if (!tenantId) {
-        const branch = await BranchModel.findById(req.employee.branchId).lean();
+        const branch = await storage.getBranch(req.employee.branchId);
         if (branch && (branch as any).tenantId) {
           tenantId = (branch as any).tenantId;
         }
@@ -2516,21 +4195,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { adoptFromItemId, ...bodyData } = req.body;
 
       // Get tenantId from employee or fallback to default - DO THIS BEFORE VALIDATION
-      let tenantId = req.employee?.tenantId || 'demo-tenant';
-      if (tenantId === 'default') tenantId = 'demo-tenant';
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
       let branchId = req.employee?.branchId || 'default-branch';
-      
-      // If employee has branchId, try to get tenantId from branch
-      if (req.employee?.branchId) {
-        const branch = await BranchModel.findById(req.employee.branchId).lean();
-        if (branch && (branch as any).tenantId) {
-          tenantId = (branch as any).tenantId;
-          if (tenantId === 'default') tenantId = 'demo-tenant';
-        } else if (!req.employee?.tenantId) {
-          // If branch doesn't have tenantId and employee doesn't have one, create a tenant based on branch
-          tenantId = `tenant-${req.employee.branchId}`;
-        }
-      }
 
       // Add tenantId to bodyData BEFORE validation
       bodyData.tenantId = tenantId;
@@ -2693,7 +4359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       res.set('Cache-Control', 'public, max-age=120');
       const { category } = req.params;
-      const tenantId = req.session?.employee?.tenantId || req.query.tenantId || 'default';
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
       const items = await CoffeeItemModel.find({ tenantId, category }).lean().exec();
       if (!items || items.length === 0) {
         return res.json([]);
@@ -2748,87 +4414,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { branchId, isAvailable, availabilityStatus } = req.body;
       
-      // Crucial: Fallback to 'demo-tenant' if not set, but log it
-      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
 
       console.log(`[AVAILABILITY] Updating item ${id} for tenant ${tenantId}, branch ${branchId}`);
 
-      // Try finding by 'id' field (string ID like 'espresso-single')
+      // Try finding by 'id' field
       let item = await CoffeeItemModel.findOne({ id, tenantId }).exec();
-      
-      // If not found by 'id', try by MongoDB '_id'
       if (!item && mongoose.Types.ObjectId.isValid(id)) {
         item = await CoffeeItemModel.findOne({ _id: id, tenantId }).exec();
       }
 
-      // Final attempt: search by 'id' WITHOUT tenantId to see if it's a tenant mismatch (for debugging)
       if (!item) {
-        const globalItem = await CoffeeItemModel.findOne({ id }).exec();
-        if (globalItem) {
-          console.warn(`[AVAILABILITY] Item ${id} found globally but NOT for tenant ${tenantId}. Item tenant: ${globalItem.tenantId}`);
-          // If we are in demo mode or it's a known mismatch, we might want to allow it or fix the tenant
-          item = globalItem; 
-        }
-      }
-
-      if (!item) {
-        console.error(`[AVAILABILITY] Item not found: id=${id}, tenantId=${tenantId}`);
         return res.status(404).json({ error: "Coffee item not found" });
       }
 
-      // Update the main item for backward compatibility and cross-branch visibility
       const updates: any = {};
       
-      if (isAvailable !== undefined) {
-        updates.isAvailable = isAvailable ? 1 : 0;
-      }
-
-      if (availabilityStatus !== undefined) {
+      // Map availability status to internal flags
+      if (availabilityStatus) {
         updates.availabilityStatus = availabilityStatus;
+        if (availabilityStatus === 'available' || availabilityStatus === 'new') {
+          updates.isAvailable = 1;
+        } else {
+          updates.isAvailable = 0;
+        }
+        
+        if (availabilityStatus === 'new') {
+          updates.isNewProduct = 1;
+        } else {
+          updates.isNewProduct = 0;
+        }
+      } else if (isAvailable !== undefined) {
+        updates.isAvailable = isAvailable ? 1 : 0;
+        if (isAvailable) {
+          updates.availabilityStatus = 'available';
+        } else {
+          updates.availabilityStatus = 'unavailable';
+        }
       }
 
       if (branchId) {
-        // Ensure we are working with the latest branchAvailability array
         const branchAvailability = (item.branchAvailability || []) as Array<{branchId: string, isAvailable: number}>;
         const existingIndex = branchAvailability.findIndex((b: any) => b.branchId === branchId);
-        
-        const availabilityValue = isAvailable !== undefined ? (isAvailable ? 1 : 0) : (item.isAvailable ?? 1);
+        const availabilityValue = updates.isAvailable !== undefined ? updates.isAvailable : (item.isAvailable ?? 1);
 
         if (existingIndex >= 0) {
           branchAvailability[existingIndex].isAvailable = availabilityValue;
         } else {
           branchAvailability.push({ branchId, isAvailable: availabilityValue });
         }
-        
         updates.branchAvailability = branchAvailability;
-        
-        // CRITICAL: Force update the top-level isAvailable for legacy compatibility
-        // This ensures that queries not filtering by branch still see the status change
-        if (isAvailable !== undefined) {
-          updates.isAvailable = isAvailable ? 1 : 0;
-        }
-      } else {
-        // If no branchId, update the global isAvailable
-        if (isAvailable !== undefined) {
-          updates.isAvailable = isAvailable ? 1 : 0;
-        }
       }
-
-      console.log(`[AVAILABILITY] Applying updates to ${item._id} (ID: ${item.id}):`, JSON.stringify(updates));
 
       const updatedItem = await CoffeeItemModel.findOneAndUpdate(
         { _id: item._id },
-        { $set: updates },
+        { $set: { ...updates, updatedAt: new Date() } },
         { new: true }
       ).exec();
 
-      if (updatedItem) {
-        console.log(`[AVAILABILITY] Update successful. New branchAvailability:`, 
-          JSON.stringify(updatedItem.branchAvailability));
-        console.log(`[AVAILABILITY] Global isAvailable:`, updatedItem.isAvailable);
-      }
-
-      // Explicitly return the updated item directly as expected by the frontend
       res.json(serializeDoc(updatedItem));
     } catch (error) {
       console.error("Availability Update Error:", error);
@@ -2867,66 +4510,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(serializeDoc(updatedItem));
     } catch (error) {
       res.status(500).json({ error: "Failed to update coffee item branches" });
-    }
-  });
-
-  // Update complete coffee item (for manager)
-  app.put("/api/coffee-items/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const item = await storage.getCoffeeItem(id);
-      
-      if (!item) {
-        return res.status(404).json({ error: "Coffee item not found" });
-      }
-
-      const updatedItem = await storage.updateCoffeeItem(id, req.body);
-      res.json(serializeDoc(updatedItem));
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update coffee item" });
-    }
-  });
-
-  // Delete coffee item (for manager)
-  app.delete("/api/coffee-items/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      console.log(`[MENU] DELETE product request: id=${id}`);
-      
-      // Try to find by custom 'id' first, then fallback to mongoose _id
-      let item = await CoffeeItemModel.findOne({ id });
-      
-      if (!item && mongoose.Types.ObjectId.isValid(id)) {
-        item = await CoffeeItemModel.findById(id);
-      }
-
-      // If still not found, try a broader search for debugging
-      if (!item) {
-        console.log(`[MENU] Product not found by ID: ${id}. Searching by name or partial ID...`);
-        // This is a safety check to ensure we don't miss items that might have different ID storage
-        item = await CoffeeItemModel.findOne({ $or: [{ id: id }, { _id: mongoose.Types.ObjectId.isValid(id) ? id : new mongoose.Types.ObjectId() }] });
-      }
-
-      if (!item) {
-        console.log(`[MENU] Product not found in database: id=${id}`);
-        // Log all current items to see what's available
-        const allItems = await CoffeeItemModel.find({}, { id: 1, nameAr: 1 });
-        console.log(`[MENU] Available items:`, allItems.map(i => ({ id: i.id, _id: i._id, name: i.nameAr })));
-        return res.status(404).json({ error: "Coffee item not found" });
-      }
-
-      // Use the actual internal _id for deletion to be certain
-      const result = await CoffeeItemModel.deleteOne({ _id: item._id });
-      console.log(`[MENU] Delete result for ${item.id || item._id}:`, result);
-      
-      if (result.deletedCount === 0) {
-        return res.status(404).json({ error: "Coffee item not found during deletion" });
-      }
-
-      res.json({ success: true, message: "Coffee item deleted successfully" });
-    } catch (error) {
-      console.error("[MENU] Delete error:", error);
-      res.status(500).json({ error: "Failed to delete coffee item" });
     }
   });
 
@@ -3129,8 +4712,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create order (supports both customer and employee)
-  app.post("/api/orders", async (req: AuthRequest, res) => {
+  // DUPLICATE: This POST /api/orders handler is superseded by the one defined earlier (line ~573).
+  // Wrapped in a never-called function to prevent duplicate route registration.
+  const _unusedDuplicateOrderPost = () => { app.post("/api/orders-duplicate-disabled", async (req: AuthRequest, res) => {
     try {
       console.log("Creating order with body:", JSON.stringify(req.body, null, 2));
       const { 
@@ -3138,7 +4722,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerInfo, customerId, customerNotes, freeItemsDiscount, usedFreeDrinks, 
         discountCode, discountPercentage,
         deliveryType, deliveryAddress, deliveryFee, branchId,
-        tableNumber, tableId, orderType
+        tableNumber, tableId, orderType,
+        carType, carColor, plateNumber, arrivalTime,
+        pointsRedeemed, pointsValue, pointsVerificationToken
       } = req.body;
 
       // Validate required fields
@@ -3158,20 +4744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finalCustomerName = req.body.customerName || customerInfo?.customerName || req.body.customerPhone || "عميل";
 
       // Determine branch ID from request body or employee session
-      let finalBranchId = branchId || req.employee?.branchId;
-
-      // FIX: If no branchId is provided (e.g. guest customer) and there's only one branch, use it
-      if (!finalBranchId) {
-        try {
-          const branches = await storage.getAllBranches();
-          if (branches.length > 0) {
-            finalBranchId = branches[0].id;
-            console.log(`[ORDER] Auto-assigned order to branch: ${finalBranchId}`);
-          }
-        } catch (e) {
-          console.error("[ORDER] Error auto-assigning branch:", e);
-        }
-      }
+      const finalBranchId = branchId || req.employee?.branchId;
 
       if (!finalCustomerName) {
         console.error("Missing customer name in request. customerInfo:", JSON.stringify(customerInfo), "req.body:", JSON.stringify(req.body));
@@ -3218,14 +4791,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create order
+      // Determine initial status based on payment method
+      const isAutoConfirm = ['pos', 'apple_pay', 'pos-network', 'alinma', 'rajhi', 'ur', 'barq', 'cash', 'mada', 'stc-pay', 'online', 'neoleap', 'neoleap-apple-pay'].includes(paymentMethod);
+      // PAID orders go to 'payment_confirmed' (which notifies kitchen), others go to 'pending'
+      const initialStatus = isAutoConfirm ? 'payment_confirmed' : 'pending';
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+
+      console.log(`[ORDER] Payment method: ${paymentMethod}, Initial status: ${initialStatus}`);
+
+      if (discountCode) {
+        try {
+          const coupon = await DiscountCodeModel.findOne({ 
+            code: discountCode.toUpperCase(), 
+            isActive: 1 
+          });
+          if (coupon) {
+            coupon.usageCount = (coupon.usageCount || 0) + 1;
+            await coupon.save();
+            console.log(`[ORDER] Coupon ${discountCode} usage count updated to ${coupon.usageCount}`);
+          }
+        } catch (couponErr) {
+          console.error("[ORDER] Failed to update coupon usage count:", couponErr);
+        }
+      }
+
       // Update or create order
       let order;
       if (tableId && (orderType === 'table' || orderType === 'dine-in')) {
         // Look for an existing 'open' order for this table
         const existingOrder = await OrderModel.findOne({ 
           tableId, 
-          status: 'open',
+          status: { $in: ['open', 'pending', 'payment_confirmed'] },
           branchId: finalBranchId 
         });
 
@@ -3234,19 +4830,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           existingOrder.items = [...(existingOrder.items || []), ...processedItems];
           existingOrder.totalAmount += Number(totalAmount);
           existingOrder.updatedAt = new Date();
+          
+          // If the order was just "open", and this addition is "paid/confirmed", upgrade status
+          if (existingOrder.status === 'open' && initialStatus === 'payment_confirmed') {
+             existingOrder.status = 'payment_confirmed';
+          }
+          
           order = await existingOrder.save();
+          
+          // Broadcast update to kitchen for additions
+          const serializedOrder = serializeDoc(order);
+          wsManager.broadcastOrderUpdate(serializedOrder);
+          if (order.status === 'payment_confirmed' || order.status === 'confirmed') {
+            wsManager.broadcastNewOrder(serializedOrder);
+          }
         } else {
+          const isOpenTab = req.body.isOpenTab === true;
+          const tableOrderStatus = isOpenTab ? 'open' : initialStatus;
           const orderData: any = {
             orderNumber: `T-${nanoid(6).toUpperCase()}`,
             items: processedItems,
             totalAmount: Number(totalAmount),
-            paymentMethod: paymentMethod || 'cash',
-            status: 'open',
-            tableStatus: 'open',
+            paymentMethod: isOpenTab ? 'cash' : (paymentMethod || 'cash'),
+            status: tableOrderStatus,
+            tableStatus: isOpenTab ? 'open' : 'pending',
             orderType: 'table',
             tableId,
             tableNumber,
             branchId: finalBranchId,
+            tenantId,
             employeeId: req.employee?.id || null,
             customerInfo: customerInfo || { 
               customerName: finalCustomerName, 
@@ -3258,11 +4870,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
           order = await storage.createOrder(orderData);
           
-          // Broadcast new order to WebSocket
           if (order) {
             const serializedOrder = serializeDoc(order);
-            console.log(`[ORDER] Broadcasting new table order #${serializedOrder.orderNumber} to WebSocket`);
-            wsManager.broadcastNewOrder(serializedOrder);
+            if (!isOpenTab) {
+              wsManager.broadcastNewOrder(serializedOrder);
+            }
             wsManager.broadcastOrderUpdate(serializedOrder);
           }
           
@@ -3270,19 +4882,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateTableOccupancy(tableId, true, order.id);
         }
       } else {
-        // Auto-confirm payment for POS/Cashier orders with cash, network, or copy card
-        const autoConfirmPaymentMethods = ['cash', 'network', 'pos-network', 'qahwa-card'];
-        const autoConfirmStatus = (req.employee && autoConfirmPaymentMethods.includes(paymentMethod)) 
-          ? 'payment_confirmed' 
-          : 'pending';
-        
         const orderData: any = {
           customerId: finalCustomerId || null,
           totalAmount: Number(totalAmount),
           paymentMethod,
           paymentDetails: paymentDetails || "",
           paymentReceiptUrl: paymentReceiptUrl || null,
-          status: autoConfirmStatus, // Auto-confirm for POS orders
           customerInfo: customerInfo || { 
             customerName: finalCustomerName, 
             phoneNumber: req.body.customerPhone || "", 
@@ -3294,54 +4899,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
           deliveryType: deliveryType || null,
           deliveryAddress: deliveryAddress || null,
           deliveryFee: deliveryFee ? Number(deliveryFee) : 0,
+          carType: carType || null,
+          carColor: carColor || null,
+          plateNumber: plateNumber || null,
+          arrivalTime: arrivalTime || null,
           branchId: finalBranchId,
+          tenantId,
+          status: initialStatus,
           employeeId: req.employee?.id || null,
-          assignedCashierId: req.employee?.id || null, // Track cashier who created the order
           createdBy: req.employee?.username || 'system',
           tableNumber: tableNumber || null,
           tableId: tableId || null,
           orderType: orderType || (tableNumber || tableId ? 'dine-in' : 'regular'),
-          items: processedItems
+          items: processedItems,
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
-        
-        console.log(`[ORDER] Creating order with status: ${autoConfirmStatus} (Payment: ${paymentMethod}, Employee: ${req.employee ? 'Yes' : 'No'})`);
         order = await storage.createOrder(orderData);
 
         // Broadcast new order to WebSocket
         if (order) {
           const serializedOrder = serializeDoc(order);
-          console.log(`[ORDER] Broadcasting new order #${serializedOrder.orderNumber} to WebSocket`);
           wsManager.broadcastNewOrder(serializedOrder);
           wsManager.broadcastOrderUpdate(serializedOrder);
         }
       }
 
-      // Finalize (Pay) Open Table Order
-      app.post("/api/orders/:id/finalize", requireAuth, async (req: AuthRequest, res) => {
+      // ===== Points Redemption: Deduct points from loyalty card =====
+      if (pointsRedeemed && Number(pointsRedeemed) > 0) {
         try {
-          const { paymentMethod, paymentDetails } = req.body;
-          const order = await OrderModel.findById(req.params.id);
-          
-          if (!order) return res.status(404).json({ error: "Order not found" });
-          if (order.status !== 'open') return res.status(400).json({ error: "Order is not open" });
+          const redeemPoints = Number(pointsRedeemed);
+          const redeemValue = Number(pointsValue) || (redeemPoints / 100) * 5;
+          const phoneForPoints = req.body.customerPhone || customerInfo?.phoneNumber;
+          const cleanPhoneForPoints = phoneForPoints?.replace(/\D/g, '');
 
-          order.status = 'payment_confirmed';
-          order.tableStatus = 'payment_confirmed';
-          order.paymentMethod = paymentMethod;
-          order.paymentDetails = paymentDetails;
-          order.updatedAt = new Date();
-          await order.save();
+          if (cleanPhoneForPoints) {
+            const entry = pointsVerificationCodes.get(cleanPhoneForPoints);
+            if (!entry || !entry.verified) {
+              console.warn(`[POINTS] Verification not completed for ${cleanPhoneForPoints}. Points NOT deducted.`);
+            } else {
+              const loyaltyCard = await storage.getLoyaltyCardByPhone(cleanPhoneForPoints);
+              if (loyaltyCard) {
+                const currentPoints = Number(loyaltyCard.points) || 0;
+                if (currentPoints >= redeemPoints) {
+                  await storage.updateLoyaltyCard(loyaltyCard.id, {
+                    points: currentPoints - redeemPoints,
+                    lastUsedAt: new Date(),
+                  });
 
-          // Free up the table
-          if (order.tableId) {
-            await storage.updateTableOccupancy(order.tableId, false, null);
+                  const LoyaltyTransactionModel = mongoose.model('LoyaltyTransaction');
+                  await LoyaltyTransactionModel.create({
+                    cardId: loyaltyCard.id,
+                    type: 'points_redeemed',
+                    pointsChange: -redeemPoints,
+                    description: `استخدام ${redeemPoints} نقطة (${redeemValue.toFixed(2)} ريال) - طلب #${order.orderNumber}`,
+                    orderId: order.id,
+                    createdAt: new Date(),
+                  });
+
+                  await OrderModel.findByIdAndUpdate(order.id, {
+                    pointsRedeemed: redeemPoints,
+                    pointsValue: redeemValue,
+                  });
+
+                  pointsVerificationCodes.delete(cleanPhoneForPoints);
+                  console.log(`[POINTS] Deducted ${redeemPoints} points (${redeemValue} SAR) from ${cleanPhoneForPoints} for order ${order.orderNumber}`);
+                } else {
+                  console.warn(`[POINTS] Insufficient points for ${cleanPhoneForPoints}: has ${currentPoints}, needs ${redeemPoints}`);
+                }
+              }
+            }
           }
-
-          res.json(serializeDoc(order));
-        } catch (error) {
-          res.status(500).json({ error: "Failed to finalize order" });
+        } catch (pointsError) {
+          console.error("[POINTS] Error deducting points:", pointsError);
         }
-      });
+      }
 
       // Send initial order email notification
       const initialCustomerInfo = typeof order.customerInfo === 'string' ? JSON.parse(order.customerInfo) : order.customerInfo;
@@ -3356,7 +4988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const { sendOrderNotificationEmail } = await import("./mail-service");
             const emailSent = await sendOrderNotificationEmail(
               customerEmail,
-              customerName || 'عميل BLACK ROSE',
+              customerName || 'عميل CLUNY CAFE',
               order.orderNumber,
               "pending",
               parseFloat(order.totalAmount.toString())
@@ -3470,6 +5102,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add stamps automatically if customer has phone number (works for guests and registered users)
       let phoneForStamps = customerInfo?.phoneNumber || req.body.customerPhone;
+      
+      // FIX: Ensure phoneForStamps is normalized
+      if (phoneForStamps) {
+        phoneForStamps = phoneForStamps.toString().trim();
+      }
+
       if (finalCustomerId) {
         try {
           const customer = await storage.getCustomer(finalCustomerId);
@@ -3477,7 +5115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (e) {}
       }
 
-      console.log(`[LOYALTY] Attempting to add stamps for phone: ${phoneForStamps}`);
+      console.log(`[LOYALTY] Attempting to add points for phone: ${phoneForStamps}`);
 
       if (phoneForStamps) {
         try {
@@ -3487,80 +5125,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!loyaltyCard) {
             console.log(`[LOYALTY] Creating new card for ${phoneForStamps}`);
             loyaltyCard = await storage.createLoyaltyCard({
-              customerName: finalCustomerName,
+              customerName: finalCustomerName || customerInfo?.customerName || 'عميل',
               phoneNumber: phoneForStamps,
               isActive: 1,
               stamps: 0,
               freeCupsEarned: 0,
-              totalSpent: 0
+              totalSpent: 0,
+              points: 0,
+              pendingPoints: 0
             });
           }
 
-          // Calculate stamps (1 stamp per drink) and points (10 points per drink)
-          // Filter items that are actually drinks (using category or metadata if possible)
-          const itemsToProcess = Array.isArray(processedItems) ? processedItems : [];
-          const stampsToAdd = itemsToProcess.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
-          const pointsToAdd = stampsToAdd * 10; // 10 points per drink
+          // Calculate points (10 points per drink)
+          const itemsToProcess = Array.isArray(processedItems) ? processedItems : 
+                                (Array.isArray(items) ? items : []);
+          
+          const drinksCount = itemsToProcess.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
+          const pointsToAdd = drinksCount * 10; // 10 points per drink
 
-          console.log(`[LOYALTY] Stamps to add: ${stampsToAdd}, Points to add: ${pointsToAdd}, Current stamps: ${loyaltyCard.stamps}, Current points: ${loyaltyCard.points}`);
+          console.log(`[LOYALTY] Points to add: ${pointsToAdd}, Drinks: ${drinksCount}, Current points: ${loyaltyCard.points || 0}`);
 
-          if (stampsToAdd > 0) {
-            const currentStamps = Number(loyaltyCard.stamps) || 0;
+          if (pointsToAdd > 0) {
             const currentPoints = Number(loyaltyCard.points) || 0;
-            const currentFreeCups = Number(loyaltyCard.freeCupsEarned) || 0;
+            const currentPendingPoints = Number(loyaltyCard.pendingPoints) || 0;
             const currentTotalSpent = parseFloat(loyaltyCard.totalSpent?.toString() || "0");
             
-            const totalStamps = currentStamps + stampsToAdd;
-            const freeCupsToEarn = Math.floor(totalStamps / 6);
-            const remainingStamps = totalStamps % 6;
-            const newPoints = currentPoints + pointsToAdd;
-
-            console.log(`[LOYALTY] New totals - Stamps: ${remainingStamps}, Free Cups: ${currentFreeCups + freeCupsToEarn}, Points: ${newPoints}`);
-
+            // Add points as pending until order is completed
             await storage.updateLoyaltyCard(loyaltyCard.id, {
-              stamps: remainingStamps,
-              points: newPoints,
-              freeCupsEarned: currentFreeCups + freeCupsToEarn,
+              pendingPoints: currentPendingPoints + pointsToAdd,
               totalSpent: currentTotalSpent + parseFloat(totalAmount.toString()),
               lastUsedAt: new Date()
             });
 
-            // Create loyalty transaction for stamps
+            console.log(`[LOYALTY] Updated card ${loyaltyCard.id}: Pending Points ${currentPendingPoints + pointsToAdd}`);
+
+            // Create loyalty transaction for pending points
             await storage.createLoyaltyTransaction({
               cardId: loyaltyCard.id,
-              type: 'stamps_earned',
-              pointsChange: stampsToAdd,
+              type: 'points_pending',
+              pointsChange: pointsToAdd,
               discountAmount: 0,
               orderAmount: Number(totalAmount),
-              description: `اكتسبت ${stampsToAdd} ختم و ${pointsToAdd} نقطة من الطلب رقم ${order.orderNumber}`,
+              orderId: order.id,
+              description: `نقاط معلقة: ${pointsToAdd} نقطة من الطلب رقم ${order.orderNumber} (ستضاف عند اكتمال الطلب)`,
             });
-
-            // Create transaction for free cups earned
-            if (freeCupsToEarn > 0) {
-              await storage.createLoyaltyTransaction({
-                cardId: loyaltyCard.id,
-                type: 'free_cup_earned',
-                pointsChange: 0,
-                discountAmount: 0,
-                orderAmount: Number(totalAmount),
-                description: `مبروك! لقد حصلت على ${freeCupsToEarn} قهوة مجانية من الطلب رقم ${order.orderNumber}`,
-              });
-            }
-            
-            // Update customer points too
-            if (finalCustomerId) {
-              try {
-                await CustomerModel.findByIdAndUpdate(finalCustomerId, {
-                  $inc: { points: pointsToAdd }
-                });
-              } catch (e) {
-                console.error('[LOYALTY] Error updating customer points:', e);
-              }
-            }
           }
         } catch (error) {
-          console.error("[LOYALTY] Error processing stamps:", error);
-          // Don't fail the order if stamp addition fails
+          console.error("[LOYALTY] Error processing points:", error);
         }
       }
 
@@ -3643,6 +5254,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("[ORDERS] Error creating order:", error);
       res.status(500).json({ error: "Failed to create order", details: error instanceof Error ? error.message : String(error) });
     }
+  }); };
+
+  // Finalize (Pay) Open Table Order
+  app.post("/api/orders/:id/finalize", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { paymentMethod, paymentDetails } = req.body;
+      const order = await OrderModel.findOne({ id: req.params.id }) || await OrderModel.findById(req.params.id).catch(() => null);
+      
+      if (!order) return res.status(404).json({ error: "Order not found" });
+      if (order.status !== 'open') return res.status(400).json({ error: "Order is not open" });
+
+      order.status = 'payment_confirmed';
+      order.tableStatus = 'payment_confirmed';
+      order.paymentMethod = paymentMethod;
+      order.paymentDetails = paymentDetails;
+      order.updatedAt = new Date();
+      await order.save();
+
+      // Broadcast to kitchen so paid order appears there
+      const serializedOrder = serializeDoc(order);
+      wsManager.broadcastNewOrder(serializedOrder);
+      wsManager.broadcastOrderUpdate(serializedOrder);
+
+      // Free up the table
+      if (order.tableId) {
+        await storage.updateTableOccupancy(order.tableId, false, null);
+      }
+
+      res.json(serializedOrder);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to finalize order" });
+    }
   });
 
   // Get pending table orders (for cashier) - MOST SPECIFIC FIRST
@@ -3693,38 +5336,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/orders/complete-all", requireAuth, requireManager, async (req: AuthRequest, res) => {
+  // Get table orders (branch-filtered for managers)
+  app.get("/api/orders/table", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const branchId = req.employee?.branchId || "main-branch";
-      const { OrderModel } = await import("@shared/schema");
-      
-      const result = await OrderModel.updateMany(
-        { 
-          branchId, 
-          status: { $nin: ['completed', 'cancelled'] } 
-        },
-        { $set: { status: 'completed' } }
-      );
-      
-      res.json({ success: true, count: result.modifiedCount });
-    } catch (error) {
-      console.error("Error completing all orders:", error);
-      res.status(500).json({ error: "Failed to complete orders" });
-    }
-  });
+      const { status } = req.query;
+      const allOrders = await storage.getTableOrders(status as string | undefined);
 
-  // Simplified payment methods with auto-validation
-  app.get("/api/payment-methods", async (req, res) => {
-    try {
-      const methods = [
-        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', autoConfirm: true },
-        { id: 'card', nameAr: 'بطاقة كلوني', nameEn: 'Klony Card', details: 'الدفع عبر بطاقة كلوني', icon: 'fas fa-credit-card', autoConfirm: true },
-        { id: 'mada', nameAr: 'مدى', nameEn: 'Mada', details: 'الدفع عبر مدى', icon: 'fas fa-credit-card', autoConfirm: true },
-        { id: 'apple_pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fab fa-apple-pay', autoConfirm: true },
-      ];
-      res.json(methods);
+      // Filter by branch for non-admin managers
+      const orders = filterByBranch(allOrders, req.employee);
+
+      const coffeeItems = await storage.getCoffeeItems();
+
+      // Enrich orders with coffee item details
+      const enrichedOrders = orders.map(order => {
+        const serializedOrder = serializeDoc(order);
+        
+        let orderItems = serializedOrder.items;
+        if (typeof orderItems === 'string') {
+          try {
+            orderItems = JSON.parse(orderItems);
+          } catch (e) {
+            orderItems = [];
+          }
+        }
+        
+        if (!Array.isArray(orderItems)) {
+          orderItems = [];
+        }
+        
+        const items = orderItems.map((item: any) => {
+          const coffeeItem = coffeeItems.find(ci => ci.id === item.coffeeItemId);
+          return {
+            ...item,
+            coffeeItem: coffeeItem ? {
+              nameAr: coffeeItem.nameAr,
+              nameEn: coffeeItem.nameEn,
+              price: coffeeItem.price,
+              imageUrl: coffeeItem.imageUrl
+            } : null
+          };
+        });
+
+        return {
+          ...serializedOrder,
+          items
+        };
+      });
+
+      res.json(enrichedOrders);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch payment methods" });
+      res.status(500).json({ error: "Failed to fetch table orders" });
     }
   });
 
@@ -3912,18 +5573,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied - insufficient permissions" });
       }
 
-      // Get orders that are pending, in_progress, or ready (not completed or cancelled)
       const { OrderModel } = await import("@shared/schema");
       
-      // Build query with branch filtering for non-admin/owner users
       const query: any = {
-        status: { $in: ['pending', 'payment_confirmed', 'in_progress', 'ready'] }
+        status: { $in: ['pending', 'confirmed', 'payment_confirmed', 'in_progress', 'ready'] }
       };
 
-      // Apply branch filtering for cashiers and managers
-      if (req.employee.role === 'cashier' || req.employee.role === 'manager') {
+      // Apply branch filtering for managers and other roles
+      if (req.employee.role !== 'admin' && req.employee.role !== 'owner') {
         if (req.employee.branchId) {
           query.branchId = req.employee.branchId;
+        } else if (req.employee.role === 'manager') {
+          // If manager has no branchId, they might not see anything
+          // We can try to find their branch if it's missing in session
+          const { BranchModel } = await import("@shared/schema");
+          const branch = await BranchModel.findOne({ tenantId: req.employee.tenantId });
+          if (branch) {
+            query.branchId = branch._id.toString();
+          }
         }
       }
 
@@ -3976,17 +5643,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/orders", requireAuth, async (req: AuthRequest, res) => {
+  // Get all orders (branch-filtered for non-admin/owner roles)
+  app.get("/api/orders", async (req: any, res) => {
     try {
-      const { limit, offset, branchId: queryBranchId } = req.query;
+      const { limit, offset } = req.query;
       const limitNum = limit ? parseInt(limit as string) : undefined;
       const offsetNum = offset ? parseInt(offset as string) : undefined;
 
       const allOrders = await storage.getOrders(limitNum, offsetNum);
 
-      // Filter by branch
-      const branchId = queryBranchId || req.employee?.branchId;
-      const orders = branchId ? allOrders.filter(o => o.branchId === branchId) : allOrders;
+      // If session employee exists, filter by branch; otherwise return all orders
+      const employee = req.session?.employee;
+      const orders = employee ? filterByBranch(allOrders, { ...employee, tenantId: employee.tenantId || 'default' }) : allOrders;
 
       const coffeeItems = await storage.getCoffeeItems();
 
@@ -4044,6 +5712,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Order not found" });
       }
 
+      // If it's a dine-in order with a table number, mark table as occupied and set auto-clear alert
+      if ((order.orderType === 'dine-in' || order.orderType === 'table') && order.tableNumber) {
+        const { TableModel } = await import("@shared/schema");
+        const autoClearTime = new Date(Date.now() + 10 * 60 * 1000);
+        
+        await TableModel.findOneAndUpdate(
+          { tableNumber: order.tableNumber, branchId: order.branchId },
+          { 
+            isOccupied: 1, 
+            currentOrderId: order.id,
+            "reservedFor.autoExpiryTime": autoClearTime,
+            updatedAt: new Date()
+          }
+        );
+      }
+
       // Serialize the order (converts _id to id and removes MongoDB internals)
       const serializedOrder = serializeDoc(order);
 
@@ -4058,6 +5742,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch order" });
     }
   });
+
+  // Background task to auto-clear expired tables
+  setInterval(async () => {
+    try {
+      const { TableModel } = await import("@shared/schema");
+      const now = new Date();
+      
+      const expiredTables = await TableModel.find({
+        isOccupied: 1,
+        "reservedFor.autoExpiryTime": { $lte: now }
+      });
+
+      for (const table of expiredTables) {
+        await TableModel.findOneAndUpdate(
+          { _id: table._id },
+          {
+            isOccupied: 0,
+            currentOrderId: null,
+            "reservedFor.autoExpiryTime": null,
+            updatedAt: new Date()
+          }
+        );
+        
+        if (typeof wsManager !== 'undefined') {
+          wsManager.broadcast({
+            type: 'TABLE_AUTO_CLEARED',
+            tableNumber: table.tableNumber,
+            branchId: table.branchId
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Auto-clear tables error:", error);
+    }
+  }, 60000); // Check every minute
 
   // Update order car pickup info
   app.post("/api/orders/:id/car-pickup", async (req, res) => {
@@ -4084,6 +5803,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(serializeDoc(updatedOrder));
     } catch (error) {
       res.status(500).json({ error: "Failed to update car pickup info" });
+    }
+  });
+
+  app.patch("/api/orders/:id/prep-time", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const { additionalMinutes } = req.body;
+
+      if (!additionalMinutes || typeof additionalMinutes !== 'number' || additionalMinutes <= 0) {
+        return res.status(400).json({ error: "Invalid additionalMinutes" });
+      }
+
+      const order = await storage.getOrder(id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      const currentEstimated = (order as any).estimatedPrepTimeMinutes || 0;
+      const newEstimated = currentEstimated + additionalMinutes;
+
+      const updatedOrder = await OrderModel.findOneAndUpdate(
+        { id },
+        { 
+          $set: { 
+            estimatedPrepTimeMinutes: newEstimated,
+            updatedAt: new Date()
+          }
+        },
+        { new: true }
+      );
+
+      if (updatedOrder && (updatedOrder as any).customerId) {
+        const { sendPushToCustomer } = await import("./push-service");
+        try {
+          await sendPushToCustomer((updatedOrder as any).customerId, {
+            type: 'order_status',
+            title: 'تحديث وقت التحضير',
+            body: `الوقت المتوقع لطلبك #${(updatedOrder as any).orderNumber}: ${newEstimated} دقيقة`,
+            orderId: id,
+            orderNumber: (updatedOrder as any).orderNumber,
+            status: 'in_progress',
+            estimatedTime: newEstimated
+          });
+        } catch (pushErr) {
+          console.log("[PUSH] Failed to send time update notification:", pushErr);
+        }
+      }
+
+      res.json({ success: true, estimatedPrepTimeMinutes: newEstimated });
+    } catch (error) {
+      console.error("[API] Error updating prep time:", error);
+      res.status(500).json({ error: "Failed to update prep time" });
     }
   });
 
@@ -4117,20 +5888,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.prepTimeSetAt = new Date();
       }
 
-      const updatedOrder = await OrderModel.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+      const updatedOrder = await storage.updateOrderStatus(id, status, cancellationReason, estimatedPrepTimeInMinutes);
 
       if (!updatedOrder) {
         return res.status(404).json({ error: "Order not found" });
       }
 
-      // Automatic inventory deduction when order starts preparation
-      if (status === 'in_progress' && order.branchId) {
-        const employeeId = req.employee?.id || 'system';
-        const inventoryResult = await deductInventoryForOrder(id, order.branchId, employeeId);
-        if (inventoryResult.success) {
-        } else {
+      // If status is completed, generate ZATCA invoice
+      if (status === 'completed' || status === 'ready') {
+        try {
+          const existingInvoice = await TaxInvoiceModel.findOne({ orderId: updatedOrder.id });
+          if (!existingInvoice) {
+            const { createZATCAInvoice } = await import("./utils/zatca");
+            let items = updatedOrder.items || [];
+            if (typeof items === 'string') items = JSON.parse(items);
+            
+            const invoiceItems = items.map((item: any) => ({
+              itemId: item.coffeeItemId || item.id,
+              nameAr: item.coffeeItem?.nameAr || item.nameAr || 'منتج',
+              quantity: item.quantity || 1,
+              unitPrice: item.coffeeItem?.price || item.unitPrice || 0,
+              taxRate: 0.15,
+              discountAmount: item.discountAmount || 0
+            }));
+
+            await createZATCAInvoice({
+              orderId: updatedOrder.id,
+              orderNumber: updatedOrder.orderNumber,
+              customerName: updatedOrder.customerInfo?.customerName || 'عميل نقدي',
+              customerPhone: updatedOrder.customerInfo?.customerPhone || '',
+              items: invoiceItems,
+              paymentMethod: updatedOrder.paymentMethod || 'cash',
+              branchId: updatedOrder.branchId,
+              createdBy: req.employee?.id,
+              invoiceType: 'simplified'
+            });
+            console.log(`[ZATCA] Auto-generated invoice for order ${updatedOrder.orderNumber} on status ${status}`);
+          }
+        } catch (zatcaError) {
+          console.error("[ZATCA] Failed to auto-generate invoice:", zatcaError);
         }
       }
+
+      if (status === 'in_progress' && order.branchId) {
+        try {
+          const employeeId = req.employee?.id || 'system';
+          await deductInventoryForOrder(id, order.branchId, employeeId);
+        } catch (invErr) {
+          console.error(`[INVENTORY] Auto-deduction failed for order ${order.orderNumber}:`, invErr);
+        }
+      }
+
 
       // Serialize the order properly
       const serializedOrder = serializeDoc(updatedOrder);
@@ -4141,6 +5949,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (status === 'ready') {
         wsManager.broadcastOrderReady(serializedOrder);
+      } else if (status === 'payment_confirmed' || status === 'confirmed') {
+        wsManager.broadcastNewOrder(serializedOrder);
+      }
+
+      try {
+        const custInfo = typeof updatedOrder.customerInfo === 'string' ? JSON.parse(updatedOrder.customerInfo) : updatedOrder.customerInfo;
+        const custId = updatedOrder.customerId || custInfo?.customerId;
+        console.log(`[PUSH] Attempting customer push for order #${serializedOrder.orderNumber}, customerId: ${custId}, status: ${status}`);
+        if (custId) {
+          const statusMessages: Record<string, string> = {
+            'payment_confirmed': `تم تأكيد طلبك رقم #${serializedOrder.orderNumber}`,
+            'in_progress': `جاري تحضير طلبك رقم #${serializedOrder.orderNumber}`,
+            'ready': `طلبك جاهز للاستلام! #${serializedOrder.orderNumber}`,
+            'completed': `تم إتمام طلبك رقم #${serializedOrder.orderNumber} بنجاح`,
+            'cancelled': `تم إلغاء طلبك رقم #${serializedOrder.orderNumber}`,
+          };
+          const pushBody = statusMessages[status];
+          if (pushBody) {
+            const orderItems = Array.isArray(serializedOrder.items) 
+              ? serializedOrder.items.map((item: any) => ({
+                  name: item.nameAr || item.name || item.coffeeItem?.nameAr || 'منتج',
+                  quantity: item.quantity || 1
+                }))
+              : [];
+
+            sendPushToCustomer(custId, {
+              title: 'تحديث الطلب',
+              body: pushBody,
+              url: '/my-orders',
+              tag: `order-${serializedOrder.orderNumber}`,
+              type: 'order_status',
+              orderNumber: serializedOrder.orderNumber || serializedOrder.dailyNumber,
+              orderStatus: status,
+              totalAmount: serializedOrder.totalAmount,
+              itemCount: orderItems.length,
+              items: orderItems.slice(0, 5),
+              orderType: serializedOrder.orderType,
+              estimatedTime: status === 'in_progress' ? 5 : undefined,
+            }).catch(err => console.error('[PUSH] Customer notification error:', err));
+          }
+        }
+      } catch (pushErr) {
+        console.error('[PUSH] Error sending customer push:', pushErr);
       }
 
       // Send email notification on status change
@@ -4156,7 +6007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const { sendOrderNotificationEmail } = await import("./mail-service");
               const emailSent = await sendOrderNotificationEmail(
                 customerEmail,
-                customerName || 'عميل BLACK ROSE',
+                customerName || 'عميل CLUNY CAFE',
                 updatedOrder.orderNumber,
                 status,
                 parseFloat(updatedOrder.totalAmount.toString()),
@@ -4168,12 +6019,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           });
         }
-      }
-
-      // Broadcast order update via WebSocket
-      wsManager.broadcastOrderUpdate(serializedOrder);
-      if (status === 'ready') {
-        wsManager.broadcastOrderReady(serializedOrder);
       }
 
       // Update Google Sheets and send email notification
@@ -4226,85 +6071,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/cashier/payment-methods", async (req, res) => {
     try {
       const paymentMethods = [
-        { id: 'qahwa-card', nameAr: 'بطاقة كوبي', nameEn: 'Copy Card', details: 'استخدم المشروبات المجانية من بطاقتك', icon: 'fas fa-gift', requiresReceipt: false, autoConfirm: true },
-        { id: 'cash', nameAr: 'نقداً', nameEn: 'Cash', details: 'الدفع نقداً', icon: 'fas fa-money-bill-wave', requiresReceipt: false, autoConfirm: true },
-        { id: 'network', nameAr: 'شبكة', nameEn: 'Network', details: 'الدفع عبر الشبكة', icon: 'fas fa-credit-card', requiresReceipt: false, autoConfirm: true },
-        { id: 'pos-network', nameAr: 'شبكة (POS)', nameEn: 'Network (POS)', details: 'الدفع عبر جهاز نقاط البيع', icon: 'fas fa-credit-card', requiresReceipt: false, autoConfirm: true },
-        { id: 'newleap', nameAr: 'نيو ليب', nameEn: 'New Leap', details: 'الدفع عبر نيو ليب', icon: 'fas fa-mobile-alt', requiresReceipt: false, autoConfirm: false },
-        { id: 'alinma', nameAr: 'Alinma Pay', nameEn: 'Alinma Pay', details: '0532441566', icon: 'fas fa-credit-card', requiresReceipt: true, autoConfirm: false },
-        { id: 'ur', nameAr: 'Ur Pay', nameEn: 'Ur Pay', details: '0532441566', icon: 'fas fa-university', requiresReceipt: true, autoConfirm: false },
-        { id: 'barq', nameAr: 'Barq', nameEn: 'Barq', details: '0532441566', icon: 'fas fa-bolt', requiresReceipt: true, autoConfirm: false },
-        { id: 'rajhi', nameAr: 'بنك الراجحي', nameEn: 'Al Rajhi Bank', details: 'SA78 8000 0539 6080 1942 4738', icon: 'fas fa-building-columns', requiresReceipt: true, autoConfirm: false },
+        { id: 'qahwa-card', nameAr: 'بطاقة كوبي', nameEn: 'Qahwa Card', details: 'استخدم المشروبات المجانية من بطاقتك', icon: 'fas fa-gift', requiresReceipt: false },
+        { id: 'cash', nameAr: 'الدفع نقداً', nameEn: 'Cash Payment', details: 'ادفع عند الاستلام', icon: 'fas fa-money-bill-wave', requiresReceipt: false },
+        { id: 'pos-network', nameAr: 'شبكة (POS)', nameEn: 'Network (POS)', details: 'الدفع عبر جهاز نقاط البيع', icon: 'fas fa-credit-card', requiresReceipt: false },
+        { id: 'alinma', nameAr: 'Alinma Pay', nameEn: 'Alinma Pay', details: '0532441566', icon: 'fas fa-credit-card', requiresReceipt: true },
+        { id: 'ur', nameAr: 'Ur Pay', nameEn: 'Ur Pay', details: '0532441566', icon: 'fas fa-university', requiresReceipt: true },
+        { id: 'barq', nameAr: 'Barq', nameEn: 'Barq', details: '0532441566', icon: 'fas fa-bolt', requiresReceipt: true },
+        { id: 'rajhi', nameAr: 'بنك الراجحي', nameEn: 'Al Rajhi Bank', details: 'SA78 8000 0539 6080 1942 4738', icon: 'fas fa-building-columns', requiresReceipt: true },
       ];
 
       res.json(paymentMethods);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch payment methods" });
-    }
-  });
-
-  // Loyalty rewards/tiers information
-  app.get("/api/loyalty/rewards", async (req, res) => {
-    try {
-      const rewards = [
-        {
-          tier: 'bronze',
-          nameAr: 'برونزي',
-          nameEn: 'Bronze',
-          requiredSpending: 0,
-          requiredPoints: 0,
-          benefits: [
-            'استرجاع نقدي 5%',
-            'قهوة عيد ميلاد مجانية',
-            'وصول مبكر للمنتجات الجديدة'
-          ]
-        },
-        {
-          tier: 'silver',
-          nameAr: 'فضي',
-          nameEn: 'Silver',
-          requiredSpending: 500,
-          requiredPoints: 100,
-          benefits: [
-            'استرجاع نقدي 7.5%',
-            'قهوة عيد ميلاد مجانية + حلوى',
-            'ترقية مجانية للحجم',
-            'دعوات للفعاليات الخاصة'
-          ]
-        },
-        {
-          tier: 'gold',
-          nameAr: 'ذهبي',
-          nameEn: 'Gold',
-          requiredSpending: 1500,
-          requiredPoints: 300,
-          benefits: [
-            'استرجاع نقدي 10%',
-            'وجبة عيد ميلاد كاملة مجانية',
-            'ترقية مجانية للحجم',
-            'أولوية الطلب',
-            'عروض حصرية شهرية'
-          ]
-        },
-        {
-          tier: 'platinum',
-          nameAr: 'بلاتيني',
-          nameEn: 'Platinum',
-          requiredSpending: 3000,
-          requiredPoints: 600,
-          benefits: [
-            'استرجاع نقدي 15%',
-            'حفلة عيد ميلاد كاملة',
-            'توصيل مجاني دائماً',
-            'وصول مبكر لجميع المنتجات',
-            'جلسات تذوق حصرية',
-            'خط خدمة VIP'
-          ]
-        }
-      ];
-      res.json(rewards);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch loyalty rewards" });
     }
   });
 
@@ -4328,6 +6106,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json([loyaltyCard]); // Return as array for consistency with frontend query
     } catch (error) {
       res.status(500).json({ error: "فشل في جلب بطاقة الولاء" });
+    }
+  });
+
+  // Get loyalty transactions by customer ID
+  app.get("/api/loyalty/transactions/customer/:customerId", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { customerId } = req.params;
+      const LoyaltyTransactionModel = mongoose.model('LoyaltyTransaction');
+      const transactions = await LoyaltyTransactionModel.find({ customerId }).sort({ createdAt: -1 });
+      res.json(transactions.map(serializeDoc));
+    } catch (error) {
+      console.error("Error fetching loyalty transactions:", error);
+      res.status(500).json({ error: "فشل في جلب سجل العمليات" });
     }
   });
 
@@ -4645,6 +6436,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer loyalty cards endpoint for /my-card page
+  app.get("/api/customer/loyalty-cards", requireCustomerAuth, async (req: CustomerAuthRequest, res) => {
+    try {
+      const customerId = req.customer?.id;
+      const customerPhone = req.customer?.phone;
+      
+      if (!customerPhone) {
+        return res.status(401).json({ error: "يرجى تسجيل الدخول" });
+      }
+
+      const cleanPhone = customerPhone.replace(/\D/g, '').slice(-9);
+      let loyaltyCard = await storage.getLoyaltyCardByPhone(cleanPhone);
+      
+      // Create card if doesn't exist
+      if (!loyaltyCard) {
+        const cardNumber = `CLUNY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const qrToken = `QR-${customerId || cleanPhone}-${Date.now()}`;
+        
+        loyaltyCard = await storage.createLoyaltyCard({
+          customerId: customerId || cleanPhone,
+          customerName: req.customer?.name || 'عميل',
+          phoneNumber: cleanPhone,
+          cardNumber: cardNumber,
+          qrToken: qrToken,
+          isActive: 1,
+          stamps: 0,
+          freeCupsEarned: 0,
+          totalSpent: 0,
+          points: 0,
+          pendingPoints: 0
+        });
+      }
+
+      res.json([loyaltyCard]);
+    } catch (error) {
+      console.error("[CUSTOMER LOYALTY] Error:", error);
+      res.status(500).json({ error: "فشل في جلب بطاقة الولاء" });
+    }
+  });
+
+  // Customer loyalty transactions endpoint
+  app.get("/api/customer/loyalty-transactions", requireCustomerAuth, async (req: CustomerAuthRequest, res) => {
+    try {
+      const customerPhone = req.customer?.phone;
+      
+      if (!customerPhone) {
+        return res.status(401).json({ error: "يرجى تسجيل الدخول" });
+      }
+
+      const cleanPhone = customerPhone.replace(/\D/g, '').slice(-9);
+      const loyaltyCard = await storage.getLoyaltyCardByPhone(cleanPhone);
+      
+      if (!loyaltyCard) {
+        return res.json([]);
+      }
+
+      const transactions = await storage.getLoyaltyTransactions(loyaltyCard.id);
+      
+      // Transform transactions for frontend
+      const formattedTransactions = transactions.map((tx: any) => ({
+        id: tx.id || tx._id,
+        type: tx.type === 'stamps_earned' || tx.type === 'points_earned' ? 'earn' : 'redeem',
+        points: tx.pointsChange || 0,
+        descriptionAr: tx.description,
+        createdAt: tx.createdAt
+      }));
+
+      res.json(formattedTransactions);
+    } catch (error) {
+      console.error("[CUSTOMER TRANSACTIONS] Error:", error);
+      res.status(500).json({ error: "فشل في جلب معاملات الولاء" });
+    }
+  });
+
+  // Transfer points between customers
+  app.post("/api/customer/transfer-points", requireCustomerAuth, async (req: CustomerAuthRequest, res) => {
+    try {
+      const { recipientPhone, points, pin } = req.body;
+      const senderPhone = req.customer?.phone;
+      
+      if (!senderPhone || !recipientPhone || !points || points <= 0) {
+        return res.status(400).json({ error: "بيانات غير صالحة" });
+      }
+
+      const cleanSenderPhone = senderPhone.replace(/\D/g, '').slice(-9);
+      const cleanRecipientPhone = recipientPhone.replace(/\D/g, '').slice(-9);
+
+      // Get sender's card
+      const senderCard = await storage.getLoyaltyCardByPhone(cleanSenderPhone);
+      if (!senderCard) {
+        return res.status(404).json({ error: "بطاقتك غير موجودة" });
+      }
+
+      // Verify PIN
+      const customer = await storage.getCustomerByPhone(cleanSenderPhone);
+      if (customer?.cardPassword && customer.cardPassword !== pin) {
+        return res.status(401).json({ error: "الرقم السري غير صحيح" });
+      }
+
+      // Check if sender has enough points
+      const currentPoints = senderCard.points || 0;
+      if (currentPoints < points) {
+        return res.status(400).json({ error: "رصيد النقاط غير كافي" });
+      }
+
+      // Transfer points
+      await storage.updateLoyaltyCard(senderCard.id, { points: currentPoints - points });
+      
+      // Get or create recipient's card
+      let recipientCard = await storage.getLoyaltyCardByPhone(cleanRecipientPhone);
+      const recipientCustomer = await storage.getCustomerByPhone(cleanRecipientPhone);
+      
+      if (!recipientCard && recipientCustomer) {
+        const recipientCustomerId = (recipientCustomer as any)._id?.toString() || (recipientCustomer as any).id;
+        const cardNumber = `CLUNY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const qrToken = `QR-${recipientCustomerId}-${Date.now()}`;
+        
+        recipientCard = await storage.createLoyaltyCard({
+          customerId: recipientCustomerId,
+          customerName: recipientCustomer.name,
+          phoneNumber: cleanRecipientPhone,
+          cardNumber: cardNumber,
+          qrToken: qrToken,
+          isActive: 1,
+          stamps: 0,
+          freeCupsEarned: 0,
+          totalSpent: 0,
+          points: 0,
+          pendingPoints: 0
+        });
+      }
+
+      if (!recipientCard) {
+        return res.status(404).json({ error: "المستلم غير مسجل في النظام" });
+      }
+
+      // Transfer points
+      await storage.updateLoyaltyCard(recipientCard.id, {
+        points: (recipientCard.points || 0) + points
+      });
+
+      // Create transaction records
+      await storage.createLoyaltyTransaction({
+        cardId: senderCard.id,
+        customerId: senderCard.customerId,
+        type: 'transfer_out',
+        pointsChange: -points,
+        points: -points,
+        description: `تحويل نقاط إلى ${recipientCustomer?.name || recipientPhone}`,
+      });
+
+      await storage.createLoyaltyTransaction({
+        cardId: recipientCard.id,
+        customerId: recipientCard.customerId,
+        type: 'transfer_in',
+        pointsChange: points,
+        points: points,
+        description: `استلام نقاط من ${req.customer?.name || senderPhone}`,
+      });
+
+      res.json({ 
+        success: true, 
+        message: "تم تحويل النقاط بنجاح",
+        recipientName: recipientCustomer?.name || recipientPhone
+      });
+    } catch (error) {
+      console.error("[TRANSFER POINTS] Error:", error);
+      res.status(500).json({ error: "فشل في تحويل النقاط" });
+    }
+  });
+
   // Get loyalty card by card number (for cashier lookup)
   app.get("/api/loyalty/card/:cardNumber", async (req, res) => {
     try {
@@ -4848,7 +6810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/branches", async (req, res) => {
     try {
       const { BranchModel } = await import("@shared/schema");
-      const tenantId = (req as any).employee?.tenantId || 'black-rose-tenant';
+      const tenantId = (req as any).employee?.tenantId || 'demo-tenant';
       const userRole = (req as any).employee?.role;
       const userBranchId = (req as any).employee?.branchId;
 
@@ -4870,8 +6832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         _id: b._id?.toString()
       }));
       
-      // Enforce single branch system
-      res.json(serialized.slice(0, 1));
+      res.json(serialized);
     } catch (error) {
       console.error("Error fetching branches:", error);
       res.status(500).json({ error: "Failed to fetch branches" });
@@ -4901,19 +6862,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(branches);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch branches" });
-    }
-  });
-
-  app.get("/api/branches/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const branch = await storage.getBranch(id);
-      if (!branch) {
-        return res.status(404).json({ error: "Branch not found" });
-      }
-      res.json(branch);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch branch" });
     }
   });
 
@@ -4976,29 +6924,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/branches", requireAuth, requireManager, async (req: AuthRequest, res) => {
+  app.post("/api/branches", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
     try {
-      const { insertBranchSchema, BranchModel: LocalBranchModel } = await import("@shared/schema");
-      // SINGLE BRANCH RESTRICTION: Check if a branch already exists
-      const tenantId = req.employee?.tenantId || 'demo-tenant';
-      const existingBranches = await LocalBranchModel.find({ tenantId });
-      
-      if (existingBranches.length >= 1) {
-        return res.status(400).json({ 
-          error: "لا يمكن إضافة أكثر من فرع واحد. النظام مقيد بفرع واحد فقط.",
-          errorEn: "Cannot add more than one branch. System is limited to a single branch only."
-        });
-      }
-
-      const { managerAssignment, ...branchData } = req.body;
+      const { insertBranchSchema, BranchModel } = await import("@shared/schema");
+      const branchData = req.body;
+      const { managerAssignment, ...cleanBranchData } = branchData;
       
       // Force cafeId and tenantId for safety
-      const cafeId = branchData.cafeId || tenantId;
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const cafeId = cleanBranchData.cafeId || tenantId;
       
-      const id = branchData.id || nanoid();
+      const id = cleanBranchData.id || nanoid();
       
-      const newBranch = await LocalBranchModel.create({
-        ...branchData,
+      const newBranch = await BranchModel.create({
+        ...cleanBranchData,
         id,
         tenantId,
         cafeId,
@@ -5119,7 +7058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/branches/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+  app.put("/api/branches/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
       const branch = await storage.updateBranch(id, req.body);
@@ -5132,7 +7071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/branches/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+  app.delete("/api/branches/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteBranch(id);
@@ -5146,54 +7085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Attendance Check with Geofencing
-  app.post("/api/attendance/check", requireAuth, async (req: AuthRequest, res) => {
-    try {
-      const { latitude, longitude, branchId } = req.body;
-      const employee = req.employee!;
-      
-      const branch = await storage.getBranch(branchId || employee.branchId);
-      if (!branch) return res.status(404).json({ error: "Branch not found" });
-
-      let isWithinGeofence = false;
-      
-      if (branch.geofenceBoundary && branch.geofenceBoundary.length >= 3) {
-        // Use polygon check
-        const { isPointInPolygon } = await import("./utils/geo");
-        isWithinGeofence = isPointInPolygon({ lat: latitude, lng: longitude }, branch.geofenceBoundary);
-      } else if (branch.location?.lat && branch.location?.lng) {
-        // Use radius check
-        const { calculateDistance } = await import("./utils/geo");
-        const distance = calculateDistance(
-          { lat: latitude, lng: longitude },
-          { lat: branch.location.lat, lng: branch.location.lng }
-        );
-        isWithinGeofence = distance <= (branch.geofenceRadius || 200);
-      } else {
-        // No location data, assume within geofence to not block
-        isWithinGeofence = true;
-      }
-
-      if (!isWithinGeofence) {
-        // Send alert to manager
-        const managerId = branch.managerId;
-        if (managerId) {
-          await storage.createNotification({
-            userId: managerId,
-            title: "تنبيه خروج موظف",
-            message: `الموظف ${employee.fullName} خارج حدود الفرع أثناء وقت العمل.`,
-            type: "geofence_alert",
-            metadata: { employeeId: employee.id, latitude, longitude }
-          });
-        }
-      }
-
-      res.json({ isWithinGeofence });
-    } catch (error) {
-      console.error("Geofence check error:", error);
-      res.status(500).json({ error: "Failed to perform geofence check" });
-    }
-  });
+  // CATEGORY MANAGEMENT ROUTES
   app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();
@@ -5240,80 +7132,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete category" });
-    }
-  });
-
-  // KITCHEN DEPARTMENTS MANAGEMENT
-  app.get("/api/kitchen-departments", requireAuth, async (req: AuthRequest, res) => {
-    try {
-      const tenantId = await getTenantIdFromRequest(req);
-      const kitchens = await KitchenDepartmentModel.find({ tenantId }).sort({ sortOrder: 1 });
-      res.json(kitchens.map(serializeDoc));
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch kitchen departments" });
-    }
-  });
-
-  app.post("/api/kitchen-departments", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    try {
-      const tenantId = await getTenantIdFromRequest(req);
-      const branchId = req.employee?.branchId;
-      
-      const kitchenData = {
-        id: `kitchen-${nanoid(10)}`,
-        tenantId,
-        branchId,
-        ...req.body,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      const kitchen = await KitchenDepartmentModel.create(kitchenData);
-      res.status(201).json(serializeDoc(kitchen));
-    } catch (error) {
-      console.error('Error creating kitchen department:', error);
-      res.status(500).json({ error: "Failed to create kitchen department" });
-    }
-  });
-
-  app.put("/api/kitchen-departments/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    try {
-      const { id } = req.params;
-      const updateData = {
-        ...req.body,
-        updatedAt: new Date(),
-      };
-
-      const kitchen = await KitchenDepartmentModel.findOneAndUpdate(
-        { id },
-        { $set: updateData },
-        { new: true }
-      );
-
-      if (!kitchen) {
-        return res.status(404).json({ error: "Kitchen department not found" });
-      }
-
-      res.json(serializeDoc(kitchen));
-    } catch (error) {
-      console.error('Error updating kitchen department:', error);
-      res.status(500).json({ error: "Failed to update kitchen department" });
-    }
-  });
-
-  app.delete("/api/kitchen-departments/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    try {
-      const { id } = req.params;
-      const kitchen = await KitchenDepartmentModel.findOneAndDelete({ id });
-      
-      if (!kitchen) {
-        return res.status(404).json({ error: "Kitchen department not found" });
-      }
-
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error deleting kitchen department:', error);
-      res.status(500).json({ error: "Failed to delete kitchen department" });
     }
   });
 
@@ -5415,45 +7233,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const employee = req.employee;
       const queryBranchId = req.query.branchId as string;
+      const tenantId = employee?.tenantId || (req.headers['x-tenant-id'] as string) || 'demo-tenant';
       
-      // Admin can see all tables or specific branch if requested
-      if (employee?.role === 'admin') {
-        if (queryBranchId) {
-          const tables = await storage.getTables(queryBranchId);
-          return res.json(tables);
+      console.log(`[TABLES_CRITICAL] GET Request - Tenant: ${tenantId}, Branch: ${queryBranchId}`);
+
+      // Direct fetch for total visibility
+      // @ts-ignore
+      const allTablesRaw = await TableModel.find({}).lean().exec();
+      console.log(`[TABLES_CRITICAL] DB Total Count: ${allTablesRaw?.length || 0}`);
+
+      if (!allTablesRaw || allTablesRaw.length === 0) {
+        return res.json([]);
+      }
+
+      const allTables = allTablesRaw.map((t: any) => {
+        const doc = { ...t };
+        if (t._id) doc.id = t._id.toString();
+        // Ensure tenantId exists if missing (legacy data)
+        if (!doc.tenantId) doc.tenantId = 'demo-tenant';
+        return doc;
+      });
+
+      // Filter by tenant
+      let filtered = allTables;
+      if (tenantId && tenantId !== 'demo-tenant') {
+        filtered = filtered.filter((t: any) => t.tenantId === tenantId);
+      }
+
+      // Filter by branch
+      const effectiveBranchId = (queryBranchId === 'none' || !queryBranchId) ? undefined : queryBranchId;
+      if (effectiveBranchId) {
+        const branchFiltered = filtered.filter((t: any) => t.branchId === effectiveBranchId);
+        if (branchFiltered.length > 0) {
+          filtered = branchFiltered;
         }
-        const allTables = await storage.getTables();
-        return res.json(allTables);
       }
-      
-      // Manager can only see tables from their own branch
-      // CRITICAL: Each branch must display ONLY its own 10 tables
-      if (employee?.role === 'manager') {
-        const managerBranch = employee?.branchId;
-        
-        // If queryBranchId is provided, verify it matches manager's branch
-        if (queryBranchId && queryBranchId !== managerBranch) {
-          return res.status(403).json({ error: "Unauthorized: Cannot access other branches" });
-        }
-        
-        const tables = await storage.getTables(managerBranch);
-        return res.json(tables);
+
+      // Emergency fallback for visibility
+      if (filtered.length === 0 && allTables.length > 0) {
+        console.log(`[TABLES_CRITICAL] Falling back to all DB tables due to empty filtered list`);
+        filtered = allTables;
       }
-      
-      // Other roles (cashier, etc.) see only their branch
-      const branchId = queryBranchId || employee?.branchId;
-      if (!branchId) {
-        return res.status(400).json({ error: "Employee branch not assigned" });
-      }
-      
-      // Security: Non-managers can only see their own branch
-      if (branchId !== employee?.branchId) {
-        return res.status(403).json({ error: "Unauthorized: Cannot access other branches" });
-      }
-      
-      const tables = await storage.getTables(branchId);
-      res.json(tables);
+
+      console.log(`[TABLES_CRITICAL] Returning ${filtered.length} tables`);
+      res.json(filtered);
     } catch (error) {
+      console.error("[TABLES_CRITICAL] Error:", error);
       res.status(500).json({ error: "Failed to fetch tables" });
     }
   });
@@ -5461,7 +7286,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cleanup: Clear all old table reservations (temporary endpoint)
   app.post("/api/tables/cleanup-reservations", async (req, res) => {
     try {
-      const tables = await storage.getTables();
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const tables = await storage.getTables(undefined, tenantId);
       let cleaned = 0;
       for (const table of tables) {
         if (table.reservedFor) {
@@ -5481,12 +7307,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tables/status", async (req, res) => {
     try {
       const { branchId } = req.query;
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
       
       if (!branchId) {
         return res.status(400).json({ error: "Branch ID required" });
       }
 
-      const tables = await storage.getTables(branchId as string);
+      const tables = await storage.getTables(branchId as string, tenantId);
       const now = new Date();
       
       // Return all active tables with their simple availability status
@@ -5564,12 +7391,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tables/available", async (req, res) => {
     try {
       const { branchId } = req.query;
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
       
       if (!branchId) {
         return res.status(400).json({ error: "Branch ID required" });
       }
 
-      const tables = await storage.getTables(branchId as string);
+      const tables = await storage.getTables(branchId as string, tenantId);
       
       // Filter available tables - return only active tables without active reservations
       const availableTables = tables.filter(t => {
@@ -5674,6 +7502,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all tables - nuclear option
+  app.delete("/api/tables/all", async (req, res) => {
+    try {
+      // @ts-ignore
+      const result = await TableModel.deleteMany({});
+      res.json({ message: `Deleted ${result.deletedCount} tables` });
+    } catch (error) {
+      console.error("[TABLES_DELETE] Error:", error);
+      res.status(500).json({ error: "Failed to delete tables" });
+    }
+  });
+
   app.get("/api/tables/qr/:qrToken", async (req, res) => {
     try {
       const table = await storage.getTableByQRToken(req.params.qrToken);
@@ -5686,82 +7526,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tables", async (req, res) => {
-    try {
-      const { insertTableSchema } = await import("@shared/schema");
-      const validatedData = insertTableSchema.parse(req.body);
-      const table = await storage.createTable(validatedData);
-      res.status(201).json(table);
-    } catch (error: any) {
-      if (error instanceof Error && 'issues' in error) {
-        return res.status(400).json({ error: "Validation error", details: error.issues });
-      }
-      if (error.message?.includes('already exists')) {
-        return res.status(409).json({ error: error.message });
-      }
-      res.status(500).json({ error: "Failed to create table" });
-    }
-  });
-
-  app.post("/api/tables/bulk-create", async (req, res) => {
-    try {
-      const { count, branchId } = req.body;
-      
-      if (!count || count < 1 || count > 100) {
-        return res.status(400).json({ error: "Count must be between 1 and 100" });
-      }
-
-      if (!branchId || typeof branchId !== 'string') {
-        return res.status(400).json({ error: "Valid branchId is required" });
-      }
-
-      const results = {
-        created: [] as any[],
-        failed: [] as { tableNumber: string, reason: string }[],
-        totalRequested: count,
-      };
-
-      for (let i = 1; i <= count; i++) {
-        const tableNumber = String(i).padStart(2, '0');
-        try {
-          const table = await storage.createTable({
-            tableNumber,
-            branchId
-          });
-          results.created.push(table);
-        } catch (tableError: any) {
-          // Track failures with reason
-          results.failed.push({
-            tableNumber,
-            reason: tableError.message || "Unknown error"
-          });
-        }
-      }
-
-      // Return appropriate status code based on results
-      if (results.created.length === 0) {
-        // All failed
-        return res.status(409).json({
-          error: "Failed to create any tables",
-          details: results
-        });
-      } else if (results.failed.length > 0) {
-        // Partial success - use 207 Multi-Status
-        return res.status(207).json({
-          message: `Created ${results.created.length} of ${count} tables`,
-          details: results
-        });
-      } else {
-        // Complete success
-        return res.status(201).json({
-          message: `Successfully created ${results.created.length} tables`,
-          details: results
-        });
-      }
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create tables" });
-    }
-  });
 
   app.put("/api/tables/:id", async (req, res) => {
     try {
@@ -5830,30 +7594,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tables/:id/qr-code", async (req, res) => {
-    try {
-      const table = await storage.getTable(req.params.id);
-      
-      if (!table) {
-        return res.status(404).json({ error: "Table not found" });
+
+    // Empty table (manually clear occupancy)
+    app.post("/api/tables/:id/empty", requireAuth, requireManager, async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { TableModel } = await import("@shared/schema");
+        
+        const table = await TableModel.findOneAndUpdate(
+          { 
+            $or: [
+              { id: id },
+              { _id: isValidObjectId(id) ? id : null }
+            ].filter(q => q._id !== null || q.id !== undefined)
+          },
+          {
+            isOccupied: 0,
+            currentOrderId: null,
+            reservedFor: null,
+            updatedAt: new Date()
+          },
+          { new: true }
+        );
+        
+        if (!table) {
+          return res.status(404).json({ error: "Table not found" });
+        }
+        
+        res.json(serializeDoc(table));
+      } catch (error) {
+        res.status(500).json({ error: "Failed to empty table" });
       }
+    });
 
-      const baseUrl = `https://BLACKROSE.com.sa`;
-      const tableUrl = `${baseUrl}/table-menu/${table.qrToken}`;
-      
-      // Get branch info for QR card
-      const branch = await storage.getBranch(table.branchId);
-
-      res.json({
-        tableUrl,
-        tableNumber: table.tableNumber,
-        qrToken: table.qrToken,
-        branchName: branch?.nameAr || 'BLACK ROSE'
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to generate QR code" });
-    }
-  });
+    // Update table mutation
+    app.patch("/api/tables/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+      try {
+        const { tableNumber, capacity, branchId } = req.body;
+        const updates: any = { updatedAt: new Date() };
+        if (tableNumber !== undefined) updates.tableNumber = tableNumber;
+        if (capacity !== undefined) updates.capacity = capacity;
+        if (branchId !== undefined) updates.branchId = branchId;
+        
+        const { TableModel } = await import("@shared/schema");
+        const table = await TableModel.findOneAndUpdate(
+          { 
+            $or: [
+              { id: req.params.id },
+              { _id: isValidObjectId(req.params.id) ? req.params.id : null }
+            ].filter(q => q._id !== null || q.id !== undefined)
+          },
+          { $set: updates },
+          { new: true }
+        );
+        if (!table) return res.status(404).json({ error: "Table not found" });
+        res.json(serializeDoc(table));
+      } catch (error) {
+        console.error("Error updating table:", error);
+        res.status(500).json({ error: "Failed to update table" });
+      }
+    });
 
   // Reserve a table
   app.post("/api/tables/:id/reserve", async (req, res) => {
@@ -5915,27 +7715,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Release a table reservation
   app.post("/api/tables/:id/release", async (req, res) => {
     try {
+      const { id } = req.params;
       const { employeeId } = req.body;
 
-      // Optionally verify branch ownership if employeeId is provided
-      if (employeeId) {
-        const employee = await storage.getEmployee(employeeId);
-        if (!employee) {
-          return res.status(404).json({ error: "Employee not found" });
-        }
+      console.log(`[TABLE] Releasing table ${id}, requested by employee: ${employeeId || 'none'}`);
 
-        const existingTable = await storage.getTable(req.params.id);
-        if (!existingTable) {
-          return res.status(404).json({ error: "Table not found" });
-        }
-
-        // Verify branch ownership
-        if (existingTable.branchId && employee.branchId && existingTable.branchId !== employee.branchId) {
-          return res.status(403).json({ error: "Cannot release tables in other branches" });
-        }
-      }
-
-      const table = await storage.updateTable(req.params.id, {
+      const table = await storage.updateTable(id, {
         isOccupied: 0,
         reservedFor: null as any,
         currentOrderId: null as any
@@ -5947,6 +7732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(table);
     } catch (error) {
+      console.error("[TABLE] Failed to release table:", error);
       res.status(500).json({ error: "Failed to release table" });
     }
   });
@@ -6439,7 +8225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { cancellationReason } = req.body;
       const { OrderModel } = await import("@shared/schema");
       
-      const order = await OrderModel.findById(req.params.id);
+      const order = await OrderModel.findOne({ id: req.params.id }) || await OrderModel.findById(req.params.id).catch(() => null);
       
       if (!order) {
         return res.status(404).json({ error: "الطلب غير موجود" });
@@ -6538,7 +8324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "معرف الكاشير مطلوب" });
       }
 
-      const order = await OrderModel.findById(req.params.id);
+      const order = await OrderModel.findOne({ id: req.params.id }) || await OrderModel.findById(req.params.id).catch(() => null);
       
       if (!order) {
         return res.status(404).json({ error: "الطلب غير موجود" });
@@ -6570,7 +8356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "حالة الطلب غير صالحة" });
       }
 
-      const order = await OrderModel.findById(req.params.id);
+      const order = await OrderModel.findOne({ id: req.params.id }) || await OrderModel.findById(req.params.id).catch(() => null);
       
       if (!order) {
         return res.status(404).json({ error: "الطلب غير موجود" });
@@ -6671,24 +8457,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { status, cancellationReason } = req.body;
+      const employee = req.employee;
       
-      const order = await OrderModel.findById(id);
+      const order = await OrderModel.findOne({ id }) || await OrderModel.findById(id).catch(() => null);
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
 
       if (status === 'in_progress' || status === 'preparing' || status === 'completed') {
-        const deductionResult = await deductInventoryForOrder(id, order.branchId || '', req.employee!.id);
+        const deductionResult = await deductInventoryForOrder(id, order.branchId || '', employee?.id || 'system');
         if (!deductionResult.success) {
           console.error(`[INVENTORY] Deduction failed for order ${id}:`, deductionResult.error);
         }
       }
 
+      // When order is completed, convert pending points to confirmed points
+      if (status === 'completed' && order.status !== 'completed') {
+        // Automatically generate ZATCA invoice on completion
+        try {
+          const { createZATCAInvoice } = await import("./utils/zatca");
+          const items = Array.isArray(order.items) ? order.items : JSON.parse(order.items || '[]');
+          
+          await createZATCAInvoice({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            customerName: (order.customerInfo as any)?.customerName || 'عميل',
+            customerPhone: (order.customerInfo as any)?.phone || '',
+            items: items.map((item: any) => ({
+              itemId: item.coffeeItemId,
+              nameAr: item.nameAr || 'منتج',
+              quantity: item.quantity,
+              unitPrice: item.unitPrice || 0
+            })),
+            paymentMethod: order.paymentMethod || 'cash',
+            branchId: order.branchId,
+            createdBy: employee?.id
+          });
+          console.log(`[ZATCA] Auto-generated invoice for order ${order.orderNumber}`);
+        } catch (zatcaErr) {
+          console.error("[ZATCA] Auto-generation failed:", zatcaErr);
+        }
+        const customerInfo = typeof order.customerInfo === 'string' ? JSON.parse(order.customerInfo) : order.customerInfo;
+        const customerPhone = customerInfo?.phone || customerInfo?.phoneNumber;
+        
+        if (customerPhone) {
+          try {
+            const cleanPhone = customerPhone.replace(/\D/g, '').slice(-9);
+            const loyaltyCard = await storage.getLoyaltyCardByPhone(cleanPhone);
+            
+            if (loyaltyCard) {
+              const orderItems = Array.isArray(order.items) ? order.items : 
+                                (typeof order.items === 'string' ? JSON.parse(order.items) : []);
+              const totalPointsToAward = orderItems.reduce((acc: number, item: any) => acc + ((item.quantity || 1) * 10), 0);
+              
+              const currentPoints = Number(loyaltyCard.points) || 0;
+              const currentPendingPoints = Number(loyaltyCard.pendingPoints) || 0;
+              
+              await storage.updateLoyaltyCard(loyaltyCard.id, {
+                points: currentPoints + totalPointsToAward,
+                pendingPoints: Math.max(0, currentPendingPoints - totalPointsToAward)
+              });
+
+              // Create transaction for confirmed points
+              await storage.createLoyaltyTransaction({
+                cardId: loyaltyCard.id,
+                type: 'points_earned',
+                pointsChange: totalPointsToAward,
+                discountAmount: 0,
+                orderAmount: Number(order.totalAmount),
+                orderId: order.id,
+                description: `تم إضافة ${totalPointsToAward} نقطة من الطلب رقم ${order.orderNumber}`,
+              });
+
+              console.log(`[LOYALTY] Confirmed ${totalPointsToAward} points for ${cleanPhone} on order completion`);
+            }
+          } catch (e) {
+            console.error("[LOYALTY] Error confirming points:", e);
+          }
+        }
+
+        // Also update CustomerModel if exists
+        if (order.customerId) {
+          const totalPointsToAward = order.items.reduce((acc: number, item: any) => acc + ((item.quantity || 1) * 10), 0);
+          await CustomerModel.findByIdAndUpdate(order.customerId, {
+            $inc: { 
+              points: totalPointsToAward,
+              pendingPoints: -totalPointsToAward 
+            }
+          });
+        }
+      }
+
       const updatedOrder = await OrderModel.findByIdAndUpdate(
         id,
-        { $set: { status, cancellationReason } },
+        { $set: { status, cancellationReason, updatedAt: new Date() } },
         { new: true }
       );
       
       if (updatedOrder) {
+        wsManager.broadcastToBranch(updatedOrder.branchId, {
+          type: 'ORDER_UPDATED',
+          order: serializeDoc(updatedOrder)
+        });
+
         const updateCustomerInfo = typeof updatedOrder.customerInfo === 'string' ? JSON.parse(updatedOrder.customerInfo) : updatedOrder.customerInfo;
         const customerEmail = updateCustomerInfo?.email;
         if (customerEmail) {
@@ -6697,7 +8566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const { sendOrderNotificationEmail } = await import("./mail-service");
               await sendOrderNotificationEmail(
                 customerEmail,
-                updateCustomerInfo?.name || 'عميل BLACK ROSE',
+                updateCustomerInfo?.name || 'عميل CLUNY CAFE',
                 updatedOrder.orderNumber,
                 status,
                 parseFloat(updatedOrder.totalAmount.toString()),
@@ -6711,6 +8580,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(serializeDoc(updatedOrder));
     } catch (error) {
       res.status(500).json({ error: "فشل تحديث حالة الطلب" });
+    }
+  });
+
+  app.post("/api/orders/mark-all-completed", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const branchId = req.employee?.branchId;
+      
+      const query: any = { tenantId, status: { $ne: 'completed' } };
+      if (branchId) query.branchId = branchId;
+
+      const result = await OrderModel.updateMany(query, { 
+        $set: { status: 'completed', updatedAt: new Date() } 
+      });
+
+      console.log(`[ORDERS] Marked ${result.modifiedCount} orders as completed for branch ${branchId}`);
+      res.json({ message: "تم تحديث جميع الطلبات بنجاح" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark all completed" });
     }
   });
 
@@ -6741,62 +8629,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[PAYMENT-STATUS] Error:", error);
       res.status(500).json({ error: "فشل تحديث حالة الدفع" });
-    }
-  });
-
-  app.post("/api/orders/complete-all", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    try {
-      const { OrderModel } = await import("@shared/schema");
-      const coffeeItems = await storage.getCoffeeItems();
-      
-      const orders = await OrderModel.find({
-        orderType: 'table',
-        $or: [
-          { tableStatus: 'pending' },
-          { status: 'pending', tableStatus: { $exists: false } }
-        ],
-        assignedCashierId: { $exists: false }
-      }).sort({ createdAt: 1 });
-
-      // Serialize orders and parse items
-      const enrichedOrders = orders.map(order => {
-        const serializedOrder = serializeDoc(order);
-        
-        let orderItems = serializedOrder.items;
-        if (typeof orderItems === 'string') {
-          try {
-            orderItems = JSON.parse(orderItems);
-          } catch (e) {
-            orderItems = [];
-          }
-        }
-        
-        if (!Array.isArray(orderItems)) {
-          orderItems = [];
-        }
-        
-        const items = orderItems.map((item: any) => {
-          const coffeeItem = coffeeItems.find(ci => ci.id === item.coffeeItemId);
-          return {
-            ...item,
-            coffeeItem: coffeeItem ? {
-              nameAr: coffeeItem.nameAr,
-              nameEn: coffeeItem.nameEn,
-              price: coffeeItem.price,
-              imageUrl: coffeeItem.imageUrl
-            } : null
-          };
-        });
-
-        return {
-          ...serializedOrder,
-          items
-        };
-      });
-
-      res.json(enrichedOrders);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch unassigned orders" });
     }
   });
 
@@ -6928,23 +8760,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload employee image
-  app.post("/api/upload-employee-image", requireAuth, requireManager, employeeUpload.single('image'), (req, res) => {
+  app.post("/api/upload-employee-image", requireAuth, requireManager, employeeUpload.single('image'), async (req: AuthRequest, res) => {
     try {
       if (!req.file) {
-        return res.status(400).json({ error: "لم يتم رفع صورة" });
+        return res.status(400).json({ error: "No image file uploaded" });
       }
 
-      const fileUrl = `/attached_assets/employees/${req.file.filename}`;
-      res.json({ url: fileUrl, filename: req.file.filename });
+      const { ObjectStorageService } = await import("./replit_integrations/object_storage");
+      const storageService = new ObjectStorageService();
+
+      try {
+        const uploadURL = await storageService.getObjectEntityUploadURL();
+        const objectPath = storageService.normalizeObjectEntityPath(uploadURL);
+
+        const fsModule = await import('fs');
+        const fileBuffer = fsModule.readFileSync(req.file.path);
+
+        const uploadResponse = await fetch(uploadURL, {
+          method: 'PUT',
+          body: fileBuffer,
+          headers: {
+            'Content-Type': req.file.mimetype || 'image/png',
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload to object storage');
+        }
+
+        fsModule.unlinkSync(req.file.path);
+        res.json({ url: objectPath });
+      } catch (storageError) {
+        console.log('[UPLOAD] Object storage not available, falling back to local storage');
+        const fileUrl = `/attached_assets/employees/${req.file.filename}`;
+        res.json({ url: fileUrl });
+      }
     } catch (error) {
-      res.status(500).json({ error: "فشل رفع الصورة" });
+      console.error("Error uploading employee image:", error);
+      res.status(500).json({ error: "Failed to upload image" });
     }
   });
 
   // Configure multer for drink image uploads
-  const drinksUploadsDir = path.join(import.meta.dirname, '..', 'attached_assets', 'drinks');
+  const drinksUploadsDir = path.resolve(__dirname, '..', 'attached_assets', 'drinks');
   const drinksStorage = multer.diskStorage({
     destination: function (req, file, cb) {
+      if (!fs.existsSync(drinksUploadsDir)) {
+        fs.mkdirSync(drinksUploadsDir, { recursive: true });
+      }
       cb(null, drinksUploadsDir);
     },
     filename: function (req, file, cb) {
@@ -6972,25 +8835,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload drink image
-  app.post("/api/upload-drink-image", requireAuth, requireManager, (req, res) => {
-    drinkUpload.single('image')(req, res, (err) => {
-      if (err) {
-        console.error('Upload error:', err);
-        return res.status(400).json({ error: err.message || "فشل رفع الصورة" });
-      }
+  app.post("/api/upload-drink-image", requireAuth, requireManager, drinkUpload.single('image'), async (req: AuthRequest, res) => {
+    try {
       if (!req.file) {
-        return res.status(400).json({ error: "لم يتم رفع صورة" });
+        return res.status(400).json({ error: "No image file uploaded" });
       }
-      const fileUrl = `/attached_assets/drinks/${req.file.filename}`;
-      console.log(`[UPLOAD] Drink image uploaded successfully: ${fileUrl}`);
-      res.json({ url: fileUrl, filename: req.file.filename });
-    });
+
+      const { ObjectStorageService } = await import("./replit_integrations/object_storage");
+      const storageService = new ObjectStorageService();
+
+      try {
+        const uploadURL = await storageService.getObjectEntityUploadURL();
+        const objectPath = storageService.normalizeObjectEntityPath(uploadURL);
+
+        const fsModule = await import('fs');
+        const fileBuffer = fsModule.readFileSync(req.file.path);
+
+        const uploadResponse = await fetch(uploadURL, {
+          method: 'PUT',
+          body: fileBuffer,
+          headers: {
+            'Content-Type': req.file.mimetype || 'image/png',
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload to object storage');
+        }
+
+        fsModule.unlinkSync(req.file.path);
+        res.json({ url: objectPath });
+      } catch (storageError) {
+        console.log('[UPLOAD] Object storage not available, falling back to local storage');
+        const fileUrl = `/attached_assets/drinks/${req.file.filename}`;
+        res.json({ url: fileUrl });
+      }
+    } catch (error) {
+      console.error("Error uploading drink image:", error);
+      res.status(500).json({ error: "Failed to upload image" });
+    }
   });
 
   // Configure multer for size image uploads
-  const sizesUploadsDir = path.join(import.meta.dirname, '..', 'attached_assets', 'sizes');
+  const sizesUploadsDir = path.resolve(__dirname, '..', 'attached_assets', 'sizes');
   const sizesStorage = multer.diskStorage({
     destination: function (req, file, cb) {
+      if (!fs.existsSync(sizesUploadsDir)) {
+        fs.mkdirSync(sizesUploadsDir, { recursive: true });
+      }
       cb(null, sizesUploadsDir);
     },
     filename: function (req, file, cb) {
@@ -7015,24 +8907,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload size image
-  app.post("/api/upload-size-image", requireAuth, requireManager, (req, res) => {
-    sizeUpload.single('image')(req, res, (err) => {
-      if (err) {
-        console.error('Upload error:', err);
-        return res.status(400).json({ error: err.message || "فشل رفع الصورة" });
-      }
+  app.post("/api/upload-size-image", requireAuth, requireManager, sizeUpload.single('image'), (req, res) => {
+    try {
       if (!req.file) {
         return res.status(400).json({ error: "لم يتم رفع صورة" });
       }
       const fileUrl = `/attached_assets/sizes/${req.file.filename}`;
+      console.log(`[UPLOAD] Size image uploaded successfully: ${fileUrl}`);
       res.json({ url: fileUrl, filename: req.file.filename });
-    });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: "فشل رفع الصورة" });
+    }
   });
 
   // Configure multer for addon image uploads
-  const addonsUploadsDir = path.join(import.meta.dirname, '..', 'attached_assets', 'addons');
+  const addonsUploadsDir = path.resolve(__dirname, '..', 'attached_assets', 'addons');
   const addonsStorage = multer.diskStorage({
     destination: function (req, file, cb) {
+      if (!fs.existsSync(addonsUploadsDir)) {
+        fs.mkdirSync(addonsUploadsDir, { recursive: true });
+      }
       cb(null, addonsUploadsDir);
     },
     filename: function (req, file, cb) {
@@ -7057,21 +8952,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload addon image
-  app.post("/api/upload-addon-image", requireAuth, requireManager, (req, res) => {
-    addonUpload.single('image')(req, res, (err) => {
-      if (err) {
-        console.error('Upload error:', err);
-        return res.status(400).json({ error: err.message || "فشل رفع الصورة" });
-      }
+  app.post("/api/upload-addon-image", requireAuth, requireManager, addonUpload.single('image'), (req, res) => {
+    try {
       if (!req.file) {
         return res.status(400).json({ error: "لم يتم رفع صورة" });
       }
       const fileUrl = `/attached_assets/addons/${req.file.filename}`;
+      console.log(`[UPLOAD] Addon image uploaded successfully: ${fileUrl}`);
       res.json({ url: fileUrl, filename: req.file.filename });
-      return;
-    });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: "فشل رفع الصورة" });
+    }
   });
-  
+
   app.post("/old-upload-addon-image", requireAuth, requireManager, addonUpload.single('image'), (req, res) => {
     try {
       if (!req.file) {
@@ -8130,68 +10024,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create or update recipe item
-  app.post("/api/recipes", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    try {
-      const { insertRecipeItemSchema, CoffeeItemModel } = await import("@shared/schema");
-      
-      // Validate input with Zod schema
-      const validatedData = insertRecipeItemSchema.parse(req.body);
-      
-      // Verify coffee item exists
-      const coffeeItem = await CoffeeItemModel.findById(validatedData.coffeeItemId);
-      if (!coffeeItem) {
-        return res.status(400).json({ error: "المشروب غير موجود" });
-      }
-      
-      // Verify raw item exists (by ID or code)
-      const rawItem = await RawItemModel.findOne({
-        $or: [
-          { _id: validatedData.rawItemId },
-          { code: validatedData.rawItemId }
-        ]
-      });
-      if (!rawItem) {
-        return res.status(400).json({ error: "المادة الخام غير موجودة" });
-      }
-      
-      // Normalize rawItemId to the actual document ID
-      const normalizedRawItemId = (rawItem._id as any).toString();
-      
-      // Upsert the recipe item
-      const recipe = await RecipeItemModel.findOneAndUpdate(
-        { coffeeItemId: validatedData.coffeeItemId, rawItemId: normalizedRawItemId },
-        { 
-          coffeeItemId: validatedData.coffeeItemId, 
-          rawItemId: normalizedRawItemId, 
-          quantity: validatedData.quantity, 
-          unit: validatedData.unit, 
-          notes: validatedData.notes, 
-          updatedAt: new Date() 
-        },
-        { upsert: true, new: true }
-      );
-      
-      res.status(201).json({
-        ...recipe.toObject(),
-        id: (recipe._id as any).toString(),
-        _id: undefined,
-        rawItem: {
-          id: normalizedRawItemId,
-          code: rawItem.code,
-          nameAr: rawItem.nameAr,
-          unit: rawItem.unit,
-          unitCost: rawItem.unitCost
-        }
-      });
-    } catch (error: any) {
-      if (error?.name === 'ZodError') {
-        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
-      }
-      res.status(500).json({ error: "فشل في إنشاء الوصفة" });
-    }
-  });
-
   // Delete recipe item
   app.delete("/api/recipes/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
@@ -8361,23 +10193,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/inventory/stock/adjust", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
-      const { branchId, rawItemId, quantity, notes, movementType } = req.body;
+      const { branchId, rawItemId, quantity, notes, movementType, unitCost } = req.body;
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const employeeId = req.employee?.id || 'system';
       
       if (!branchId || !rawItemId || quantity === undefined) {
         return res.status(400).json({ error: "البيانات المطلوبة غير مكتملة" });
       }
       
+      const rawItem = await RawItemModel.findById(rawItemId);
+      if (!rawItem) {
+        return res.status(404).json({ error: "المادة غير موجودة" });
+      }
+
       const stock = await storage.updateBranchStock(
         branchId,
         rawItemId,
         quantity,
-        req.employee?.id || 'system',
+        employeeId,
         movementType || 'adjustment',
         notes
       );
       
+      // Create Accounting Entry for stock addition
+      if (quantity > 0 && (movementType === 'purchase' || movementType === 'adjustment')) {
+        try {
+          const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
+          const cashAccount = await AccountModel.findOne({ tenantId, accountNumber: "1000" });
+
+          const cost = (unitCost || rawItem.unitCost || 0) * Math.abs(quantity);
+          if (cost > 0 && inventoryAccount && cashAccount) {
+            if (movementType === 'purchase') {
+              await ErpAccountingService.createJournalEntry({
+                tenantId,
+                entryDate: new Date(),
+                description: `شراء مخزون: ${rawItem.nameAr}`,
+                lines: [
+                  {
+                    accountId: inventoryAccount.id,
+                    accountNumber: inventoryAccount.accountNumber,
+                    accountName: inventoryAccount.nameAr,
+                    debit: cost,
+                    credit: 0,
+                    description: `زيادة قيمة المخزون - ${rawItem.nameAr}`,
+                    branchId,
+                  },
+                  {
+                    accountId: cashAccount.id,
+                    accountNumber: cashAccount.accountNumber,
+                    accountName: cashAccount.nameAr,
+                    debit: 0,
+                    credit: cost,
+                    description: `مدفوعات شراء مخزون - ${rawItem.nameAr}`,
+                    branchId,
+                  }
+                ],
+                referenceType: 'inventory_purchase',
+                referenceId: (stock as any).id || (stock as any)._id?.toString(),
+                createdBy: employeeId,
+                autoPost: true,
+              });
+              console.log(`[ACCOUNTING] Purchase journal entry: ${cost} SAR for ${rawItem.nameAr}`);
+            } else {
+              await ErpAccountingService.createJournalEntry({
+                tenantId,
+                entryDate: new Date(),
+                description: `تسوية مخزون: ${rawItem.nameAr}`,
+                lines: [
+                  {
+                    accountId: inventoryAccount.id,
+                    accountNumber: inventoryAccount.accountNumber,
+                    accountName: inventoryAccount.nameAr,
+                    debit: cost,
+                    credit: 0,
+                    description: `تسوية قيمة المخزون - ${rawItem.nameAr}`,
+                    branchId,
+                  },
+                  {
+                    accountId: cashAccount.id,
+                    accountNumber: cashAccount.accountNumber,
+                    accountName: cashAccount.nameAr,
+                    debit: 0,
+                    credit: cost,
+                    description: `تسوية مخزون - ${rawItem.nameAr}`,
+                    branchId,
+                  }
+                ],
+                referenceType: 'inventory_adjustment',
+                referenceId: (stock as any).id || (stock as any)._id?.toString(),
+                createdBy: employeeId,
+                autoPost: true,
+              });
+            }
+          }
+        } catch (accError) {
+          console.error("[ACCOUNTING] Failed to create inventory entry:", accError);
+        }
+      }
+      
       res.json(stock);
     } catch (error) {
+      console.error("Error adjusting stock:", error);
       res.status(500).json({ error: "فشل في تعديل المخزون" });
     }
   });
@@ -8387,11 +10303,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { rawItemId, branchId, quantity, type, notes } = req.body;
       
+      console.log("[DEBUG] Stock adjustment request:", { rawItemId, branchId, quantity, type, notes });
+      
       if (!rawItemId || !branchId || quantity === undefined || !type) {
         return res.status(400).json({ error: "البيانات المطلوبة غير مكتملة" });
       }
       
-      const adjustedQuantity = type === 'subtract' ? -Math.abs(quantity) : Math.abs(quantity);
+      const numQuantity = Number(quantity);
+      if (isNaN(numQuantity)) {
+        return res.status(400).json({ error: "الكمية يجب أن تكون رقماً" });
+      }
+      
+      const adjustedQuantity = type === 'subtract' ? -Math.abs(numQuantity) : Math.abs(numQuantity);
+      
+      console.log("[DEBUG] Adjusted quantity:", adjustedQuantity);
       
       const stock = await storage.updateBranchStock(
         branchId,
@@ -8404,7 +10329,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(stock);
     } catch (error) {
-      res.status(500).json({ error: "فشل في تعديل المخزون" });
+      console.error("[ERROR] In stock-adjustment route:", error);
+      res.status(500).json({ 
+        error: "فشل في تعديل المخزون",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -8413,27 +10342,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { rawItemId, branchId, quantity, unitCost, notes } = req.body;
       
-      if (!rawItemId || !branchId || !quantity || quantity <= 0) {
+      console.log("[DEBUG] Stock batch request:", { rawItemId, branchId, quantity, unitCost, notes });
+      
+      const numQuantity = Number(quantity);
+      if (!rawItemId || !branchId || isNaN(numQuantity) || numQuantity <= 0) {
         return res.status(400).json({ error: "البيانات المطلوبة غير مكتملة" });
       }
       
       // Update raw item cost if provided
-      if (unitCost && unitCost > 0) {
-        await RawItemModel.findByIdAndUpdate(rawItemId, { unitCost });
+      if (unitCost && Number(unitCost) > 0) {
+        const { RawItemModel } = await import("@shared/schema");
+        await RawItemModel.findOneAndUpdate({ id: rawItemId }, { unitCost: Number(unitCost) });
       }
       
       const stock = await storage.updateBranchStock(
         branchId,
         rawItemId,
-        Math.abs(quantity),
+        numQuantity,
         req.employee?.id || 'system',
         'purchase',
         notes || 'دفعة جديدة'
       );
+
+      // Create Expense record for accounting
+      try {
+        const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+        const { ExpenseErpModel, AccountModel } = await import("@shared/schema");
+        const { nanoid } = await import("nanoid");
+        
+        const totalAmount = (Number(unitCost) || 0) * numQuantity;
+        if (totalAmount > 0) {
+          const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
+          
+          await ExpenseErpModel.create({
+            id: nanoid(),
+            tenantId,
+            branchId,
+            expenseNumber: `EXP-INV-${nanoid(6).toUpperCase()}`,
+            expenseDate: new Date(),
+            category: 'inventory',
+            description: `شراء مخزون: ${notes || 'دفعة جديدة'}`,
+            amount: totalAmount,
+            taxAmount: totalAmount * 0.15, // Assuming 15% VAT
+            totalAmount: totalAmount * 1.15,
+            paymentMethod: 'cash',
+            status: 'paid',
+            requestedBy: req.employee?.id || 'system',
+            accountId: inventoryAccount?.id,
+            notes: `تلقائي من إضافة مخزون - مادة: ${rawItemId}`
+          });
+          console.log(`[ACCOUNTING] Created expense for inventory batch: ${totalAmount}`);
+        }
+      } catch (expError) {
+        console.error("[ACCOUNTING] Failed to create expense record:", expError);
+      }
       
       res.json(stock);
     } catch (error) {
-      res.status(500).json({ error: "فشل في إضافة الدفعة" });
+      console.error("[ERROR] In stock-batch route:", error);
+      res.status(500).json({ 
+        error: "فشل في إضافة الدفعة",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -8445,19 +10415,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const stocks = await storage.getBranchStock(branchId as string);
         res.json(stocks);
       } else {
-        // Get all branches
+        const { BranchModel } = await import("@shared/schema");
         const branches = await BranchModel.find({ isActive: 1 }).lean();
         let allStocks: any[] = [];
         
         for (const branch of branches) {
-          const branchId = (branch as any)._id.toString();
-          const stocks = await storage.getBranchStock(branchId);
+          const branchIdStr = (branch as any)._id?.toString() || (branch as any).id;
+          const stocks = await storage.getBranchStock(branchIdStr);
           allStocks = allStocks.concat(stocks);
         }
         
         res.json(allStocks);
       }
     } catch (error) {
+      console.error("[ERROR] In branch-stocks route:", error);
       res.status(500).json({ error: "فشل في جلب المخزون" });
     }
   });
@@ -9067,7 +11038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { TaxInvoiceModel } = await import('@shared/schema');
-      const invoice = await TaxInvoiceModel.findById(id);
+      const invoice = await TaxInvoiceModel.findOne({ id }) || await TaxInvoiceModel.findById(id).catch(() => null);
       
       if (!invoice) {
         return res.status(404).json({ error: "الفاتورة غير موجودة" });
@@ -9718,7 +11689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id, itemId } = req.params;
       const { status } = req.body;
       
-      const order = await KitchenOrderModel.findById(id);
+      const order = await KitchenOrderModel.findOne({ id }) || await KitchenOrderModel.findById(id).catch(() => null);
       if (!order) {
         return res.status(404).json({ error: "طلب المطبخ غير موجود" });
       }
@@ -9799,7 +11770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/product-addons", async (req, res) => {
     try {
       const { ProductAddonModel } = await import("@shared/schema");
-      const addons = await ProductAddonModel.find({ isAvailable: 1 }).sort({ category: 1, nameAr: 1 });
+      const addons = await ProductAddonModel.find({ isAvailable: 1 }).sort({ orderIndex: 1, category: 1, nameAr: 1 });
       res.json(addons.map(a => ({ ...a.toObject(), id: a.id })));
     } catch (error) {
       res.status(500).json({ error: "فشل في جلب الإضافات" });
@@ -10010,6 +11981,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "تم حذف العرض بنجاح" });
     } catch (error) {
       res.status(500).json({ error: "فشل في حذف العرض" });
+    }
+  });
+
+  // ===== Menu Categories API =====
+  
+  // Get all active menu categories (public - scoped by tenantId)
+  app.get("/api/menu-categories", async (req, res) => {
+    try {
+      const { MenuCategoryModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const branchId = req.query.branchId as string;
+      
+      const query: any = { 
+        isActive: 1,
+        tenantId 
+      };
+      
+      if (branchId && branchId !== 'all' && branchId !== 'undefined' && branchId !== 'null') {
+        query.$or = [
+          { branchId: branchId },
+          { publishedBranches: branchId },
+          { createdByBranchId: branchId }
+        ];
+      }
+      
+      const categories = await MenuCategoryModel.find(query).sort({ orderIndex: 1, createdAt: 1 });
+      res.json(categories.map(c => ({ ...c.toObject(), id: c.id })));
+    } catch (error) {
+      res.status(500).json({ error: "فشل في جلب الأقسام" });
+    }
+  });
+
+  // Create menu category (admin/manager)
+  app.post("/api/menu-categories", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { MenuCategoryModel } = await import("@shared/schema");
+      const { z } = await import("zod");
+      const crypto = await import("crypto");
+      
+      // Validate input
+      const createSchema = z.object({
+        nameAr: z.string().min(1, "اسم القسم مطلوب"),
+        nameEn: z.string().optional(),
+        icon: z.string().optional(),
+        department: z.enum(['drinks', 'food']).default('drinks'),
+      });
+      
+      const validatedData = createSchema.parse(req.body);
+      
+      // Get tenant from auth or header
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      
+      // Get the max orderIndex for new categories
+      const maxOrder = await MenuCategoryModel.findOne({ tenantId }).sort({ orderIndex: -1 });
+      const newOrderIndex = (maxOrder?.orderIndex || 0) + 1;
+      
+      const categoryData = {
+        id: crypto.randomUUID(),
+        tenantId,
+        nameAr: validatedData.nameAr,
+        nameEn: validatedData.nameEn,
+        icon: validatedData.icon || 'Coffee',
+        department: validatedData.department,
+        orderIndex: newOrderIndex,
+        isSystem: false,
+        isActive: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const category = new MenuCategoryModel(categoryData);
+      await category.save();
+      
+      res.status(201).json({ ...category.toObject(), id: category.id });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: error.errors[0]?.message || "بيانات غير صالحة" });
+      }
+      console.error("Error creating menu category:", error);
+      res.status(500).json({ error: "فشل في إنشاء القسم" });
+    }
+  });
+
+  // Update menu category
+  app.put("/api/menu-categories/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { MenuCategoryModel } = await import("@shared/schema");
+      const { z } = await import("zod");
+      
+      // Validate input - only allow specific fields to be updated
+      const updateSchema = z.object({
+        nameAr: z.string().min(1).optional(),
+        nameEn: z.string().optional(),
+        icon: z.string().optional(),
+        department: z.enum(['drinks', 'food']).optional(),
+        orderIndex: z.number().optional(),
+      });
+      
+      const validatedData = updateSchema.parse(req.body);
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      
+      const category = await MenuCategoryModel.findOneAndUpdate(
+        { id: req.params.id, tenantId },
+        { $set: { ...validatedData, updatedAt: new Date() } },
+        { new: true }
+      );
+      
+      if (!category) {
+        return res.status(404).json({ error: "القسم غير موجود" });
+      }
+      
+      res.json({ ...category.toObject(), id: category.id });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: error.errors[0]?.message || "بيانات غير صالحة" });
+      }
+      res.status(500).json({ error: "فشل في تحديث القسم" });
+    }
+  });
+
+  // Delete menu category (soft delete)
+  app.delete("/api/menu-categories/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { MenuCategoryModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      
+      // Check if it's a system category
+      const category = await MenuCategoryModel.findOne({ id: req.params.id, tenantId });
+      if (!category) {
+        return res.status(404).json({ error: "القسم غير موجود" });
+      }
+      if (category.isSystem) {
+        return res.status(400).json({ error: "لا يمكن حذف قسم أساسي" });
+      }
+      
+      // Soft delete by setting isActive to 0
+      await MenuCategoryModel.findOneAndUpdate(
+        { id: req.params.id, tenantId },
+        { $set: { isActive: 0, updatedAt: new Date() } }
+      );
+      res.json({ success: true, message: "تم حذف القسم بنجاح" });
+    } catch (error) {
+      res.status(500).json({ error: "فشل في حذف القسم" });
     }
   });
 
@@ -10462,27 +12576,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============ RECIPE ROUTES (Phase 4) ============
   
-  // Create recipe
-  app.post("/api/recipes", requireAuth, requireManager, async (req: AuthRequest, res) => {
-    try {
-      const { coffeeItemId, nameAr, nameEn, ingredients } = req.body;
-      
-      if (!coffeeItemId || !nameAr || !Array.isArray(ingredients)) {
-        return res.status(400).json({ error: "Missing required fields: coffeeItemId, nameAr, ingredients" });
-      }
-
-      const result = await RecipeEngine.createRecipe(coffeeItemId, nameAr, nameEn, ingredients);
-      
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
-      }
-
-      res.json({ success: true, recipe: result.recipe });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create recipe" });
-    }
-  });
-
   // Get active recipe for drink
   app.get("/api/recipes/:coffeeItemId", requireAuth, async (req: AuthRequest, res) => {
     try {
@@ -10696,7 +12789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================
 
   // Initialize Chart of Accounts
-  app.post("/api/erp/accounts/initialize", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  app.post("/api/erp/accounts/initialize", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
       const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
       const accounts = await ErpAccountingService.initializeChartOfAccounts(tenantId);
@@ -10734,7 +12827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new account
-  app.post("/api/erp/accounts", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  app.post("/api/erp/accounts", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
       const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
       const account = await ErpAccountingService.createAccount({
@@ -10744,6 +12837,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, account: serializeDoc(account) });
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to create account" });
+    }
+  });
+
+  // Get journal entries
+  app.get("/api/erp/journal-entries", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const query: any = { tenantId };
+      if (req.query.status) query.status = req.query.status;
+      if (req.query.referenceType) query.referenceType = req.query.referenceType;
+      const entries = await JournalEntryModel.find(query).sort({ entryDate: -1, createdAt: -1 }).limit(100);
+      res.json({ success: true, entries: entries.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch journal entries" });
+    }
+  });
+
+  // Get expenses
+  app.get("/api/erp/expenses", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || req.query.tenantId as string || "demo-tenant";
+      const query: any = { tenantId };
+      if (req.query.status) query.status = req.query.status;
+      const expenses = await ExpenseErpModel.find(query).sort({ createdAt: -1 }).limit(100);
+      res.json({ success: true, expenses: expenses.map(serializeDoc) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch expenses" });
     }
   });
 
@@ -10850,7 +12970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lines: req.body.lines,
         notes: req.body.notes,
         issuedBy,
-        sellerName: req.body.sellerName || "BLACK ROSE",
+        sellerName: req.body.sellerName || "CLUNY CAFE",
         sellerVatNumber: req.body.sellerVatNumber || "311234567890003",
       });
       res.json({ success: true, invoice: serializeDoc(invoice) });
@@ -10935,7 +13055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Approve expense
-  app.patch("/api/erp/expenses/:id/approve", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+  app.patch("/api/erp/expenses/:id/approve", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
       const tenantId = getTenantIdFromRequest(req) || req.body.tenantId || "demo-tenant";
       const approvedBy = req.employee?.id || "system";

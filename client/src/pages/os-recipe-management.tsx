@@ -48,7 +48,7 @@ export default function OSRecipeManagement() {
 
   const calculateTotalCost = () => {
     return recipeIngredients.reduce((total, item) => {
-      const ing = ingredients?.find((i: any) => i._id === item.ingredientId);
+      const ing = ingredients?.find((i: any) => i.id === item.ingredientId);
       return total + (ing ? ing.unitCost * item.quantity : 0);
     }, 0);
   };
@@ -107,7 +107,7 @@ export default function OSRecipeManagement() {
                   </TableHeader>
                   <TableBody>
                     {recipeIngredients.map((ri, index) => {
-                      const ing = ingredients?.find((i: any) => i._id === ri.ingredientId);
+                      const ing = ingredients?.find((i: any) => i.id === ri.ingredientId);
                       return (
                         <TableRow key={index}>
                           <TableCell>
@@ -122,7 +122,7 @@ export default function OSRecipeManagement() {
                               <SelectTrigger><SelectValue placeholder="اختر مادة" /></SelectTrigger>
                               <SelectContent>
                                 {ingredients?.map((i: any) => (
-                                  <SelectItem key={i._id} value={i._id}>{i.nameAr}</SelectItem>
+                                  <SelectItem key={i.id} value={i.id}>{i.nameAr}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>

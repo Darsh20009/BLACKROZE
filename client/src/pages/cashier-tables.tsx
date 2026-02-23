@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, User, Phone, CheckCircle2, XCircle, Clock, Check, X } from "lucide-react";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 
 interface ITable {
-  _id: string;
+  id: string;
   tableNumber: string;
   branchId: string;
   isActive: number;
@@ -48,7 +49,7 @@ interface IPendingOrder {
 }
 
 interface IBranch {
-  _id: string;
+  id: string;
   nameAr: string;
 }
 
@@ -71,8 +72,8 @@ export default function CashierTables() {
       const emp = JSON.parse(employeeData);
       if (emp.branchId) {
         setEmployeeBranchId(emp.branchId);
-      } else if (emp._id || emp.id) {
-        fetch(`/api/employees/${emp._id || emp.id}`, { credentials: "include" })
+      } else if (emp.id) {
+        fetch(`/api/employees/${emp.id}`, { credentials: "include" })
           .then(res => res.json())
           .then(data => {
             if (data.branchId) {
@@ -104,7 +105,7 @@ export default function CashierTables() {
       return Array.isArray(data) ? data.filter((t: ITable) => t.branchId === branchId) : [];
     },
     enabled: !!(selectedBranchId || employeeBranchId),
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   // Fetch pending table orders
@@ -116,7 +117,7 @@ export default function CashierTables() {
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   // Get branch info
@@ -157,7 +158,7 @@ export default function CashierTables() {
           numberOfGuests,
           reservationDate,
           reservationTime,
-          employeeId: employee?._id || employee?.id,
+          employeeId: employee?.id,
         }),
       });
       
@@ -199,7 +200,7 @@ export default function CashierTables() {
       const response = await fetch(`/api/tables/${tableId}/release`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId: employee?._id || employee?.id }),
+        body: JSON.stringify({ employeeId: employee?.id }),
       });
       
       if (!response.ok) {
@@ -210,7 +211,7 @@ export default function CashierTables() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["/api/tables", employeeBranchId] });
+      queryClient.refetchQueries({ queryKey: ["/api/tables"] });
       toast({
         title: "تم تحرير الطاولة",
         description: "الطاولة متاحة الآن",
@@ -294,7 +295,7 @@ export default function CashierTables() {
 
   const handleReleaseTable = (table: ITable) => {
     if (window.confirm(`هل أنت متأكد من تحرير الطاولة ${table.tableNumber}؟`)) {
-      releaseTableMutation.mutate(table._id);
+      releaseTableMutation.mutate(table.id);
     }
   };
 
@@ -339,7 +340,7 @@ export default function CashierTables() {
     }
 
     reserveTableMutation.mutate({
-      tableId: selectedTable._id,
+      tableId: selectedTable.id,
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
       numberOfGuests: guests,
@@ -401,7 +402,7 @@ export default function CashierTables() {
               </SelectTrigger>
               <SelectContent>
                 {branches.map(branch => (
-                  <SelectItem key={branch._id} value={branch._id}>
+                  <SelectItem key={branch.id} value={branch.id}>
                     {branch.nameAr}
                   </SelectItem>
                 ))}
@@ -423,7 +424,7 @@ export default function CashierTables() {
   const activeBranchId = selectedBranchId || employeeBranchId;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-primary/5 to-amber-100 pb-16 sm:pb-0" dir="rtl">
       <div className="max-w-7xl mx-auto p-4 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -478,7 +479,7 @@ export default function CashierTables() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {tables.map((table) => (
               <Card
-                key={table._id}
+                key={table.id}
                 className={`hover-elevate cursor-pointer transition-all duration-300 transform hover:scale-105 ${
                   table.isOccupied
                     ? "bg-gradient-to-br from-red-100 via-red-50 to-orange-100 border-2 border-red-400 shadow-lg shadow-red-200/50 dark:from-red-900 dark:via-red-950 dark:to-orange-900"
@@ -552,7 +553,7 @@ export default function CashierTables() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => approveReservationMutation.mutate(table._id)}
+                            onClick={() => approveReservationMutation.mutate(table.id)}
                             disabled={approveReservationMutation.isPending}
                             className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                             data-testid={`button-approve-${table.tableNumber}`}
@@ -563,7 +564,7 @@ export default function CashierTables() {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => cancelReservationMutation.mutate(table._id)}
+                            onClick={() => cancelReservationMutation.mutate(table.id)}
                             disabled={cancelReservationMutation.isPending}
                             className="flex-1"
                             data-testid={`button-cancel-reserve-${table.tableNumber}`}
@@ -715,6 +716,7 @@ export default function CashierTables() {
           </DialogContent>
         </Dialog>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }

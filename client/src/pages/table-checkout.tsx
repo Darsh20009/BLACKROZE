@@ -51,7 +51,12 @@ export default function TableCheckout() {
     }
   }, []);
   
-  const cart: CartItem[] = JSON.parse(sessionStorage.getItem(`cart_${tableId}`) || "[]");
+  const rawCart = JSON.parse(sessionStorage.getItem(`cart_${tableId}`) || "[]");
+  const cart: CartItem[] = rawCart.map((ci: any) => {
+    if (ci.item) return ci;
+    if (ci.coffeeItem) return { ...ci, item: ci.coffeeItem };
+    return ci;
+  }).filter((ci: any) => ci.item);
   const branchId = sessionStorage.getItem(`branchId_${tableId}`) || "";
 
   const getTotalPrice = () => {

@@ -9,5 +9,15 @@ declare module "express-session" {
       branchId?: string;
       fullName: string;
     };
+    restoreKey?: string;
+    customer?: {
+      id: string;
+      name: string;
+      phone: string;
+      email?: string;
+      points?: number;
+      pendingPoints?: number;
+      cardPassword?: string;
+    };
   }
 }

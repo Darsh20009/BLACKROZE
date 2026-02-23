@@ -1,4 +1,4 @@
-# 🎯 BLACK ROSE Engine — Session Summary
+# 🎯 CLUNY CAFE Engine — Session Summary
 ## December 29, 2025
 
 ---
@@ -211,7 +211,7 @@ I will:
 
 ## 🚀 THE CHOICE
 
-**You have a solid 24% of BLACK ROSE Engine built.**
+**You have a solid 24% of CLUNY CAFE Engine built.**
 
 Next 76% requires consistent, focused development:
 - **Fast mode:** Slower, requires many sessions, takes 2-3x longer

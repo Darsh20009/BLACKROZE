@@ -8,12 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhoneInput } from "@/components/phone-input";
 import { SmartIdentifierInput } from "@/components/smart-identifier-input";
-import { Phone, User, Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { Phone, User, Lock, Mail, Eye, EyeOff, Gift } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
-
-import Screenshot_2026_01_28_125936 from "@assets/Screenshot 2026-01-28 125936.png";
 
 export default function CustomerAuth() {
   const { t, i18n } = useTranslation();
@@ -24,6 +22,7 @@ export default function CustomerAuth() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -137,7 +136,8 @@ export default function CustomerAuth() {
         phone: cleanPhone,
         name: name.trim(),
         email: email.trim(),
-        password
+        password,
+        referralCode: referralCode.trim() || undefined
       });
       
       const customer = await res.json();
@@ -173,11 +173,11 @@ export default function CustomerAuth() {
         <CardHeader className="space-y-3 text-center pb-6">
           <div className="flex justify-center">
             <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-accent/50 backdrop-blur-xl border border-white/20 bg-[#a7b0b1]/30">
-              <img src={Screenshot_2026_01_28_125936} alt="BLACK ROSE" className="w-full h-full object-cover rounded-2xl" />
+              <img src="/logo.png" alt="CLUNY CAFE" className="w-full h-full object-cover rounded-2xl" />
             </div>
           </div>
           <CardTitle className="tracking-tight text-3xl font-bold text-[#a7b0b1]">
-            {i18n.language === 'ar' ? "مرحباً بك في BLACK ROSE" : "Welcome to BLACK ROSE"}
+            {i18n.language === 'ar' ? "مرحباً بك في CLUNY CAFE" : "Welcome to CLUNY CAFE"}
           </CardTitle>
           <CardDescription className="text-lg text-[#b2babc]">
             {i18n.language === 'ar' ? "سجل دخولك للحصول على حسابك الخاص" : "Sign in to access your account"}
@@ -347,6 +347,25 @@ export default function CustomerAuth() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-referral" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 text-[#1f2025]">
+                    <Gift className="w-4 h-4" />
+                    {i18n.language === 'ar' ? "كود الإحالة (اختياري)" : "Referral Code (Optional)"}
+                  </Label>
+                  <Input
+                    id="register-referral"
+                    type="text"
+                    placeholder={i18n.language === 'ar' ? "أدخل كود الإحالة للحصول على نقاط إضافية" : "Enter referral code for bonus points"}
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    className="bg-stone-800/50 border-amber-900/50 text-amber-50 placeholder:text-amber-200/40 focus:border-amber-600 focus:ring-amber-600/30"
+                    data-testid="input-referral-code"
+                  />
+                  <p className="text-xs text-green-400/70 mt-1">
+                    {i18n.language === 'ar' ? "ستحصل أنت ومن أحالك على 50 نقطة لكل منكما!" : "You and your referrer will each get 50 bonus points!"}
+                  </p>
                 </div>
 
                 <Button

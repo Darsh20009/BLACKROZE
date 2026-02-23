@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
-import MemoryStore from "memorystore";
+import MongoStore from "connect-mongo";
 import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -8,11 +8,10 @@ import mongoose from "mongoose";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
+import { initWebPush } from "./push-service";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const SessionStore = MemoryStore(session);
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -78,6 +77,9 @@ mongoose.connection.on('error', (err) => {
 
 // Start database connection in background
 connectDatabase();
+
+// Initialize Web Push
+initWebPush();
 
 // Scheduled task: Clean up expired table reservations and send notifications
 let isMaintenanceRunning = false;
@@ -189,14 +191,18 @@ app.use(
     secret: process.env.SESSION_SECRET || "dev-secret",
     resave: false,
     saveUninitialized: false, 
-    name: 'blackrose.sid', // custom cookie name
-    store: new SessionStore({
-      checkPeriod: 86400000, // prune expired entries every 24h
+    name: 'cluny.sid', // custom cookie name
+    store: MongoStore.create({
+      mongoUrl: MONGODB_URI!,
+      collectionName: 'sessions',
+      ttl: 30 * 24 * 60 * 60,
+      autoRemove: 'native',
+      touchAfter: 24 * 3600,
     }),
     cookie: {
       secure: process.env.NODE_ENV === 'production', 
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: "/",
     },

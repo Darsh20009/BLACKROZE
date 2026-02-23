@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingState, EmptyState } from "@/components/ui/states";
 import LoyaltyCardComponent from "@/components/loyalty-card";
 import type { LoyaltyCard } from "@shared/schema";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export default function EmployeeLoyalty() {
   const [, setLocation] = useLocation();
@@ -66,7 +67,7 @@ export default function EmployeeLoyalty() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background p-4">
+    <div dir="rtl" className="min-h-screen bg-background p-4 pb-20 sm:pb-4">
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-6">
         <div className="flex items-center justify-between gap-4">
@@ -176,6 +177,7 @@ export default function EmployeeLoyalty() {
           </CardContent>
         </Card>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }

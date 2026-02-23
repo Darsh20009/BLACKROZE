@@ -100,9 +100,11 @@ import {
   ProductAddonModel,
   CoffeeItemAddonModel,
   StatusHistoryModel,
+  AccountModel,
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
+import { ErpAccountingService } from "./erp-accounting-service";
 
 export interface IStorage {
   // Business Config
@@ -204,7 +206,7 @@ export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
   getOrderByNumber(orderNumber: string): Promise<Order | undefined>;
   updateOrderStatus(id: string, status: string, cancellationReason?: string): Promise<Order | undefined>;
-  updateOrderCarPickup(id: string, carPickup: any): Promise<Order | undefined>;
+  updateOrderCarPickup(id: string, carPickup: { carType?: string; carColor?: string; plateNumber?: string }): Promise<Order | undefined>;
   getOrders(limit?: number, offset?: number): Promise<Order[]>;
 
   createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem>;
@@ -245,6 +247,13 @@ export interface IStorage {
   removeCoffeeItemIngredient(coffeeItemId: string, ingredientId: string): Promise<void>;
   getCoffeeItemsByIngredient(ingredientId: string): Promise<CoffeeItem[]>;
   deleteBranch(id: string): Promise<boolean>;
+
+  // Appointment Methods
+  getAppointments(tenantId: string, branchId?: string): Promise<any[]>;
+  getAppointment(id: string): Promise<any | undefined>;
+  createAppointment(appointment: any): Promise<any>;
+  updateAppointment(id: string, updates: any): Promise<any | undefined>;
+  deleteAppointment(id: string): Promise<boolean>;
 
   // ================== INVENTORY MANAGEMENT ==================
   // Raw Items
@@ -389,7 +398,6 @@ export class DBStorage implements IStorage {
   private async initializeDatabase() {
     try {
       await this.initializeDemoEmployee();
-      await this.initializeDefaultBranch();
     } catch (error) {
       console.error("Error initializing database:", error);
     }
@@ -400,39 +408,22 @@ export class DBStorage implements IStorage {
   }
 
   private async initializeDemoEmployee() {
-    const existing = await EmployeeModel.findOne({ username: 'admin' });
+    const existing = await EmployeeModel.findOne({ username: 'manager' });
     if (existing) return;
 
-    const hashedPassword = bcrypt.hashSync('admin', 10);
+    const hashedPassword = bcrypt.hashSync('2030', 10);
     await EmployeeModel.create({
-      id: "admin-id",
-      username: 'admin',
+      id: "manager-demo",
+      username: 'manager',
       password: hashedPassword,
-      fullName: 'مدير النظام',
-      role: 'admin',
-      title: 'مدير النظام',
-      phone: '999999999',
-      jobTitle: 'Admin',
+      fullName: 'المدير',
+      role: 'manager',
+      title: 'مدير المقهى',
+      phone: '500000000',
+      jobTitle: 'مدير',
       isActivated: 1,
-      employmentNumber: 'ADM-001',
-      tenantId: 'black-rose-tenant'
-    });
-  }
-
-  private async initializeDefaultBranch() {
-    const existing = await BranchModel.findOne({ tenantId: 'black-rose-tenant' });
-    if (existing) return;
-
-    await BranchModel.create({
-      id: "main-branch",
-      tenantId: "black-rose-tenant",
-      cafeId: "black-rose-cafe",
-      nameAr: "فرع بلاك روز الرئيسي",
-      address: "الرياض، المملكة العربية السعودية",
-      phone: "0500000000",
-      workingHours: { open: "08:00", close: "23:00" },
-      isMainBranch: true,
-      isActive: true
+      employmentNumber: 'EMP-001',
+      tenantId: 'demo-tenant'
     });
   }
 
@@ -444,9 +435,22 @@ export class DBStorage implements IStorage {
   }
 
   async updateBusinessConfig(tenantId: string, updates: Partial<IBusinessConfig>): Promise<IBusinessConfig> {
+    // Handle socialLinks specifically if they are being updated as a plain object
+    const updateData: any = { ...updates, updatedAt: new Date() };
+    
+    // If updates contains socialLinks, ensure we're not losing existing fields if it's partial
+    if (updates.socialLinks) {
+      const currentConfig = await BusinessConfigModel.findOne({ tenantId });
+      const existingSocial = currentConfig?.socialLinks || {};
+      updateData.socialLinks = {
+        ...existingSocial,
+        ...updates.socialLinks
+      };
+    }
+
     const config = await BusinessConfigModel.findOneAndUpdate(
       { tenantId },
-      { $set: { ...updates, updatedAt: new Date() } },
+      { $set: updateData },
       { upsert: true, new: true }
     ).lean();
     return config as any;
@@ -536,7 +540,10 @@ export class DBStorage implements IStorage {
   }
 
   async getEmployeeByUsername(username: string): Promise<Employee | undefined> {
-    const employee = await EmployeeModel.findOne({ username }).lean();
+    const normalizedUsername = username.trim().toLowerCase();
+    const employee = await EmployeeModel.findOne({ 
+      username: { $regex: new RegExp(`^${normalizedUsername}$`, 'i') } 
+    }).lean();
     if (!employee) return undefined;
     const result: any = {
       ...employee,
@@ -700,6 +707,43 @@ export class DBStorage implements IStorage {
     return true;
   }
 
+  async transferPoints(fromPhone: string, toPhone: string, points: number, password: string): Promise<{ success: boolean; message: string }> {
+    const fromCustomer = await CustomerModel.findOne({ phone: fromPhone });
+    if (!fromCustomer) return { success: false, message: "المرسل غير موجود" };
+
+    const isMatch = await bcrypt.compare(password, fromCustomer.password || "");
+    if (!isMatch) return { success: false, message: "كلمة المرور غير صحيحة" };
+
+    if ((fromCustomer.points || 0) < points) return { success: false, message: "النقاط غير كافية" };
+
+    const toCustomer = await CustomerModel.findOne({ phone: toPhone });
+    if (!toCustomer) return { success: false, message: "المستلم غير موجود" };
+
+    fromCustomer.points = (fromCustomer.points || 0) - points;
+    toCustomer.points = (toCustomer.points || 0) + points;
+
+    await fromCustomer.save();
+    await toCustomer.save();
+
+    return { success: true, message: `تم تحويل ${points} نقطة إلى ${toCustomer.name}` };
+  }
+
+  async convertPointsToWallet(customerId: string, points: number): Promise<{ success: boolean; message: string }> {
+    const customer = await CustomerModel.findById(customerId);
+    if (!customer) return { success: false, message: "العميل غير موجود" };
+
+    if (points < 100) return { success: false, message: "الحد الأدنى للاستبدال 100 نقطة" };
+    if ((customer.points || 0) < points) return { success: false, message: "النقاط غير كافية" };
+
+    const sarAmount = (points / 100) * 5;
+    customer.points = (customer.points || 0) - points;
+    customer.walletBalance = (customer.walletBalance || 0) + sarAmount;
+
+    await customer.save();
+
+    return { success: true, message: `تم استبدال ${points} نقطة بـ ${sarAmount} ريال` };
+  }
+
   async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
     const normalizedCode = code.trim().toLowerCase();
     const result = await DiscountCodeModel.findOne({ code: normalizedCode }).lean();
@@ -758,41 +802,82 @@ export class DBStorage implements IStorage {
     return !!result;
   }
 
-  async getTables(branchId?: string): Promise<Table[]> {
-    const query = branchId ? { branchId } : {};
-    const tables = await TableModel.find(query).lean();
-    const serialized = (tables as any[]).map(serializeDoc);
-
-    if (branchId && serialized.length === 0) {
-      const createdTables = [];
-      for (let i = 1; i <= 10; i++) {
-        const table = await TableModel.create({
-          id: `table-${branchId}-${i}`,
-          branchId,
-          number: i.toString(),
-          capacity: 4,
-          status: "available",
-          isActive: true
-        });
-        createdTables.push(serializeDoc(table));
-      }
-      return createdTables;
+  async getTables(branchId?: string, tenantId?: string): Promise<Table[]> {
+    console.log(`[STORAGE_TABLES] Request - branchId: ${branchId}, tenantId: ${tenantId}`);
+    
+    let allTablesRaw;
+    try {
+      // @ts-ignore
+      allTablesRaw = await TableModel.find({}).lean().exec();
+      console.log(`[STORAGE_TABLES] DB Total Count: ${allTablesRaw?.length || 0}`);
+    } catch (err) {
+      console.error(`[STORAGE_TABLES] DB Fetch Error:`, err);
+      return [];
     }
-    return serialized;
+    
+    if (!allTablesRaw || allTablesRaw.length === 0) return [];
+    
+    const allTables = allTablesRaw.map((t: any) => {
+      const doc = { ...t } as any;
+      if (t._id) doc.id = t._id.toString();
+      // Ensure tenantId exists
+      if (!doc.tenantId) doc.tenantId = 'demo-tenant';
+      return doc;
+    });
+
+    let filtered = allTables;
+    
+    if (tenantId && tenantId !== 'demo-tenant') {
+      filtered = filtered.filter((t: any) => t.tenantId === tenantId);
+    }
+    
+    const effectiveBranchId = (branchId === 'none' || branchId === 'undefined' || branchId === 'null' || !branchId || branchId === '') 
+      ? undefined 
+      : branchId;
+
+    if (effectiveBranchId) {
+      const branchFiltered = filtered.filter((t: any) => t.branchId === effectiveBranchId);
+      if (branchFiltered.length > 0) {
+        filtered = branchFiltered;
+      }
+    }
+
+    // Final fallback for demo visibility
+    if (filtered.length === 0 && (tenantId === 'demo-tenant' || !tenantId)) {
+      return allTables;
+    }
+
+    console.log(`[STORAGE_TABLES] Returning ${filtered.length} tables`);
+    return filtered;
   }
 
   async getTable(id: string): Promise<Table | undefined> {
-    const table = await TableModel.findOne({ id }).lean();
-    if (!table && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
-      const byId = await TableModel.findById(id).lean();
-      return byId ? serializeDoc(byId) : undefined;
+    try {
+      if (!id) return undefined;
+      // Try custom ID first
+      const table = await TableModel.findOne({ id }).lean();
+      if (table) return serializeDoc(table);
+      
+      // If not found and looks like ObjectId, try findById
+      if (id.match(/^[0-9a-fA-F]{24}$/)) {
+        const byId = await TableModel.findById(id).lean();
+        return byId ? serializeDoc(byId) : undefined;
+      }
+      return undefined;
+    } catch (error) {
+      console.error(`[STORAGE] Error fetching table ${id}:`, error);
+      return undefined;
     }
-    return table ? serializeDoc(table) : undefined;
   }
 
   async getTableByQRToken(qrToken: string): Promise<Table | undefined> {
-    const table = await TableModel.findOne({ qrToken }).lean();
-    return table ? serializeDoc(table) : undefined;
+    try {
+      const table = await TableModel.findOne({ qrToken }).lean();
+      return table ? serializeDoc(table) : undefined;
+    } catch (error) {
+      console.error(`[STORAGE] Error fetching table by token:`, error);
+      return undefined;
+    }
   }
 
   async createTable(table: InsertTable): Promise<Table> {
@@ -801,16 +886,35 @@ export class DBStorage implements IStorage {
   }
 
   async updateTable(id: string, updates: Partial<Table>): Promise<Table | undefined> {
-    let table = await TableModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
-    if (!table && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
-      table = await TableModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
+    try {
+      if (!id) return undefined;
+      // Try findOneAndUpdate with custom ID
+      let table = await TableModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+      
+      // If not found and looks like ObjectId, try findByIdAndUpdate
+      if (!table && id.match(/^[0-9a-fA-F]{24}$/)) {
+        table = await TableModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
+      }
+      return table ? serializeDoc(table) : undefined;
+    } catch (error) {
+      console.error(`[STORAGE] Error updating table ${id}:`, error);
+      return undefined;
     }
-    return table ? serializeDoc(table) : undefined;
   }
 
   async deleteTable(id: string): Promise<boolean> {
-    const result = await TableModel.findOneAndDelete({ id });
-    return !!result;
+    try {
+      if (!id) return false;
+      const result = await TableModel.findOneAndDelete({ 
+        $or: [
+          { id },
+          { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }
+        ].filter(q => q._id !== null || q.id !== undefined) as any
+      });
+      return !!result;
+    } catch (error) {
+      return false;
+    }
   }
 
   async updateTableOccupancy(id: string, isOccupied: boolean, orderId?: string): Promise<Table | undefined> {
@@ -910,11 +1014,30 @@ export class DBStorage implements IStorage {
 
   async createOrder(order: any): Promise<Order> {
     try {
-      const orderNumber = `ORD-${Date.now()}-${this.orderCounter++}`;
-      // Ensure all fields are handled correctly for MongoDB
-      const orderData = { ...order, orderNumber };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+
+      // Find the count of orders created today for this branch/tenant
+      const count = await OrderModel.countDocuments({
+        tenantId: order.tenantId,
+        createdAt: { $gte: today, $lt: tomorrow }
+      });
+
+      const dailyNumber = count + 1;
+      const formattedNumber = dailyNumber.toString().padStart(4, '0');
       
-      // Basic validation for required fields at storage level to catch issues early
+      // Use the daily number as the visible order number for the user
+      // But we still need a globally unique orderNumber for lookups
+      const uniqueOrderNumber = `ORD-${today.toISOString().split('T')[0].replace(/-/g, '')}-${formattedNumber}`;
+      
+      const orderData = { 
+        ...order, 
+        dailyNumber,
+        orderNumber: uniqueOrderNumber 
+      };
+      
       if (!orderData.items) throw new Error("Order items are missing in storage");
       if (!orderData.totalAmount && orderData.totalAmount !== 0) throw new Error("Order total amount is missing in storage");
 
@@ -929,7 +1052,10 @@ export class DBStorage implements IStorage {
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
-    const order = await OrderModel.findOne({ id }).lean();
+    let order = await OrderModel.findOne({ id }).lean();
+    if (!order && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
+      order = await OrderModel.findById(id).lean();
+    }
     return order ? serializeDoc(order) : undefined;
   }
 
@@ -938,15 +1064,66 @@ export class DBStorage implements IStorage {
     return order ? serializeDoc(order) : undefined;
   }
 
-  async updateOrderStatus(id: string, status: string, cancellationReason?: string): Promise<Order | undefined> {
-    const updates: any = { status };
+  async updateOrderStatus(id: string, status: string, cancellationReason?: string, estimatedPrepTime?: number): Promise<Order | undefined> {
+    const updates: any = { status, updatedAt: new Date() };
     if (cancellationReason) updates.cancellationReason = cancellationReason;
-    const order = await OrderModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
-    return order ? serializeDoc(order) : undefined;
+    if (estimatedPrepTime !== undefined) {
+      updates.estimatedPrepTimeInMinutes = estimatedPrepTime;
+      updates.prepTimeSetAt = new Date();
+    }
+    
+    // Auto-update paymentStatus and order flow
+    if (status === 'payment_confirmed') {
+      updates.paymentStatus = 'paid';
+      updates.status = 'in_progress'; 
+    }
+
+    let updated = await OrderModel.findOneAndUpdate(
+      { id },
+      { $set: updates },
+      { new: true }
+    ).lean();
+
+    if (!updated && (id as any).match(/^[0-9a-fA-F]{24}$/)) {
+      updated = await OrderModel.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
+    }
+    return updated ? serializeDoc(updated) : undefined;
   }
 
-  async updateOrderCarPickup(id: string, carPickup: any): Promise<Order | undefined> {
-    const order = await OrderModel.findOneAndUpdate({ id }, { $set: { carPickup } }, { new: true }).lean();
+  async updateOrderCarPickup(id: string, carPickup: { carType?: string; carColor?: string; plateNumber?: string }): Promise<Order | undefined> {
+    let order = await OrderModel.findOneAndUpdate(
+      { id },
+      { 
+        $set: { 
+          carType: carPickup.carType,
+          carColor: carPickup.carColor,
+          plateNumber: carPickup.plateNumber,
+          'carInfo.carType': carPickup.carType,
+          'carInfo.carColor': carPickup.carColor,
+          'carInfo.plateNumber': carPickup.plateNumber,
+          updatedAt: new Date()
+        } 
+      },
+      { new: true }
+    ).lean();
+    
+    if (!order && id.match(/^[0-9a-fA-F]{24}$/)) {
+      order = await OrderModel.findByIdAndUpdate(
+        id,
+        { 
+          $set: { 
+            carType: carPickup.carType,
+            carColor: carPickup.carColor,
+            plateNumber: carPickup.plateNumber,
+            'carInfo.carType': carPickup.carType,
+            'carInfo.carColor': carPickup.carColor,
+            'carInfo.plateNumber': carPickup.plateNumber,
+            updatedAt: new Date()
+          } 
+        },
+        { new: true }
+      ).lean();
+    }
     return order ? serializeDoc(order) : undefined;
   }
 
@@ -1063,6 +1240,16 @@ export class DBStorage implements IStorage {
 
   async createLoyaltyTransaction(transaction: InsertLoyaltyTransaction): Promise<LoyaltyTransaction> {
     const newTx = await LoyaltyTransactionModel.create(transaction);
+    
+    // Update the loyalty card balance
+    if (transaction.pointsChange && transaction.pointsChange !== 0) {
+      const card = await LoyaltyCardModel.findById(transaction.cardId);
+      if (card) {
+        const newPoints = (card.points || 0) + transaction.pointsChange;
+        await LoyaltyCardModel.findByIdAndUpdate(transaction.cardId, { points: newPoints });
+      }
+    }
+    
     return serializeDoc(newTx);
   }
 
@@ -1140,6 +1327,38 @@ export class DBStorage implements IStorage {
     return result.deletedCount > 0;
   }
 
+  // --- APPOINTMENT IMPLEMENTATIONS ---
+  async getAppointments(tenantId: string, branchId?: string): Promise<any[]> {
+    const query: any = { tenantId };
+    if (branchId) query.branchId = branchId;
+    return await AppointmentModel.find(query).sort({ appointmentDate: 1 }).lean();
+  }
+
+  async getAppointment(id: string): Promise<any | undefined> {
+    const appointment = await AppointmentModel.findOne({ id }).lean();
+    return appointment || undefined;
+  }
+
+  async createAppointment(appointment: any): Promise<any> {
+    const id = nanoid(10);
+    const newAppointment = await AppointmentModel.create({ ...appointment, id });
+    return newAppointment.toObject();
+  }
+
+  async updateAppointment(id: string, updates: any): Promise<any | undefined> {
+    const updated = await AppointmentModel.findOneAndUpdate(
+      { id },
+      { $set: { ...updates, updatedAt: new Date() } },
+      { new: true }
+    ).lean();
+    return updated || undefined;
+  }
+
+  async deleteAppointment(id: string): Promise<boolean> {
+    const result = await AppointmentModel.findOneAndDelete({ id });
+    return !!result;
+  }
+
   async getRawItems(): Promise<RawItem[]> {
     const items = await RawItemModel.find({}).lean();
     return (items as any[]).map(serializeDoc);
@@ -1211,27 +1430,47 @@ export class DBStorage implements IStorage {
   }
 
   async updateBranchStock(branchId: string, rawItemId: string, quantity: number, createdBy: string, movementType: string = "adjustment", notes: string = ""): Promise<BranchStock> {
-    let stock = await BranchStockModel.findOne({ branchId, rawItemId });
-    const previousQuantity = stock ? stock.quantity : 0;
-    if (stock) {
-      stock.quantity = quantity;
-      stock.updatedAt = new Date();
-      await stock.save();
-    } else {
-      stock = await BranchStockModel.create({ branchId, rawItemId, quantity, id: nanoid() });
+    try {
+      console.log(`[STORAGE] Updating stock: branch=${branchId}, item=${rawItemId}, delta=${quantity}`);
+      
+      let stock = await BranchStockModel.findOne({ branchId, rawItemId });
+      const previousQuantity = stock ? stock.currentQuantity : 0;
+      
+      // Calculate new quantity based on the delta (quantity parameter)
+      const newQuantity = previousQuantity + quantity;
+      
+      if (stock) {
+        stock.currentQuantity = newQuantity;
+        stock.lastUpdated = new Date();
+        await stock.save();
+      } else {
+        stock = await BranchStockModel.create({ 
+          branchId, 
+          rawItemId, 
+          currentQuantity: newQuantity, 
+          id: nanoid(),
+          lastUpdated: new Date()
+        });
+      }
+      
+      await StockMovementModel.create({
+        branchId,
+        rawItemId,
+        quantity: quantity, // This is the delta
+        movementType: movementType, 
+        previousQuantity,
+        newQuantity: newQuantity,
+        createdBy,
+        notes,
+        id: nanoid(),
+        createdAt: new Date()
+      });
+      
+      return serializeDoc(stock);
+    } catch (error) {
+      console.error("[STORAGE] Error in updateBranchStock:", error);
+      throw error;
     }
-    await StockMovementModel.create({
-      branchId,
-      rawItemId,
-      quantity: quantity - previousQuantity,
-      type: movementType,
-      previousQuantity,
-      newQuantity: quantity,
-      createdBy,
-      notes,
-      id: nanoid()
-    });
-    return serializeDoc(stock);
   }
 
   async getLowStockItems(branchId?: string): Promise<any[]> {
@@ -1242,8 +1481,8 @@ export class DBStorage implements IStorage {
     const lowStock = [];
     for (const s of stock) {
       const item = rawItems.find(r => r.id === s.rawItemId);
-      if (item && s.quantity <= (item.minThreshold || 0)) {
-        lowStock.push({ ...s, rawItemName: item.nameAr, minThreshold: item.minThreshold });
+      if (item && s.currentQuantity <= (item.minStockLevel || 0)) {
+        lowStock.push({ ...s, rawItemName: item.nameAr, minThreshold: item.minStockLevel });
       }
     }
     return lowStock;
@@ -1283,20 +1522,23 @@ export class DBStorage implements IStorage {
     for (const item of transfer.items) {
       const fromStock = await BranchStockModel.findOne({ branchId: transfer.fromBranchId, rawItemId: item.rawItemId });
       if (fromStock) {
-        fromStock.quantity -= item.quantity;
+        fromStock.currentQuantity -= item.quantity;
+        fromStock.lastUpdated = new Date();
         await fromStock.save();
       }
       let toStock = await BranchStockModel.findOne({ branchId: transfer.toBranchId, rawItemId: item.rawItemId });
       if (toStock) {
-        toStock.quantity += item.quantity;
+        toStock.currentQuantity += item.quantity;
+        toStock.lastUpdated = new Date();
         await toStock.save();
       } else {
-        await BranchStockModel.create({ branchId: transfer.toBranchId, rawItemId: item.rawItemId, quantity: item.quantity, id: nanoid() });
+        await BranchStockModel.create({ branchId: transfer.toBranchId, rawItemId: item.rawItemId, currentQuantity: item.quantity, id: nanoid(), lastUpdated: new Date() });
       }
     }
     transfer.status = "completed";
     transfer.completedBy = completedBy;
-    transfer.completedAt = new Date();
+    transfer.completionDate = new Date();
+    transfer.updatedAt = new Date();
     await transfer.save();
     return serializeDoc(transfer);
   }
@@ -1325,6 +1567,8 @@ export class DBStorage implements IStorage {
   async receivePurchaseInvoice(id: string, receivedBy: string): Promise<PurchaseInvoice | undefined> {
     const invoice = await PurchaseInvoiceModel.findOne({ id });
     if (!invoice || invoice.status === "received") return undefined;
+    
+    // Update stock for each item in the invoice
     for (const item of invoice.items) {
       let stock = await BranchStockModel.findOne({ branchId: invoice.branchId, rawItemId: item.rawItemId });
       if (stock) {
@@ -1334,10 +1578,74 @@ export class DBStorage implements IStorage {
         await BranchStockModel.create({ branchId: invoice.branchId, rawItemId: item.rawItemId, quantity: item.quantity, id: nanoid() });
       }
     }
+    
     invoice.status = "received";
     invoice.receivedBy = receivedBy;
-    invoice.receivedAt = new Date();
+    invoice.receivedDate = new Date();
     await invoice.save();
+    
+    // Create accounting journal entry for inventory receipt
+    try {
+      // Get branch to retrieve tenantId
+      const branch = await BranchModel.findOne({ id: invoice.branchId });
+      if (branch) {
+        const tenantId = branch.tenantId;
+        
+        // Find the required accounts
+        const inventoryAccount = await AccountModel.findOne({ 
+          tenantId, 
+          accountNumber: "1130" 
+        });
+        
+        const accountsPayableAccount = await AccountModel.findOne({ 
+          tenantId, 
+          accountNumber: "2110" 
+        });
+        
+        const cashAccount = await AccountModel.findOne({ 
+          tenantId, 
+          accountNumber: "1111" 
+        });
+        
+        // Determine which account to credit based on payment status
+        const creditAccount = invoice.paymentStatus === 'paid' ? cashAccount : accountsPayableAccount;
+        
+        // Create the journal entry if we have all required accounts
+        if (inventoryAccount && creditAccount) {
+          await ErpAccountingService.createJournalEntry({
+            tenantId,
+            entryDate: invoice.invoiceDate || new Date(),
+            description: `استلام مشتريات - فاتورة رقم ${invoice.invoiceNumber}`,
+            lines: [
+              {
+                accountId: inventoryAccount.id,
+                accountNumber: inventoryAccount.accountNumber,
+                accountName: inventoryAccount.nameAr || inventoryAccount.nameEn || 'المخزون',
+                debit: invoice.totalAmount,
+                credit: 0,
+                branchId: invoice.branchId,
+              },
+              {
+                accountId: creditAccount.id,
+                accountNumber: creditAccount.accountNumber,
+                accountName: creditAccount.nameAr || creditAccount.nameEn || (invoice.paymentStatus === 'paid' ? 'الصندوق' : 'الموردين'),
+                debit: 0,
+                credit: invoice.totalAmount,
+                branchId: invoice.branchId,
+              }
+            ],
+            referenceType: 'purchase',
+            referenceId: invoice.id,
+            createdBy: receivedBy,
+            autoPost: true,
+          });
+        }
+      }
+    } catch (error) {
+      // Log the error but don't fail the purchase invoice receipt
+      console.error('Failed to create journal entry for purchase invoice:', error);
+    }
+    
     return serializeDoc(invoice);
   }
 
@@ -1427,16 +1735,16 @@ export class DBStorage implements IStorage {
     let costOfGoods = 0;
     
     for (const item of items) {
-      // 1. Deduct based on Recipe
       const recipe = await RecipeItemModel.find({ coffeeItemId: item.coffeeItemId }).lean();
       for (const r of recipe) {
         const stock = await BranchStockModel.findOne({ branchId, rawItemId: r.rawItemId });
         const raw = await RawItemModel.findOne({ id: r.rawItemId }).lean();
         const required = r.quantity * item.quantity;
         
-        if (stock && stock.quantity >= required) {
-          const previousQuantity = stock.quantity;
-          stock.quantity -= required;
+        if (stock && stock.currentQuantity >= required) {
+          const previousQuantity = stock.currentQuantity;
+          stock.currentQuantity -= required;
+          stock.lastUpdated = new Date();
           await stock.save();
           
           const unitCost = Number(raw?.lastCost || 0);
@@ -1451,13 +1759,12 @@ export class DBStorage implements IStorage {
             unitCost, 
             totalCost, 
             previousQuantity, 
-            newQuantity: stock.quantity, 
+            newQuantity: stock.currentQuantity, 
             status: "deducted", 
             message: "Successfully deducted (Recipe)" 
           };
           deductionDetails.push(detail);
           
-          // Log movement
           await StockMovementModel.create({
             id: nanoid(),
             branchId,
@@ -1465,18 +1772,17 @@ export class DBStorage implements IStorage {
             movementType: 'sale',
             quantity: required,
             previousQuantity,
-            newQuantity: stock.quantity,
+            newQuantity: stock.currentQuantity,
             referenceType: 'order',
             referenceId: orderId,
             createdBy,
             notes: `Order #${orderId} - Recipe Item`
           });
         } else {
-          shortages.push({ rawItemId: r.rawItemId, rawItemName: raw?.nameAr || "Unknown", required, available: stock ? stock.quantity : 0, unit: r.unit });
+          shortages.push({ rawItemId: r.rawItemId, rawItemName: raw?.nameAr || "Unknown", required, available: stock ? stock.currentQuantity : 0, unit: r.unit });
         }
       }
 
-      // 2. Deduct based on Addons
       if (item.addons && Array.isArray(item.addons)) {
         for (const addon of item.addons) {
           if (!addon.rawItemId) continue;
@@ -1485,9 +1791,10 @@ export class DBStorage implements IStorage {
           const raw = await RawItemModel.findOne({ id: addon.rawItemId }).lean();
           const required = (addon.quantity || 1) * item.quantity;
 
-          if (stock && stock.quantity >= required) {
-            const previousQuantity = stock.quantity;
-            stock.quantity -= required;
+          if (stock && stock.currentQuantity >= required) {
+            const previousQuantity = stock.currentQuantity;
+            stock.currentQuantity -= required;
+            stock.lastUpdated = new Date();
             await stock.save();
 
             const unitCost = Number(raw?.lastCost || 0);
@@ -1502,13 +1809,12 @@ export class DBStorage implements IStorage {
               unitCost, 
               totalCost, 
               previousQuantity, 
-              newQuantity: stock.quantity, 
+              newQuantity: stock.currentQuantity, 
               status: "deducted", 
               message: "Successfully deducted (Addon)" 
             };
             deductionDetails.push(detail);
 
-            // Log movement
             await StockMovementModel.create({
               id: nanoid(),
               branchId,
@@ -1516,21 +1822,20 @@ export class DBStorage implements IStorage {
               movementType: 'sale',
               quantity: required,
               previousQuantity,
-              newQuantity: stock.quantity,
+              newQuantity: stock.currentQuantity,
               referenceType: 'order',
               referenceId: orderId,
               createdBy,
               notes: `Order #${orderId} - Addon Item`
             });
           } else {
-            shortages.push({ rawItemId: addon.rawItemId, rawItemName: raw?.nameAr || "Unknown", required, available: stock ? stock.quantity : 0, unit: addon.unit || 'unit' });
+            shortages.push({ rawItemId: addon.rawItemId, rawItemName: raw?.nameAr || "Unknown", required, available: stock ? stock.currentQuantity : 0, unit: addon.unit || 'unit' });
           }
         }
       }
     }
 
-    // Update Order with COGS and deduction status
-    await OrderModel.findByIdAndUpdate(orderId, {
+    await OrderModel.findOneAndUpdate({ id: orderId }, {
       $set: {
         costOfGoods,
         inventoryDeducted: shortages.length === 0 ? 1 : 2,
@@ -1582,11 +1887,6 @@ export class DBStorage implements IStorage {
   }
 
   async createBranch(branch: Partial<IBranch>): Promise<IBranch> {
-    const tenantId = branch.tenantId || 'black-rose-tenant';
-    const existing = await BranchModel.findOne({ tenantId });
-    if (existing) {
-      throw new Error("لا يمكن إضافة أكثر من فرع واحد.");
-    }
     const newBranch = await BranchModel.create(branch);
     return serializeDoc(newBranch);
   }
@@ -1639,7 +1939,16 @@ export class DBStorage implements IStorage {
   }
 
   async updateCustomer(id: string, customer: Partial<Customer>): Promise<Customer | undefined> {
-    const updated = await CustomerModel.findByIdAndUpdate(id, { $set: customer }, { new: true });
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const query = isObjectId 
+      ? { $or: [{ _id: id }, { id: id }] }
+      : { id: id };
+    
+    let updated = await CustomerModel.findOneAndUpdate(
+      query,
+      { $set: { ...customer, updatedAt: new Date() } },
+      { new: true }
+    );
     return updated || undefined;
   }
 

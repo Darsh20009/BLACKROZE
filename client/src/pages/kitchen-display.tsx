@@ -30,15 +30,17 @@ import {
   Store,
   ShoppingBag,
   Truck,
-  Printer
+  Printer,
+  Navigation
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 // Set global SEO metadata on mount
 if (typeof document !== 'undefined') {
-  document.title = "شاشة المطبخ - BLACK ROSE | إدارة الطلبات";
+  document.title = "شاشة المطبخ - CLUNY CAFE | إدارة الطلبات";
   const metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc) metaDesc.setAttribute('content', 'شاشة المطبخ لـ BLACK ROSE - إدارة سهلة وسريعة للطلبات المدخلة');
+  if (metaDesc) metaDesc.setAttribute('content', 'شاشة المطبخ لـ CLUNY CAFE - إدارة سهلة وسريعة للطلبات المدخلة');
 }
 
 interface OrderItem {
@@ -67,7 +69,17 @@ interface Order {
   updatedAt?: string;
   tableNumber?: string;
   orderType?: string;
-  deliveryType?: 'pickup' | 'delivery' | 'dine-in';
+  deliveryType?: 'pickup' | 'delivery' | 'dine-in' | 'car-pickup' | 'car_pickup';
+  carInfo?: {
+    carType: string;
+    carColor: string;
+    plateNumber: string;
+  };
+  carType?: string;
+  carColor?: string;
+  carPlate?: string;
+  plateNumber?: string;
+  arrivalTime?: string;
   customerNotes?: string;
   branchId?: string;
 }
@@ -81,6 +93,7 @@ function getElapsedMinutes(dateString: string): number {
 }
 
 export default function KitchenDisplay() {
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("all");
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -124,20 +137,18 @@ export default function KitchenDisplay() {
   });
 
   useEffect(() => {
-    if (!soundEnabled || orders.length === 0) return;
+    if (!soundEnabled || !Array.isArray(orders) || orders.length === 0) return;
     
-    const pendingOrders = orders.filter(o => o.status === "pending" || o.status === "payment_confirmed");
+    const pendingOrders = orders.filter(o => o.status === "pending" || o.status === "payment_confirmed" || o.status === "confirmed" || o.status === "in_progress");
     const readyOrders = orders.filter(o => o.status === "ready");
     
-    // Debug order count
-    console.log(`[KDS] Current pending: ${pendingOrders.length}, Previous: ${previousOrderCountRef.current}`);
-    
     if (pendingOrders.length > previousOrderCountRef.current) {
-      console.log("[KDS] New order detected, playing sound...");
-      playNotificationSound('newOrder', 1.0); // Max volume
+      if (soundEnabled) {
+        playNotificationSound('newOrder', 1.0);
+      }
       toast({
         title: "طلب جديد!",
-        description: `وصل طلب جديد #${orders[0]?.orderNumber || ''}`,
+        description: `وصل طلب جديد #${orders.find(o => o.status === 'pending' || o.status === 'payment_confirmed' || o.status === 'in_progress')?.orderNumber || ''}`,
       });
     }
     
@@ -160,10 +171,11 @@ export default function KitchenDisplay() {
         description: "تم تحديث حالة الطلب بنجاح",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("[KDS] Status update failed:", error);
       toast({
         title: "خطأ",
-        description: "فشل تحديث حالة الطلب",
+        description: error?.message || "فشل تحديث حالة الطلب",
         variant: "destructive",
       });
     },
@@ -181,6 +193,34 @@ export default function KitchenDisplay() {
     updateStatusMutation.mutate({ id, status: "ready" });
   };
 
+  const handleMarkCompleted = (id: string) => {
+    updateStatusMutation.mutate({ id, status: "completed" });
+  };
+
+  const updateTimeMutation = useMutation({
+    mutationFn: async ({ id, additionalMinutes }: { id: string; additionalMinutes: number }) => {
+      return apiRequest("PATCH", `/api/orders/${id}/prep-time`, { additionalMinutes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/kitchen"] });
+      toast({
+        title: "تم تحديث الوقت",
+        description: "تم إضافة وقت إضافي وإبلاغ العميل",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل تحديث الوقت",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateTime = (id: string, additionalMinutes: number) => {
+    updateTimeMutation.mutate({ id, additionalMinutes });
+  };
+
   const filterByDeliveryType = useCallback((orderList: Order[]) => {
     if (deliveryTypeFilter === "all") return orderList;
     return orderList.filter(o => {
@@ -188,6 +228,7 @@ export default function KitchenDisplay() {
       if (deliveryTypeFilter === "dine-in") return type === "dine-in" || type === "dine_in";
       if (deliveryTypeFilter === "pickup") return type === "pickup" || type === "takeaway";
       if (deliveryTypeFilter === "delivery") return type === "delivery";
+      if (deliveryTypeFilter === "car-pickup") return type === "car-pickup" || type === "car_pickup";
       return true;
     });
   }, [deliveryTypeFilter]);
@@ -196,10 +237,10 @@ export default function KitchenDisplay() {
     const filteredOrders = filterByDeliveryType(orders);
     
     const pending = filteredOrders.filter(o => 
-      o.status === "pending" || o.status === "payment_confirmed"
+      o.status === "pending" || o.status === "payment_confirmed" || o.status === "confirmed"
     );
     const preparing = filteredOrders.filter(o => o.status === "in_progress");
-    const ready = filteredOrders.filter(o => o.status === "ready");
+    const ready = filteredOrders.filter(o => o.status === "ready" || o.status === "completed");
     
     const delayed = [...pending, ...preparing].filter(o => 
       getElapsedMinutes(o.createdAt) >= DELAY_THRESHOLD_MINUTES
@@ -238,16 +279,19 @@ export default function KitchenDisplay() {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-background pb-16 sm:pb-0" dir="rtl">
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <Link href="/employee/dashboard">
-                <Button variant="ghost" size="icon" data-testid="button-back">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setLocation("/employee/dashboard")}
+                data-testid="button-back"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
               <div className="flex items-center gap-2">
                 <ChefHat className="h-6 w-6 text-primary" />
                 <h1 className="text-xl font-bold">شاشة المطبخ</h1>
@@ -305,6 +349,12 @@ export default function KitchenDisplay() {
                     <div className="flex items-center gap-2">
                       <Truck className="h-4 w-4" />
                       توصيل
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="car-pickup">
+                    <div className="flex items-center gap-2">
+                      <Navigation className="h-4 w-4" />
+                      استلام من السيارة
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -397,7 +447,8 @@ export default function KitchenDisplay() {
                       showActions={true}
                       onStartPreparing={handleStartPreparing}
                       onMarkReady={handleMarkReady}
-                      isPending={updateStatusMutation.isPending}
+                      onUpdateTime={handleUpdateTime}
+                      isPending={updateStatusMutation.isPending || updateTimeMutation.isPending}
                     />
                   ))}
               </div>
@@ -405,6 +456,7 @@ export default function KitchenDisplay() {
           </TabsContent>
         </Tabs>
       </main>
+      <MobileBottomNav />
     </div>
   );
 }

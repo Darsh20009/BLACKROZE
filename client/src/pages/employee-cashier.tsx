@@ -16,12 +16,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Coffee, ShoppingBag, User, Phone, Trash2, Plus, Minus, ArrowRight, Check, Scan, Search, X, Gift, Printer, MonitorSmartphone, Settings, Wifi, WifiOff, FileText, Store, Truck, MapPin, Wallet, CreditCard } from "lucide-react";
 import QRScanner from "@/components/qr-scanner";
 import BarcodeScanner from "@/components/barcode-scanner";
+import { TableOccupancyAlerts } from "@/components/table-occupancy-alerts";
 import { printTaxInvoice, printSimpleReceipt, printCustomerPickupReceipt, printCashierReceipt, printAllReceipts } from "@/lib/print-utils";
 import type { Employee, CoffeeItem, PaymentMethod, LoyaltyCard } from "@shared/schema";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface OrderItem {
  coffeeItem: CoffeeItem;
  quantity: number;
+ customization?: {
+   selectedSize?: string;
+   addons?: any[];
+   totalAddonsPrice?: number;
+ };
 }
 
 interface WhatsAppMessageData {
@@ -51,7 +58,7 @@ ${data.items.map(item => `• ${item.coffeeItem.nameAr} × ${item.quantity} - ${
 
 سنبلغك عند اكتمال طلبك. شكراً لتعاملك معنا!
 
-BLACK ROSE
+CLUNY CAFE
 `.trim();
 
  const phoneNumber = data.phone.replace(/[^0-9]/g, '');
@@ -93,11 +100,6 @@ export default function EmployeeCashier() {
  const storedEmployee = localStorage.getItem("currentEmployee");
  if (storedEmployee) {
  const parsed = JSON.parse(storedEmployee);
- // Ensure employee has an _id field for compatibility
- if (!parsed._id && parsed.id) {
- parsed._id = parsed.id;
- }
- 
  // If employee doesn't have branchId, fetch it from server
  if (!parsed.branchId) {
  try {
@@ -707,75 +709,78 @@ export default function EmployeeCashier() {
  }
  };
 
- const handleSubmitOrder = () => {
- if (orderItems.length === 0) {
- toast({
- title: "خطأ",
- description: "يرجى إضافة عناصر للطلب",
- variant: "destructive",
- });
- return;
- }
+ const handleSubmitOrder = async () => {
+   if (orderItems.length === 0) {
+     toast({
+       title: "خطأ",
+       description: "يرجى إضافة عناصر للطلب",
+       variant: "destructive",
+     });
+     return;
+   }
 
- if (!(customerName || '').trim() || !(customerPhone || '').trim()) {
- toast({
- title: "خطأ",
- description: "يرجى إدخال بيانات العميل",
- variant: "destructive",
- });
- return;
- }
+   const totalAmount = calculateTotal();
+   const orderData = {
+     customerId: customerId || undefined,
+     customerInfo: {
+       customerName: customerName,
+       phoneNumber: customerPhone,
+       customerEmail: customerEmail || undefined
+     },
+     items: orderItems.map(item => ({
+       coffeeItemId: item.coffeeItem.id,
+       quantity: item.quantity,
+       size: item.customization?.selectedSize || "Default",
+       extras: item.customization?.addons?.map((a: any) => a.nameAr) || [],
+       totalPrice: ((Number(item.coffeeItem.price) + (item.customization?.totalAddonsPrice || 0)) * item.quantity).toFixed(2)
+     })),
+     totalAmount: parseFloat(totalAmount),
+     paymentMethod,
+     orderType,
+     tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
+     branchId: employee?.branchId,
+     discountCode: appliedDiscount?.code,
+     discountPercentage: appliedDiscount?.percentage || 0,
+   };
 
- let finalTotal = parseFloat(calculateTotal());
- let stampDiscount = 0;
- if (paymentMethod === 'qahwa-card' && stampsToUse > 0) {
- // الختم = عنصر واحد مجاني - نختار أغلى العناصر
- const itemPrices = orderItems.flatMap(item => 
- Array(item.quantity).fill(item.coffeeItem.price)
- ).sort((a, b) => b - a);
- 
- for (let i = 0; i < Math.min(stampsToUse, itemPrices.length); i++) {
- stampDiscount += itemPrices[i];
- }
- finalTotal = Math.max(0, finalTotal - stampDiscount);
- }
+   try {
+     const order = await createOrderMutation.mutateAsync(orderData);
+     
+     // Handle Printing after success
+     if (order) {
+       toast({
+         title: "تم الطلب",
+         description: "جاري تحضير الفواتير...",
+       });
+       
+       // Update lastOrder state for manual printing if needed
+       setLastOrder({
+         orderNumber: order.orderNumber,
+         customerName,
+         customerPhone,
+         items: orderItems,
+         subtotal: calculateSubtotal().toFixed(2),
+         discount: appliedDiscount ? {
+           code: appliedDiscount.code,
+           percentage: appliedDiscount.percentage,
+           amount: calculateDiscount().toFixed(2)
+         } : undefined,
+         total: order.totalAmount,
+         paymentMethod: paymentMethod === "cash" ? "نقدي" : "إلكتروني",
+         employeeName: employee?.fullName || "",
+         tableNumber: tableNumber || undefined,
+         deliveryType: orderType,
+         date: new Date().toISOString()
+       });
 
- // Ensure we have branchId from employee
- if (!employee?.branchId) {
- toast({
- title: "خطأ",
- description: "معلومات الفرع غير متوفرة. يرجى تسجيل الدخول مجدداً",
- variant: "destructive",
- });
- setLocation("/employee/login");
- return;
- }
-
- const orderData = {
- items: orderItems.map(item => ({
- coffeeItemId: item.coffeeItem.id,
- quantity: item.quantity,
- price: item.coffeeItem.price
- })),
- totalAmount: finalTotal.toFixed(2),
- paymentMethod,
- deliveryType: orderType,
- orderType: orderType === 'dine-in' ? 'dine-in' : 'regular',
- stampsUsed: paymentMethod === 'qahwa-card' ? stampsToUse : 0,
- stampDiscount: stampDiscount,
- customerInfo: {
- customerName: customerName,
- phoneNumber: customerPhone,
- customerEmail: customerEmail || undefined
- },
- customerId: customerId || undefined,
- employeeId: employee?.id,
- branchId: employee.branchId,
- tableNumber: tableNumber || undefined,
- status: "in_progress"
- };
-
- createOrderMutation.mutate(orderData);
+       // Small delay to ensure state updates if needed
+       setTimeout(() => {
+         handlePrintAllReceipts();
+       }, 500);
+     }
+   } catch (error) {
+     console.error("Order submission error:", error);
+   }
  };
 
  if (!employee) {
@@ -783,7 +788,7 @@ export default function EmployeeCashier() {
  }
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4">
+ <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4 pb-20 sm:pb-4">
  <div className="max-w-7xl mx-auto">
  <div className="flex items-center justify-between mb-6">
  <div className="flex items-center gap-3">
@@ -1470,6 +1475,7 @@ export default function EmployeeCashier() {
  </div>
  </div>
 
+ <MobileBottomNav employeeRole={employee?.role} />
  </div>
  );
 }

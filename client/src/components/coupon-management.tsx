@@ -12,7 +12,6 @@ import { Plus, Trash2, ToggleLeft, ToggleRight, Ticket, Percent, Tag } from "luc
 
 interface DiscountCode {
   id: string;
-  _id?: string;
   code: string;
   discountPercentage: number;
   reason: string;
@@ -223,7 +222,7 @@ export function CouponManagement({ employeeId }: CouponManagementProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {discountCodes.map((code) => (
-            <Card key={code._id || code.id} className={`border ${code.isActive ? 'border-green-500/30 bg-green-50/50 dark:bg-green-950/10' : 'border-red-500/30 bg-red-50/50 dark:bg-red-950/10'}`}>
+            <Card key={code.id} className={`border ${code.isActive ? 'border-green-500/30 bg-green-50/50 dark:bg-green-950/10' : 'border-red-500/30 bg-red-50/50 dark:bg-red-950/10'}`}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -255,7 +254,7 @@ export function CouponManagement({ employeeId }: CouponManagementProps) {
                     size="sm"
                     className="flex-1"
                     onClick={() => toggleCouponMutation.mutate({
-                      id: code._id || code.id,
+                      id: code.id,
                       isActive: code.isActive ? 0 : 1,
                     })}
                     disabled={toggleCouponMutation.isPending}

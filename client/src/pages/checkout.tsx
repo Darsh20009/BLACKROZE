@@ -11,666 +11,726 @@ import { useCartStore } from "@/lib/cart-store";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import PaymentMethods from "@/components/payment-methods";
-import FileUpload from "@/components/file-upload";
-import { generatePDF } from "@/lib/pdf-generator";
 import { customerStorage } from "@/lib/customer-storage";
 import { useCustomer } from "@/contexts/CustomerContext";
-import { CreditCard, FileText, MessageCircle, CheckCircle, Coffee, Clock, Star, User, Gift, Sparkles, Award, Copy, Check, Store, Truck, MapPin, Edit, ShoppingBag, Eye, EyeOff } from "lucide-react";
-import type { PaymentMethodInfo, PaymentMethod, Order } from "@shared/schema";
+import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
+import { User, Gift, CheckCircle, Sparkles, Shield, Loader2, KeyRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { PaymentMethodInfo, PaymentMethod } from "@shared/schema";
 
 export default function CheckoutPage() {
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
-  const { cartItems, clearCart, getTotalPrice, deliveryInfo, getFinalTotal } = useCartStore();
+  const { cartItems, clearCart, getFinalTotal, deliveryInfo } = useCartStore();
   const { toast } = useToast();
+  const isAr = i18n.language === 'ar';
 
-  const isAr = true;
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [showSuccessPage, setShowSuccessPage] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPassword, setCustomerPassword] = useState("");
+  const [wantToRegister, setWantToRegister] = useState(false);
+  const [customerNotes, setCustomerNotes] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<{code: string, percentage: number, isOffer?: boolean} | null>(null);
+  const [pointsRedeemed, setPointsRedeemed] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointsVerified, setPointsVerified] = useState(false);
+  const [pointsVerificationToken, setPointsVerificationToken] = useState("");
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isRequestingCode, setIsRequestingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [devCode, setDevCode] = useState<string | null>(null);
+  const { card: loyaltyCard, refetch: refetchLoyaltyCard } = useLoyaltyCard();
 
-  const t = (key: string, options?: any) => {
-    const translations: Record<string, string> = {
-      "nav.checkout": "الدفع",
-      "checkout.order_summary": "ملخص الطلب",
-      "checkout.order_failed": "فشل في إنشاء الطلب",
-      "checkout.order_success": "تم إنشاء الطلب بنجاح",
-      "checkout.order_error": "خطأ في إنشاء الطلب",
-      "checkout.discount_applied": "تم تطبيق الخصم بنجاح",
-      "checkout.invalid_discount": "كود خصم غير صحيح",
-      "checkout.select_payment": "الرجاء اختيار طريقة الدفع",
-      "checkout.enter_customer_name": "الرجاء إدخال اسم العميل",
-      "checkout.location_failed": "فشل في تحديد الموقع",
-      "checkout.location_allow": "الرجاء السماح بالوصول للموقع",
-      "checkout.too_far": "الموقع بعيد جداً",
-      "checkout.cash_limit": "الدفع النقدي متاح فقط للمواقع القريبة",
-      "checkout.phone_required": "رقم الهاتف مطلوب بصيغة صحيحة (5xxxxxxxx)",
-      "checkout.email_required": "البريد الإلكتروني مطلوب بصيغة صحيحة",
-      "checkout.password_required": "كلمة المرور مطلوبة (6 أحرف على الأقل)",
-      "checkout.transfer_name_required": "اسم صاحب الحساب المحول مطلوب",
-      "checkout.receipt_required": "إيصال التحويل مطلوب",
-      "checkout.no_free_drinks": "لا توجد مشروبات مجانية متاحة",
-      "checkout.select_payment_remaining": "الرجاء اختيار طريقة دفع للمبلغ المتبقي",
-      "checkout.registration_error": "خطأ في إنشاء الحساب",
-      "checkout.full_name": "الاسم الكامل",
-      "checkout.enter_name": "أدخل اسمك",
-      "checkout.have_discount": "هل لديك كود خصم؟",
-      "checkout.enter_discount": "أدخل الكود هنا",
-      "checkout.remove": "إزالة",
-      "checkout.order_desc": "تم استلام طلبك برقم",
-      "cart.total": "الإجمالي",
-      "cart.continue_shopping": "العودة للقائمة",
-      "currency": "ر.س",
-      "status.in_progress": "قيد التنفيذ",
-      "nav.thank_you": "شكراً لك",
-      "tracking.order_number": "رقم الطلب"
-    };
-    return translations[key] || key;
+  const pointsToSar = (pts: number) => (pts / 100) * 5;
+
+  const getFinalTotalWithPoints = () => {
+    let total = getFinalTotal();
+    if (appliedDiscount) {
+      total = total * (1 - appliedDiscount.percentage / 100);
+    }
+    if (usePoints && pointsVerified) {
+      total = Math.max(0, total - pointsToSar(pointsRedeemed));
+    }
+    return total;
   };
+  const [isRegistering, setIsRegistering] = useState(false);
+  const { customer, setCustomer } = useCustomer();
 
   useEffect(() => {
-    document.title = `${t("nav.checkout")} - BLACK ROSE`;
-  }, []);
-
- const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
- const [secondaryPaymentMethod, setSecondaryPaymentMethod] = useState<PaymentMethod | null>(null);
- const [paymentReceiptUrl, setPaymentReceiptUrl] = useState("");
- const [secondaryPaymentReceiptUrl, setSecondaryPaymentReceiptUrl] = useState("");
- const [showConfirmation, setShowConfirmation] = useState(false);
- const [orderDetails, setOrderDetails] = useState<any>(null);
- const [showSuccessPage, setShowSuccessPage] = useState(false);
- const [customerName, setCustomerName] = useState("");
- const [transferOwnerName, setTransferOwnerName] = useState("");
- const [isSameAsCustomer, setIsSameAsCustomer] = useState(true);
- const [customerPhone, setCustomerPhone] = useState("");
- const [customerEmail, setCustomerEmail] = useState("");
- const [customerPassword, setCustomerPassword] = useState("");
- const [showPassword, setShowPassword] = useState(false);
- const [wantToRegister, setWantToRegister] = useState(false);
- const [loyaltyCodes, setLoyaltyCodes] = useState<any[]>([]);
- const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
- const [useFreeDrink, setUseFreeDrink] = useState(false);
- const [isRegisteredCustomer, setIsRegisteredCustomer] = useState(false);
- const [selectedFreeItems, setSelectedFreeItems] = useState<{[key: string]: number}>({});
- const [customerNotes, setCustomerNotes] = useState("");
- const [discountCode, setDiscountCode] = useState("");
- const [appliedDiscount, setAppliedDiscount] = useState<{code: string, percentage: number} | null>(null);
- const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
- const [isRegistering, setIsRegistering] = useState(false);
- const { customer, setCustomer } = useCustomer();
-
- const { data: customerOrders = [] } = useQuery<Order[]>({
-   queryKey: ["/api/customers", customer?.id, "orders"],
-   enabled: !!customer?.id,
- });
-
- const { data: loyaltyCard, refetch: refetchLoyaltyCard } = useQuery({
-   queryKey: ["/api/loyalty/cards/phone", customer?.phone],
-   queryFn: async () => {
-     if (!customer?.phone) return null;
-     const res = await fetch(`/api/loyalty/cards/phone/${customer.phone}`);
-     if (!res.ok) return null;
-     return res.json();
-   },
-   enabled: !!customer?.phone,
-   staleTime: 0,
-   refetchInterval: 5000,
- });
-
- const calculateFreeDrinks = () => {
-   if (!loyaltyCard) return 0;
-   const freeCupsEarned = loyaltyCard.freeCupsEarned || Math.floor((loyaltyCard.stamps || 0) / 6) || 0;
-   const freeCupsRedeemed = loyaltyCard.freeCupsRedeemed || 0;
-   return Math.max(0, freeCupsEarned - freeCupsRedeemed);
- };
-
- const availableFreeDrinks = calculateFreeDrinks();
-
- const getAutoSelectedFreeItems = () => {
-   if (availableFreeDrinks === 0 || cartItems.length === 0) return {};
-   const sortedItems = [...cartItems].sort((a, b) => {
-     const priceA = parseFloat(String(a.coffeeItem?.price || 0));
-     const priceB = parseFloat(String(b.coffeeItem?.price || 0));
-     return priceA - priceB;
-   });
-   const selected: {[key: string]: number} = {};
-   let remaining = availableFreeDrinks;
-   for (const item of sortedItems) {
-     if (remaining <= 0) break;
-     const freeQty = Math.min(item.quantity, remaining);
-     if (freeQty > 0) {
-       selected[item.coffeeItemId] = freeQty;
-       remaining -= freeQty;
-     }
-   }
-   return selected;
- };
-
- useEffect(() => {
-   if (selectedPaymentMethod === 'qahwa-card' && availableFreeDrinks > 0) {
-     setSelectedFreeItems(getAutoSelectedFreeItems());
-   }
- }, [selectedPaymentMethod, availableFreeDrinks, cartItems]);
-
- useEffect(() => {
-   if (!deliveryInfo && !showSuccessPage && cartItems.length > 0) {
-     setLocation("/delivery");
-   }
- }, [deliveryInfo, setLocation, showSuccessPage, cartItems.length]);
-
-  useEffect(() => {
-    if (customer?.name && customer?.phone) {
+    if (customer) {
       setCustomerName(customer.name);
       setCustomerPhone(customer.phone);
-      if (customer?.email) setCustomerEmail(customer.email);
-      setIsRegisteredCustomer(true);
-      console.log("Customer data set from context:", customer.name);
-    } else {
-      const profile = customerStorage.getProfile();
-      if (profile && !customerStorage.isGuestMode()) {
-        setCustomerName(profile.name);
-        setCustomerPhone(profile.phone);
-        if (profile.email) setCustomerEmail(profile.email);
-        setIsRegisteredCustomer(true);
-        console.log("Customer data set from storage:", profile.name);
-      }
+      if (customer.email) setCustomerEmail(customer.email);
     }
   }, [customer]);
 
- const { data: paymentMethods = [] } = useQuery<PaymentMethodInfo[]>({
-   queryKey: ["/api/payment-methods"],
-   queryFn: async () => {
-     const res = await fetch(`/api/payment-methods`);
-     if (!res.ok) throw new Error('Failed to fetch payment methods');
-     return res.json();
-   }
- });
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment') === 'callback') {
+      const storedOrderData = sessionStorage.getItem('pendingOrderData');
+      const storedSessionId = sessionStorage.getItem('paymentSessionId');
+      const storedProvider = sessionStorage.getItem('paymentProvider');
 
- useEffect(() => {
-   if (selectedPaymentMethod !== 'qahwa-card' && appliedDiscount?.code === 'qahwa-card') {
-     setAppliedDiscount(null);
-   }
- }, [selectedPaymentMethod]);
+      if (storedOrderData && storedSessionId) {
+        (async () => {
+          try {
+            const verifyRes = await apiRequest("POST", "/api/payments/verify", {
+              sessionId: storedSessionId,
+              provider: storedProvider,
+            });
+            const verifyData = await verifyRes.json();
 
- const generateCodesMutation = useMutation({
-   mutationFn: async (orderId: number) => {
-     const response = await apiRequest("POST", `/api/orders/${orderId}/generate-codes`, {});
-     return response.json();
-   },
-   onSuccess: (codes) => setLoyaltyCodes(codes),
- });
+            if (verifyData.verified) {
+              const orderData = JSON.parse(storedOrderData);
+              orderData.paymentStatus = 'paid';
+              orderData.transactionId = verifyData.transactionId;
+              sessionStorage.removeItem('pendingOrderData');
+              sessionStorage.removeItem('paymentSessionId');
+              sessionStorage.removeItem('paymentProvider');
+              createOrderMutation.mutate(orderData);
+            } else {
+              sessionStorage.removeItem('pendingOrderData');
+              sessionStorage.removeItem('paymentSessionId');
+              sessionStorage.removeItem('paymentProvider');
+              toast({ variant: "destructive", title: t("checkout.payment_failed"), description: verifyData.error || t("checkout.payment_verification_failed") });
+            }
+          } catch {
+            toast({ variant: "destructive", title: t("checkout.error"), description: t("checkout.payment_status_check_failed") });
+          }
+        })();
+      }
+      window.history.replaceState({}, '', '/checkout');
+    }
+  }, []);
 
- const createOrderMutation = useMutation({
-   mutationFn: async (orderData: any) => {
-     const response = await apiRequest("POST", "/api/orders", orderData);
-     if (!response.ok) {
-       const error = await response.json();
-       throw new Error(error.error || t("checkout.order_failed") || "فشل في إنشاء الطلب");
-     }
-     return response.json();
-   },
-   onSuccess: (data) => {
-     setOrderDetails(data);
-     clearCart();
-     setShowSuccessPage(true);
-     queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-     if (data.id) generateCodesMutation.mutate(data.id);
-     if (customerPhone) {
-       localStorage.setItem("customer-phone", customerPhone);
-       if (data.customerId) {
-         localStorage.setItem("customer-id", data.customerId);
-         fetch(`/api/customers/${data.customerId}`)
-           .then(res => res.json())
-           .then(customerData => {
-             if (customerData && !customerData.error) setCustomer(customerData);
-           });
-       }
-     }
-     toast({ title: t("checkout.order_success") || "تم إنشاء الطلب بنجاح", description: `${t("tracking.order_number")}: ${data.orderNumber}` });
-   },
-   onError: (error) => toast({ variant: "destructive", title: t("checkout.order_error") || "خطأ في إنشاء الطلب", description: error.message }),
- });
+  useEffect(() => {
+    const activeOffer = customerStorage.getActiveOffer();
+    if (activeOffer && activeOffer.discount > 0 && !appliedDiscount) {
+      const discountPercentage = activeOffer.type === 'loyalty' 
+        ? 0 
+        : activeOffer.discount;
+      
+      if (discountPercentage > 0) {
+        setAppliedDiscount({
+          code: activeOffer.title,
+          percentage: discountPercentage,
+          isOffer: true
+        });
+        toast({
+          title: t("points.offer_applied"),
+          description: `${activeOffer.title} - ${t("points.discount")} ${discountPercentage}%`,
+        });
+      }
+    }
+  }, []);
 
- const handleValidateDiscount = async () => {
-   if (!discountCode.trim()) return;
-   setIsValidatingDiscount(true);
-   try {
-     const response = await fetch('/api/discount-codes/validate', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ 
-         code: discountCode.trim(),
-         customerId: (customer as any)?.id || (customer as any)?._id || localStorage.getItem("customer-id")
-       }),
-     });
-     const data = await response.json();
-     if (response.ok && data.valid) {
-       setAppliedDiscount({ code: discountCode.trim(), percentage: data.discountPercentage });
-       toast({ title: t("checkout.discount_applied") || "تم تطبيق الخصم بنجاح", description: `${t("checkout.discount_desc", { percentage: data.discountPercentage })}` });
-     } else {
-       setAppliedDiscount(null);
-       toast({ variant: "destructive", title: t("checkout.invalid_discount") || "كود خصم غير صحيح" });
-     }
-   } finally {
-     setIsValidatingDiscount(false);
-   }
- };
+  const { data: paymentMethods = [] } = useQuery<PaymentMethodInfo[]>({
+    queryKey: ["/api/payment-methods"],
+    queryFn: async () => {
+      const res = await fetch(`/api/payment-methods`);
+      return res.json();
+    }
+  });
+
+  const createOrderMutation = useMutation({
+    mutationFn: async (orderData: any) => {
+      const response = await apiRequest("POST", "/api/orders", orderData);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Order failed");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setOrderDetails(data);
+      clearCart();
+      customerStorage.clearActiveOffer();
+      setShowSuccessPage(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loyalty/cards/phone"] });
+      refetchLoyaltyCard();
+      const displayNum = data.orderNumber.includes('-') ? data.orderNumber.split('-').pop() : data.orderNumber;
+      toast({ title: t("checkout.order_success"), description: `${t("tracking.order_number")}: ${displayNum}` });
+    },
+    onError: (error) => toast({ variant: "destructive", title: t("checkout.order_error"), description: error.message }),
+  });
+
+  const { data: coupons = [] } = useQuery<any[]>({
+    queryKey: ["/api/discount-codes"],
+  });
+
+  const [showCouponSuggestions, setShowCouponSuggestions] = useState(false);
+
+  const filteredCoupons = coupons.filter(c => 
+    c.isActive && 
+    c.code.toLowerCase().includes(discountCode.toLowerCase())
+  );
+
+  const handleValidateDiscount = async (codeOverride?: string) => {
+    const codeToUse = codeOverride || discountCode.trim();
+    if (!codeToUse) return;
+    
+    setIsValidatingDiscount(true);
+    try {
+      const response = await fetch('/api/discount-codes/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          code: codeToUse, 
+          customerId: customer?.id,
+          amount: total
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.valid) {
+        setAppliedDiscount({ code: data.code, percentage: data.discountPercentage });
+        setDiscountCode(data.code);
+        setShowCouponSuggestions(false);
+        toast({
+          title: t("checkout.coupon_applied"),
+          description: `${t("checkout.discount")}: ${data.discountPercentage}%`,
+        });
+      } else {
+        setAppliedDiscount(null);
+        toast({ 
+          variant: "destructive", 
+          title: t("checkout.invalid_discount"),
+          description: data.error || data.message
+        });
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: t("checkout.error") });
+    } finally { setIsValidatingDiscount(false); }
+  };
+
+  const handleRequestVerificationCode = async () => {
+    if (!pointsRedeemed || pointsRedeemed <= 0) {
+      toast({ variant: "destructive", title: t("points.enter_points_amount") });
+      return;
+    }
+
+    const phone = customer?.phone || customerPhone;
+    if (!phone) {
+      toast({ variant: "destructive", title: t("points.phone_required") });
+      return;
+    }
+
+    setIsRequestingCode(true);
+    try {
+      const response = await apiRequest("POST", "/api/loyalty/points/request-code", {
+        phone,
+        points: pointsRedeemed,
+        requestedBy: 'customer',
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setShowVerificationDialog(true);
+        if (data.devCode) setDevCode(data.devCode);
+        toast({
+          title: t("points.code_sent"),
+          description: data.maskedEmail
+            ? t("points.code_sent_to_email", { email: data.maskedEmail })
+            : t("points.code_generated"),
+        });
+      } else {
+        toast({ variant: "destructive", title: data.error || t("points.code_error") });
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: t("points.code_error") });
+    } finally {
+      setIsRequestingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode.trim() || verificationCode.length < 4) {
+      toast({ variant: "destructive", title: t("points.enter_valid_code") });
+      return;
+    }
+
+    const phone = customer?.phone || customerPhone;
+    setIsVerifyingCode(true);
+    try {
+      const response = await apiRequest("POST", "/api/loyalty/points/verify-code", {
+        phone,
+        code: verificationCode.trim(),
+      });
+      const data = await response.json();
+      if (response.ok && data.verified) {
+        setPointsVerified(true);
+        setUsePoints(true);
+        setPointsVerificationToken(data.verificationToken);
+        setShowVerificationDialog(false);
+        setVerificationCode("");
+        setDevCode(null);
+        toast({ title: t("points.verified_success"), description: t("points.points_will_be_deducted", { amount: pointsToSar(pointsRedeemed).toFixed(2) }) });
+      } else {
+        toast({ variant: "destructive", title: data.error || t("points.invalid_code") });
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: t("points.verification_error") });
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
+
+  const handleCancelPoints = () => {
+    setUsePoints(false);
+    setPointsVerified(false);
+    setPointsVerificationToken("");
+    setPointsRedeemed(0);
+    setVerificationCode("");
+    setDevCode(null);
+  };
 
   const handleProceedPayment = () => {
-    console.log("Proceeding to payment debug:", { 
-      customerName, 
-      selectedPaymentMethod,
-      isRegisteredCustomer,
-      customer: !!customer 
-    });
-    
     if (!selectedPaymentMethod) {
       toast({ variant: "destructive", title: t("checkout.select_payment") });
       return;
     }
-
-    // Force name from context/storage if it's missing but we're "registered"
-    let finalName = customerName;
-    if (!finalName || !finalName.trim()) {
-      const profile = customerStorage.getProfile();
-      finalName = customer?.name || profile?.name || "";
-      if (finalName) {
-        setCustomerName(finalName);
-      }
-    }
-
-    if (!finalName || !finalName.trim()) {
+    if (!customerName.trim()) {
       toast({ variant: "destructive", title: t("checkout.enter_customer_name") });
       return;
     }
     setShowConfirmation(true);
   };
 
- const confirmAndCreateOrder = async () => {
-   let customerLocation = null;
-   try {
-     const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-       navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-     });
-     customerLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-   } catch (err) {
-     if (selectedPaymentMethod === 'cash') {
-       toast({ variant: "destructive", title: t("checkout.location_failed"), description: t("checkout.location_allow") });
-       return;
-     }
-   }
+  const isOnlinePaymentMethod = (method: string | null) => {
+    if (!method) return false;
+    const onlineMethods = ['neoleap', 'geidea', 'apple_pay', 'neoleap-apple-pay', 'bank_card'];
+    return onlineMethods.includes(method);
+  };
 
-   if (selectedPaymentMethod === 'cash' && customerLocation) {
-     const branchId = deliveryInfo?.branchId;
-     if (branchId) {
-       const res = await fetch(`/api/branches/${branchId}/check-location`, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ latitude: customerLocation.lat, longitude: customerLocation.lng })
-       });
-       const locationData = await res.json();
-       if (!locationData.withinRange) {
-         toast({ variant: "destructive", title: t("checkout.too_far"), description: t("checkout.cash_limit") });
-         return;
-       }
-     }
-   }
+  const confirmAndCreateOrder = async () => {
+    let finalTotal = getFinalTotalWithPoints();
 
-   if (!isRegisteredCustomer) {
-     if (!customerPhone.trim() || !/^5\d{8}$/.test(customerPhone.trim())) {
-       toast({ variant: "destructive", title: t("checkout.phone_required") });
-       return;
-     }
-     if (!customerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
-       toast({ variant: "destructive", title: t("checkout.email_required") });
-       return;
-     }
-     if (wantToRegister && (!customerPassword.trim() || customerPassword.length < 6)) {
-       toast({ variant: "destructive", title: t("checkout.password_required") });
-       return;
-     }
-   }
+    if (selectedPaymentMethod === ('wallet' as any) && (customer?.walletBalance || 0) < finalTotal) {
+      toast({ variant: "destructive", title: t("points.insufficient_wallet") });
+      return;
+    }
 
-   if (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer && !transferOwnerName.trim()) {
-     toast({ variant: "destructive", title: t("checkout.transfer_name_required") });
-     return;
-   }
-
-   const electronicPayments = ['alinma', 'ur', 'barq', 'rajhi'];
-   if (electronicPayments.includes(selectedPaymentMethod!) && !paymentReceiptUrl) {
-     toast({ variant: "destructive", title: t("checkout.receipt_required") });
-     return;
-   }
-
-   const isQahwaCardPayment = selectedPaymentMethod === 'qahwa-card';
-   if (isQahwaCardPayment && availableFreeDrinks <= 0) {
-     toast({ variant: "destructive", title: t("checkout.no_free_drinks") });
-     return;
-   }
-
-   if (isQahwaCardPayment && availableFreeDrinks > 0) {
-     const totalSelectedFreeItems = Object.values(selectedFreeItems).reduce((sum, val) => sum + val, 0);
-     const totalDrinks = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-     if (totalDrinks > totalSelectedFreeItems && !secondaryPaymentMethod) {
-       toast({ variant: "destructive", title: t("checkout.select_payment_remaining") });
-       return;
-     }
-   }
-
-   let totalAmount = getTotalPrice();
-   let freeItemsDiscount = 0;
-   const usedFreeDrinksCount = isQahwaCardPayment ? Object.values(selectedFreeItems).reduce((sum, val) => sum + val, 0) : 0;
-
-   if (isQahwaCardPayment) {
-     Object.entries(selectedFreeItems).forEach(([itemId, quantity]) => {
-       const item = cartItems.find(ci => ci.coffeeItemId === itemId);
-       if (item) {
-         const price = typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0));
-         freeItemsDiscount += price * quantity;
-       }
-     });
-     totalAmount = Math.max(0, totalAmount - freeItemsDiscount);
-   } else if (useFreeDrink && availableFreeDrinks > 0) {
-     totalAmount = 0;
-   } else if (appliedDiscount) {
-     totalAmount = Math.max(0, totalAmount - (totalAmount * (appliedDiscount.percentage / 100)));
-   }
-
-   let activeCustomerId = (customer as any)?.id || (customer as any)?._id;
-   if (!activeCustomerId && wantToRegister) {
-     try {
-       setIsRegistering(true);
-       const regRes = await fetch("/api/customers/register", {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ name: customerName, phone: customerPhone, email: customerEmail, password: customerPassword })
-       });
-       if (regRes.ok) {
-         const newC = await regRes.json();
-         activeCustomerId = newC.id;
-         setCustomer(newC);
-       } else {
-         toast({ variant: "destructive", title: t("checkout.registration_error") });
-         setIsRegistering(false);
-         return;
-       }
-     } finally { setIsRegistering(false); }
-   }
-
-    const finalCustomerName = (customerName || "").trim() || (customer?.name || "").trim() || customerStorage.getProfile()?.name || (isAr ? "عميل" : "Customer");
-    const finalCustomerPhone = (customerPhone || "").trim() || (customer?.phone || "").trim() || customerStorage.getProfile()?.phone || "";
-    const finalCustomerEmail = (customerEmail || "").trim() || (customer?.email || "").trim() || customerStorage.getProfile()?.email || "";
+    let activeCustomerId = customer?.id;
+    if (!activeCustomerId && wantToRegister) {
+      setIsRegistering(true);
+      const regRes = await fetch("/api/customers/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: customerName, phone: customerPhone, email: customerEmail, password: customerPassword })
+      });
+      if (regRes.ok) {
+        const newC = await regRes.json();
+        activeCustomerId = newC.id;
+        setCustomer(newC);
+      }
+      setIsRegistering(false);
+    }
 
     const orderData = {
-      customerId: activeCustomerId || null,
-      customerName: finalCustomerName,
-      customerPhone: finalCustomerPhone,
-      customerEmail: finalCustomerEmail,
-      customerInfo: {
-        customerName: finalCustomerName,
-        phoneNumber: finalCustomerPhone,
-        customerEmail: finalCustomerEmail,
-        carType: "",
-        carColor: "",
-        saveCarInfo: 0
-      },
+      customerId: activeCustomerId,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      customerEmail: customerEmail,
       items: cartItems.map(i => ({
         coffeeItemId: i.coffeeItemId,
-        quantity: Number(i.quantity),
-        price: typeof i.coffeeItem?.price === 'number' ? i.coffeeItem.price : parseFloat(String(i.coffeeItem?.price || 0)),
+        quantity: i.quantity,
+        price: i.coffeeItem?.price || 0,
         nameAr: i.coffeeItem?.nameAr || ""
       })),
-      totalAmount: Number(totalAmount),
-      paymentMethod: selectedPaymentMethod,
-      secondaryPaymentMethod: isQahwaCardPayment ? secondaryPaymentMethod : null,
-      paymentReceiptUrl: paymentReceiptUrl || null,
-      secondaryPaymentReceiptUrl: secondaryPaymentReceiptUrl || null,
+      totalAmount: finalTotal,
+      paymentMethod: selectedPaymentMethod as PaymentMethod,
       status: "pending",
-      branchId: String(deliveryInfo?.branchId || "default-branch"),
-      tenantId: String((customer as any)?.tenantId || "demo-tenant"),
-      orderType: deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn ? 'dine-in' : 'regular',
-      customerNotes: customerNotes || "",
-      discountCode: appliedDiscount?.code || null,
-      discountPercentage: appliedDiscount ? Number(appliedDiscount.percentage) : null,
-      usedFreeDrink: !!(useFreeDrink || isQahwaCardPayment),
-      freeDrinksUsed: Number(usedFreeDrinksCount || 0),
-      deliveryAddress: {
-        fullAddress: typeof deliveryInfo?.address === 'string' ? deliveryInfo.address : (deliveryInfo?.address as any)?.fullAddress || "",
-        lat: Number(customerLocation?.lat || (deliveryInfo as any)?.latitude || (deliveryInfo?.address as any)?.lat || 0),
-        lng: Number(customerLocation?.lng || (deliveryInfo as any)?.longitude || (deliveryInfo?.address as any)?.lng || 0),
-      },
-      transferOwnerName: (selectedPaymentMethod !== 'cash' && selectedPaymentMethod !== 'qahwa-card' && !isSameAsCustomer) ? (transferOwnerName || "") : null,
+      branchId: deliveryInfo?.branchId || "default",
+      orderType: deliveryInfo?.type === 'car-pickup' ? 'car_pickup' : (deliveryInfo?.type === 'pickup' && deliveryInfo?.dineIn ? 'dine-in' : 'regular'),
+      deliveryType: deliveryInfo?.type === 'car-pickup' ? 'car_pickup' : deliveryInfo?.type || 'pickup',
+      customerNotes: customerNotes,
+      discountCode: appliedDiscount?.code,
+      pointsRedeemed: (usePoints && pointsVerified) ? pointsRedeemed : 0,
+      pointsValue: (usePoints && pointsVerified) ? pointsToSar(pointsRedeemed) : 0,
+      pointsVerificationToken: (usePoints && pointsVerified) ? pointsVerificationToken : undefined,
+      ...(deliveryInfo?.type === 'car-pickup' && deliveryInfo?.carInfo ? {
+        carType: deliveryInfo.carInfo.carType,
+        carColor: deliveryInfo.carInfo.carColor,
+        plateNumber: deliveryInfo.carInfo.plateNumber,
+      } : {}),
     };
 
-    console.log("Submitting order data final deep check:", JSON.stringify(orderData, null, 2));
+    if (isOnlinePaymentMethod(selectedPaymentMethod)) {
+      try {
+        const initRes = await apiRequest("POST", "/api/payments/init", {
+          amount: finalTotal,
+          currency: "SAR",
+          orderId: `temp-${Date.now()}`,
+          customerName: customerName,
+          customerEmail: customerEmail || undefined,
+          customerPhone: customerPhone || undefined,
+          paymentMethod: selectedPaymentMethod,
+          returnUrl: `${window.location.origin}/checkout?payment=callback`,
+        });
+        const initData = await initRes.json();
+        if (initData.redirectUrl) {
+          sessionStorage.setItem('pendingOrderData', JSON.stringify(orderData));
+          sessionStorage.setItem('paymentSessionId', initData.sessionId || '');
+          sessionStorage.setItem('paymentProvider', initData.provider || '');
+          window.location.href = initData.redirectUrl;
+          return;
+        } else {
+          toast({ variant: "destructive", title: t("checkout.error"), description: initData.error || t("checkout.payment_init_failed") });
+          return;
+        }
+      } catch (err: any) {
+        toast({ variant: "destructive", title: t("checkout.payment_error"), description: err.message || t("checkout.payment_gateway_failed") });
+        return;
+      }
+    }
+
     createOrderMutation.mutate(orderData);
- };
+  };
 
- if (showSuccessPage) {
-   return (
-     <div className="min-h-screen flex items-center justify-center p-8 bg-[#533d2d]" dir="rtl">
-       <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl text-center space-y-6">
-         <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
-         <h2 className="text-3xl font-bold text-accent">{t("nav.thank_you")}</h2>
-         <p>{t("checkout.order_desc")} <span className="font-bold text-primary">#{orderDetails?.orderNumber}</span> {t("status.in_progress")}</p>
-         <Button onClick={() => setLocation("/menu")} className="w-full h-12 bg-primary">{t("cart.continue_shopping")}</Button>
-       </div>
-     </div>
-   );
- }
+  if (showSuccessPage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-[#533d2d]" dir={isAr ? 'rtl' : 'ltr'}>
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl text-center space-y-6">
+          <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
+          <h2 className="text-3xl font-bold text-accent">{t("nav.thank_you")}</h2>
+          <p>{t("checkout.order_desc")} <span className="font-bold text-primary">#{orderDetails?.orderNumber?.includes('-') ? orderDetails.orderNumber.split('-').pop() : orderDetails?.orderNumber}</span></p>
+          <Button onClick={() => setLocation("/menu")} className="w-full h-12 bg-primary" data-testid="button-back-to-menu">{t("cart.continue_shopping")}</Button>
+        </div>
+      </div>
+    );
+  }
 
- return (
-   <div className="min-h-screen py-12 bg-[#21302f]" dir="rtl">
-     <div className="max-w-6xl mx-auto px-4">
-       <h1 className="text-3xl font-bold text-center mb-8">{t("nav.checkout")}</h1>
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         <div className="lg:col-span-1 space-y-6">
-           <Card>
-             <CardHeader><CardTitle>{t("checkout.order_summary")}</CardTitle></CardHeader>
-             <CardContent className="space-y-4">
-                  {cartItems.map(item => {
-                    let itemPrice = 0;
-                    const basePrice = typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0));
-                    
-                    if (item.selectedSize && item.coffeeItem?.availableSizes) {
-                      const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
-                      itemPrice = size ? size.price : basePrice;
-                    } else {
-                      itemPrice = basePrice;
-                    }
-
-                    return (
-                      <div key={item.id} className="flex justify-between items-center">
-                        <div className="flex flex-col">
-                          <span>{item.coffeeItem?.nameAr || item.coffeeItem?.nameEn} × {item.quantity}</span>
-                          {item.selectedSize && (
-                            <span className="text-xs text-muted-foreground">({item.selectedSize})</span>
-                          )}
-                        </div>
-                        <span className="font-bold">{(itemPrice * item.quantity).toFixed(2)} {t("currency")}</span>
+  return (
+    <div className="min-h-screen py-12 bg-[#21302f]" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className="max-w-6xl mx-auto px-4">
+        <h1 className="text-3xl font-bold text-white text-center mb-8">{t("nav.checkout")}</h1>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-6">
+            <Card>
+              <CardHeader><CardTitle>{t("checkout.order_summary")}</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                {cartItems.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center gap-2 text-sm" data-testid={`cart-item-${index}`}>
+                    <span>{isAr ? item.coffeeItem?.nameAr : item.coffeeItem?.nameEn} × {item.quantity}</span>
+                    <span className="font-bold">{((item.coffeeItem?.price || 0) * item.quantity).toFixed(2)} {t("currency")}</span>
+                  </div>
+                ))}
+                {appliedDiscount && (
+                  <div className="flex justify-between items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-950/30 p-2 rounded">
+                    <span>{t("points.discount")} ({appliedDiscount.percentage}%)</span>
+                    <span>-{(getFinalTotal() * appliedDiscount.percentage / 100).toFixed(2)} {t("currency")}</span>
+                  </div>
+                )}
+                {usePoints && pointsVerified && (
+                  <div className="flex justify-between items-center gap-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-950/30 p-2 rounded">
+                    <span>{t("points.points_discount")}</span>
+                    <span>-{pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}</span>
+                  </div>
+                )}
+                <div className="pt-4 border-t font-bold text-xl flex justify-between gap-2">
+                  <span>{t("cart.total")}:</span>
+                  <span className="text-primary">
+                    {getFinalTotalWithPoints().toFixed(2)} {t("currency")}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                {customer ? (
+                  <div className="bg-muted/30 p-4 rounded-lg flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <User className="w-5 h-5 text-accent" />
+                      <div>
+                        <p className="font-semibold">{customer.name}</p>
+                        <p className="text-sm text-muted-foreground">{customer.phone}</p>
                       </div>
-                    );
-                  })}
-               <div className="pt-4 border-t font-bold text-xl flex justify-between">
-                 <span>{t("cart.total")}:</span>
-                 <span className="text-primary">{getFinalTotal().toFixed(2)} {t("currency")}</span>
-               </div>
-             </CardContent>
-           </Card>
-         </div>
-         <div className="lg:col-span-2 space-y-6">
-           <Card>
-             <CardContent className="pt-6">
-               <div className="space-y-4">
-                 {!isRegisteredCustomer && (
-                   <div className="space-y-2">
-                     <Label>{t("checkout.full_name")}</Label>
-                     <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={t("checkout.enter_name")} />
-                   </div>
-                 )}
-                 {isRegisteredCustomer && (
-                   <div className="bg-muted/30 p-4 rounded-lg flex items-center gap-3">
-                     <User className="w-5 h-5 text-accent" />
-                     <div>
-                       <p className="font-semibold text-foreground">{customerName}</p>
-                       <p className="text-sm text-muted-foreground">{customerPhone}</p>
-                     </div>
-                   </div>
-                 )}
-                 <PaymentMethods
-                   paymentMethods={paymentMethods}
-                   selectedMethod={selectedPaymentMethod}
-                   onSelectMethod={setSelectedPaymentMethod}
-                   customerPhone={customerPhone}
-                   loyaltyCard={loyaltyCard}
-                 />
-                 
-                 {/* قسم كود الخصم */}
-                 <div className="border rounded-lg p-4 bg-gradient-to-r from-amber-50 to-orange-50">
-                   <div className="flex items-center gap-2 mb-3">
-                     <Gift className="w-5 h-5 text-amber-600" />
-                     <Label className="font-semibold text-amber-800">{t("checkout.have_discount")}</Label>
-                   </div>
-                   <div className="flex gap-2">
-                     <Input
-                       value={discountCode}
-                       onChange={(e) => setDiscountCode(e.target.value)}
-                       placeholder={t("checkout.enter_discount")}
-                       className="flex-1"
-                       disabled={!!appliedDiscount}
-                       data-testid="input-discount-code"
-                     />
-                     {appliedDiscount ? (
-                       <Button
-                         variant="outline"
-                         onClick={() => {
-                           setAppliedDiscount(null);
-                           setDiscountCode("");
-                         }}
-                         className="text-red-600 border-red-300"
-                         data-testid="button-remove-discount"
-                       >
-                         {t("checkout.remove")}
-                       </Button>
-                     ) : (
-                       <Button
-                         onClick={handleValidateDiscount}
-                         disabled={!discountCode.trim() || isValidatingDiscount}
-                         className="bg-amber-600 hover:bg-amber-700"
-                         data-testid="button-apply-discount"
-                       >
-                         {isValidatingDiscount ? t("checkout.validating") : t("checkout.apply")}
-                       </Button>
-                     )}
-                   </div>
-                   {appliedDiscount && (
-                     <div className="mt-3 flex items-center gap-2 text-green-700 bg-green-50 p-2 rounded-lg">
-                       <Sparkles className="w-4 h-4" />
-                       <span className="font-medium">{t("checkout.discount_applied_success", { percentage: appliedDiscount.percentage })}</span>
-                     </div>
-                   )}
-                 </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder={t("checkout.full_name")} data-testid="input-customer-name" />
+                    <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder={t("checkout.phone")} data-testid="input-customer-phone" />
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="register" checked={wantToRegister} onCheckedChange={checked => setWantToRegister(!!checked)} data-testid="checkbox-register" />
+                      <Label htmlFor="register">{t("checkout.want_to_register")}</Label>
+                    </div>
+                  </div>
+                )}
 
-                 <Button onClick={handleProceedPayment} className="w-full h-14 text-lg" data-testid="button-confirm-order">{t("checkout.confirm_order")}</Button>
-               </div>
-             </CardContent>
-           </Card>
-         </div>
-       </div>
-     </div>
+                <PaymentMethods
+                  paymentMethods={paymentMethods}
+                  selectedMethod={selectedPaymentMethod}
+                  onSelectMethod={setSelectedPaymentMethod}
+                />
 
-     {/* نافذة تأكيد الدفع */}
-     <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-       <DialogContent className="max-w-md" dir="rtl">
-         <DialogHeader>
-           <DialogTitle className="text-xl font-bold text-center">تأكيد الطلب</DialogTitle>
-           <DialogDescription className="text-center">
-             يرجى مراجعة تفاصيل طلبك قبل التأكيد
-           </DialogDescription>
-         </DialogHeader>
-         
-         <div className="space-y-4 py-4">
-           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-             <div className="flex justify-between">
-               <span className="text-muted-foreground">عدد المنتجات:</span>
-               <span className="font-medium">{cartItems.reduce((sum, i) => sum + i.quantity, 0)} منتج</span>
-             </div>
-             <div className="flex justify-between">
-               <span className="text-muted-foreground">طريقة الدفع:</span>
-               <span className="font-medium">
-                 {selectedPaymentMethod === 'cash' && 'كاش عند الاستلام'}
-                 {selectedPaymentMethod === 'qahwa-card' && 'بطاقة قهوة'}
-                 {selectedPaymentMethod === 'loyalty-card' && 'بطاقة الولاء'}
-                 {selectedPaymentMethod === 'pos' && 'نقاط البيع'}
-                 {selectedPaymentMethod === 'geidea' && 'Geidea'}
-                 {selectedPaymentMethod === 'apple-pay' && 'Apple Pay'}
-                 {selectedPaymentMethod === 'mada' && 'مدى'}
-               </span>
-             </div>
-             {selectedPaymentMethod === 'qahwa-card' && secondaryPaymentMethod && (
-               <div className="flex justify-between text-muted-foreground">
-                 <span>الدفع الإضافي:</span>
-                 <span className="font-medium">
-                   {secondaryPaymentMethod === 'cash' && 'كاش'}
-                   {secondaryPaymentMethod === 'mada' && 'مدى'}
-                   {secondaryPaymentMethod === 'apple-pay' && 'Apple Pay'}
-                 </span>
-               </div>
-             )}
-             {selectedPaymentMethod === 'qahwa-card' && Object.values(selectedFreeItems).reduce((s, v) => s + v, 0) > 0 && (
-               <div className="flex justify-between text-amber-600">
-                 <span>مشروبات مجانية:</span>
-                 <span className="font-medium">{Object.values(selectedFreeItems).reduce((s, v) => s + v, 0)} مشروب</span>
-               </div>
-             )}
-             {appliedDiscount && (
-               <div className="flex justify-between text-green-600">
-                 <span>خصم:</span>
-                 <span className="font-medium">{appliedDiscount.percentage}%</span>
-               </div>
-             )}
-             <div className="flex justify-between text-lg font-bold pt-2 border-t">
-               <span>الإجمالي:</span>
-               <span className="text-primary">
-                 {(() => {
-                   let total = getTotalPrice();
-                   if (selectedPaymentMethod === 'qahwa-card') {
-                     Object.entries(selectedFreeItems).forEach(([itemId, quantity]) => {
-                       const item = cartItems.find(ci => ci.coffeeItemId === itemId);
-                       if (item) {
-                         const price = typeof item.coffeeItem?.price === 'number' ? item.coffeeItem.price : parseFloat(String(item.coffeeItem?.price || 0));
-                         total -= price * quantity;
-                       }
-                     });
-                   } else if (appliedDiscount) {
-                     total = total * (1 - appliedDiscount.percentage / 100);
-                   }
-                   return Math.max(0, total).toFixed(2);
-                 })()} ريال
-               </span>
-             </div>
-           </div>
-         </div>
+                {appliedDiscount?.isOffer && (
+                  <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-green-600" />
+                        <div>
+                          <p className="font-semibold text-green-800 dark:text-green-300">{appliedDiscount.code}</p>
+                          <p className="text-sm text-green-600">{t("points.discount")} {appliedDiscount.percentage}% {t("points.applied")}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setAppliedDiscount(null);
+                          customerStorage.clearActiveOffer();
+                        }}
+                        className="text-red-500"
+                        data-testid="button-remove-offer"
+                      >
+                        {t("points.remove")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
-         <DialogFooter className="flex gap-2 sm:gap-0">
-           <Button
-             variant="outline"
-             onClick={() => setShowConfirmation(false)}
-             className="flex-1"
-             data-testid="button-cancel-confirmation"
-           >
-             رجوع
-           </Button>
-           <Button
-             onClick={() => {
-               setShowConfirmation(false);
-               confirmAndCreateOrder();
-             }}
-             disabled={createOrderMutation.isPending || isRegistering}
-             className="flex-1 bg-green-600 hover:bg-green-700"
-             data-testid="button-final-confirm"
-           >
-             {createOrderMutation.isPending || isRegistering ? "جاري الإرسال..." : "تأكيد ودفع"}
-           </Button>
-         </DialogFooter>
-       </DialogContent>
-     </Dialog>
-   </div>
- );
+                <div className="border rounded-lg p-4 bg-orange-50 dark:bg-orange-950/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Gift className="w-5 h-5 text-orange-600" />
+                    <Label className="font-semibold">{t("checkout.have_discount")}</Label>
+                  </div>
+                  <div className="relative">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input 
+                          value={discountCode} 
+                          onChange={e => {
+                            setDiscountCode(e.target.value);
+                            setShowCouponSuggestions(true);
+                          }}
+                          onFocus={() => setShowCouponSuggestions(true)}
+                          placeholder={t("checkout.enter_discount")}
+                          disabled={!!appliedDiscount}
+                          className="bg-white dark:bg-background"
+                          data-testid="input-discount-code"
+                        />
+                        {showCouponSuggestions && filteredCoupons.length > 0 && !appliedDiscount && (
+                          <div className="absolute z-50 bottom-full mb-2 left-0 right-0 bg-popover border-2 border-primary/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 zoom-in-95">
+                            <div className="p-3 border-b bg-primary/5 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Ticket className="w-4 h-4 text-primary" />
+                                <span className="text-xs font-black uppercase tracking-wider text-primary">{t("checkout.available_coupons")}</span>
+                              </div>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-bold hover:bg-primary/10" onClick={() => setShowCouponSuggestions(false)}>{t("common.close")}</Button>
+                            </div>
+                            <div className="max-h-60 overflow-y-auto p-1">
+                              {filteredCoupons.map((coupon) => (
+                                <button
+                                  key={coupon.id}
+                                  onClick={() => {
+                                    setDiscountCode(coupon.code);
+                                    handleValidateDiscount(coupon.code);
+                                  }}
+                                  className="w-full p-4 flex items-center justify-between hover:bg-primary/10 rounded-xl transition-all group text-right mb-1 last:mb-0"
+                                >
+                                  <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                      <Tag className="w-5 h-5 text-primary" />
+                                    </div>
+                                    <div>
+                                      <p className="font-black text-sm uppercase tracking-wider">{coupon.code}</p>
+                                      <p className="text-[10px] font-medium text-muted-foreground line-clamp-1">{coupon.reason || t("checkout.exclusive_discount")}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1">
+                                    <Badge className="bg-primary text-white border-0 font-black px-2 py-0.5">
+                                      {coupon.discountPercentage}%
+                                    </Badge>
+                                    <span className="text-[8px] font-bold text-primary/60 uppercase">{t("checkout.discount")}</span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <Button 
+                        onClick={() => handleValidateDiscount()} 
+                        disabled={!!appliedDiscount || isValidatingDiscount} 
+                        data-testid="button-apply-discount"
+                      >
+                        {isValidatingDiscount ? <Loader2 className="w-4 h-4 animate-spin" /> : t("checkout.apply")}
+                      </Button>
+                    </div>
+                  </div>
+                  {appliedDiscount && !appliedDiscount.isOffer && (
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-sm text-green-600">{t("points.applied")}: {appliedDiscount.code} ({appliedDiscount.percentage}%)</p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 text-red-500 hover:text-red-700 p-0"
+                        onClick={() => {
+                          setAppliedDiscount(null);
+                          setDiscountCode("");
+                        }}
+                      >
+                        {t("common.remove") || "إزالة"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {customer && loyaltyCard && (loyaltyCard.points || 0) > 0 && (
+                  <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-5 h-5 text-blue-600" />
+                      <Label className="font-semibold text-blue-800 dark:text-blue-300">{t("points.cluny_points")}</Label>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center gap-2 flex-wrap">
+                        <span className="text-sm text-blue-700 dark:text-blue-400">{t("points.your_balance")}: {loyaltyCard.points} {t("points.points_unit")}</span>
+                        <span className="text-sm font-bold text-blue-800 dark:text-blue-300">≈ {pointsToSar(loyaltyCard.points || 0).toFixed(2)} {t("currency")}</span>
+                      </div>
+
+                      {pointsVerified ? (
+                        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 space-y-2">
+                          <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                            <Shield className="w-4 h-4" />
+                            <span className="text-sm font-semibold">{t("points.verified_and_active")}</span>
+                          </div>
+                          <div className="flex justify-between items-center gap-2 flex-wrap">
+                            <span className="text-sm">{pointsRedeemed} {t("points.points_unit")} = {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}</span>
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={handleCancelPoints}
+                              data-testid="button-cancel-points"
+                            >
+                              {t("points.cancel_use")}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={loyaltyCard.points}
+                              value={pointsRedeemed || ''}
+                              onChange={(e) => {
+                                const val = Math.min(Math.max(0, Number(e.target.value)), loyaltyCard.points || 0);
+                                setPointsRedeemed(val);
+                              }}
+                              placeholder={t("points.enter_points")}
+                              className="bg-white dark:bg-background"
+                              data-testid="input-points-redeem"
+                            />
+                            <Button 
+                              onClick={handleRequestVerificationCode}
+                              disabled={isRequestingCode || !pointsRedeemed || pointsRedeemed <= 0}
+                              data-testid="button-request-points-code"
+                            >
+                              {isRequestingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                              <span className="mr-1">{t("points.send_code")}</span>
+                            </Button>
+                          </div>
+                          {pointsRedeemed > 0 && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400">
+                              {t("points.will_deduct", { amount: pointsToSar(pointsRedeemed).toFixed(2) })}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {t("points.verification_required")}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <Button onClick={handleProceedPayment} className="w-full h-14 text-lg" data-testid="button-proceed-payment">{t("checkout.confirm_order")}</Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
+        <DialogContent dir={isAr ? 'rtl' : 'ltr'} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-600" />
+              {t("points.verify_title")}
+            </DialogTitle>
+            <DialogDescription>{t("points.verify_desc")}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="text-center bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground">{t("points.redeeming")}</p>
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{pointsRedeemed} {t("points.points_unit")}</p>
+              <p className="text-sm text-blue-600">=  {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("points.enter_code")}</Label>
+              <Input
+                type="text"
+                maxLength={4}
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="1234"
+                className="text-center text-2xl tracking-widest font-bold"
+                dir="ltr"
+                data-testid="input-verification-code"
+              />
+            </div>
+            {devCode && (
+              <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-2 text-center">
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">{t("points.dev_code")}: <span className="font-bold text-lg">{devCode}</span></p>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowVerificationDialog(false)} className="flex-1" data-testid="button-cancel-verify">
+              {t("points.cancel")}
+            </Button>
+            <Button 
+              onClick={handleVerifyCode} 
+              disabled={isVerifyingCode || verificationCode.length < 4}
+              className="flex-1"
+              data-testid="button-confirm-verify"
+            >
+              {isVerifyingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {t("points.verify")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <DialogContent dir={isAr ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle>{t("checkout.confirm_title")}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-center">
+            <p className="text-lg">{t("checkout.confirm_question")}</p>
+            <p className="text-2xl font-bold text-primary mt-2">{getFinalTotalWithPoints().toFixed(2)} {t("currency")}</p>
+            {usePoints && pointsVerified && (
+              <p className="text-sm text-blue-600 mt-1">{t("points.includes_points_discount", { points: pointsRedeemed, amount: pointsToSar(pointsRedeemed).toFixed(2) })}</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowConfirmation(false)} className="flex-1" data-testid="button-cancel-order">{t("points.cancel")}</Button>
+            <Button onClick={confirmAndCreateOrder} className="flex-1 bg-green-600" data-testid="button-confirm-order">{t("checkout.confirm_pay")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

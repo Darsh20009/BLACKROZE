@@ -15,7 +15,7 @@ import * as XLSX from 'xlsx';
 import type { Employee } from "@shared/schema";
 
 interface LeaveRequest {
-  _id: string;
+  id: string;
   employeeId: string;
   startDate: string;
   endDate: string;
@@ -127,7 +127,7 @@ export default function ManagerAttendance() {
         credentials: 'include'
       });
       if (response.ok) {
-        setLeaveRequests(leaveRequests.filter(r => r._id !== requestId));
+        setLeaveRequests(leaveRequests.filter(r => r.id !== requestId));
       }
     } catch (error) {
       console.error("Error approving leave request:", error);
@@ -144,7 +144,7 @@ export default function ManagerAttendance() {
         credentials: 'include'
       });
       if (response.ok) {
-        setLeaveRequests(leaveRequests.filter(r => r._id !== requestId));
+        setLeaveRequests(leaveRequests.filter(r => r.id !== requestId));
       }
     } catch (error) {
       console.error("Error rejecting leave request:", error);
@@ -434,9 +434,9 @@ export default function ManagerAttendance() {
               <div className="space-y-4">
                 {leaveRequests.map((request) => (
                   <div
-                    key={request._id}
+                    key={request.id}
                     className="bg-[#1a1410] rounded-lg p-4 border border-primary/10"
-                    data-testid={`leave-request-card-${request._id}`}
+                    data-testid={`leave-request-card-${request.id}`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -475,22 +475,22 @@ export default function ManagerAttendance() {
 
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => approveLeaveRequest(request._id)}
-                        disabled={approvingId === request._id}
+                        onClick={() => approveLeaveRequest(request.id)}
+                        disabled={approvingId === request.id}
                         className="bg-green-500/20 text-green-400 border border-green-500/50 hover:bg-green-500/30 flex-1"
-                        data-testid={`button-approve-leave-${request._id}`}
+                        data-testid={`button-approve-leave-${request.id}`}
                       >
                         <Check className="w-4 h-4 ml-2" />
-                        {approvingId === request._id ? 'جاري...' : 'موافقة'}
+                        {approvingId === request.id ? 'جاري...' : 'موافقة'}
                       </Button>
                       <Button
-                        onClick={() => rejectLeaveRequest(request._id)}
-                        disabled={rejectingId === request._id}
+                        onClick={() => rejectLeaveRequest(request.id)}
+                        disabled={rejectingId === request.id}
                         className="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30 flex-1"
-                        data-testid={`button-reject-leave-${request._id}`}
+                        data-testid={`button-reject-leave-${request.id}`}
                       >
                         <X className="w-4 h-4 ml-2" />
-                        {rejectingId === request._id ? 'جاري...' : 'رفض'}
+                        {rejectingId === request.id ? 'جاري...' : 'رفض'}
                       </Button>
                     </div>
                   </div>

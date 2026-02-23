@@ -1,432 +1,345 @@
-import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { CustomerLayout } from "@/components/layouts/CustomerLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Gift, Star, Crown, Zap, Coffee, Award, TrendingUp } from "lucide-react";
+import { Sparkles, Coffee, Clock, Gift, Percent, ArrowRight, Star, TrendingUp } from "lucide-react";
+import { useCustomer } from "@/contexts/CustomerContext";
+import { useLocation } from "wouter";
+import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
+import { customerStorage } from "@/lib/customer-storage";
 import { useToast } from "@/hooks/use-toast";
 
-interface LoyaltyCard {
+interface PersonalizedOffer {
   id: string;
-  points: number;
-  tier: string;
-  stamps: number;
-  freeCupsEarned: number;
-  freeCupsRedeemed: number;
-  totalSpent: number;
-}
-
-interface CustomerOffer {
-  id: string;
-  nameAr: string;
-  nameEn: string;
+  title: string;
   description: string;
-  pointsCost: number;
-  discountPercentage?: number;
-  requiredTier: string;
-  imageUrl?: string;
-  itemId?: string;
-  expiryDate?: string;
-  type: 'discount' | 'free_item' | 'upgrade' | 'special';
+  discount: number;
+  type: 'loyalty' | 'comeback' | 'birthday' | 'frequent' | 'new';
+  expiresIn?: string;
+  coffeeItemId?: string;
+  coffeeItem?: any;
 }
 
 export default function MyOffersPage() {
-  const { t, i18n } = useTranslation();
-  const isRTL = i18n.language === 'ar';
+  const { customer } = useCustomer();
+  const [, setLocation] = useLocation();
+  const { card: loyaltyCard } = useLoyaltyCard();
   const { toast } = useToast();
-  
-  const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
-  const [offers, setOffers] = useState<CustomerOffer[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLoyaltyData();
-  }, []);
-
-  const fetchLoyaltyData = async () => {
-    try {
-      const customerPhone = localStorage.getItem('customerPhone');
-      if (!customerPhone) {
-        toast({
-          title: isRTL ? "خطأ" : "Error",
-          description: isRTL ? "يرجى تسجيل الدخول أولاً" : "Please login first",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Fetch loyalty card
-      const response = await fetch(`/api/loyalty/cards/phone/${customerPhone}`);
-      if (response.ok) {
-        const card = await response.json();
-        setLoyaltyCard(card);
-        
-        // Generate offers based on tier and points
-        generateOffersForCustomer(card);
-      }
-    } catch (error) {
-      console.error('Error fetching loyalty data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateOffersForCustomer = (card: LoyaltyCard) => {
-    const generatedOffers: CustomerOffer[] = [];
-    
-    // Tier-based offers
-    const tierOffers = {
-      bronze: [
-        {
-          id: 'bronze-1',
-          nameAr: 'قهوة مجانية',
-          nameEn: 'Free Coffee',
-          description: isRTL ? 'احصل على قهوة مجانية من اختيارك' : 'Get a free coffee of your choice',
-          pointsCost: 50,
-          requiredTier: 'bronze',
-          type: 'free_item' as const,
-        },
-        {
-          id: 'bronze-2',
-          nameAr: 'خصم 10%',
-          nameEn: '10% Discount',
-          description: isRTL ? 'خصم 10% على طلبك القادم' : '10% off your next order',
-          pointsCost: 30,
-          discountPercentage: 10,
-          requiredTier: 'bronze',
-          type: 'discount' as const,
-        },
-      ],
-      silver: [
-        {
-          id: 'silver-1',
-          nameAr: 'قهوتان مجانيتان',
-          nameEn: 'Two Free Coffees',
-          description: isRTL ? 'احصل على قهوتين مجانيتين' : 'Get two free coffees',
-          pointsCost: 80,
-          requiredTier: 'silver',
-          type: 'free_item' as const,
-        },
-        {
-          id: 'silver-2',
-          nameAr: 'خصم 15%',
-          nameEn: '15% Discount',
-          description: isRTL ? 'خصم 15% على طلبك القادم' : '15% off your next order',
-          pointsCost: 50,
-          discountPercentage: 15,
-          requiredTier: 'silver',
-          type: 'discount' as const,
-        },
-        {
-          id: 'silver-3',
-          nameAr: 'ترقية حجم مجانية',
-          nameEn: 'Free Size Upgrade',
-          description: isRTL ? 'ترقية مجانية للحجم الأكبر' : 'Free upgrade to larger size',
-          pointsCost: 20,
-          requiredTier: 'silver',
-          type: 'upgrade' as const,
-        },
-      ],
-      gold: [
-        {
-          id: 'gold-1',
-          nameAr: '3 قهوات مجانية',
-          nameEn: 'Three Free Coffees',
-          description: isRTL ? 'احصل على 3 قهوات مجانية' : 'Get three free coffees',
-          pointsCost: 100,
-          requiredTier: 'gold',
-          type: 'free_item' as const,
-        },
-        {
-          id: 'gold-2',
-          nameAr: 'خصم 20%',
-          nameEn: '20% Discount',
-          description: isRTL ? 'خصم 20% على طلبك القادم' : '20% off your next order',
-          pointsCost: 70,
-          discountPercentage: 20,
-          requiredTier: 'gold',
-          type: 'discount' as const,
-        },
-        {
-          id: 'gold-3',
-          nameAr: 'عرض خاص ذهبي',
-          nameEn: 'Gold Special Offer',
-          description: isRTL ? 'اشترِ 2 واحصل على 1 مجاناً' : 'Buy 2 Get 1 Free',
-          pointsCost: 60,
-          requiredTier: 'gold',
-          type: 'special' as const,
-        },
-      ],
-      platinum: [
-        {
-          id: 'platinum-1',
-          nameAr: '5 قهوات مجانية',
-          nameEn: 'Five Free Coffees',
-          description: isRTL ? 'احصل على 5 قهوات مجانية' : 'Get five free coffees',
-          pointsCost: 150,
-          requiredTier: 'platinum',
-          type: 'free_item' as const,
-        },
-        {
-          id: 'platinum-2',
-          nameAr: 'خصم 25%',
-          nameEn: '25% Discount',
-          description: isRTL ? 'خصم 25% على طلبك القادم' : '25% off your next order',
-          pointsCost: 100,
-          discountPercentage: 25,
-          requiredTier: 'platinum',
-          type: 'discount' as const,
-        },
-        {
-          id: 'platinum-3',
-          nameAr: 'عرض البلاتيني الحصري',
-          nameEn: 'Exclusive Platinum Offer',
-          description: isRTL ? 'وجبة كاملة مجانية مع قهوتك' : 'Free meal with your coffee',
-          pointsCost: 120,
-          requiredTier: 'platinum',
-          type: 'special' as const,
-        },
-      ],
-    };
-
-    const currentTier = card.tier.toLowerCase();
-    
-    // Add offers for current tier
-    if (tierOffers[currentTier as keyof typeof tierOffers]) {
-      generatedOffers.push(...tierOffers[currentTier as keyof typeof tierOffers]);
-    }
-    
-    // Add offers from lower tiers too
-    if (currentTier === 'silver' || currentTier === 'gold' || currentTier === 'platinum') {
-      generatedOffers.push(...tierOffers.bronze);
-    }
-    if (currentTier === 'gold' || currentTier === 'platinum') {
-      generatedOffers.push(...tierOffers.silver);
-    }
-    if (currentTier === 'platinum') {
-      generatedOffers.push(...tierOffers.gold);
-    }
-
-    setOffers(generatedOffers);
-  };
-
-  const getTierIcon = (tier: string) => {
-    switch (tier.toLowerCase()) {
-      case 'bronze': return <Award className="w-5 h-5 text-orange-600" />;
-      case 'silver': return <Star className="w-5 h-5 text-gray-400" />;
-      case 'gold': return <Crown className="w-5 h-5 text-yellow-500" />;
-      case 'platinum': return <Zap className="w-5 h-5 text-purple-500" />;
-      default: return <Coffee className="w-5 h-5" />;
-    }
-  };
-
-  const getTierColor = (tier: string) => {
-    switch (tier.toLowerCase()) {
-      case 'bronze': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'silver': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'gold': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'platinum': return 'bg-purple-100 text-purple-800 border-purple-200';
-      default: return 'bg-blue-100 text-blue-800 border-blue-200';
-    }
-  };
-
-  const getOfferTypeIcon = (type: string) => {
-    switch (type) {
-      case 'discount': return <TrendingUp className="w-4 h-4" />;
-      case 'free_item': return <Coffee className="w-4 h-4" />;
-      case 'upgrade': return <Zap className="w-4 h-4" />;
-      case 'special': return <Gift className="w-4 h-4" />;
-      default: return <Star className="w-4 h-4" />;
-    }
-  };
-
-  const handleRedeemOffer = async (offer: CustomerOffer) => {
-    if (!loyaltyCard) return;
-
-    if (loyaltyCard.points < offer.pointsCost) {
-      toast({
-        title: isRTL ? "نقاط غير كافية" : "Insufficient Points",
-        description: isRTL ? `تحتاج إلى ${offer.pointsCost} نقطة لاستبدال هذا العرض` : `You need ${offer.pointsCost} points to redeem this offer`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: isRTL ? "جاري الاستبدال..." : "Redeeming...",
-      description: isRTL ? "يتم استبدال العرض الآن" : "Redeeming your offer now",
+  const handleUseOffer = (offer: PersonalizedOffer) => {
+    customerStorage.setActiveOffer({
+      id: offer.id,
+      title: offer.title,
+      description: offer.description,
+      discount: offer.discount,
+      type: offer.type,
+      coffeeItemId: offer.coffeeItemId,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     });
-
-    // TODO: Implement actual redemption API call
-    // For now, just show success message
-    setTimeout(() => {
-      toast({
-        title: isRTL ? "تم الاستبدال بنجاح!" : "Redeemed Successfully!",
-        description: isRTL 
-          ? `تم استبدال ${offer.nameAr}. استخدمه في طلبك القادم!` 
-          : `${offer.nameEn} has been redeemed. Use it on your next order!`,
-      });
-    }, 1500);
+    
+    toast({
+      title: "تم تفعيل العرض!",
+      description: `${offer.title} - سيتم تطبيقه عند الدفع`,
+    });
+    
+    setLocation("/menu");
   };
 
-  if (loading) {
+  const { data: coffeeItems = [] } = useQuery<any[]>({
+    queryKey: ["/api/coffee-items"]
+  });
+
+  const { data: orders = [] } = useQuery<any[]>({
+    queryKey: ["/api/orders/customer", customer?.phone],
+    enabled: !!customer?.phone
+  });
+
+  const { data: businessConfig } = useQuery<any>({
+    queryKey: ["/api/business-config"],
+  });
+
+  const offersConfig = businessConfig?.offersConfig;
+  const loyaltyConfig = businessConfig?.loyaltyConfig;
+  const ptsPerSar = loyaltyConfig?.pointsPerSar ?? 20;
+
+  const offers = useMemo((): PersonalizedOffer[] => {
+    const result: PersonalizedOffer[] = [];
+    const points = loyaltyCard?.points || 0;
+    const orderCount = orders.length;
+
+    // Points discount
+    const pointsRedemption = offersConfig?.pointsRedemption;
+    if (pointsRedemption?.enabled !== false) {
+      const minPoints = pointsRedemption?.minPoints ?? 100;
+      if (points >= minPoints) {
+        result.push({
+          id: 'points-discount',
+          title: 'خصم نقاطك!',
+          description: `لديك ${points} نقطة يمكنك استخدامها للحصول على خصم ${(points / ptsPerSar).toFixed(0)} ريال`,
+          discount: Math.floor(points / ptsPerSar),
+          type: 'loyalty'
+        });
+      }
+    }
+
+    // First order discount
+    const firstOrderDiscount = offersConfig?.firstOrderDiscount;
+    if (firstOrderDiscount?.enabled !== false && orderCount === 0) {
+      const discountValue = firstOrderDiscount?.value ?? 15;
+      const discountType = firstOrderDiscount?.discountType ?? 'percent';
+      const expiresDays = firstOrderDiscount?.expiresDays ?? 7;
+      const discountText = discountType === 'amount' ? `خصم ${discountValue} ريال` : `خصم ${discountValue}%`;
+      
+      result.push({
+        id: 'first-order',
+        title: 'عرض الترحيب!',
+        description: `احصل على ${discountText} على طلبك الأول كعميل جديد`,
+        discount: discountValue,
+        type: 'new',
+        expiresIn: `${expiresDays} أيام`
+      });
+    }
+
+    // Comeback discount
+    const comebackDiscount = offersConfig?.comebackDiscount;
+    if (comebackDiscount?.enabled !== false) {
+      const minOrders = comebackDiscount?.minOrders ?? 0;
+      const maxOrders = comebackDiscount?.maxOrders ?? 5;
+      if (orderCount > minOrders && orderCount < maxOrders) {
+        const discountValue = comebackDiscount?.value ?? 10;
+        const discountType = comebackDiscount?.discountType ?? 'percent';
+        const expiresDays = comebackDiscount?.expiresDays ?? 3;
+        const discountText = discountType === 'amount' ? `خصم ${discountValue} ريال` : `خصم ${discountValue}%`;
+        
+        result.push({
+          id: 'comeback',
+          title: 'اشتقنا لك!',
+          description: `احصل على ${discountText} على طلبك القادم`,
+          discount: discountValue,
+          type: 'comeback',
+          expiresIn: `${expiresDays} أيام`
+        });
+      }
+    }
+
+    // Frequent customer discount
+    const frequentDiscount = offersConfig?.frequentDiscount;
+    if (frequentDiscount?.enabled !== false) {
+      const minOrders = frequentDiscount?.minOrders ?? 5;
+      if (orderCount >= minOrders) {
+        const discountValue = frequentDiscount?.value ?? 20;
+        const discountType = frequentDiscount?.discountType ?? 'percent';
+        const discountText = discountType === 'amount' ? `خصم ${discountValue} ريال` : `خصم ${discountValue}%`;
+        
+        result.push({
+          id: 'frequent',
+          title: 'عميل مميز!',
+          description: `كمكافأة لولائك، احصل على ${discountText} على أي مشروب`,
+          discount: discountValue,
+          type: 'frequent'
+        });
+      }
+    }
+
+    // Special drink discount
+    const specialDrinkDiscount = offersConfig?.specialDrinkDiscount;
+    if (specialDrinkDiscount?.enabled !== false && coffeeItems.length > 0) {
+      const stableIndex = (customer?.phone?.length || 0) % coffeeItems.length;
+      const featuredItem = coffeeItems[stableIndex];
+      if (featuredItem) {
+        const discountValue = specialDrinkDiscount?.value ?? 25;
+        const discountType = specialDrinkDiscount?.discountType ?? 'percent';
+        const discountText = discountType === 'amount' ? `خصم ${discountValue} ريال على` : `خصم ${discountValue}% على`;
+        
+        result.push({
+          id: 'special-drink',
+          title: 'عرض خاص على مشروبك المفضل',
+          description: `${discountText} ${featuredItem.nameAr}`,
+          discount: discountValue,
+          type: 'frequent',
+          coffeeItemId: featuredItem.id,
+          coffeeItem: featuredItem,
+          expiresIn: 'اليوم فقط'
+        });
+      }
+    }
+
+    // Almost there
+    const pointsRedemptionConfig = offersConfig?.pointsRedemption;
+    const minPointsThreshold = pointsRedemptionConfig?.minPoints ?? 100;
+    if (points >= 50 && points < minPointsThreshold) {
+      const pointsNeeded = minPointsThreshold - points;
+      const sarValue = pointsNeeded / ptsPerSar;
+      
+      result.push({
+        id: 'almost-there',
+        title: 'اقتربت من المكافأة!',
+        description: `تحتاج ${pointsNeeded} نقطة إضافية للحصول على خصم ${sarValue.toFixed(0)} ريال`,
+        discount: 0,
+        type: 'loyalty'
+      });
+    }
+
+    return result;
+  }, [loyaltyCard?.points, orders.length, coffeeItems, customer?.phone, offersConfig, loyaltyConfig, ptsPerSar]);
+
+  const getOfferIcon = (type: PersonalizedOffer['type']) => {
+    switch (type) {
+      case 'loyalty': return <Star className="w-5 h-5" />;
+      case 'comeback': return <Coffee className="w-5 h-5" />;
+      case 'birthday': return <Gift className="w-5 h-5" />;
+      case 'frequent': return <TrendingUp className="w-5 h-5" />;
+      case 'new': return <Sparkles className="w-5 h-5" />;
+      default: return <Percent className="w-5 h-5" />;
+    }
+  };
+
+  const getOfferColor = (type: PersonalizedOffer['type']) => {
+    switch (type) {
+      case 'loyalty': return 'from-amber-500 to-orange-500';
+      case 'comeback': return 'from-blue-500 to-cyan-500';
+      case 'birthday': return 'from-pink-500 to-rose-500';
+      case 'frequent': return 'from-green-500 to-emerald-500';
+      case 'new': return 'from-purple-500 to-violet-500';
+      default: return 'from-primary to-accent';
+    }
+  };
+
+  if (!customer) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white p-4 flex items-center justify-center">
-        <div className="text-center">
-          <Coffee className="w-12 h-12 animate-spin mx-auto mb-4 text-amber-600" />
-          <p className={isRTL ? "text-right" : "text-left"}>{isRTL ? "جاري التحميل..." : "Loading..."}</p>
+      <CustomerLayout>
+        <div className="container max-w-lg mx-auto p-4 flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+          <Sparkles className="w-12 h-12 text-primary" />
+          <p className="font-ibm-arabic text-muted-foreground text-center">
+            سجل دخولك لاكتشاف عروضك الخاصة
+          </p>
+          <Button onClick={() => setLocation("/auth")} data-testid="button-login">
+            تسجيل الدخول
+          </Button>
         </div>
-      </div>
+      </CustomerLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white p-6 shadow-lg">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-          <Gift className="w-8 h-8" />
-          {isRTL ? "عروضي الخاصة" : "My Special Offers"}
-        </h1>
-        <p className="text-amber-100">
-          {isRTL ? "استبدل نقاطك واحصل على مكافآت رائعة!" : "Redeem your points and get amazing rewards!"}
-        </p>
-      </div>
-
-      <div className="p-4 max-w-6xl mx-auto">
-        {/* Loyalty Card Summary */}
-        {loyaltyCard && (
-          <Card className="mb-6 overflow-hidden border-2 shadow-lg">
-            <div className={`bg-gradient-to-r ${
-              loyaltyCard.tier === 'platinum' ? 'from-purple-500 to-purple-600' :
-              loyaltyCard.tier === 'gold' ? 'from-yellow-500 to-yellow-600' :
-              loyaltyCard.tier === 'silver' ? 'from-gray-400 to-gray-500' :
-              'from-orange-500 to-orange-600'
-            } text-white p-6`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  {getTierIcon(loyaltyCard.tier)}
-                  <div>
-                    <p className="text-sm opacity-90">{isRTL ? "المستوى" : "Tier"}</p>
-                    <p className="text-xl font-bold capitalize">{loyaltyCard.tier}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm opacity-90">{isRTL ? "إجمالي الإنفاق" : "Total Spent"}</p>
-                  <p className="text-xl font-bold">{loyaltyCard.totalSpent.toFixed(2)} {isRTL ? "ريال" : "SAR"}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm">
-                  <p className="text-xs opacity-90 mb-1">{isRTL ? "النقاط" : "Points"}</p>
-                  <p className="text-2xl font-bold">{loyaltyCard.points}</p>
-                </div>
-                <div className="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm">
-                  <p className="text-xs opacity-90 mb-1">{isRTL ? "الأختام" : "Stamps"}</p>
-                  <p className="text-2xl font-bold">{loyaltyCard.stamps}/6</p>
-                </div>
-                <div className="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm">
-                  <p className="text-xs opacity-90 mb-1">{isRTL ? "قهوة مجانية" : "Free Cups"}</p>
-                  <p className="text-2xl font-bold">{loyaltyCard.freeCupsEarned - loyaltyCard.freeCupsRedeemed}</p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Offers Grid */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <Star className="w-6 h-6 text-amber-600" />
-            {isRTL ? "العروض المتاحة لك" : "Available Offers for You"}
-          </h2>
-          
-          {offers.length === 0 ? (
-            <Card className="p-8 text-center">
-              <Coffee className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <p className="text-gray-500">{isRTL ? "لا توجد عروض متاحة حالياً" : "No offers available at the moment"}</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {offers.map((offer) => {
-                const canAfford = loyaltyCard && loyaltyCard.points >= offer.pointsCost;
-                
-                return (
-                  <Card key={offer.id} className={`overflow-hidden border-2 transition-all hover:shadow-lg ${
-                    canAfford ? 'border-amber-200' : 'border-gray-200 opacity-75'
-                  }`}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge className={getTierColor(offer.requiredTier)} variant="outline">
-                          {getTierIcon(offer.requiredTier)}
-                          <span className={`${isRTL ? 'mr-1' : 'ml-1'} capitalize`}>{offer.requiredTier}</span>
-                        </Badge>
-                        <div className="flex items-center gap-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-sm font-semibold">
-                          {getOfferTypeIcon(offer.type)}
-                          <span>{offer.pointsCost} {isRTL ? "نقطة" : "pts"}</span>
-                        </div>
-                      </div>
-                      <CardTitle className="text-lg">
-                        {isRTL ? offer.nameAr : offer.nameEn}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 mb-4">{offer.description}</p>
-                      
-                      {offer.discountPercentage && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-2 mb-4">
-                          <p className="text-green-800 font-semibold text-sm text-center">
-                            {offer.discountPercentage}% {isRTL ? "خصم" : "OFF"}
-                          </p>
-                        </div>
-                      )}
-                      
-                      <Button 
-                        onClick={() => handleRedeemOffer(offer)}
-                        disabled={!canAfford}
-                        className="w-full"
-                        variant={canAfford ? "default" : "secondary"}
-                      >
-                        {canAfford 
-                          ? (isRTL ? "استبدل الآن" : "Redeem Now")
-                          : (isRTL ? `تحتاج ${offer.pointsCost - (loyaltyCard?.points || 0)} نقطة إضافية` : `Need ${offer.pointsCost - (loyaltyCard?.points || 0)} more points`)
-                        }
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+    <CustomerLayout>
+      <div className="container max-w-lg mx-auto p-4 pb-24" dir="rtl">
+        <div className="flex items-center gap-3 mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLocation("/menu")}
+            data-testid="button-back"
+          >
+            <ArrowRight className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-primary" />
+              عروضك الخاصة
+            </h1>
+            <p className="text-sm text-muted-foreground">عروض مخصصة لك بناءً على تفضيلاتك</p>
+          </div>
         </div>
 
-        {/* How to Earn More Points */}
-        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200">
+        {offers.length === 0 ? (
+          <Card className="text-center p-8">
+            <CardContent>
+              <Gift className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-lg font-medium text-foreground">لا توجد عروض حالياً</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                استمر في الطلب لفتح عروض خاصة بك
+              </p>
+              <Button 
+                onClick={() => setLocation("/menu")} 
+                className="mt-4"
+                data-testid="button-explore-menu"
+              >
+                استكشف القائمة
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {offers.map((offer) => (
+              <Card 
+                key={offer.id} 
+                className="overflow-hidden border-0 shadow-lg"
+                data-testid={`offer-card-${offer.id}`}
+              >
+                <div className={`bg-gradient-to-r ${getOfferColor(offer.type)} p-4`}>
+                  <div className="flex items-center gap-3 text-white">
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      {getOfferIcon(offer.type)}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg">{offer.title}</h3>
+                      {offer.expiresIn && (
+                        <div className="flex items-center gap-1 text-xs text-white/80 mt-1">
+                          <Clock className="w-3 h-3" />
+                          <span>ينتهي خلال {offer.expiresIn}</span>
+                        </div>
+                      )}
+                    </div>
+                    {offer.discount > 0 && (
+                      <Badge className="bg-white text-foreground font-bold text-lg px-3 py-1">
+                        {offer.type === 'loyalty' ? `${offer.discount} ر.س` : `${offer.discount}%`}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <p className="text-foreground">{offer.description}</p>
+                  {offer.coffeeItem && (
+                    <div className="mt-3 flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+                      {offer.coffeeItem.imageUrl && (
+                        <img 
+                          src={offer.coffeeItem.imageUrl} 
+                          alt={offer.coffeeItem.nameAr}
+                          className="w-12 h-12 rounded-lg object-cover"
+                        />
+                      )}
+                      <div>
+                        <p className="font-medium text-foreground">{offer.coffeeItem.nameAr}</p>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="line-through">{offer.coffeeItem.price} ر.س</span>
+                          <span className="text-primary font-bold mr-2">
+                            {(offer.coffeeItem.price * (1 - offer.discount / 100)).toFixed(2)} ر.س
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <Button 
+                    className="w-full mt-4" 
+                    onClick={() => handleUseOffer(offer)}
+                    disabled={offer.discount === 0}
+                    data-testid={`button-use-offer-${offer.id}`}
+                  >
+                    {offer.discount > 0 ? 'استخدم العرض' : 'استمر في جمع النقاط'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <Card className="mt-6 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-amber-600" />
-              {isRTL ? "كيف تكسب المزيد من النقاط؟" : "How to Earn More Points?"}
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Gift className="w-4 h-4 text-primary" />
+              كيف تحصل على المزيد من العروض؟
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-gray-700">
-              <li className="flex items-center gap-2">
-                <Coffee className="w-4 h-4 text-amber-600" />
-                {isRTL ? "احصل على 10 نقاط مع كل مشروب تشتريه" : "Get 10 points with every drink you buy"}
-              </li>
-              <li className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-amber-600" />
-                {isRTL ? "اجمع 6 أختام للحصول على قهوة مجانية" : "Collect 6 stamps to get a free coffee"}
-              </li>
-              <li className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-600" />
-                {isRTL ? "ارتقِ إلى مستويات أعلى لفتح المزيد من العروض" : "Level up to unlock more exclusive offers"}
-              </li>
-            </ul>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>• اطلب بانتظام لفتح عروض العملاء المميزين</p>
+            <p>• اجمع النقاط واستبدلها بخصومات</p>
+            <p>• ادعُ أصدقاءك واحصل على 50 نقطة لكل صديق</p>
           </CardContent>
         </Card>
       </div>
-    </div>
+    </CustomerLayout>
   );
 }

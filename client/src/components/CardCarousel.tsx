@@ -17,7 +17,7 @@ export default function CardCarousel({ cards, activeCard, onSelectCard }: CardCa
     return null;
   }
 
-  const currentIndex = cards.findIndex(c => c._id === activeCard._id);
+  const currentIndex = cards.findIndex(c => c.id === activeCard.id);
   const nextIndex = (currentIndex + 1) % cards.length;
   const prevIndex = (currentIndex - 1 + cards.length) % cards.length;
 
@@ -60,7 +60,7 @@ export default function CardCarousel({ cards, activeCard, onSelectCard }: CardCa
       <div className="relative h-64 md:h-72">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
-            key={String(activeCard._id)}
+            key={String(activeCard.id)}
             custom={direction}
             variants={slideVariants}
             initial="enter"
@@ -81,7 +81,7 @@ export default function CardCarousel({ cards, activeCard, onSelectCard }: CardCa
               </div>
 
               <div className="relative z-10">
-                <h4 className="text-2xl font-black mb-2">BLACK ROSE</h4>
+                <h4 className="text-2xl font-black mb-2">CLUNY CAFE</h4>
                 <p className="text-sm opacity-90">{designColor.label}</p>
               </div>
 
@@ -145,13 +145,13 @@ export default function CardCarousel({ cards, activeCard, onSelectCard }: CardCa
         <div className="flex gap-2 justify-center">
           {cards.map((card, idx) => (
             <button
-              key={String(card._id)}
+              key={String(card.id)}
               onClick={() => {
                 setDirection(idx > currentIndex ? 1 : -1);
                 onSelectCard(card);
               }}
               className={`h-2 rounded-full transition-all ${
-                card._id === activeCard._id ? "bg-amber-500 w-8" : "bg-white/20 w-2 hover:bg-white/30"
+                card.id === activeCard.id ? "bg-amber-500 w-8" : "bg-white/20 w-2 hover:bg-white/30"
               }`}
               aria-label={`بطاقة ${idx + 1}`}
             />

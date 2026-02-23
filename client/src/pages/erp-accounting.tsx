@@ -60,6 +60,9 @@ import {
   Clock,
   XCircle,
   Download,
+  BookOpen,
+  Users,
+  Scale,
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -146,6 +149,61 @@ interface Invoice {
   }>;
 }
 
+interface JournalEntry {
+  id: string;
+  entryNumber: string;
+  entryDate: string;
+  description: string;
+  lines: Array<{
+    accountId: string;
+    accountNumber: string;
+    accountName: string;
+    debit: number;
+    credit: number;
+    description?: string;
+    branchId?: string;
+  }>;
+  totalDebit: number;
+  totalCredit: number;
+  status: string;
+  referenceType?: string;
+  referenceId?: string;
+  createdBy: string;
+}
+
+interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  status: string;
+  accountId?: string;
+  vendorId?: string;
+  vendorName?: string;
+  createdAt: string;
+  approvedBy?: string;
+}
+
+interface Vendor {
+  id: string;
+  nameAr: string;
+  nameEn?: string;
+  phone?: string;
+  email?: string;
+  taxNumber?: string;
+  address?: string;
+  isActive: number;
+}
+
+interface BalanceSheet {
+  assets: Array<{ accountName: string; balance: number }>;
+  totalAssets: number;
+  liabilities: Array<{ accountName: string; balance: number }>;
+  totalLiabilities: number;
+  equity: Array<{ accountName: string; balance: number }>;
+  totalEquity: number;
+}
+
 const invoiceStatusLabels: Record<string, string> = {
   draft: "مسودة",
   issued: "صادرة",
@@ -184,6 +242,54 @@ const accountTypeColors: Record<string, string> = {
   revenue: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   expense: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
 };
+
+const journalStatusLabels: Record<string, string> = {
+  draft: "مسودة",
+  posted: "مرحل",
+};
+
+const journalStatusColors: Record<string, string> = {
+  draft: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+  posted: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+};
+
+const expenseStatusLabels: Record<string, string> = {
+  pending_approval: "بانتظار الموافقة",
+  approved: "معتمد",
+  rejected: "مرفوض",
+  paid: "مدفوع",
+};
+
+const expenseStatusColors: Record<string, string> = {
+  pending_approval: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  approved: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  paid: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+};
+
+const expenseCategoryLabels: Record<string, string> = {
+  operating: "تشغيلية",
+  salary: "رواتب",
+  rent: "إيجار",
+  utilities: "مرافق",
+  marketing: "تسويق",
+  maintenance: "صيانة",
+  other: "أخرى",
+};
+
+function flattenAccounts(accounts: Account[]): Account[] {
+  const result: Account[] = [];
+  function traverse(accs: Account[]) {
+    for (const acc of accs) {
+      result.push(acc);
+      if (acc.children && acc.children.length > 0) {
+        traverse(acc.children);
+      }
+    }
+  }
+  traverse(accounts);
+  return result;
+}
 
 function AccountTreeNode({ account, level = 0 }: { account: Account; level?: number }) {
   const [isOpen, setIsOpen] = useState(level < 2);
@@ -279,7 +385,14 @@ export default function ErpAccountingPage() {
     accountType: "asset",
     normalBalance: "debit",
     openingBalance: 0,
+    parentAccountId: "",
   });
+  const [showAddJournalDialog, setShowAddJournalDialog] = useState(false);
+  const [showAddExpenseDialog, setShowAddExpenseDialog] = useState(false);
+  const [showAddVendorDialog, setShowAddVendorDialog] = useState(false);
+  const [newJournal, setNewJournal] = useState({ description: "", lines: [{ accountId: "", accountNumber: "", accountName: "", debit: 0, credit: 0 }, { accountId: "", accountNumber: "", accountName: "", debit: 0, credit: 0 }] });
+  const [newExpense, setNewExpense] = useState({ description: "", amount: 0, category: "operating", accountId: "" });
+  const [newVendor, setNewVendor] = useState({ nameAr: "", nameEn: "", phone: "", email: "", taxNumber: "" });
 
   const { data: dashboardData, isLoading: dashboardLoading } = useQuery<{ success: boolean; summary: DashboardSummary }>({
     queryKey: ["/api/erp/dashboard"],
@@ -301,6 +414,22 @@ export default function ErpAccountingPage() {
     queryKey: ["/api/erp/invoices"],
   });
 
+  const { data: journalData, isLoading: journalLoading } = useQuery<{ success: boolean; entries: JournalEntry[] }>({
+    queryKey: ["/api/erp/journal-entries"],
+  });
+
+  const { data: expensesData, isLoading: expensesLoading } = useQuery<{ success: boolean; expenses: Expense[] }>({
+    queryKey: ["/api/erp/expenses"],
+  });
+
+  const { data: vendorsData, isLoading: vendorsLoading } = useQuery<{ success: boolean; vendors: Vendor[] }>({
+    queryKey: ["/api/erp/vendors"],
+  });
+
+  const { data: balanceSheetData, isLoading: balanceSheetLoading } = useQuery<{ success: boolean; balanceSheet: BalanceSheet }>({
+    queryKey: ["/api/erp/reports/balance-sheet"],
+  });
+
   const initializeAccountsMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/erp/accounts/initialize"),
     onSuccess: () => {
@@ -319,7 +448,7 @@ export default function ErpAccountingPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/erp/accounts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/erp/accounts/tree"] });
       setShowAddAccountDialog(false);
-      setNewAccount({ accountNumber: "", nameAr: "", nameEn: "", accountType: "asset", normalBalance: "debit", openingBalance: 0 });
+      setNewAccount({ accountNumber: "", nameAr: "", nameEn: "", accountType: "asset", normalBalance: "debit", openingBalance: 0, parentAccountId: "" });
       toast({ title: "تم إنشاء الحساب بنجاح" });
     },
     onError: (error: any) => {
@@ -327,11 +456,75 @@ export default function ErpAccountingPage() {
     },
   });
 
+  const createJournalMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/erp/journal-entries", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/journal-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/reports/trial-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/reports/income-statement"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/reports/balance-sheet"] });
+      setShowAddJournalDialog(false);
+      setNewJournal({ description: "", lines: [{ accountId: "", accountNumber: "", accountName: "", debit: 0, credit: 0 }, { accountId: "", accountNumber: "", accountName: "", debit: 0, credit: 0 }] });
+      toast({ title: "تم إنشاء القيد بنجاح" });
+    },
+    onError: (error: any) => { toast({ title: error.message || "فشل في إنشاء القيد", variant: "destructive" }); },
+  });
+
+  const postJournalMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("PATCH", `/api/erp/journal-entries/${id}/post`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/journal-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/accounts/tree"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/dashboard"] });
+      toast({ title: "تم ترحيل القيد بنجاح" });
+    },
+    onError: (error: any) => { toast({ title: error.message || "فشل في ترحيل القيد", variant: "destructive" }); },
+  });
+
+  const createExpenseMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/erp/expenses", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/dashboard"] });
+      setShowAddExpenseDialog(false);
+      setNewExpense({ description: "", amount: 0, category: "operating", accountId: "" });
+      toast({ title: "تم إضافة المصروف بنجاح" });
+    },
+    onError: (error: any) => { toast({ title: error.message || "فشل في إضافة المصروف", variant: "destructive" }); },
+  });
+
+  const approveExpenseMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("PATCH", `/api/erp/expenses/${id}/approve`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/dashboard"] });
+      toast({ title: "تم اعتماد المصروف بنجاح" });
+    },
+    onError: (error: any) => { toast({ title: error.message || "فشل في اعتماد المصروف", variant: "destructive" }); },
+  });
+
+  const createVendorMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/erp/vendors", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/erp/vendors"] });
+      setShowAddVendorDialog(false);
+      setNewVendor({ nameAr: "", nameEn: "", phone: "", email: "", taxNumber: "" });
+      toast({ title: "تم إضافة المورد بنجاح" });
+    },
+    onError: (error: any) => { toast({ title: error.message || "فشل في إضافة المورد", variant: "destructive" }); },
+  });
+
   const summary = dashboardData?.summary;
   const accounts = accountsData?.tree || [];
   const trialBalance = trialBalanceData?.trialBalance || [];
   const incomeStatement = incomeStatementData?.incomeStatement;
   const invoices = invoicesData?.invoices || [];
+  const journalEntries = journalData?.entries || [];
+  const expenses = expensesData?.expenses || [];
+  const vendors = vendorsData?.vendors || [];
+  const balanceSheet = balanceSheetData?.balanceSheet;
+  const flatAccounts = flattenAccounts(accounts);
 
   const totalDebit = trialBalance.reduce((sum, item) => sum + item.debitBalance, 0);
   const totalCredit = trialBalance.reduce((sum, item) => sum + item.creditBalance, 0);
@@ -372,7 +565,7 @@ export default function ErpAccountingPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-5 lg:w-[750px]">
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1">
             <TabsTrigger value="dashboard" data-testid="tab-dashboard">
               <BarChart3 className="h-4 w-4 ml-2" />
               لوحة التحكم
@@ -392,6 +585,22 @@ export default function ErpAccountingPage() {
             <TabsTrigger value="income" data-testid="tab-income">
               <TrendingUp className="h-4 w-4 ml-2" />
               قائمة الدخل
+            </TabsTrigger>
+            <TabsTrigger value="journal-entries" data-testid="tab-journal-entries">
+              <BookOpen className="h-4 w-4 ml-2" />
+              القيود
+            </TabsTrigger>
+            <TabsTrigger value="expenses" data-testid="tab-expenses">
+              <Wallet className="h-4 w-4 ml-2" />
+              المصروفات
+            </TabsTrigger>
+            <TabsTrigger value="vendors" data-testid="tab-vendors">
+              <Users className="h-4 w-4 ml-2" />
+              الموردين
+            </TabsTrigger>
+            <TabsTrigger value="balance-sheet" data-testid="tab-balance-sheet">
+              <Scale className="h-4 w-4 ml-2" />
+              الميزانية
             </TabsTrigger>
           </TabsList>
 
@@ -903,6 +1112,319 @@ export default function ErpAccountingPage() {
               </Card>
             )}
           </TabsContent>
+
+          <TabsContent value="journal-entries" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">القيود المحاسبية</h2>
+              <Button onClick={() => setShowAddJournalDialog(true)} data-testid="button-add-journal">
+                <Plus className="h-4 w-4 ml-2" />
+                إضافة قيد
+              </Button>
+            </div>
+
+            <Card className="bg-card border-border/50">
+              {journalLoading ? (
+                <CardContent className="p-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                </CardContent>
+              ) : journalEntries.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">رقم القيد</TableHead>
+                      <TableHead className="text-right">التاريخ</TableHead>
+                      <TableHead className="text-right">الوصف</TableHead>
+                      <TableHead className="text-left">مدين</TableHead>
+                      <TableHead className="text-left">دائن</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-center">إجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {journalEntries.map((entry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell className="font-mono font-medium">{entry.entryNumber}</TableCell>
+                        <TableCell>
+                          {format(new Date(entry.entryDate), "dd/MM/yyyy", { locale: ar })}
+                        </TableCell>
+                        <TableCell>{entry.description}</TableCell>
+                        <TableCell className="text-left font-mono">
+                          {entry.totalDebit.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س
+                        </TableCell>
+                        <TableCell className="text-left font-mono">
+                          {entry.totalCredit.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={journalStatusColors[entry.status] || "bg-gray-100"}>
+                            {journalStatusLabels[entry.status] || entry.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {entry.status === "draft" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => postJournalMutation.mutate(entry.id)}
+                              disabled={postJournalMutation.isPending}
+                              data-testid={`button-post-journal-${entry.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 ml-1" />
+                              ترحيل
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <CardContent className="p-12 text-center">
+                  <BookOpen className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد قيود محاسبية</h3>
+                  <p className="text-muted-foreground">اضغط على إضافة قيد لإنشاء قيد جديد</p>
+                </CardContent>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="expenses" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">المصروفات</h2>
+              <Button onClick={() => setShowAddExpenseDialog(true)} data-testid="button-add-expense">
+                <Plus className="h-4 w-4 ml-2" />
+                إضافة مصروف
+              </Button>
+            </div>
+
+            <Card className="bg-card border-border/50">
+              {expensesLoading ? (
+                <CardContent className="p-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                </CardContent>
+              ) : expenses.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">الوصف</TableHead>
+                      <TableHead className="text-right">الفئة</TableHead>
+                      <TableHead className="text-left">المبلغ</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">التاريخ</TableHead>
+                      <TableHead className="text-center">إجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {expenses.map((expense) => (
+                      <TableRow key={expense.id}>
+                        <TableCell>{expense.description}</TableCell>
+                        <TableCell>{expenseCategoryLabels[expense.category] || expense.category}</TableCell>
+                        <TableCell className="text-left font-mono">
+                          {expense.amount.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={expenseStatusColors[expense.status] || "bg-gray-100"}>
+                            {expenseStatusLabels[expense.status] || expense.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(expense.createdAt), "dd/MM/yyyy", { locale: ar })}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {expense.status === "pending_approval" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => approveExpenseMutation.mutate(expense.id)}
+                              disabled={approveExpenseMutation.isPending}
+                              data-testid={`button-approve-expense-${expense.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 ml-1" />
+                              اعتماد
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <CardContent className="p-12 text-center">
+                  <Wallet className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد مصروفات</h3>
+                  <p className="text-muted-foreground">اضغط على إضافة مصروف لإنشاء مصروف جديد</p>
+                </CardContent>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="vendors" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">الموردين</h2>
+              <Button onClick={() => setShowAddVendorDialog(true)} data-testid="button-add-vendor">
+                <Plus className="h-4 w-4 ml-2" />
+                إضافة مورد
+              </Button>
+            </div>
+
+            <Card className="bg-card border-border/50">
+              {vendorsLoading ? (
+                <CardContent className="p-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                </CardContent>
+              ) : vendors.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">الاسم (عربي)</TableHead>
+                      <TableHead className="text-right">الاسم (إنجليزي)</TableHead>
+                      <TableHead className="text-right">الهاتف</TableHead>
+                      <TableHead className="text-right">البريد</TableHead>
+                      <TableHead className="text-right">الرقم الضريبي</TableHead>
+                      <TableHead className="text-center">الحالة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vendors.map((vendor) => (
+                      <TableRow key={vendor.id}>
+                        <TableCell className="font-medium">{vendor.nameAr}</TableCell>
+                        <TableCell>{vendor.nameEn || "-"}</TableCell>
+                        <TableCell className="font-mono">{vendor.phone || "-"}</TableCell>
+                        <TableCell>{vendor.email || "-"}</TableCell>
+                        <TableCell className="font-mono">{vendor.taxNumber || "-"}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge className={vendor.isActive ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}>
+                            {vendor.isActive ? "نشط" : "غير نشط"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <CardContent className="p-12 text-center">
+                  <Users className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">لا يوجد موردين</h3>
+                  <p className="text-muted-foreground">اضغط على إضافة مورد لإنشاء مورد جديد</p>
+                </CardContent>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="balance-sheet" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">الميزانية العمومية</h2>
+              <Button variant="outline" data-testid="button-export-balance-sheet">
+                <Download className="h-4 w-4 ml-2" />
+                تصدير
+              </Button>
+            </div>
+
+            {balanceSheetLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : balanceSheet ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <Card className="bg-card border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-green-600" />
+                        الأصول
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {balanceSheet.assets.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between py-2 border-b border-border/50">
+                          <span>{item.accountName}</span>
+                          <span className="font-mono text-green-600">{item.balance.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between py-3 font-bold bg-green-50 dark:bg-green-900/20 px-3 rounded">
+                        <span>إجمالي الأصول</span>
+                        <span className="font-mono text-green-600">{balanceSheet.totalAssets.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <TrendingDown className="h-5 w-5 text-red-600" />
+                        الخصوم
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {balanceSheet.liabilities.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between py-2 border-b border-border/50">
+                          <span>{item.accountName}</span>
+                          <span className="font-mono text-red-600">{item.balance.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between py-3 font-bold bg-red-50 dark:bg-red-900/20 px-3 rounded">
+                        <span>إجمالي الخصوم</span>
+                        <span className="font-mono text-red-600">{balanceSheet.totalLiabilities.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-card border-border/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Scale className="h-5 w-5 text-purple-600" />
+                        حقوق الملكية
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {balanceSheet.equity.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between py-2 border-b border-border/50">
+                          <span>{item.accountName}</span>
+                          <span className="font-mono text-purple-600">{item.balance.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between py-3 font-bold bg-purple-50 dark:bg-purple-900/20 px-3 rounded">
+                        <span>إجمالي حقوق الملكية</span>
+                        <span className="font-mono text-purple-600">{balanceSheet.totalEquity.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-3 gap-6 text-center">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">إجمالي الأصول</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {balanceSheet.totalAssets.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س
+                        </p>
+                      </div>
+                      <div className="border-x border-border">
+                        <p className="text-sm text-muted-foreground mb-1">إجمالي الخصوم</p>
+                        <p className="text-2xl font-bold text-red-600">
+                          {balanceSheet.totalLiabilities.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">حقوق الملكية</p>
+                        <p className="text-2xl font-bold text-purple-600">
+                          {balanceSheet.totalEquity.toLocaleString("ar-SA", { minimumFractionDigits: 2 })} ر.س
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card className="bg-card border-border/50">
+                <CardContent className="p-12 text-center">
+                  <Scale className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">لا توجد بيانات</h3>
+                  <p className="text-muted-foreground">يرجى تهيئة دليل الحسابات وإضافة قيود</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -940,6 +1462,25 @@ export default function ErpAccountingPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>الحساب الأب (اختياري)</Label>
+              <Select
+                value={newAccount.parentAccountId || "none"}
+                onValueChange={(value) => setNewAccount({ ...newAccount, parentAccountId: value === "none" ? "" : value })}
+              >
+                <SelectTrigger data-testid="select-parent-account">
+                  <SelectValue placeholder="بدون حساب أب" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">بدون حساب أب</SelectItem>
+                  {flatAccounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.accountNumber} - {acc.nameAr}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>اسم الحساب (عربي)</Label>
@@ -1138,6 +1679,243 @@ export default function ErpAccountingPage() {
             <Button variant="default" data-testid="button-print-invoice">
               <Download className="h-4 w-4 ml-2" />
               طباعة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddJournalDialog} onOpenChange={setShowAddJournalDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة قيد محاسبي</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>الوصف</Label>
+              <Input
+                value={newJournal.description}
+                onChange={(e) => setNewJournal({ ...newJournal, description: e.target.value })}
+                placeholder="وصف القيد"
+                data-testid="input-journal-description"
+              />
+            </div>
+            {newJournal.lines.map((line, index) => (
+              <div key={index} className="grid grid-cols-3 gap-3 p-3 bg-muted/30 rounded-lg">
+                <div className="space-y-1">
+                  <Label className="text-xs">الحساب</Label>
+                  <Select
+                    value={line.accountId || "none"}
+                    onValueChange={(value) => {
+                      const lines = [...newJournal.lines];
+                      const selectedAcc = flatAccounts.find(a => a.id === value);
+                      lines[index] = {
+                        ...lines[index],
+                        accountId: value === "none" ? "" : value,
+                        accountNumber: selectedAcc?.accountNumber || "",
+                        accountName: selectedAcc?.nameAr || "",
+                      };
+                      setNewJournal({ ...newJournal, lines });
+                    }}
+                  >
+                    <SelectTrigger data-testid={`select-journal-line-account-${index}`}>
+                      <SelectValue placeholder="اختر حساب" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">اختر حساب</SelectItem>
+                      {flatAccounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.accountNumber} - {acc.nameAr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">مدين</Label>
+                  <Input
+                    type="number"
+                    value={line.debit}
+                    onChange={(e) => {
+                      const lines = [...newJournal.lines];
+                      lines[index] = { ...lines[index], debit: parseFloat(e.target.value) || 0 };
+                      setNewJournal({ ...newJournal, lines });
+                    }}
+                    data-testid={`input-journal-line-debit-${index}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">دائن</Label>
+                  <Input
+                    type="number"
+                    value={line.credit}
+                    onChange={(e) => {
+                      const lines = [...newJournal.lines];
+                      lines[index] = { ...lines[index], credit: parseFloat(e.target.value) || 0 };
+                      setNewJournal({ ...newJournal, lines });
+                    }}
+                    data-testid={`input-journal-line-credit-${index}`}
+                  />
+                </div>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              onClick={() => setNewJournal({ ...newJournal, lines: [...newJournal.lines, { accountId: "", accountNumber: "", accountName: "", debit: 0, credit: 0 }] })}
+              data-testid="button-add-journal-line"
+            >
+              <Plus className="h-4 w-4 ml-2" />
+              إضافة سطر
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddJournalDialog(false)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => createJournalMutation.mutate({
+                description: newJournal.description,
+                lines: newJournal.lines,
+                autoPost: true,
+                entryDate: new Date(),
+              })}
+              disabled={createJournalMutation.isPending || !newJournal.description}
+              data-testid="button-submit-journal"
+            >
+              {createJournalMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : null}
+              إنشاء القيد
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddExpenseDialog} onOpenChange={setShowAddExpenseDialog}>
+        <DialogContent className="sm:max-w-[500px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة مصروف</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>الوصف</Label>
+              <Input
+                value={newExpense.description}
+                onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                placeholder="وصف المصروف"
+                data-testid="input-expense-description"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>المبلغ</Label>
+                <Input
+                  type="number"
+                  value={newExpense.amount}
+                  onChange={(e) => setNewExpense({ ...newExpense, amount: parseFloat(e.target.value) || 0 })}
+                  data-testid="input-expense-amount"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>الفئة</Label>
+                <Select
+                  value={newExpense.category}
+                  onValueChange={(value) => setNewExpense({ ...newExpense, category: value })}
+                >
+                  <SelectTrigger data-testid="select-expense-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="operating">تشغيلية</SelectItem>
+                    <SelectItem value="salary">رواتب</SelectItem>
+                    <SelectItem value="rent">إيجار</SelectItem>
+                    <SelectItem value="utilities">مرافق</SelectItem>
+                    <SelectItem value="marketing">تسويق</SelectItem>
+                    <SelectItem value="maintenance">صيانة</SelectItem>
+                    <SelectItem value="other">أخرى</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddExpenseDialog(false)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => createExpenseMutation.mutate(newExpense)}
+              disabled={createExpenseMutation.isPending || !newExpense.description || newExpense.amount <= 0}
+              data-testid="button-submit-expense"
+            >
+              {createExpenseMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : null}
+              إضافة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddVendorDialog} onOpenChange={setShowAddVendorDialog}>
+        <DialogContent className="sm:max-w-[500px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة مورد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>اسم المورد (عربي)</Label>
+              <Input
+                value={newVendor.nameAr}
+                onChange={(e) => setNewVendor({ ...newVendor, nameAr: e.target.value })}
+                placeholder="اسم المورد بالعربي"
+                data-testid="input-vendor-name-ar"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>اسم المورد (إنجليزي)</Label>
+              <Input
+                value={newVendor.nameEn}
+                onChange={(e) => setNewVendor({ ...newVendor, nameEn: e.target.value })}
+                placeholder="Vendor Name"
+                data-testid="input-vendor-name-en"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>الهاتف</Label>
+                <Input
+                  value={newVendor.phone}
+                  onChange={(e) => setNewVendor({ ...newVendor, phone: e.target.value })}
+                  placeholder="رقم الهاتف"
+                  data-testid="input-vendor-phone"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>البريد الإلكتروني</Label>
+                <Input
+                  value={newVendor.email}
+                  onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })}
+                  placeholder="email@example.com"
+                  data-testid="input-vendor-email"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>الرقم الضريبي</Label>
+              <Input
+                value={newVendor.taxNumber}
+                onChange={(e) => setNewVendor({ ...newVendor, taxNumber: e.target.value })}
+                placeholder="الرقم الضريبي"
+                data-testid="input-vendor-tax-number"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddVendorDialog(false)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => createVendorMutation.mutate(newVendor)}
+              disabled={createVendorMutation.isPending || !newVendor.nameAr}
+              data-testid="button-submit-vendor"
+            >
+              {createVendorMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : null}
+              إضافة
             </Button>
           </DialogFooter>
         </DialogContent>

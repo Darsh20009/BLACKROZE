@@ -12,11 +12,9 @@ export interface ICoffeeItem extends Document {
   category: string;
   menuType?: 'drinks' | 'food';
   imageUrl?: string;
-  isAvailable: number;
-  availabilityStatus?: string;
-  coffeeStrength?: string;
-  strengthLevel?: number;
-  isNewProduct?: number;
+  availabilityStatus?: 'available' | 'out_of_stock' | 'coming_soon' | 'unavailable' | 'new' | 'temporarily_unavailable';
+  isAvailable: number; // 1 for available, 0 for unavailable
+  isNewProduct?: number; // 1 for new, 0 for not new
   sizeML?: number; // Default size in milliliters
   sku?: string; // Product SKU/Code
   costOfGoods?: number; // Calculated COGS from recipe
@@ -46,7 +44,7 @@ export interface ICoffeeItem extends Document {
 }
 
 const CoffeeItemSchema = new Schema<ICoffeeItem>({
-  id: { type: String, required: true, unique: false },
+  id: { type: String, required: true }, // Changed unique: false to just required
   tenantId: { type: String, required: true },
   nameAr: { type: String, required: true },
   nameEn: { type: String },
@@ -64,7 +62,7 @@ const CoffeeItemSchema = new Schema<ICoffeeItem>({
   sku: { type: String, sparse: true }, // SKU for product identification
   sizeML: { type: Number }, // Size in milliliters (optional if using availableSizes)
   isGiftable: { type: Boolean, default: false },
-  groupId: { type: String }, // For grouping similar products
+  groupId: { type: String, index: true }, // For grouping similar products
   availableSizes: [{
     nameAr: { type: String, required: true },
     nameEn: { type: String },
@@ -114,8 +112,18 @@ export interface IProductAddon extends Document {
   rawItemId?: string;
   quantityPerUnit?: number;
   unit?: string;
+  orderIndex?: number;
   sku?: string;
   imageUrl?: string;
+  isAddonDrink?: boolean;
+  isIndependentProduct?: boolean;
+  linkedCoffeeItemId?: string; // New field to link to a drink
+  inventoryRawItemId?: string;
+  linkedRawItemId?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -130,8 +138,14 @@ const ProductAddonSchema = new Schema<IProductAddon>({
   rawItemId: { type: String },
   quantityPerUnit: { type: Number },
   unit: { type: String },
+  orderIndex: { type: Number, default: 0 },
   sku: { type: String },
   imageUrl: { type: String },
+  isAddonDrink: { type: Boolean, default: false },
+  isIndependentProduct: { type: Boolean, default: false },
+  linkedCoffeeItemId: { type: String }, // New field
+  inventoryRawItemId: { type: String },
+  linkedRawItemId: { type: String },
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: false });
 
@@ -150,6 +164,10 @@ export interface IWarehouseTransfer extends Document {
   status: 'pending' | 'shipped' | 'received' | 'cancelled';
   notes?: string;
   createdBy: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -180,6 +198,10 @@ export interface ICoffeeItemAddon extends Document {
   defaultValue?: string;
   minQuantity: number;
   maxQuantity: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -217,12 +239,16 @@ export interface IPromoOffer extends Document {
   startDate?: Date;
   endDate?: Date;
   sortOrder: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const PromoOfferSchema = new Schema<IPromoOffer>({
-  id: { type: String, required: true, unique: true },
+  id: { type: String, required: true },
   tenantId: { type: String, required: true },
   nameAr: { type: String, required: true },
   nameEn: { type: String },
@@ -249,6 +275,91 @@ PromoOfferSchema.index({ id: 1 }, { unique: true });
 
 export const PromoOfferModel = mongoose.model<IPromoOffer>("PromoOffer", PromoOfferSchema);
 
+// Menu Categories - Custom dynamic categories for drinks/food
+export interface IMenuCategory extends Document {
+  id: string;
+  tenantId: string;
+  nameAr: string;
+  nameEn?: string;
+  icon?: string;
+  department: 'drinks' | 'food';
+  orderIndex: number;
+  isSystem?: boolean;
+  isActive: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const MenuCategorySchema = new Schema<IMenuCategory>({
+  id: { type: String, required: true },
+  tenantId: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String },
+  icon: { type: String, default: 'Coffee' },
+  department: { type: String, enum: ['drinks', 'food'], default: 'drinks' },
+  orderIndex: { type: Number, default: 0 },
+  isSystem: { type: Boolean, default: false },
+  isActive: { type: Number, default: 1 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+MenuCategorySchema.index({ tenantId: 1, isActive: 1 });
+MenuCategorySchema.index({ id: 1 }, { unique: true });
+
+export const MenuCategoryModel = mongoose.model<IMenuCategory>("MenuCategory", MenuCategorySchema);
+
+// Custom Banners for Admin Control
+export interface ICustomBanner extends Document {
+  id: string;
+  tenantId: string;
+  titleAr: string;
+  titleEn?: string;
+  subtitleAr?: string;
+  subtitleEn?: string;
+  imageUrl: string;
+  linkType: 'product' | 'category' | 'offer' | 'external' | 'none';
+  linkId?: string; // id of product/category/offer
+  externalUrl?: string;
+  badgeAr?: string;
+  badgeEn?: string;
+  isActive: boolean;
+  orderIndex: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
+  couponImageUrl?: string;
+  couponCode?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const CustomBannerSchema = new Schema<ICustomBanner>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  titleAr: { type: String, required: true },
+  titleEn: { type: String },
+  subtitleAr: { type: String },
+  subtitleEn: { type: String },
+  imageUrl: { type: String, required: true },
+  linkType: { type: String, enum: ['product', 'category', 'offer', 'external', 'none'], default: 'none' },
+  linkId: { type: String },
+  externalUrl: { type: String },
+  badgeAr: { type: String },
+  badgeEn: { type: String },
+  isActive: { type: Boolean, default: true },
+  orderIndex: { type: Number, default: 0 },
+  couponImageUrl: { type: String },
+  couponCode: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+CustomBannerSchema.index({ tenantId: 1, isActive: 1, orderIndex: 1 });
+
+export const CustomBannerModel = mongoose.model<ICustomBanner>("CustomBanner", CustomBannerSchema);
+
 export interface ICustomer extends Document {
   phone: string;
   email?: string;
@@ -257,8 +368,16 @@ export interface ICustomer extends Document {
   registeredBy?: 'self' | 'cashier';
   isPasswordSet?: number;
   points?: number;
+  pendingPoints?: number;
+  walletBalance?: number;
+  walletPin?: string;
   carType?: string;
   carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
   saveCarInfo?: number;
   createdAt: Date;
 }
@@ -271,19 +390,90 @@ const CustomerSchema = new Schema<ICustomer>({
   registeredBy: { type: String, default: 'self' },
   isPasswordSet: { type: Number, default: 0 },
   points: { type: Number, default: 0 },
+  pendingPoints: { type: Number, default: 0 },
+  walletBalance: { type: Number, default: 0 },
+  walletPin: { type: String },
   carType: { type: String },
   carColor: { type: String },
+  plateNumber: { type: String },
   saveCarInfo: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
 });
 
 export const CustomerModel = mongoose.model<ICustomer>("Customer", CustomerSchema);
 
+// ---------------- Appointment System ----------------
+export interface IAppointment extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  customerId?: string;
+  customerName: string;
+  customerPhone: string;
+  serviceType: 'table' | 'event' | 'other';
+  appointmentDate: Date;
+  numberOfPeople: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const AppointmentSchema = new Schema<IAppointment>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  customerId: { type: String },
+  customerName: { type: String, required: true },
+  customerPhone: { type: String, required: true },
+  serviceType: { type: String, enum: ['table', 'event', 'other'], default: 'table' },
+  appointmentDate: { type: Date, required: true },
+  numberOfPeople: { type: Number, default: 1 },
+  status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
+  notes: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+AppointmentSchema.index({ tenantId: 1, branchId: 1 });
+AppointmentSchema.index({ appointmentDate: 1 });
+AppointmentSchema.index({ customerPhone: 1 });
+
+export const AppointmentModel = mongoose.model<IAppointment>("Appointment", AppointmentSchema);
+
+export interface IPointTransfer extends Document {
+  tenantId: string;
+  fromCustomerId: string;
+  toCustomerId: string;
+  points: number;
+  status: 'completed' | 'failed';
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
+  createdAt: Date;
+}
+
+const PointTransferSchema = new Schema<IPointTransfer>({
+  tenantId: { type: String, required: true },
+  fromCustomerId: { type: String, required: true },
+  toCustomerId: { type: String, required: true },
+  points: { type: Number, required: true },
+  status: { type: String, enum: ['completed', 'failed'], default: 'completed' },
+  createdAt: { type: Date, default: Date.now },
+});
+
+export const PointTransferModel = mongoose.model<IPointTransfer>("PointTransfer", PointTransferSchema);
+
 export interface IPasswordResetToken extends Document {
   email: string;
   token: string;
   expiresAt: Date;
   used: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -303,6 +493,10 @@ export interface IPasswordSetupOTP extends Document {
   expiresAt: Date;
   used: number;
   attempts: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -349,6 +543,10 @@ export interface ICafe extends Document {
     primaryColor?: string;
     secondaryColor?: string;
   };
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -388,6 +586,50 @@ export const CafeModel = mongoose.model<ICafe>("Cafe", CafeSchema);
 // --- NEW OPERATING SYSTEM CORE MODELS ---
 
 // 1. Business Configuration (Extended Cafe)
+export type PaymentGatewayProvider = 'none' | 'neoleap' | 'geidea';
+
+export interface IPaymentGatewayConfig {
+  provider: PaymentGatewayProvider;
+  enabledMethods: string[];
+  neoleap?: {
+    clientId?: string;
+    clientSecret?: string;
+    merchantId?: string;
+    baseUrl?: string;
+    callbackUrl?: string;
+  };
+  geidea?: {
+    publicKey?: string;
+    apiPassword?: string;
+    baseUrl?: string;
+    callbackUrl?: string;
+  };
+  cashEnabled: boolean;
+  posEnabled: boolean;
+  qahwaCardEnabled: boolean;
+  bankTransferEnabled: boolean;
+  stcPayEnabled: boolean;
+}
+
+export interface ISocialLinks {
+  instagram?: string;
+  twitter?: string;
+  facebook?: string;
+  snapchat?: string;
+  tiktok?: string;
+  whatsapp?: string;
+}
+
+export interface IStoreHours {
+  monday: { open: string; close: string; isOpen: boolean };
+  tuesday: { open: string; close: string; isOpen: boolean };
+  wednesday: { open: string; close: string; isOpen: boolean };
+  thursday: { open: string; close: string; isOpen: boolean };
+  friday: { open: string; close: string; isOpen: boolean };
+  saturday: { open: string; close: string; isOpen: boolean };
+  sunday: { open: string; close: string; isOpen: boolean };
+}
+
 export interface IBusinessConfig extends Document {
   tenantId: string;
   tradeNameAr: string;
@@ -395,15 +637,47 @@ export interface IBusinessConfig extends Document {
   activityType: 'cafe' | 'restaurant' | 'both';
   isFoodEnabled: boolean;
   isDrinksEnabled: boolean;
+  employeeInvoiceEnabled: boolean;
   vatNumber?: string;
   vatPercentage: number;
   currency: string;
   timezone: string;
+  isEmergencyClosed: boolean;
+  storeHours: IStoreHours;
+  socialLinks: ISocialLinks;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
+  paymentGateway?: IPaymentGatewayConfig;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export type BusinessConfig = IBusinessConfig;
+
+const PaymentGatewayConfigSchema = new Schema({
+  provider: { type: String, enum: ['none', 'neoleap', 'geidea'], default: 'none' },
+  enabledMethods: [{ type: String }],
+  neoleap: {
+    clientId: { type: String },
+    clientSecret: { type: String },
+    merchantId: { type: String },
+    baseUrl: { type: String, default: 'https://api.neoleap.com.sa' },
+    callbackUrl: { type: String },
+  },
+  geidea: {
+    publicKey: { type: String },
+    apiPassword: { type: String },
+    baseUrl: { type: String, default: 'https://api.merchant.geidea.net' },
+    callbackUrl: { type: String },
+  },
+  cashEnabled: { type: Boolean, default: true },
+  posEnabled: { type: Boolean, default: true },
+  qahwaCardEnabled: { type: Boolean, default: true },
+  bankTransferEnabled: { type: Boolean, default: false },
+  stcPayEnabled: { type: Boolean, default: false },
+}, { _id: false });
 
 const BusinessConfigSchema = new Schema<IBusinessConfig>({
   tenantId: { type: String, required: true, unique: true },
@@ -416,6 +690,39 @@ const BusinessConfigSchema = new Schema<IBusinessConfig>({
   vatPercentage: { type: Number, default: 15 },
   currency: { type: String, default: 'SAR' },
   timezone: { type: String, default: 'Asia/Riyadh' },
+  isMaintenanceMode: { type: Boolean, default: false },
+  maintenanceReason: { type: String, default: 'maintenance' },
+  isEmergencyClosed: { type: Boolean, default: false },
+  storeHours: {
+    type: Schema.Types.Mixed,
+    default: () => ({
+      monday: { open: '06:00', close: '03:00', isOpen: true, isAlwaysOpen: false },
+      tuesday: { open: '06:00', close: '03:00', isOpen: true, isAlwaysOpen: false },
+      wednesday: { open: '06:00', close: '03:00', isOpen: true, isAlwaysOpen: false },
+      thursday: { open: '06:00', close: '03:00', isOpen: true, isAlwaysOpen: false },
+      friday: { open: '13:00', close: '04:00', isOpen: true, isAlwaysOpen: false },
+      saturday: { open: '13:00', close: '04:00', isOpen: true, isAlwaysOpen: false },
+      sunday: { open: '06:00', close: '03:00', isOpen: true, isAlwaysOpen: false }
+    })
+  },
+  socialLinks: {
+    instagram: { type: String, default: '' },
+    twitter: { type: String, default: '' },
+    facebook: { type: String, default: '' },
+    snapchat: { type: String, default: '' },
+    tiktok: { type: String, default: '' },
+    whatsapp: { type: String, default: '' }
+  },
+  paymentGateway: { type: PaymentGatewayConfigSchema, default: () => ({
+    provider: 'none',
+    enabledMethods: ['cash'],
+    cashEnabled: true,
+    posEnabled: true,
+    qahwaCardEnabled: true,
+    bankTransferEnabled: false,
+    stcPayEnabled: false,
+  })},
+  employeeInvoiceEnabled: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -442,6 +749,10 @@ export interface IIngredientItem extends Document {
     cost: number;
   }>;
   isActive: boolean; // Added for Phase 1.1 consistency
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -489,6 +800,10 @@ export interface IRecipeDefinition extends Document {
   version: number;
   isActive: boolean;
   description?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -505,6 +820,10 @@ export interface IRecipeHistory extends Document {
   }>;
   totalCost: number;
   reason?: string; // Why recipe was changed
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -562,6 +881,10 @@ export interface IWarehouse extends Document {
   };
   managerId?: string;
   isActive: boolean;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -638,6 +961,10 @@ export interface IBranch extends Document {
     showVat: boolean;
   };
   lateThresholdMinutes?: number; // عتبة التأخير بالدقائق
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -657,9 +984,8 @@ const BranchSchema = new Schema<IBranch>({
     lat: { type: Number },
     lng: { type: Number }
   },
-  geofenceRadius: { type: Number, default: 200 }, 
-  geofenceBoundary: [{ lat: { type: Number }, lng: { type: Number } }], 
-  isMainBranch: { type: Boolean, default: true },
+  geofenceRadius: { type: Number, default: 200 }, // الافتراضي 200 متر
+  geofenceBoundary: [{ lat: { type: Number }, lng: { type: Number } }], // حدود متعددة النقاط
   isActive: { type: Schema.Types.Mixed, default: true },
   managerName: { type: String },
   managerId: { type: String },
@@ -677,6 +1003,10 @@ export interface IDiscountCode extends Document {
   employeeId: string;
   isActive: number;
   usageCount: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -693,15 +1023,23 @@ const DiscountCodeSchema = new Schema<IDiscountCode>({
 export const DiscountCodeModel = mongoose.model<IDiscountCode>("DiscountCode", DiscountCodeSchema);
 
 export interface IOrder extends Document {
+  tenantId: string;
   orderNumber: string;
   items: any;
   totalAmount: number;
+  dailyNumber?: number;
   paymentMethod: string;
   paymentDetails?: string;
   paymentReceiptUrl?: string;
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
   status: string; // 'pending', 'payment_confirmed', 'completed', 'cancelled', 'open'
   tableStatus?: 'pending' | 'payment_confirmed' | 'preparing' | 'delivering_to_table' | 'delivered' | 'cancelled' | 'open';
-  orderType?: 'regular' | 'table' | 'dine_in' | 'dine-in';
+  orderType?: 'dine-in' | 'pickup' | 'delivery' | 'car-pickup';
+  pickupType?: 'inside' | 'table' | 'car';
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  arrivalNoticeSent?: boolean;
   customerInfo?: any;
   customerId?: string;
   employeeId?: string;
@@ -712,7 +1050,11 @@ export interface IOrder extends Document {
   customerNotes?: string;
   cancellationReason?: string;
   cancelledBy?: 'customer' | 'cashier';
-  carPickup?: any;
+  carPickup?: {
+    carType?: string;
+    carColor?: string;
+    plateNumber?: string;
+  };
   discountCode?: string;
   discountPercentage?: number;
   isOpenTab?: boolean;
@@ -748,65 +1090,55 @@ export interface IOrder extends Document {
     unitCost: number;
     totalCost: number;
   }>;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
+  dailyNumber?: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const OrderSchema = new Schema<IOrder>({
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  customerId: { type: String },
+  customerName: { type: String },
+  customerPhone: { type: String },
+  customerEmail: { type: String },
+  customerInfo: { type: Schema.Types.Mixed },
+  employeeId: { type: String },
+  subtotal: { type: Number },
+  tax: { type: Number },
   orderNumber: { type: String, required: true, unique: true },
+  orderType: { type: String, enum: ['dine-in', 'pickup', 'delivery', 'car-pickup', 'car_pickup', 'regular', 'table', 'dine_in', 'curbside'], default: 'dine-in' },
+  pickupType: { type: String, enum: ['inside', 'table', 'car'] },
+  tableNumber: { type: String },
+  arrivalTime: { type: String },
+  dineIn: { type: Boolean, default: false },
+  carPickup: { type: Boolean, default: false },
+  carInfo: {
+    carType: { type: String },
+    carColor: { type: String },
+    plateNumber: { type: String }
+  },
+  carType: { type: String },
+  carColor: { type: String },
+  carPlate: { type: String },
+  plateNumber: { type: String },
   items: { type: Schema.Types.Mixed, required: true },
   totalAmount: { type: Number, required: true },
-  paymentMethod: { type: String, required: true },
+  dailyNumber: { type: Number },
+  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada"], required: true },
   paymentDetails: { type: String },
   paymentReceiptUrl: { type: String },
   isOpenTab: { type: Boolean, default: false },
   status: { type: String, default: "pending", required: true },
-  tableStatus: { type: String, enum: ['pending', 'payment_confirmed', 'preparing', 'delivering_to_table', 'delivered', 'cancelled', 'active_tab'] },
-  orderType: { type: String, enum: ['regular', 'table', 'dine_in', 'dine-in'], default: 'regular' },
-  customerInfo: { type: Schema.Types.Mixed },
-  customerId: { type: String },
-  employeeId: { type: String },
-  assignedCashierId: { type: String },
-  branchId: { type: String },
-  tableNumber: { type: String },
-  tableId: { type: String },
-  customerNotes: { type: String },
-  cancellationReason: { type: String },
-  cancelledBy: { type: String, enum: ['customer', 'cashier'] },
-  carPickup: { type: Schema.Types.Mixed },
-  discountCode: { type: String },
-  discountPercentage: { type: Number },
-  deliveryType: { type: String, enum: ['pickup', 'delivery', 'dine-in'] },
-  deliveryAddress: {
-    fullAddress: { type: String },
-    lat: { type: Number },
-    lng: { type: Number },
-    zone: { type: String },
-    isInDeliveryZone: { type: Boolean }
-  },
-  deliveryFee: { type: Number, default: 0 },
-  driverId: { type: String },
-  driverLocation: {
-    lat: { type: Number },
-    lng: { type: Number },
-    updatedAt: { type: Date }
-  },
-  deliveryStatus: { type: String },
-  deliveryStartedAt: { type: Date },
-  estimatedPrepTimeInMinutes: { type: Number },
-  prepTimeSetAt: { type: Date },
-  estimatedDeliveryTime: { type: Date },
-  deliveredAt: { type: Date },
-  costOfGoods: { type: Number, default: 0 },
-  grossProfit: { type: Number, default: 0 },
-  inventoryDeducted: { type: Number, default: 0 },
-  inventoryDeductionDetails: [{
-    rawItemId: { type: String },
-    rawItemName: { type: String },
-    quantity: { type: Number },
-    unit: { type: String },
-    unitCost: { type: Number },
-    totalCost: { type: Number }
+  statusHistory: [{
+    status: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+    updatedBy: { type: String },
+    notes: { type: String }
   }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -889,6 +1221,10 @@ export interface ICartItem extends Document {
   quantity: number;
   selectedSize?: string;
   selectedAddons?: string[];
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -920,12 +1256,17 @@ export interface ILoyaltyCard extends Document {
   freeCupsEarned: number;
   freeCupsRedeemed: number;
   points: number;
+  pendingPoints: number;
   tier: string;
   totalSpent: number;
   discountCount: number;
   status: string;
   isActive: boolean;
   lastUsedAt?: Date;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -943,6 +1284,7 @@ const LoyaltyCardSchema = new Schema<ILoyaltyCard>({
   freeCupsEarned: { type: Number, default: 0, required: true },
   freeCupsRedeemed: { type: Number, default: 0, required: true },
   points: { type: Number, default: 0, required: true },
+  pendingPoints: { type: Number, default: 0, required: true },
   tier: { type: String, default: "bronze", required: true },
   totalSpent: { type: Number, default: 0, required: true },
   discountCount: { type: Number, default: 0, required: true },
@@ -966,6 +1308,10 @@ export interface IStatusHistory extends Document {
   toStatus: string;
   changedBy: string;
   notes?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -989,6 +1335,10 @@ export interface ICardCode extends Document {
   isRedeemed: number;
   redeemedAt?: Date;
   redeemedByCardId?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -1013,6 +1363,10 @@ export interface ILoyaltyTransaction extends Document {
   orderAmount?: number;
   description?: string;
   employeeId?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -1039,6 +1393,10 @@ export interface ILoyaltyReward extends Document {
   discountAmount?: number;
   tier?: string;
   isActive: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -1068,6 +1426,10 @@ export interface IIngredient extends Document {
   nameEn?: string;
   isAvailable: number;
   icon?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1094,6 +1456,10 @@ export interface ICoffeeItemIngredient extends Document {
   ingredientId: string;
   quantity: number;
   unit: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -1120,6 +1486,10 @@ export interface ICategory extends Document {
   icon?: string;
   sortOrder?: number;
   isActive: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1136,45 +1506,6 @@ const CategorySchema = new Schema<ICategory>({
 });
 
 export const CategoryModel = mongoose.model<ICategory>("Category", CategorySchema);
-
-// Kitchen Department Model - أقسام المطابخ
-export interface IKitchenDepartment extends Document {
-  id: string;
-  tenantId: string;
-  branchId?: string;
-  nameAr: string;
-  nameEn?: string;
-  description?: string;
-  type: 'drinks' | 'food' | 'desserts' | 'other';
-  isActive: number;
-  assignedEmployees?: string[];
-  categories?: string[]; // List of category IDs this kitchen handles
-  sortOrder?: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const KitchenDepartmentSchema = new Schema<IKitchenDepartment>({
-  id: { type: String, required: true, unique: true },
-  tenantId: { type: String, required: true },
-  branchId: { type: String },
-  nameAr: { type: String, required: true },
-  nameEn: { type: String },
-  description: { type: String },
-  type: { type: String, enum: ['drinks', 'food', 'desserts', 'other'], default: 'other' },
-  isActive: { type: Number, default: 1 },
-  assignedEmployees: [{ type: String }],
-  categories: [{ type: String }],
-  sortOrder: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
-
-KitchenDepartmentSchema.index({ tenantId: 1 });
-KitchenDepartmentSchema.index({ branchId: 1 });
-KitchenDepartmentSchema.index({ type: 1 });
-
-export const KitchenDepartmentModel = mongoose.model<IKitchenDepartment>("KitchenDepartment", KitchenDepartmentSchema);
 
 export interface IUser extends Document {
   username: string;
@@ -1216,6 +1547,10 @@ export interface ITable extends Document {
     lastExtendedAt?: Date; // آخر مرة تم تمديد الحجز
     emailNotificationSent?: boolean; // تم إرسال إشعار البريد
   };
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1226,8 +1561,9 @@ const TableSchema = new Schema<ITable>({
   branchId: { type: String, required: true },
   capacity: { type: Number, default: 4 },
   location: { type: String },
-  isActive: { type: Number, default: 1, required: true },
-  isOccupied: { type: Number, default: 0, required: true },
+  tenantId: { type: String, required: true },
+  isActive: { type: Schema.Types.Mixed, default: 1, required: true },
+  isOccupied: { type: Schema.Types.Mixed, default: 0, required: true },
   currentOrderId: { type: String },
   reservedFor: {
     customerName: { type: String },
@@ -1330,6 +1666,10 @@ export interface ITaxInvoice extends Document {
   // Employee who created the invoice
   createdBy?: string;
 
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1339,8 +1679,8 @@ const TaxInvoiceSchema = new Schema<ITaxInvoice>({
   uuid: { type: String, required: true, unique: true },
   orderId: { type: String, required: true },
 
-  sellerName: { type: String, required: true, default: 'BLACK ROSE' },
-  sellerNameEn: { type: String, default: 'BLACK ROSE' },
+  sellerName: { type: String, required: true, default: 'CLUNY CAFE' },
+  sellerNameEn: { type: String, default: 'CLUNY CAFE' },
   sellerVatNumber: { type: String, required: true, default: '311234567890003' },
   sellerCrNumber: { type: String },
   sellerAddress: { type: String, required: true, default: 'الرياض، المملكة العربية السعودية' },
@@ -1369,7 +1709,7 @@ const TaxInvoiceSchema = new Schema<ITaxInvoice>({
   taxAmount: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
 
-  paymentMethod: { type: String, required: true },
+  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada"], required: true },
   paymentMeans: { type: String },
 
   invoiceCounter: { type: Number, required: true },
@@ -1414,6 +1754,10 @@ export interface IRevenue extends Document {
   paymentMethod: string;
   employeeId?: string;
   notes?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -1427,7 +1771,7 @@ const RevenueSchema = new Schema<IRevenue>({
   grossAmount: { type: Number, required: true },
   vatAmount: { type: Number, required: true },
   netAmount: { type: Number, required: true },
-  paymentMethod: { type: String, required: true },
+  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada"], required: true },
   employeeId: { type: String },
   notes: { type: String },
   createdAt: { type: Date, default: Date.now },
@@ -1457,6 +1801,10 @@ export interface IExpense extends Document {
   createdBy: string;
   status: 'pending' | 'approved' | 'rejected' | 'paid';
   notes?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1522,6 +1870,10 @@ export interface ICashRegister extends Document {
   status: 'open' | 'closed';
   notes?: string;
 
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1602,6 +1954,10 @@ export interface IDailySummary extends Document {
   isGenerated: number;
   generatedAt?: Date;
 
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1669,6 +2025,10 @@ export interface IKitchenOrder extends Document {
   completedAt?: Date;
   estimatedTime?: number; // in minutes
   notes?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1730,6 +2090,10 @@ export interface IAttendance extends Document {
   distanceFromBranch?: number;
   checkOutIsAtBranch?: number;
   checkOutDistanceFromBranch?: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1868,6 +2232,10 @@ export interface IEmployee extends Document {
   };
   permissions?: string[];
   allowedPages?: string[];
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1932,6 +2300,10 @@ export interface IManagerNotification extends Document {
     distanceFromBranch?: number;
     location?: { lat: number; lng: number };
   };
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -1984,6 +2356,10 @@ export interface IShift extends Document {
   isOvernight: boolean; // للورديات التي تمتد لليوم التالي
   isActive: boolean;
   color?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -2017,6 +2393,10 @@ export interface IEmployeeShiftAssignment extends Document {
   effectiveFrom: Date;
   effectiveTo?: Date;
   isActive: boolean;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -2058,7 +2438,10 @@ export const insertOrderSchema = z.object({
   cancellationReason: z.string().optional(),
   cancelledBy: z.enum(['customer', 'cashier']).optional(),
   carPickup: z.any().optional(),
-  deliveryType: z.enum(['pickup', 'delivery', 'dine-in']).optional(),
+  carType: z.string().optional(),
+  carColor: z.string().optional(),
+  carPlate: z.string().optional(),
+  deliveryType: z.enum(['pickup', 'delivery', 'dine-in', 'curbside']).optional(),
   deliveryAddress: z.object({
     fullAddress: z.string().optional(),
     lat: z.number(),
@@ -2326,7 +2709,7 @@ export type InsertTable = z.infer<typeof insertTableSchema>;
 export type Attendance = IAttendance;
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 
-export type PaymentMethod = 'cash' | 'qahwa-card' | 'loyalty-card' | 'pos' | 'pos-network' | 'geidea' | 'apple-pay' | 'apple_pay' | 'mada' | 'alinma' | 'rajhi' | 'ur' | 'barq' | 'neoleap' | 'neoleap-apple-pay' | 'copy-card';
+export type PaymentMethod = 'cash' | 'qahwa-card' | 'loyalty-card' | 'pos' | 'pos-network' | 'geidea' | 'apple-pay' | 'apple_pay' | 'mada' | 'alinma' | 'rajhi' | 'ur' | 'barq' | 'neoleap' | 'neoleap-apple-pay' | 'copy-card' | 'stc-pay';
 
 export interface PaymentMethodInfo {
   id: PaymentMethod;
@@ -2384,6 +2767,10 @@ export interface IRawItem extends Document {
   maxStockLevel?: number;
   supplierId?: string;
   isActive: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -2420,6 +2807,10 @@ export interface ISupplier extends Document {
   paymentTerms?: string;
   notes?: string;
   isActive: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -2485,6 +2876,10 @@ export interface IStockTransfer extends Document {
   approvalDate?: Date;
   completionDate?: Date;
   notes?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -2538,6 +2933,10 @@ export interface IPurchaseInvoice extends Document {
   approvedBy?: string;
   notes?: string;
   attachmentUrl?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -2581,6 +2980,10 @@ export interface IRecipeItem extends Document {
   quantity: number;
   unit: string;
   notes?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -2616,6 +3019,10 @@ export interface IRecipe extends Document {
     unitCost: number;
     totalCost: number;
   }>;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -2655,6 +3062,10 @@ export interface IStockAlert extends Document {
   isResolved: number;
   resolvedBy?: string;
   resolvedAt?: Date;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -2687,6 +3098,10 @@ export interface IStockMovement extends Document {
   referenceId?: string;
   notes?: string;
   createdBy: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -2984,12 +3399,21 @@ export const insertProductAddonSchema = z.object({
   id: z.string(),
   nameAr: z.string(),
   nameEn: z.string().optional(),
-  category: z.enum(['sugar', 'milk', 'shot', 'syrup', 'topping', 'size', 'other']),
+  category: z.enum(['sugar', 'milk', 'shot', 'syrup', 'topping', 'size', 'other', 'flavor', 'Flavor', 'Shot']),
   price: z.number().min(0),
-  isAvailable: z.number().optional(),
+  isAvailable: z.number().optional().default(1),
+  isFree: z.number().optional(),
   rawItemId: z.string().optional(),
   quantityPerUnit: z.number().optional(),
   unit: z.string().optional(),
+  orderIndex: z.number().optional(),
+  sku: z.string().optional(),
+  imageUrl: z.string().optional(),
+  isAddonDrink: z.boolean().optional(),
+  isIndependentProduct: z.boolean().optional(),
+  linkedCoffeeItemId: z.string().optional(),
+  inventoryRawItemId: z.string().optional(),
+  linkedRawItemId: z.string().optional(),
 });
 
 export type ProductAddon = IProductAddon;
@@ -3017,6 +3441,10 @@ export interface IProductReview extends Document {
   adminReplyDate?: Date;
   isVerifiedPurchase: number;
   helpful: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3051,6 +3479,10 @@ export interface IReferral extends Document {
   referralBonus: number;
   referralDate: Date;
   completionDate?: Date;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -3082,6 +3514,10 @@ export interface INotification extends Document {
   type: 'order_update' | 'referral' | 'loyalty' | 'promotion' | 'system';
   relatedOrderId?: string;
   isRead: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -3182,6 +3618,10 @@ export interface IAccountingSnapshot extends Document {
   approvedBy?: string;
   approvalDate?: Date;
   isApproved: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3308,6 +3748,10 @@ export interface IFiscalPeriod extends Document {
   status: 'open' | 'closed' | 'locked';
   closedBy?: string;
   closedAt?: Date;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3340,6 +3784,10 @@ export interface ICostCenter extends Document {
   parentId?: string;
   branchId?: string;
   isActive: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3386,6 +3834,10 @@ export interface IAccount extends Document {
   description?: string;
   level: number;
   path: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3456,6 +3908,10 @@ export interface IJournalEntry extends Document {
   postedBy?: string;
   postedAt?: Date;
   createdBy: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3512,6 +3968,10 @@ export interface ITaxRate extends Document {
   isDefault: number;
   isActive: number;
   accountId?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3598,6 +4058,10 @@ export interface IInvoice extends Document {
   cancellationReason?: string;
   linkedInvoiceId?: string;
   journalEntryId?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3711,6 +4175,10 @@ export interface IExpenseErp extends Document {
   isRecurring: number;
   recurringFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
   nextRecurringDate?: Date;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3786,6 +4254,10 @@ export interface IVendor extends Document {
   contactPhone?: string;
   notes?: string;
   isActive: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3844,6 +4316,10 @@ export interface IPaymentRecord extends Document {
   status: 'pending' | 'completed' | 'bounced' | 'cancelled';
   journalEntryId?: string;
   processedBy: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3897,6 +4373,10 @@ export interface IBankStatement extends Document {
   reconciledBy?: string;
   reconciledAt?: Date;
   uploadedBy: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -3944,6 +4424,10 @@ export interface IBankTransaction extends Document {
   matchedPaymentId?: string;
   matchedJournalEntryId?: string;
   matchConfidence?: number;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -4156,6 +4640,10 @@ export interface IDeliveryIntegration extends Document {
   fixedFee: number;
   settings?: Record<string, any>;
   lastSyncAt?: Date;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -4224,6 +4712,10 @@ export interface IDeliveryZone extends Document {
     openTime: string;
     closeTime: string;
   }[];
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -4300,6 +4792,10 @@ export interface IDeliveryDriver extends Document {
   workingZoneIds?: string[];
   shiftStart?: string;
   shiftEnd?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -4393,6 +4889,10 @@ export interface IDeliveryOrder extends Document {
   customerFeedback?: string;
   proofOfDelivery?: string;
   signatureUrl?: string;
+  carType?: string;
+  carColor?: string;
+  plateNumber?: string;
+  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -4560,16 +5060,3 @@ export type InsertDeliveryDriver = z.infer<typeof insertDeliveryDriverSchema>;
 export type DeliveryDriver = IDeliveryDriver;
 export type InsertDeliveryOrder = z.infer<typeof insertDeliveryOrderSchema>;
 export type DeliveryOrder = IDeliveryOrder;
-
-// Kitchen Department types
-export type KitchenDepartment = IKitchenDepartment;
-export const insertKitchenDepartmentSchema = z.object({
-  nameAr: z.string().min(1),
-  nameEn: z.string().optional(),
-  description: z.string().optional(),
-  type: z.enum(['drinks', 'food', 'desserts', 'other']),
-  assignedEmployees: z.array(z.string()).optional(),
-  categories: z.array(z.string()).optional(),
-  sortOrder: z.number().optional(),
-});
-export type InsertKitchenDepartment = z.infer<typeof insertKitchenDepartmentSchema>;

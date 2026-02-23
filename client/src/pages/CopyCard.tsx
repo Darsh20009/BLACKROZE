@@ -61,7 +61,7 @@ export default function CopyCard() {
     enabled: !!customer?.phone,
     staleTime: 0,
     refetchOnWindowFocus: true,
-    refetchInterval: 5000, // Refetch every 5 seconds to get updated stamp data
+    refetchInterval: 30000, // Refetch every 30 seconds to get updated stamp data
   });
 
   const [activeCard, setActiveCard] = useState<LoyaltyCard | null>(null);
@@ -80,7 +80,7 @@ export default function CopyCard() {
     enabled: !!customer?.id,
     staleTime: 0,
     refetchOnWindowFocus: true,
-    refetchInterval: 5000, // Refetch every 5 seconds to get updated order data
+    refetchInterval: 30000, // Refetch every 30 seconds to get updated order data
   });
 
   useEffect(() => {
@@ -265,10 +265,10 @@ export default function CopyCard() {
     ctx.fillStyle = '#4a3728';
     ctx.font = 'bold 48px Cairo, Arial';
     ctx.textAlign = 'right';
-    ctx.fillText('BLACK ROSE', canvas.width - 50, 70);
+    ctx.fillText('CLUNY CAFE', canvas.width - 50, 70);
     ctx.font = '24px Georgia, serif';
     ctx.fillStyle = '#6b4f3c';
-    ctx.fillText('BLACK ROSE Loyalty', canvas.width - 50, 105);
+    ctx.fillText('CLUNY CAFE Loyalty', canvas.width - 50, 105);
     
     const tierColor: Record<string, string> = { bronze: '#cd7f32', silver: '#c0c0c0', gold: '#ffd700', platinum: '#e5e4e2' };
     ctx.fillStyle = tierColor[tier] || tierColor.bronze;
@@ -336,7 +336,7 @@ export default function CopyCard() {
             ctx.fillText('اعرض الباركود أو QR كود على الكاشير للحصول على نقاطك', canvas.width / 2, 980);
             
             const link = document.createElement('a');
-            link.download = 'blackrose-loyalty-' + (customer?.phone || 'card') + '.png';
+            link.download = 'cluny-loyalty-' + (customer?.phone || 'card') + '.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
             
@@ -430,7 +430,7 @@ export default function CopyCard() {
                           <Coffee className="w-4 h-4 md:w-5 md:h-5 text-white" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-base md:text-lg font-black tracking-tighter text-blue-100 leading-none">BLACK ROSE</span>
+                          <span className="text-base md:text-lg font-black tracking-tighter text-blue-100 leading-none">CLUNY CAFE</span>
                           <span className="text-[6px] md:text-[7px] uppercase tracking-[0.3em] text-blue-300/90 font-bold">LOYALTY PREMIUM</span>
                         </div>
                       </div>

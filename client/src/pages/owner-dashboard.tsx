@@ -433,7 +433,7 @@ export default function OwnerDashboard() {
                           </thead>
                           <tbody>
                             {collectionData.data.map((item, index) => (
-                              <tr key={item.id || item._id || index} className="border-b border-primary/10">
+                              <tr key={item.id || index} className="border-b border-primary/10">
                                 {Object.entries(item).slice(0, 6).map(([key, value]) => (
                                   <td key={key} className="py-2 px-3 text-white">
                                     {typeof value === 'object' 
@@ -445,9 +445,9 @@ export default function OwnerDashboard() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleDeleteRecord(selectedCollection, item.id || item._id)}
+                                    onClick={() => handleDeleteRecord(selectedCollection, item.id)}
                                     className="text-red-500 hover:text-red-400 p-1 h-auto"
-                                    data-testid={`button-delete-record-${item.id || item._id}`}
+                                    data-testid={`button-delete-record-${item.id}`}
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>

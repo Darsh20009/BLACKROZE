@@ -9,6 +9,7 @@ import {
   Coffee, Milk, Droplets, Plus, Minus, Check, Loader2,
   CandyOff, Candy, RotateCcw, Star
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { CoffeeItem } from "@shared/schema";
 
 interface ProductAddon {
@@ -59,14 +60,14 @@ interface DrinkCustomizationDialogProps {
   initialQuantity?: number;
 }
 
-const CATEGORY_INFO: Record<string, { name: string; icon: typeof Coffee; description: string }> = {
-  sugar: { name: "السكر", icon: Candy, description: "اختر مستوى السكر" },
-  milk: { name: "الحليب", icon: Milk, description: "اختر نوع الحليب" },
-  shot: { name: "شوت القهوة", icon: Coffee, description: "إضافة شوت إسبريسو" },
-  syrup: { name: "النكهات", icon: Droplets, description: "إضافة نكهة" },
-  topping: { name: "الإضافات", icon: Plus, description: "إضافات إضافية" },
-  size: { name: "الحجم", icon: Coffee, description: "اختر الحجم" },
-  other: { name: "أخرى", icon: Plus, description: "خيارات أخرى" },
+const CATEGORY_INFO: Record<string, { nameAr: string; nameEn: string; icon: typeof Coffee; descAr: string; descEn: string }> = {
+  sugar: { nameAr: "السكر", nameEn: "Sugar", icon: Candy, descAr: "اختر مستوى السكر", descEn: "Choose sugar level" },
+  milk: { nameAr: "الحليب", nameEn: "Milk", icon: Milk, descAr: "اختر نوع الحليب", descEn: "Choose milk type" },
+  shot: { nameAr: "شوت القهوة", nameEn: "Espresso Shot", icon: Coffee, descAr: "إضافة شوت إسبريسو", descEn: "Add espresso shot" },
+  syrup: { nameAr: "النكهات", nameEn: "Flavors", icon: Droplets, descAr: "إضافة نكهة", descEn: "Add flavor" },
+  topping: { nameAr: "الإضافات", nameEn: "Toppings", icon: Plus, descAr: "إضافات إضافية", descEn: "Extra toppings" },
+  size: { nameAr: "الحجم", nameEn: "Size", icon: Coffee, descAr: "اختر الحجم", descEn: "Choose size" },
+  other: { nameAr: "أخرى", nameEn: "Other", icon: Plus, descAr: "خيارات أخرى", descEn: "Other options" },
 };
 
 export default function DrinkCustomizationDialog({
@@ -83,6 +84,8 @@ export default function DrinkCustomizationDialog({
   const [notes, setNotes] = useState("");
   const [selectedVariant, setSelectedVariant] = useState<CoffeeItem | null>(coffeeItem);
   const activeItem = selectedVariant || coffeeItem;
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
@@ -288,7 +291,7 @@ export default function DrinkCustomizationDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-right">
             <Coffee className="w-5 h-5" />
-            تخصيص {activeItem.nameAr}
+            {isAr ? `تخصيص ${activeItem.nameAr}` : `Customize ${activeItem.nameEn || activeItem.nameAr}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -303,8 +306,8 @@ export default function DrinkCustomizationDialog({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Star className="w-4 h-4" />
-                    <span>النوع</span>
-                    <Badge variant="outline" className="text-xs">اختر واحد</Badge>
+                    <span>{isAr ? "النوع" : "Type"}</span>
+                    <Badge variant="outline" className="text-xs">{isAr ? "اختر واحد" : "Select one"}</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {variants.map(v => (
@@ -320,8 +323,8 @@ export default function DrinkCustomizationDialog({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <p className="text-sm font-medium">{v.nameAr}</p>
-                            <p className="text-xs text-primary">{v.price} ر.س</p>
+                            <p className="text-sm font-medium">{isAr ? v.nameAr : v.nameEn || v.nameAr}</p>
+                            <p className="text-xs text-primary">{v.price} {isAr ? "ر.س" : "SAR"}</p>
                           </div>
                           {activeItem.id === v.id && (
                             <Check className="w-4 h-4 text-primary" />
@@ -338,8 +341,8 @@ export default function DrinkCustomizationDialog({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Coffee className="w-4 h-4" />
-                    <span>الحجم</span>
-                    <Badge variant="outline" className="text-xs">اختر واحد</Badge>
+                    <span>{isAr ? "الحجم" : "Size"}</span>
+                    <Badge variant="outline" className="text-xs">{isAr ? "اختر واحد" : "Select one"}</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {activeItem.availableSizes.map(size => (
@@ -355,8 +358,8 @@ export default function DrinkCustomizationDialog({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <p className="text-sm font-medium">{size.nameAr}</p>
-                            <p className="text-xs text-primary">{size.price} ر.س</p>
+                            <p className="text-sm font-medium">{isAr ? size.nameAr : (size as any).nameEn || size.nameAr}</p>
+                            <p className="text-xs text-primary">{size.price} {isAr ? "ر.س" : "SAR"}</p>
                           </div>
                           {selectedSize === size.nameAr && (
                             <Check className="w-4 h-4 text-primary" />
@@ -378,9 +381,9 @@ export default function DrinkCustomizationDialog({
                   <div key={category} className="space-y-2">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <CategoryIcon className="w-4 h-4" />
-                      <span>{categoryInfo.name}</span>
+                      <span>{isAr ? categoryInfo.nameAr : categoryInfo.nameEn}</span>
                       {isSingleSelect && (
-                        <Badge variant="outline" className="text-xs">اختر واحد</Badge>
+                        <Badge variant="outline" className="text-xs">{isAr ? "اختر واحد" : "Select one"}</Badge>
                       )}
                     </div>
                     
@@ -404,9 +407,9 @@ export default function DrinkCustomizationDialog({
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
-                                <p className="text-sm font-medium">{addon.nameAr}</p>
+                                <p className="text-sm font-medium">{isAr ? addon.nameAr : addon.nameEn || addon.nameAr}</p>
                                 {addon.price > 0 && (
-                                  <p className="text-xs text-primary">+{addon.price} ر.س</p>
+                                  <p className="text-xs text-primary">+{addon.price} {isAr ? "ر.س" : "SAR"}</p>
                                 )}
                               </div>
                               
@@ -465,7 +468,7 @@ export default function DrinkCustomizationDialog({
               {Object.keys(groupedAddons).length === 0 && (
                 <div className="text-center py-4 text-muted-foreground">
                   <CandyOff className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>لا توجد خيارات تخصيص متاحة لهذا المشروب</p>
+                  <p>{isAr ? "لا توجد خيارات تخصيص متاحة لهذا المشروب" : "No customization options available for this drink"}</p>
                 </div>
               )}
             </div>
@@ -474,7 +477,7 @@ export default function DrinkCustomizationDialog({
 
         <div className="space-y-3 pt-3 border-t">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">الكمية</span>
+            <span className="text-sm text-muted-foreground">{isAr ? "الكمية" : "Quantity"}</span>
             <div className="flex items-center gap-2">
               <Button
                 size="icon"
@@ -497,22 +500,22 @@ export default function DrinkCustomizationDialog({
           </div>
 
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">سعر المشروب</span>
-            <span>{basePrice.toFixed(2)} ر.س</span>
+            <span className="text-muted-foreground">{isAr ? "سعر المشروب" : "Drink Price"}</span>
+            <span>{basePrice.toFixed(2)} {isAr ? "ر.س" : "SAR"}</span>
           </div>
           
           {addonsPrice > 0 && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">الإضافات</span>
-              <span className="text-primary">+{addonsPrice.toFixed(2)} ر.س</span>
+              <span className="text-muted-foreground">{isAr ? "الإضافات" : "Addons"}</span>
+              <span className="text-primary">+{addonsPrice.toFixed(2)} {isAr ? "ر.س" : "SAR"}</span>
             </div>
           )}
 
           <Separator />
           
           <div className="flex items-center justify-between font-semibold">
-            <span>الإجمالي</span>
-            <span className="text-lg" data-testid="text-total-price">{totalItemPrice.toFixed(2)} ر.س</span>
+            <span>{isAr ? "الإجمالي" : "Total"}</span>
+            <span className="text-lg" data-testid="text-total-price">{totalItemPrice.toFixed(2)} {isAr ? "ر.س" : "SAR"}</span>
           </div>
         </div>
 
@@ -524,14 +527,14 @@ export default function DrinkCustomizationDialog({
             data-testid="button-reset-default"
           >
             <RotateCcw className="w-4 h-4" />
-            إعادة للافتراضي
+            {isAr ? "إعادة للافتراضي" : "Reset to Default"}
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleCancel} data-testid="button-cancel">
-              إلغاء
+              {isAr ? "إلغاء" : "Cancel"}
             </Button>
             <Button onClick={handleConfirm} data-testid="button-confirm">
-              إضافة للطلب
+              {isAr ? "إضافة للطلب" : "Add to Order"}
             </Button>
           </div>
         </DialogFooter>

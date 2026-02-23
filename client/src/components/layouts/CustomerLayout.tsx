@@ -1,10 +1,13 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, ShoppingCart, User, CreditCard, ClipboardList } from "lucide-react";
+import { Home, ShoppingCart, User, CreditCard, ClipboardList, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/cart-store";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
+
+import { CustomerFooter } from "@/components/customer-footer";
+import { useNotifications } from "@/hooks/use-notifications";
 
 interface CustomerLayoutProps {
   children: ReactNode;
@@ -22,17 +25,45 @@ export function CustomerLayout({
   const [location] = useLocation();
   const { cartItems, showCart } = useCartStore();
   const { t, i18n } = useTranslation();
+  const [customerId, setCustomerId] = useState<string | undefined>();
+  
+  useEffect(() => {
+    const stored = localStorage.getItem("currentCustomer");
+    if (stored) {
+      try {
+        const customer = JSON.parse(stored);
+        setCustomerId(customer.id || customer._id);
+      } catch (e) {}
+    }
+  }, []);
+
+  const { requestPermission, permission, isSubscribed } = useNotifications({
+    userType: 'customer',
+    userId: customerId,
+    autoSubscribe: true,
+  });
+
+  useEffect(() => {
+    if (customerId && permission === 'default') {
+      const timer = setTimeout(() => {
+        requestPermission();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [customerId, permission, requestPermission]);
+
   const cartItemCount = cartItems.reduce((acc: number, item: { quantity: number }) => acc + item.quantity, 0);
 
   const navItems = [
     { path: "/menu", icon: Home, label: t("nav.menu") || "القائمة", testId: "nav-menu" },
+    { path: "/my-offers", icon: Gift, label: t("nav.my_offers") || "عروضي", testId: "nav-my-offers" },
     { path: "/my-orders", icon: ClipboardList, label: t("nav.my_orders") || "طلباتي", testId: "nav-my-orders" },
-    { path: "/my-card", icon: CreditCard, label: t("nav.my_card") || "بطاقتي", testId: "nav-my-card" },
+    { path: "/my-card", icon: CreditCard, label: t("nav.my_card") || "محفظتي", testId: "nav-my-card" },
     { path: "/profile", icon: User, label: t("nav.profile") || "حسابي", testId: "nav-profile" },
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-background flex flex-col font-ibm-arabic" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       {showHeader && (
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           <div className="container flex h-14 items-center justify-between gap-2">
@@ -62,30 +93,7 @@ export function CustomerLayout({
         {children}
       </main>
 
-      <footer className="bg-muted/30 py-8 border-t mb-16">
-        <div className="container px-4 flex flex-col items-center gap-6">
-          <a 
-            href="https://qr.saudibusiness.gov.sa/viewcr?nCrNumber=9AhyCS491ZPTmJxSxD96YA==" 
-            target="_blank" 
-            rel="noreferrer" 
-            className="flex flex-col items-center gap-2 hover:scale-110 transition-transform text-center"
-          >
-            <img 
-              src="https://assets.zid.store/themes/f9f0914d-3c58-493b-bd83-260ed3cb4e82/business_center.png" 
-              loading="lazy" 
-              alt="Saudi Business Center Certification" 
-              className="h-12 w-auto object-contain" 
-            />
-            <div className="text-xs text-muted-foreground font-semibold">{t("legal.cr")}</div>
-          </a>
-          <div className="flex flex-col items-center gap-1">
-            <div className="text-sm font-bold text-primary">{t("legal.vat")}</div>
-          </div>
-          <div className="text-[10px] text-muted-foreground/60 text-center">
-            &copy; {new Date().getFullYear()} BLACK ROSE. {t("legal.rights")}
-          </div>
-        </div>
-      </footer>
+      <CustomerFooter />
 
       {showNav && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">

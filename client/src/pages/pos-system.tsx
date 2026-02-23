@@ -1,2318 +1,674 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { db } from "@/lib/db/dexie-db";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  ClipboardList,
-  Coffee, ShoppingBag, User, Phone, Trash2, Plus, Minus, ArrowRight, 
-  Check, Search, X, Printer, MonitorSmartphone, 
-  Wifi, WifiOff, FileText, CreditCard, Banknote, Smartphone,
-  PauseCircle, PlayCircle, Clock, RotateCcw, Percent, Tag, 
-  Calculator, Grid3X3, ChevronLeft, ChevronRight,
-  Loader2, CheckCircle, Zap, Building, Users, Edit3,
-  Receipt, Wallet, QrCode, SplitSquareVertical, AlertTriangle,
-  RefreshCw, Archive, MoreVertical, MessageSquare, ScanLine, Camera, Gift,
-  Table2, Lock, Unlock, Bell, BellOff, Volume2, VolumeX, Eye, XCircle,
-  Columns2
-} from "lucide-react";
-import { playNotificationSound } from "@/lib/notification-sounds";
 import { useOrderWebSocket } from "@/lib/websocket";
+import { 
+  Coffee, ShoppingBag, Trash2, Plus, Minus, Search, 
+  CreditCard, ChevronLeft, ChevronRight, XCircle, 
+  Volume2, VolumeX, ClipboardList, Grid3X3, Tag, 
+  Columns2, ArrowRight, Printer, CheckCircle, 
+  Clock, Check, X, AlertTriangle, MessageSquare, 
+  Archive, RefreshCw, Wifi, WifiOff, Loader2,
+  Navigation, SplitSquareVertical, Banknote, Gift,
+  Lock, Bell, BellOff, MonitorSmartphone, ScanLine,
+  PauseCircle, Receipt, Settings
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/use-notifications";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { CoffeeItem, Order, Table, Employee } from "@shared/schema";
+import { 
+  printSimpleReceipt, 
+  printTaxInvoice, 
+  printKitchenOrder 
+} from "@/lib/print-utils";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { LoadingState } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
 
-interface TableData {
-  id: string;
-  _id?: string;
-  tableNumber: string;
-  seats: number;
-  capacity?: number;
-  isOccupied: boolean | number;
-  isActive: boolean | number;
-}
-import BarcodeScanner from "@/components/barcode-scanner";
-import DrinkCustomizationDialog, { DrinkCustomization, SelectedAddon } from "@/components/drink-customization-dialog";
-import { printTaxInvoice, printSimpleReceipt } from "@/lib/print-utils";
-import { LoadingState, EmptyState } from "@/components/ui/states";
-import type { Employee, CoffeeItem, PaymentMethod, LoyaltyCard } from "@shared/schema";
+type OrderType = "dine_in" | "takeaway" | "delivery" | "car_pickup";
+type PaymentMethod = "cash" | "card" | "qahwa-card";
 
-interface OrderItem {
-  lineItemId: string;
-  coffeeItem: CoffeeItem;
-  quantity: number;
-  itemDiscount?: number;
-  discountType?: 'fixed' | 'percentage';
-  notes?: string;
-  customization?: DrinkCustomization;
-}
-
-const generateLineItemId = () => `line-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-interface ParkedOrder {
-  id: string;
-  name: string;
-  items: OrderItem[];
-  customerName: string;
-  customerPhone: string;
-  customerEmail?: string;
-  tableNumber?: string;
-  createdAt: string;
-  note?: string;
-  priority?: 'normal' | 'urgent';
-  appliedDiscount?: { code: string; percentage: number; reason: string } | null;
-  invoiceDiscount?: number;
-}
-
-interface SplitPayment {
-  method: PaymentMethod;
-  amount: number;
-}
-
-interface PaymentMethodInfo {
-  id: PaymentMethod;
-  name: string;
-  nameEn: string;
-  icon: typeof CreditCard;
-  color: string;
-  bgColor: string;
-  enabled: boolean;
-}
-
-const PAYMENT_METHODS: PaymentMethodInfo[] = [
-  { id: "cash", name: "نقدي", nameEn: "Cash", icon: Banknote, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "pos-network", name: "شبكة", nameEn: "Network (POS)", icon: CreditCard, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "copy-card", name: "بطاقة كوبي", nameEn: "Copy Card", icon: CreditCard, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "pos", name: "مدى", nameEn: "Mada", icon: CreditCard, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "apple_pay", name: "Apple Pay", nameEn: "Apple Pay", icon: Smartphone, color: "text-white", bgColor: "bg-black", enabled: true },
-  { id: "alinma", name: "Alinma Pay", nameEn: "Alinma", icon: Wallet, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "rajhi", name: "الراجحي", nameEn: "Al Rajhi", icon: Building, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "ur", name: "Ur Pay", nameEn: "Ur Pay", icon: Zap, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "barq", name: "Barq", nameEn: "Barq", icon: Zap, color: "text-primary", bgColor: "bg-primary", enabled: true },
-  { id: "qahwa-card", name: "بطاقة قهوة", nameEn: "Qahwa Card", icon: Coffee, color: "text-primary", bgColor: "bg-primary", enabled: true },
+const ORDER_TYPES = [
+  { id: "dine_in", name: "محلي", nameEn: "Dine-in", icon: Coffee },
+  { id: "takeaway", name: "سفري", nameEn: "Takeaway", icon: ShoppingBag },
+  { id: "car_pickup", name: "توصيل للسيارة", nameEn: "Car Pickup", icon: Navigation },
+  { id: "delivery", name: "توصيل", nameEn: "Delivery", icon: ShoppingBag },
 ];
 
-
-type OrderType = 'dine_in' | 'takeaway' | 'delivery';
-
-interface OrderTypeInfo {
-  id: OrderType;
-  name: string;
-  nameEn: string;
-  icon: typeof Coffee;
-  color: string;
-  bgColor: string;
-}
-
-const ORDER_TYPES: OrderTypeInfo[] = [
-  { id: "dine_in", name: "محلي", nameEn: "Dine-in", icon: Users, color: "text-primary", bgColor: "bg-primary" },
-  { id: "takeaway", name: "سفري", nameEn: "Takeaway", icon: ShoppingBag, color: "text-primary", bgColor: "bg-primary" },
-  { id: "delivery", name: "توصيل", nameEn: "Delivery", icon: Zap, color: "text-primary", bgColor: "bg-primary" },
+const PAYMENT_METHODS = [
+  { id: "cash", name: "كاش", icon: Banknote },
+  { id: "card", name: "شبكة", icon: CreditCard },
+  { id: "qahwa-card", name: "بطاقة قهوة", icon: Gift },
 ];
 
-export default function POSSystem() {
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: "كاش",
+  card: "شبكة",
+  "qahwa-card": "بطاقة قهوة",
+};
+
+export default function PosSystem() {
   const [, setLocation] = useLocation();
+  const employee = (() => {
+    try {
+      const data = localStorage.getItem("currentEmployee");
+      return data ? JSON.parse(data) as Employee : null;
+    } catch { return null; }
+  })();
   const { toast } = useToast();
+  const { requestPermission: requestPushPermission } = useNotifications({
+    userType: 'employee',
+    userId: employee?.id?.toString(),
+    branchId: employee?.branchId?.toString(),
+    autoSubscribe: true,
+  });
   
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [orderItems, setOrderItems] = useState<any[]>([]);
   const [orderType, setOrderType] = useState<OrderType>("dine_in");
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [tableNumber, setTableNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerId, setCustomerId] = useState<string | null>(null);
-  const [customerPoints, setCustomerPoints] = useState(0);
-  const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
-  const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
-  const [showTableSelect, setShowTableSelect] = useState(false);
-  const [isSplitView, setIsSplitView] = useState(false);
-  const [tableNumber, setTableNumber] = useState("");
+  const [splitViewMode, setSplitViewMode] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncing, setSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
-  const [posConnected, setPosConnected] = useState(true);
-  const [parkedOrders, setParkedOrders] = useState<ParkedOrder[]>([]);
-  const [showParkedOrders, setShowParkedOrders] = useState(false);
-  const [invoiceDiscount, setInvoiceDiscount] = useState(0);
-  const [invoiceDiscountType, setInvoiceDiscountType] = useState<'fixed' | 'percentage'>('percentage');
-  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentage: number; reason: string } | null>(null);
-  const [showSplitPayment, setShowSplitPayment] = useState(false);
-  const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
-  const [showParkDialog, setShowParkDialog] = useState(false);
-  const [parkOrderNote, setParkOrderNote] = useState("");
-  const [showDiscountDialog, setShowDiscountDialog] = useState(false);
-  const [itemDiscountId, setItemDiscountId] = useState<string | null>(null);
-  const [itemDiscountAmount, setItemDiscountAmount] = useState(0);
-  const [itemDiscountType, setItemDiscountType] = useState<'fixed' | 'percentage'>('percentage');
-  const [discountCode, setDiscountCode] = useState("");
-  const [cashDrawerOpen, setCashDrawerOpen] = useState(false);
-  const [currentSplitAmount, setCurrentSplitAmount] = useState(0);
-  const [currentSplitMethod, setCurrentSplitMethod] = useState<PaymentMethod>("cash");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
-  const [cashReceived, setCashReceived] = useState<number>(0);
-  const [changeAmount, setChangeAmount] = useState<number>(0);
-
-  useEffect(() => {
-    const total = parseFloat(calculateTotal());
-    if (paymentMethod === 'cash' && cashReceived >= total) {
-      setChangeAmount(cashReceived - total);
-    } else {
-      setChangeAmount(0);
-    }
-  }, [cashReceived, paymentMethod, orderItems, appliedDiscount, invoiceDiscount]);
-
-  // Background sync logic
-
-  // Background Sync Logic (Outbox Pattern)
-  useEffect(() => {
-    let isMounted = true;
-    const syncInterval = setInterval(async () => {
-      if (isOnline && !syncing) {
-        const pendingItems = await db.syncQueue.where('status').equals('pending').toArray();
-        if (pendingItems.length > 0) {
-          if (isMounted) setSyncing(true);
-          
-          for (const item of pendingItems) {
-            try {
-              if (item.type === 'CREATE_ORDER') {
-                const response = await fetch("/api/orders", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(item.payload),
-                });
-                
-                if (response.ok) {
-                  // Fix: 'synced' is not allowed in type, use something else or delete
-                  await db.syncQueue.delete(item.id!);
-                  // Also update invoice status
-                  const offlineId = (item.payload as any).offlineId;
-                  if (offlineId) {
-                    await db.invoices.where('tempId').equals(offlineId).modify({ status: 'synced' as any });
-                  }
-                } else {
-                  await db.syncQueue.update(item.id!, { retryCount: (item.retryCount || 0) + 1 });
-                }
-              }
-            } catch (error) {
-              console.error("Sync error for item", item.id, error);
-            }
-          }
-          
-          if (isMounted) {
-            setSyncing(false);
-            setLastSyncTime(Date.now());
-            localStorage.setItem('lastSyncTime', Date.now().toString());
-            queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-          }
-        }
-      }
-    }, 15000); // Check every 15 seconds
-
-    return () => {
-      isMounted = false;
-      clearInterval(syncInterval);
-    };
-  }, [isOnline, syncing, queryClient]);
-  const [syncingOffline, setSyncingOffline] = useState(false);
-  
-  const [lastOrder, setLastOrder] = useState<any>(null);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [notificationAudio] = useState(new Audio("/notification.mp3"));
-  const [showLiveOrders, setShowLiveOrders] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(() => {
-    const saved = localStorage.getItem("pos_sound_enabled");
-    return saved !== "false";
-  });
-  const [alertsEnabled, setAlertsEnabled] = useState(() => {
-    const saved = localStorage.getItem("pos_alerts_enabled");
-    return saved !== "false";
-  });
-  const [splitViewMode, setSplitViewMode] = useState(false);
-  const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
-  const [activeAlerts, setActiveAlerts] = useState<any[]>([]);
-
-  // Sound loop for new orders
-  useEffect(() => {
-    let soundInterval: any;
-    if (soundEnabled && activeAlerts.length > 0) {
-      playNotificationSound('newOrder', 0.7);
-      soundInterval = setInterval(() => {
-        playNotificationSound('newOrder', 0.7);
-      }, 5000); // Repeat every 5 seconds
-    }
-    return () => clearInterval(soundInterval);
-  }, [soundEnabled, activeAlerts.length]);
-
-  // Fetch live orders for POS notification and control
-  const { data: liveOrders = [] } = useQuery<any[]>({
-    queryKey: ["/api/orders/live"],
-    queryFn: async () => {
-      const res = await fetch("/api/orders");
-      if (!res.ok) return [];
-      return res.json();
-    },
-    refetchInterval: 5000,
+  const [showOrdersPanel, setShowOrdersPanel] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [lastOrder, setLastOrder] = useState<any>(null);
+  const [posTerminalConnected, setPosTerminalConnected] = useState(() => {
+    return localStorage.getItem("pos-terminal-connected") === "true";
   });
+  const [showTablesDialog, setShowTablesDialog] = useState(false);
+  const [showOpenBillsDialog, setShowOpenBillsDialog] = useState(false);
+  const [selectedTableForBill, setSelectedTableForBill] = useState<any>(null);
+  const [billPaymentMethod, setBillPaymentMethod] = useState<PaymentMethod>("cash");
+  const [showPOSSettings, setShowPOSSettings] = useState(false);
+  const [autoPrint, setAutoPrint] = useState(() => localStorage.getItem("pos-auto-print") !== "false");
+  const [showVatLabel, setShowVatLabel] = useState(() => localStorage.getItem("pos-show-vat-label") === "true");
 
-  // Track previous order count to play sound
-  const [prevOrderCount, setPrevOrderCount] = useState(0);
-  useEffect(() => {
-    if (liveOrders.length > prevOrderCount && prevOrderCount > 0) {
-      const newCount = liveOrders.length - prevOrderCount;
-      setNewOrdersCount(prev => prev + newCount);
-      
-      if (soundEnabled) {
-        playNotificationSound('newOrder', 0.7);
-      }
-      
-      if (alertsEnabled) {
-        toast({
-          title: "طلب جديد!",
-          description: `وصل ${newCount > 1 ? newCount + ' طلبات جديدة' : 'طلب جديد'} إلى النظام`,
-          className: "bg-primary text-primary-foreground",
-        });
-      }
-    }
-    setPrevOrderCount(liveOrders.length);
-  }, [liveOrders.length, prevOrderCount, toast, soundEnabled, alertsEnabled]);
-
-  // WebSocket for real-time order updates
   const { isConnected: wsConnected } = useOrderWebSocket({
-    clientType: 'pos',
-    branchId: employee?.branchId,
+    clientType: "pos",
+    branchId: employee?.branchId?.toString(),
     onNewOrder: (order) => {
-      setActiveAlerts(prev => [...prev, order]);
-      if (alertsEnabled) {
-        toast({
-          title: "طلب جديد!",
-          description: `طلب #${order?.orderNumber || 'جديد'} - ${order?.customerInfo?.customerName || 'عميل'}`,
-          className: "bg-primary text-primary-foreground",
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+      setNewOrdersCount(prev => prev + 1);
+      if (soundEnabled) {
+        import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
+          const isOnline = order?.orderType === 'delivery' || order?.orderType === 'takeaway' || !order?.employeeId;
+          if (isOnline) {
+            playNotificationSound('onlineOrderVoice', 1.0);
+          } else {
+            playNotificationSound('newOrder', 1.0);
+          }
         });
       }
-      setNewOrdersCount(prev => prev + 1);
-      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+      toast({
+        title: "طلب جديد! 🔔",
+        description: `طلب رقم #${order?.orderNumber || ''} بقيمة ${order?.totalAmount || 0} ر.س`,
+      });
     },
     onOrderUpdated: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
     },
-    enabled: !!employee?.branchId
+    enabled: true,
   });
 
-  // Save preferences to localStorage
   useEffect(() => {
-    localStorage.setItem("pos_sound_enabled", String(soundEnabled));
-  }, [soundEnabled]);
-  
-  useEffect(() => {
-    localStorage.setItem("pos_alerts_enabled", String(alertsEnabled));
-  }, [alertsEnabled]);
-  
-  const [isCheckingCustomer, setIsCheckingCustomer] = useState(false);
-  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
-  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState(false);
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [showCustomizationDialog, setShowCustomizationDialog] = useState(false);
-  const [customizingItem, setCustomizingItem] = useState<CoffeeItem | null>(null);
-  const [editingLineItemId, setEditingLineItemId] = useState<string | null>(null);
-  const [usedFreeDrinks, setUsedFreeDrinks] = useState(0);
-  const [offlineOrders, setOfflineOrders] = useState<any[]>([]);
-  
-  const [categoryPage, setCategoryPage] = useState(0);
-  const categoriesPerPage = 6;
-  
+    localStorage.setItem("pos-terminal-connected", String(posTerminalConnected));
+  }, [posTerminalConnected]);
+
+  useEffect(() => { localStorage.setItem("pos-auto-print", String(autoPrint)); }, [autoPrint]);
+  useEffect(() => { localStorage.setItem("pos-show-vat-label", String(showVatLabel)); }, [showVatLabel]);
 
   useEffect(() => {
-    const loadEmployee = async () => {
-      const storedEmployee = localStorage.getItem("currentEmployee");
-      if (storedEmployee) {
-        try {
-          const parsed = JSON.parse(storedEmployee);
-          if (!parsed._id && parsed.id) parsed._id = parsed.id;
-          
-          if (!parsed.branchId) {
-            const response = await fetch('/api/verify-session');
-            if (response.ok) {
-              const data = await response.json();
-              if (data.employee?.branchId) {
-                parsed.branchId = data.employee.branchId;
-                localStorage.setItem("currentEmployee", JSON.stringify(parsed));
-              }
-            }
-          }
-          setEmployee(parsed);
-        } catch (e) {
-          console.error("Error parsing employee:", e);
-          setLocation("/employee/gateway");
-        }
-      } else {
-        setLocation("/employee/gateway");
-      }
-    };
-    loadEmployee();
-    
-    try {
-      const savedParkedOrders = localStorage.getItem("parkedOrders");
-      if (savedParkedOrders) {
-        setParkedOrders(JSON.parse(savedParkedOrders));
-      }
-      
-      const savedOfflineOrders = localStorage.getItem("offlineOrders");
-      if (savedOfflineOrders) {
-        setOfflineOrders(JSON.parse(savedOfflineOrders));
-      }
-    } catch (e) {
-      console.error("Error loading saved data:", e);
+    if (employee && Notification.permission === 'default') {
+      requestPushPermission();
     }
-  }, [setLocation]);
+  }, [employee, requestPushPermission]);
 
-  const syncOfflineOrders = useCallback(async () => {
-    if (offlineOrders.length === 0 || syncingOffline) return;
-    
-    setSyncingOffline(true);
-    
-    try {
-      const sessionVerify = await fetch('/api/verify-session', { credentials: 'include' });
-      if (!sessionVerify.ok) {
-        toast({ 
-          title: "يرجى تسجيل الدخول", 
-          description: "سيتم مزامنة الطلبات بعد تسجيل الدخول", 
-          variant: "destructive" 
-        });
-        return;
-      }
-      
-      const syncedOrders: string[] = [];
-      const failedOrders: typeof offlineOrders = [];
-      
-      for (const order of offlineOrders) {
-        try {
-          const response = await fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: 'include',
-            body: JSON.stringify(order),
-          });
-          
-          if (response.ok) {
-            syncedOrders.push(order.offlineId);
-          } else {
-            failedOrders.push(order);
-          }
-        } catch (error) {
-          console.error("Failed to sync order:", error);
-          failedOrders.push(order);
-        }
-      }
-      
-      if (failedOrders.length > 0) {
-        setOfflineOrders(failedOrders);
-        localStorage.setItem("offlineOrders", JSON.stringify(failedOrders));
-        toast({ 
-          title: "مزامنة جزئية", 
-          description: `تم رفع ${syncedOrders.length} طلب، ${failedOrders.length} طلب فشل`, 
-          variant: "destructive" 
-        });
-      } else {
-        setOfflineOrders([]);
-        localStorage.removeItem("offlineOrders");
-        toast({ title: "تمت المزامنة", description: `تم رفع ${syncedOrders.length} طلب محفوظ`, className: "bg-green-600 text-white" });
-      }
-    } finally {
-      setSyncingOffline(false);
-    }
-  }, [offlineOrders, syncingOffline, toast]);
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      toast({ title: "تم استعادة الاتصال", description: "جاري مزامنة الطلبات المحفوظة...", className: "bg-green-600 text-white" });
-      syncOfflineOrders();
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-      toast({ title: "انقطع الاتصال", description: "النظام يعمل في وضع عدم الاتصال", variant: "destructive" });
-    };
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [toast, syncOfflineOrders]);
-
-  useEffect(() => {
-    const checkPosConnection = async () => {
-      try {
-        const response = await fetch('/api/pos/status', { method: 'GET' });
-        if (response.ok) {
-          const data = await response.json();
-          setPosConnected(data.connected === true);
-        }
-      } catch (error) {
-        setPosConnected(false);
-      }
-    };
-    checkPosConnection();
-    const interval = setInterval(checkPosConnection, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("parkedOrders", JSON.stringify(parkedOrders));
-  }, [parkedOrders]);
-
-  const { data: productsData, isLoading } = useQuery<any[]>({
+  const { data: productsData, isLoading: isLoadingProducts } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
-    queryFn: async () => {
-      try {
-        const res = await fetch("/api/coffee-items", {
-          headers: { "Accept": "application/json" }
-        });
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
-        
-        const validItems = Array.isArray(data) ? data.filter(item => item && (item.id || item._id)) : [];
-        
-        if (validItems.length > 0) {
-          try {
-            await db.products.clear();
-            const localProducts = validItems.map((item: any) => ({
-              id: String(item.id || item._id),
-              nameAr: item.nameAr || "منتج بدون اسم",
-              price: Number(item.price) || 0,
-              category: item.category || "general",
-              imageUrl: item.imageUrl,
-              isAvailable: item.isAvailable ?? 1,
-              tenantId: item.tenantId,
-              availableSizes: item.availableSizes || [],
-              updatedAt: Date.now()
-            }));
-            await db.products.bulkAdd(localProducts);
-          } catch (dexieError) {
-            console.error("Dexie update error:", dexieError);
-          }
-        }
-        return validItems;
-      } catch (error) {
-        console.error("POS Query Error:", error);
-        return [];
-      }
-    }
   });
 
-  const { data: offlineProducts } = useQuery<any[]>({
-    queryKey: ["offline-products"],
+  const { data: liveOrders } = useQuery<Order[]>({
+    queryKey: ["/api/orders/live"],
+    refetchInterval: 5000,
+  });
+
+  const { data: tables = [], refetch: refetchTables } = useQuery<any[]>({
+    queryKey: ["/api/tables/status", employee?.branchId],
     queryFn: async () => {
-      const prods = await db.products.toArray();
-      return prods as any[];
+      const res = await fetch(`/api/tables/status?branchId=${employee?.branchId}`);
+      return res.json();
     },
-    enabled: isOnline === false // Use isOnline instead of isOffline which might be shadowed
+    enabled: !!employee?.branchId,
+    refetchInterval: 10000,
   });
 
-  // Fetch available tables for selection
-  const { data: tablesData = [] } = useQuery<TableData[]>({
-    queryKey: ["/api/tables"],
-    queryFn: async () => {
-      const res = await fetch("/api/tables");
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.filter((t: TableData) => 
-        (t.isActive === true || t.isActive === 1)
-      );
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+      return await apiRequest("PUT", `/api/orders/${orderId}/status`, { status });
     },
-    staleTime: 1000 * 30, // Refresh every 30 seconds
-  });
-
-  // Check if orders are suspended globally
-  const { data: orderSuspensionStatus } = useQuery<{ suspended: boolean }>({
-    queryKey: ["/api/settings/order-suspension"],
-    queryFn: async () => {
-      try {
-        const res = await fetch("/api/settings/order-suspension");
-        if (!res.ok) return { suspended: false };
-        return res.json();
-      } catch {
-        return { suspended: false };
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+      toast({ title: "تم التحديث", description: "تم تحديث حالة الطلب بنجاح" });
     },
-    staleTime: 1000 * 10, // Check every 10 seconds
+    onError: () => {
+      toast({ variant: "destructive", title: "خطأ", description: "فشل تحديث حالة الطلب" });
+    }
   });
 
-  const isOrdersSuspended = orderSuspensionStatus?.suspended || false;
-
-  const coffeeItems = useMemo(() => {
-    try {
-      const items = !isOnline ? (offlineProducts || []) : (productsData || []);
-      return Array.isArray(items) ? items : [];
-    } catch (e) {
-      console.error("Error computing coffeeItems:", e);
-      return [];
+  const emptyTableMutation = useMutation({
+    mutationFn: async (tableId: string) => {
+      return await apiRequest("PATCH", `/api/tables/${tableId}/occupancy`, { isOccupied: 0 });
+    },
+    onSuccess: () => {
+      refetchTables();
+      toast({ title: "تم", description: "تم إفراغ الطاولة بنجاح" });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "خطأ", description: "فشل إفراغ الطاولة" });
     }
-  }, [productsData, offlineProducts, isOnline]);
+  });
 
-
-  const checkCustomer = useCallback(async (phone: string) => {
-    if (phone.length === 9 && phone.startsWith('5')) {
-      setIsCheckingCustomer(true);
-      try {
-        const response = await fetch(`/api/customers/lookup-by-phone`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.found && data.customer) {
-            setCustomerName(data.customer.name);
-            setCustomerEmail(data.customer.email || "");
-            setCustomerPoints(data.customer.points || 0);
-            setCustomerId(data.customer.id);
-            setLoyaltyCard(data.loyaltyCard || null);
-            setShowRegisterDialog(false);
-            
-            toast({
-              title: "عميل مسجل",
-              description: `مرحباً ${data.customer.name}! لديك ${data.customer.points || 0} نقطة`,
-              className: "bg-green-600 text-white",
-            });
-          } else {
-            setShowRegisterDialog(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking customer:', error);
-      } finally {
-        setIsCheckingCustomer(false);
-      }
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => checkCustomer(customerPhone), 500);
-    return () => clearTimeout(timer);
-  }, [customerPhone, checkCustomer]);
-
-  // Clamp usedFreeDrinks when order items or loyalty card changes
-  useEffect(() => {
-    const hasQahwaCard = paymentMethod === 'qahwa-card' || (showSplitPayment && splitPayments.some(p => p.method === 'qahwa-card'));
-    
-    if (hasQahwaCard && loyaltyCard) {
-      const availableFreeDrinks = Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0));
-      const totalDrinks = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-      const maxUsable = Math.min(availableFreeDrinks, totalDrinks);
-      if (usedFreeDrinks > maxUsable) {
-        setUsedFreeDrinks(maxUsable);
-      }
-    } else if (!hasQahwaCard && usedFreeDrinks > 0) {
-      // Reset usedFreeDrinks when qahwa-card is no longer selected
-      setUsedFreeDrinks(0);
-    }
-  }, [orderItems, loyaltyCard, paymentMethod, showSplitPayment, splitPayments, usedFreeDrinks]);
-
-  const handleCustomerFoundFromScanner = useCallback((result: any) => {
-    if (result.found) {
-      if (result.card) {
-        setCustomerPhone(result.card.phoneNumber || "");
-        setCustomerName(result.card.customerName || result.customer?.name || "");
-        setLoyaltyCard(result.card);
-        setCustomerPoints(result.customer?.points || result.card.points || 0);
-        if (result.customer?.id) {
-          setCustomerId(result.customer.id);
-        }
-        if (result.customer?.email) {
-          setCustomerEmail(result.customer.email);
-        }
-        
-        const availableFreeDrinks = Math.max(0, (result.card.freeCupsEarned || 0) - (result.card.freeCupsRedeemed || 0));
-        
-        toast({
-          title: "تم العثور على العميل",
-          description: `مرحباً ${result.card.customerName}! ${availableFreeDrinks > 0 ? `لديك ${availableFreeDrinks} مشروب مجاني` : `${result.card.stamps % 6}/6 أختام`}`,
-          className: "bg-green-600 text-white",
+  const closeBillMutation = useMutation({
+    mutationFn: async ({ orderId, payMethod }: { orderId: string; payMethod: string }) => {
+      return await apiRequest("PUT", `/api/orders/${orderId}/status`, { status: "completed", paymentMethod: payMethod });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+      refetchTables();
+      const order = selectedTableForBill;
+      if (order) {
+        const items = (Array.isArray(order.items) ? order.items : []).map((item: any) => ({
+          coffeeItem: {
+            nameAr: item.name || item.nameAr || item.coffeeItem?.nameAr || '',
+            nameEn: item.nameEn || item.coffeeItem?.nameEn || '',
+            price: String(item.price || item.unitPrice || 0),
+          },
+          quantity: item.quantity || 1,
+        }));
+        const total = Number(order.totalAmount || 0);
+        printTaxInvoice({
+          orderNumber: order.dailyNumber || order.orderNumber || '',
+          customerName: order.customerName || order.customerInfo?.customerName || 'عميل نقدي',
+          customerPhone: order.customerPhone || order.customerInfo?.customerPhone || '',
+          items,
+          subtotal: (total / 1.15).toFixed(2),
+          total: total.toFixed(2),
+          paymentMethod: PAYMENT_METHOD_LABELS[variables.payMethod] || variables.payMethod,
+          employeeName: employee?.fullName || 'موظف',
+          tableNumber: order.tableNumber,
+          orderType: order.orderType,
+          date: order.createdAt || new Date().toISOString(),
         });
       }
-      setShowBarcodeScanner(false);
+      setSelectedTableForBill(null);
+      toast({ title: "تم", description: "تم إغلاق الفاتورة وطباعة الإيصال" });
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "خطأ", description: "فشل إغلاق الفاتورة" });
     }
-  }, [toast]);
+  });
 
-  const CATEGORIES = useMemo(() => {
-    try {
-      const items = Array.isArray(coffeeItems) ? coffeeItems : [];
-      const cats = Array.from(new Set(items.map((item: any) => item?.categoryAr || item?.category || "أخرى")));
-      const categoryObjects = [
-        { id: "all", name: "الكل", icon: Coffee, color: "text-primary" },
-        ...cats.map(cat => ({ 
-          id: cat, 
-          name: cat, 
-          icon: Coffee, 
-          color: "text-primary" 
-        }))
-      ];
-      return categoryObjects;
-    } catch (e) {
-      console.error("Error computing categories:", e);
-      return [{ id: "all", name: "الكل", icon: Coffee, color: "text-primary" }];
-    }
-  }, [coffeeItems]);
+  const openTableOrders = useMemo(() => {
+    if (!liveOrders) return [];
+    return liveOrders.filter((o: any) => 
+      ['pending', 'in_progress', 'ready'].includes(o.status) && 
+      o.tableNumber && 
+      (o.orderType === 'dine_in' || o.orderType === 'dine-in')
+    );
+  }, [liveOrders]);
 
-  const filteredItems = useMemo(() => {
-    try {
-      const items = Array.isArray(coffeeItems) ? coffeeItems : [];
-      return items.filter((item: any) => {
-        if (!item) return false;
-        const matchesSearch = (item.nameAr?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                              (item.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()));
-        const matchesCategory = selectedCategory === "all" || 
-                                (item.categoryAr === selectedCategory) ||
-                                (item.category === selectedCategory);
-        return matchesSearch && matchesCategory;
-      });
-    } catch (e) {
-      console.error("Error filtering items:", e);
-      return [];
-    }
-  }, [coffeeItems, searchQuery, selectedCategory]);
+  const filteredItemsList = useMemo(() => {
+    if (!productsData) return [];
+    return productsData.filter(item => {
+      const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+      const matchesSearch = item.nameAr.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           (item.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    });
+  }, [productsData, selectedCategory, searchQuery]);
 
-  const addToOrder = (coffeeItem: ICoffeeItem) => {
-    if (!coffeeItem) return;
-    setCustomizingItem(coffeeItem);
-    setEditingLineItemId(null);
-    setShowCustomizationDialog(true);
-  };
+  const visibleCategories = useMemo(() => {
+    const cats = Array.from(new Set(productsData?.map(p => p.category) || []));
+    return cats.map(c => ({ id: c, name: c, icon: Tag, color: "text-primary" }));
+  }, [productsData]);
 
-  const openEditCustomization = (orderItem: OrderItem) => {
-    if (!orderItem || !orderItem.coffeeItem) return;
-    setCustomizingItem(orderItem.coffeeItem);
-    setEditingLineItemId(orderItem.lineItemId);
-    setShowCustomizationDialog(true);
-  };
-
-  const handleCustomizationConfirm = (customization: DrinkCustomization, quantity: number) => {
-    if (!customizingItem) return;
-    
-    if (editingLineItemId) {
-      setOrderItems(orderItems.map(item => 
-        item.lineItemId === editingLineItemId 
-          ? { ...item, customization, quantity }
-          : item
-      ));
-    } else {
-      const existingItemIndex = orderItems.findIndex(item => {
-        if (item.coffeeItem.id !== customizingItem.id) return false;
-        // Also check if size matches for merging
-        if (item.customization?.selectedSize !== customization.selectedSize) return false;
-        const existingAddons = item.customization?.selectedAddons || [];
-        const newAddons = customization.selectedAddons || [];
-        if (existingAddons.length !== newAddons.length) return false;
-        return existingAddons.every(ea => 
-          newAddons.some(na => na.addonId === ea.addonId && na.quantity === ea.quantity)
-        );
-      });
-
-      if (existingItemIndex >= 0) {
-        setOrderItems(orderItems.map((item, index) => 
-          index === existingItemIndex 
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        ));
-      } else {
-        setOrderItems([...orderItems, { 
-          lineItemId: generateLineItemId(),
-          coffeeItem: customizingItem, 
-          quantity, 
-          customization 
-        }]);
-      }
-    }
-    
-    setShowCustomizationDialog(false);
-    setCustomizingItem(null);
-    setEditingLineItemId(null);
-  };
-
-  const updateQuantity = (lineItemId: string, newQuantity: number) => {
-    if (!lineItemId) return;
-    if (newQuantity <= 0) {
-      setOrderItems(orderItems.filter(item => item && item.lineItemId !== lineItemId));
-    } else {
-      setOrderItems(orderItems.map(item =>
-        item && item.lineItemId === lineItemId ? { ...item, quantity: newQuantity } : item
-      ));
-    }
-  };
-
-  const applyItemDiscount = (lineItemId: string, discount: number, type: 'fixed' | 'percentage') => {
-    setOrderItems(orderItems.map(item => {
-      if (item.lineItemId === lineItemId) {
-        let basePrice = Number(item.coffeeItem.price);
-        // Size price logic
-        if (item.customization?.selectedSize) {
-          const sizeOption = item.coffeeItem.availableSizes?.find(
-            s => s.nameAr === item.customization?.selectedSize || s.nameEn === item.customization?.selectedSize
-          );
-          if (sizeOption) basePrice = Number(sizeOption.price);
-        }
-        const addonsPrice = item.customization?.totalAddonsPrice || 0;
-        const itemTotal = (basePrice + addonsPrice) * item.quantity;
-        const actualDiscount = type === 'percentage' ? (itemTotal * discount / 100) : discount;
-        return { ...item, itemDiscount: Math.min(actualDiscount, itemTotal), discountType: type };
-      }
-      return item;
-    }));
-    setItemDiscountId(null);
-    setItemDiscountAmount(0);
-    setShowDiscountDialog(false);
+  const calculateTotal = () => {
+    return orderItems.reduce((sum, item) => sum + (Number(item.coffeeItem.price) * item.quantity), 0);
   };
 
   const calculateSubtotal = () => {
-    return orderItems.reduce((sum, item) => {
-      if (!item || !item.coffeeItem) return sum;
-      let basePrice = Number(item.coffeeItem.price);
-      
-      // Update price based on selected size
-      if (item.customization?.selectedSize) {
-        const sizeOption = item.coffeeItem.availableSizes?.find(
-          s => s.nameAr === item.customization?.selectedSize || s.nameEn === item.customization?.selectedSize
+    return calculateTotal() / 1.15;
+  };
+
+  const addToOrder = (product: CoffeeItem) => {
+    setOrderItems(prev => {
+      const existing = prev.find(item => item.coffeeItem.id === product.id);
+      if (existing) {
+        return prev.map(item => 
+          item.coffeeItem.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
         );
-        if (sizeOption) {
-          basePrice = Number(sizeOption.price);
-        }
       }
-      
-      const addonsPrice = item.customization?.totalAddonsPrice || 0;
-      const itemTotal = (basePrice + addonsPrice) * item.quantity;
-      const itemDiscount = item.itemDiscount || 0;
-      return sum + itemTotal - itemDiscount;
-    }, 0);
-  };
-
-  const calculateCodeDiscount = () => {
-    if (!appliedDiscount) return 0;
-    return (calculateSubtotal() * appliedDiscount.percentage) / 100;
-  };
-
-  const calculateInvoiceDiscount = () => {
-    if (invoiceDiscount <= 0) return 0;
-    const subtotal = calculateSubtotal() - calculateCodeDiscount();
-    if (invoiceDiscountType === 'percentage') {
-      return (subtotal * invoiceDiscount) / 100;
-    }
-    return Math.min(invoiceDiscount, subtotal);
-  };
-
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const codeDiscount = calculateCodeDiscount();
-    const invDiscount = calculateInvoiceDiscount();
-    const total = subtotal - codeDiscount - invDiscount;
-    return Math.max(0, total).toFixed(2);
-  };
-
-  const validateDiscountCode = async () => {
-    if (!discountCode.trim()) return;
-    
-    setIsValidatingDiscount(true);
-    try {
-      const response = await fetch('/api/discount-codes/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: discountCode })
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.valid) {
-        setAppliedDiscount({
-          code: data.code,
-          percentage: data.discountPercentage,
-          reason: data.reason
-        });
-        toast({
-          title: "تم تطبيق الخصم",
-          description: `${data.reason} - ${data.discountPercentage}%`,
-          className: "bg-green-600 text-white",
-        });
-      } else {
-        toast({
-          title: "كود غير صالح",
-          description: data.error || "الكود غير صحيح أو منتهي",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({ title: "خطأ", description: "فشل التحقق من الكود", variant: "destructive" });
-    } finally {
-      setIsValidatingDiscount(false);
-    }
-  };
-
-  const parkOrder = () => {
-    if (orderItems.length === 0) {
-      toast({ title: "خطأ", description: "لا توجد عناصر لتعليقها", variant: "destructive" });
-      return;
-    }
-
-    const parkedOrder: ParkedOrder = {
-      id: `park-${Date.now()}`,
-      name: customerName || `طلب معلق #${parkedOrders.length + 1}`,
-      items: [...orderItems],
-      customerName,
-      customerPhone,
-      customerEmail,
-      tableNumber,
-      createdAt: new Date().toISOString(),
-      note: parkOrderNote,
-      priority: 'normal',
-      appliedDiscount,
-      invoiceDiscount
-    };
-
-    setParkedOrders([...parkedOrders, parkedOrder]);
-    resetForm();
-    setShowParkDialog(false);
-    setParkOrderNote("");
-    
-    toast({
-      title: "تم تعليق الطلب",
-      description: `تم حفظ الطلب: ${parkedOrder.name}`,
-      className: "bg-blue-600 text-white",
+      return [...prev, { 
+        lineItemId: Math.random().toString(36).substr(2, 9),
+        coffeeItem: product, 
+        quantity: 1 
+      }];
     });
-  };
-
-  const resumeParkedOrder = (parkedOrder: ParkedOrder) => {
-    setOrderItems(parkedOrder.items);
-    setCustomerName(parkedOrder.customerName);
-    setCustomerPhone(parkedOrder.customerPhone);
-    setCustomerEmail(parkedOrder.customerEmail || "");
-    setTableNumber(parkedOrder.tableNumber || "");
-    setAppliedDiscount(parkedOrder.appliedDiscount || null);
-    setInvoiceDiscount(parkedOrder.invoiceDiscount || 0);
-    setParkedOrders(parkedOrders.filter(o => o.id !== parkedOrder.id));
-    setShowParkedOrders(false);
-    
-    toast({
-      title: "تم استئناف الطلب",
-      description: parkedOrder.name,
-    });
-  };
-
-  const deleteParkedOrder = (id: string) => {
-    setParkedOrders(parkedOrders.filter(o => o.id !== id));
-    toast({ title: "تم حذف الطلب المعلق" });
-  };
-
-  const updateParkedOrderPriority = (id: string, priority: 'normal' | 'urgent') => {
-    setParkedOrders(parkedOrders.map(o => 
-      o.id === id ? { ...o, priority } : o
-    ));
-  };
-
-  const openCashDrawer = async () => {
-    try {
-      const response = await fetch('/api/pos/cash-drawer/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        setCashDrawerOpen(true);
-        setTimeout(() => setCashDrawerOpen(false), 3000);
-        toast({ title: "تم فتح الخزانة", className: "bg-green-600 text-white" });
-      } else {
-        toast({ title: "فشل فتح الخزانة", variant: "destructive" });
-      }
-    } catch (error) {
-      toast({ title: "خطأ في الاتصال بالخزانة", variant: "destructive" });
+    if (soundEnabled) {
     }
   };
 
-  const handlePrintReceipt = async () => {
-    if (!lastOrder) {
-      toast({
-        title: "خطأ",
-        description: "لا يوجد طلب للطباعة",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      await fetch('/api/pos/print-receipt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          orderNumber: lastOrder.orderNumber,
-          receiptData: lastOrder
-        })
-      });
-    } catch (error) {
-      console.error("Error sending to printer:", error);
-    }
-    
-    try {
-      await printSimpleReceipt({
-        orderNumber: lastOrder.orderNumber,
-        customerName: lastOrder.customerName,
-        customerPhone: lastOrder.customerPhone,
-        items: lastOrder.items,
-        subtotal: lastOrder.subtotal,
-        discount: lastOrder.discount,
-        invoiceDiscount: lastOrder.invoiceDiscount,
-        total: lastOrder.total,
-        paymentMethod: lastOrder.paymentMethod,
-        employeeName: lastOrder.employeeName,
-        tableNumber: lastOrder.tableNumber,
-        orderType: lastOrder.orderType,
-        orderTypeName: lastOrder.orderTypeName,
-        date: lastOrder.date,
-      });
-      toast({ title: "تم فتح نافذة الطباعة", className: "bg-green-600 text-white" });
-    } catch (error) {
-      console.error("Error printing receipt:", error);
-      toast({ title: "خطأ في الطباعة", variant: "destructive" });
+  const updateQuantity = (lineItemId: string, newQty: number) => {
+    if (newQty <= 0) {
+      setOrderItems(prev => prev.filter(item => item.lineItemId !== lineItemId));
+    } else {
+      setOrderItems(prev => prev.map(item => 
+        item.lineItemId === lineItemId ? { ...item, quantity: newQty } : item
+      ));
     }
   };
 
-  const handlePrintTaxInvoice = async () => {
-    if (!lastOrder) {
-      toast({
-        title: "خطأ",
-        description: "لا يوجد طلب للطباعة",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      await fetch('/api/pos/print-receipt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          orderNumber: lastOrder.orderNumber,
-          receiptData: { ...lastOrder, isTaxInvoice: true }
-        })
-      });
-    } catch (error) {
-      console.error("Error sending tax invoice to printer:", error);
-    }
-    
-    try {
-      await printTaxInvoice({
-        orderNumber: lastOrder.orderNumber,
-        customerName: lastOrder.customerName,
-        customerPhone: lastOrder.customerPhone,
-        items: lastOrder.items,
-        subtotal: lastOrder.subtotal,
-        discount: lastOrder.discount,
-        invoiceDiscount: lastOrder.invoiceDiscount,
-        total: lastOrder.total,
-        paymentMethod: lastOrder.paymentMethod,
-        employeeName: lastOrder.employeeName,
-        tableNumber: lastOrder.tableNumber,
-        orderType: lastOrder.orderType,
-        orderTypeName: lastOrder.orderTypeName,
-        date: lastOrder.date,
-      });
-      toast({ title: "تم فتح نافذة الفاتورة الضريبية", className: "bg-green-600 text-white" });
-    } catch (error) {
-      console.error("Error printing tax invoice:", error);
-      toast({ title: "خطأ في الطباعة", variant: "destructive" });
-    }
-  };
-
-  const resetForm = () => {
-    setOrderItems([]);
-    setCustomerName("");
-    setCustomerPhone("");
-    setCustomerEmail("");
-    setCustomerPoints(0);
-    setCustomerId(null);
-    setLoyaltyCard(null);
-    setTableNumber("");
-    setPaymentMethod("cash");
-    setOrderType("dine_in");
-    setDiscountCode("");
-    setAppliedDiscount(null);
-    setInvoiceDiscount(0);
-    setInvoiceDiscountType('fixed');
-    setShowRegisterDialog(false);
-    setSplitPayments([]);
-    setShowSplitPayment(false);
-    setUsedFreeDrinks(0);
-  };
-
-  const addSplitPayment = () => {
-    if (currentSplitAmount <= 0) return;
-    const remaining = parseFloat(calculateTotal()) - splitPayments.reduce((sum, p) => sum + p.amount, 0);
-    const amount = Math.min(currentSplitAmount, remaining);
-    
-    setSplitPayments([...splitPayments, { method: currentSplitMethod, amount }]);
-    setCurrentSplitAmount(0);
-  };
-
-  const removeSplitPayment = (index: number) => {
-    setSplitPayments(splitPayments.filter((_, i) => i !== index));
-  };
-
-  const getRemainingAmount = () => {
-    const total = parseFloat(calculateTotal());
-    const paid = splitPayments.reduce((sum, p) => sum + p.amount, 0);
-    return Math.max(0, total - paid);
-  };
-
-  const createOrderMutation = useMutation({
-    mutationFn: async (orderData: any) => {
-      if (!isOnline) {
-        const offlineId = `offline-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-        const offlineOrder = { 
-          ...orderData, 
-          offlineId, 
-          createdAt: new Date().toISOString(),
-          status: 'pending'
-        };
-        
-        // Save to IndexedDB
-        await db.invoices.add({
-          tempId: offlineId,
-          items: orderData.items,
-          totalAmount: Number(orderData.totalAmount),
-          paymentMethod: orderData.paymentMethod,
-          createdAt: Date.now(),
-          status: 'pending',
-          tenantId: (employee as any)?.tenantId || 'demo-tenant',
-          branchId: employee?.branchId || ''
-        });
-
-        // Add to sync queue
-        await db.syncQueue.add({
-          type: 'CREATE_ORDER',
-          payload: orderData,
-          status: 'pending',
-          retryCount: 0,
-          createdAt: Date.now()
-        });
-
-        return { orderNumber: offlineId, totalAmount: orderData.totalAmount, offline: true };
-      }
-      
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      });
-      
-      if (!response.ok) throw new Error("Failed to create order");
-      return response.json();
-    },
-    onSuccess: async (order) => {
-      const paymentInfo = showSplitPayment && splitPayments.length > 0
-        ? splitPayments.map(p => `${PAYMENT_METHODS.find(m => m.id === p.method)?.name}: ${p.amount.toFixed(2)}`).join(' + ')
-        : PAYMENT_METHODS.find(m => m.id === paymentMethod)?.name || paymentMethod;
-      
-      const orderTypeInfo = ORDER_TYPES.find(t => t.id === orderType);
-      setLastOrder({
-        orderNumber: order.orderNumber,
-        customerName: customerName || "عميل",
-        customerPhone: customerPhone || "",
-        items: orderItems,
-        subtotal: calculateSubtotal().toFixed(2),
-        discount: appliedDiscount ? {
-          code: appliedDiscount.code,
-          percentage: appliedDiscount.percentage,
-          amount: calculateCodeDiscount().toFixed(2)
-        } : undefined,
-        invoiceDiscount: calculateInvoiceDiscount() > 0 ? calculateInvoiceDiscount().toFixed(2) : undefined,
-        total: order.totalAmount,
-        paymentMethod: paymentInfo,
-        employeeName: employee?.fullName || "",
-        tableNumber: tableNumber || undefined,
-        orderType: orderType,
-        orderTypeName: orderTypeInfo?.name || orderType,
-        date: new Date().toISOString(),
-        offline: order.offline
-      });
-      
-      setShowReceipt(true);
-      
-      if (paymentMethod === "cash" || splitPayments.some(p => p.method === "cash")) {
-        openCashDrawer();
-      }
-      
-      toast({
-        title: order.offline ? "تم حفظ الطلب محلياً" : "تم إنشاء الطلب بنجاح",
-        description: order.offline ? "سيتم المزامنة عند عودة الإنترنت" : `رقم الطلب: ${order.orderNumber}`,
-        className: "bg-green-600 text-white",
-      });
-      
-      // Play sound and show notification if enabled
-      if (soundEnabled) {
-        const audio = new Audio('/assets/notification.mp3');
-        audio.play().catch(() => {});
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      resetForm();
-      
-      // Redirect to dashboard after successful order
-      setTimeout(() => setLocation("/employee/dashboard"), 2000);
-    },
-    onError: (error: any) => {
-      console.error("Order creation error:", error);
-      const errorMessage = error?.message || error?.response?.data?.error || "فشل إنشاء الطلب. يرجى المحاولة مرة أخرى";
-      toast({
-        title: "خطأ في إنشاء الطلب",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmitOrder = (statusArg?: any) => {
-    if (orderItems.length === 0) {
-      toast({ title: "خطأ", description: "يرجى إضافة عناصر للطلب", variant: "destructive" });
-      return;
-    }
-
-    if (!employee?.branchId) {
-      toast({ title: "خطأ", description: "معلومات الفرع غير متوفرة", variant: "destructive" });
-      return;
-    }
-
-    if (showSplitPayment && getRemainingAmount() > 0.01) {
-      toast({ title: "خطأ", description: "يرجى إكمال الدفع المقسم", variant: "destructive" });
-      return;
-    }
-
-    const orderStatus = typeof statusArg === 'string' ? statusArg : "in_progress";
-    const tableId = selectedTable?.id || selectedTable?._id;
-    const isTableOpen = (tableId || tableNumber) && orderStatus === "pending";
-
-    const orderData = {
-      items: orderItems.map(item => {
-        let itemPrice = Number(item.coffeeItem.price);
-        // Access selectedSize from the updated customization object
-        const selectedSizeName = item.customization?.selectedSize;
-        if (selectedSizeName) {
-          const sizeOption = item.coffeeItem.availableSizes?.find(
-            s => s.nameAr === selectedSizeName
-          );
-          if (sizeOption) itemPrice = sizeOption.price;
-        }
-        return {
-          coffeeItemId: item.coffeeItem.id,
-          quantity: item.quantity,
-          price: itemPrice + (item.customization?.totalAddonsPrice || 0),
-          itemDiscount: item.itemDiscount || 0,
-          customization: item.customization ? {
-            selectedSize: selectedSizeName,
-            selectedAddons: item.customization.selectedAddons,
-            totalAddonsPrice: item.customization.totalAddonsPrice,
-            notes: item.customization.notes
-          } : undefined
-        };
-      }),
-      totalAmount: calculateTotal(),
-      paymentMethod: isTableOpen ? "cash" : (showSplitPayment ? "split" : paymentMethod),
-      splitPayments: (!isTableOpen && showSplitPayment) ? splitPayments : undefined,
-      customerInfo: {
-        customerName: customerName || "عميل",
-        phoneNumber: customerPhone || undefined,
-        customerEmail: customerEmail || undefined
-      },
-      customerId: customerId || undefined,
-      employeeId: employee?.id,
-      tenantId: (employee as any)?.tenantId || 'black-rose-tenant',
-      branchId: employee.branchId,
-      orderType: (tableId || tableNumber) ? 'dine-in' : orderType,
-      tableNumber: tableNumber || undefined,
-      tableId: selectedTable?.id || selectedTable?._id || undefined,
-      discountCode: appliedDiscount?.code,
-      invoiceDiscount: calculateInvoiceDiscount() > 0 ? calculateInvoiceDiscount() : undefined,
-      usedFreeDrinks: (!isTableOpen && (paymentMethod === 'qahwa-card' || (showSplitPayment && splitPayments.some(p => p.method === 'qahwa-card')))) ? usedFreeDrinks : 0,
-      status: isTableOpen ? "open" : "in_progress",
-      tableStatus: isTableOpen ? "open" : "pending",
-      isOpenTab: isTableOpen
-    };
-
-    createOrderMutation.mutate(orderData);
-  };
-
-  const handlePrintDraft = () => {
+  const handleCheckout = async () => {
     if (orderItems.length === 0) return;
-    const draftData = {
-      orderNumber: "DRAFT-" + Date.now().toString().slice(-6),
-      customerName: customerName || "عميل",
-      customerPhone: customerPhone || "",
-      items: orderItems,
-      total: calculateTotal(),
-      subtotal: calculateSubtotal(),
-      tableNumber: tableNumber,
-      date: new Date().toISOString(),
-      isDraft: true,
-      paymentMethod: paymentMethod,
-      employeeName: employee?.fullName || ""
-    };
-    printSimpleReceipt(draftData as any);
-    toast({ title: "فاتورة مبدئية", description: "تم إرسال الفاتورة المبدئية للطباعة" });
+    
+    try {
+      setSyncing(true);
+      const total = calculateTotal();
+      const subtotal = calculateSubtotal();
+      const tax = total - subtotal;
+
+      const orderData = {
+        items: orderItems.map(item => ({
+          coffeeItemId: item.coffeeItem.id,
+          name: item.coffeeItem.nameAr,
+          price: item.coffeeItem.price,
+          quantity: item.quantity,
+          customization: item.customization || {}
+        })),
+        subtotal,
+        tax,
+        total,
+        orderType,
+        paymentMethod,
+        tableNumber: orderType === "dine_in" ? tableNumber : undefined,
+        customerName,
+        customerPhone,
+        status: "pending",
+        branchId: employee?.branchId || "main",
+        tenantId: employee?.tenantId || "demo-tenant",
+        employeeId: employee?.id
+      };
+
+      const res = await apiRequest("POST", "/api/orders", orderData);
+      const result = await res.json();
+
+      setLastOrder({
+        orderNumber: result.orderNumber || result.dailyNumber || '',
+        date: new Date().toISOString(),
+        items: orderItems.map(item => ({
+          coffeeItem: {
+            nameAr: item.coffeeItem.nameAr,
+            nameEn: item.coffeeItem.nameEn,
+            price: String(item.coffeeItem.price),
+          },
+          quantity: item.quantity,
+        })),
+        subtotal,
+        tax,
+        total,
+        paymentMethod,
+        customerName,
+        customerPhone,
+        employeeName: employee?.fullName || 'موظف',
+        tableNumber: orderType === "dine_in" ? tableNumber : undefined,
+        orderType,
+      });
+      if (autoPrint) {
+        printTaxInvoice({
+          orderNumber: result.orderNumber || result.dailyNumber || '',
+          customerName: customerName || 'عميل نقدي',
+          customerPhone: customerPhone || '',
+          items: orderItems.map(item => ({
+            coffeeItem: {
+              nameAr: item.coffeeItem.nameAr,
+              nameEn: item.coffeeItem.nameEn,
+              price: String(item.coffeeItem.price),
+            },
+            quantity: item.quantity,
+          })),
+          subtotal: subtotal.toFixed(2),
+          total: total.toFixed(2),
+          paymentMethod: PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod,
+          employeeName: employee?.fullName || 'موظف',
+          tableNumber: orderType === "dine_in" ? tableNumber : undefined,
+          orderType: orderType as any,
+          date: new Date().toISOString(),
+        });
+        toast({ title: "تم", description: "تم إتمام الطلب وطباعة الإيصال تلقائياً" });
+      }
+      setShowReceiptDialog(true);
+
+      setOrderItems([]);
+      setTableNumber("");
+      setCustomerName("");
+      setCustomerPhone("");
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast({ 
+        variant: "destructive",
+        title: "خطأ", 
+        description: "فشل في إتمام الطلب. يرجى المحاولة مرة أخرى." 
+      });
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  if (!employee) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center" dir="rtl">
-        <LoadingState message="جاري التحميل..." />
-      </div>
-    );
-  }
+  const handlePrintReceipt = () => {
+    if (!lastOrder) return;
+    printTaxInvoice({
+      orderNumber: lastOrder.orderNumber,
+      customerName: lastOrder.customerName || 'عميل نقدي',
+      customerPhone: lastOrder.customerPhone || '',
+      items: lastOrder.items,
+      subtotal: lastOrder.subtotal.toFixed(2),
+      total: lastOrder.total.toFixed(2),
+      paymentMethod: PAYMENT_METHOD_LABELS[lastOrder.paymentMethod] || lastOrder.paymentMethod,
+      employeeName: lastOrder.employeeName,
+      tableNumber: lastOrder.tableNumber,
+      orderType: lastOrder.orderType,
+      date: lastOrder.date,
+    });
+  };
 
-  const visibleCategories = Array.isArray(CATEGORIES) ? CATEGORIES.slice(categoryPage * categoriesPerPage, (categoryPage + 1) * categoriesPerPage) : ["all"];
-  const totalPages = Array.isArray(CATEGORIES) ? Math.ceil(CATEGORIES.length / categoriesPerPage) : 1;
+  const handlePrintLiveOrder = (order: any) => {
+    const items = (Array.isArray(order.items) ? order.items : []).map((item: any) => ({
+      coffeeItem: {
+        nameAr: item.name || item.nameAr || item.coffeeItem?.nameAr || '',
+        nameEn: item.nameEn || item.coffeeItem?.nameEn || '',
+        price: String(item.price || item.unitPrice || 0),
+      },
+      quantity: item.quantity || 1,
+    }));
+    printSimpleReceipt({
+      orderNumber: order.dailyNumber || order.orderNumber || '',
+      customerName: order.customerName || order.customerInfo?.customerName || 'عميل',
+      customerPhone: order.customerPhone || order.customerInfo?.customerPhone || '',
+      items,
+      subtotal: String(Number(order.totalAmount || 0) / 1.15),
+      total: String(order.totalAmount || 0),
+      paymentMethod: PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod || 'كاش',
+      employeeName: employee?.fullName || 'موظف',
+      date: order.createdAt || new Date().toISOString(),
+    });
+  };
+
+  if (!employee) return <LoadingState />;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col" dir="rtl">
-      <div className="flex flex-col lg:flex-row h-screen gap-0">
-        {/* Header - Responsive */}
-        <div className="flex-1 flex flex-col min-h-0 lg:min-h-screen">
-          <header className="bg-card/80 backdrop-blur-sm border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex-shrink-0">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-xl flex-shrink-0 flex items-center justify-center shadow-lg">
-                  <Coffee className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
-                    نظام نقاط البيع
-                  </h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{employee.fullName}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 flex-wrap justify-end">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background/50 rounded-full border border-border">
-                  {isOnline ? (
-                    <>
-                      <Wifi className="w-4 h-4 text-green-500" />
-                      <span className="text-xs font-medium">متصل</span>
-                      {syncing && <Loader2 className="w-3 h-3 animate-spin text-primary ml-1" />}
-                    </>
-                  ) : (
-                    <>
-                      <WifiOff className="w-4 h-4 text-destructive" />
-                      <span className="text-xs font-medium">وضع الأوفلاين</span>
-                    </>
-                  )}
-                </div>
-                
-                {offlineOrders.length > 0 && (
-                  <Badge variant="destructive" className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 animate-pulse text-xs sm:text-sm">
-                    <Archive className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                    <span className="hidden sm:inline">فواتير معلقة</span>
-                    <span className="bg-red-700 px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold">
-                      {offlineOrders.length}
-                    </span>
-                  </Badge>
-                )}
-                
-                {offlineOrders.length > 0 && isOnline && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={syncOfflineOrders}
-                    disabled={syncingOffline}
-                    className="text-xs sm:text-sm"
-                  >
-                    {syncingOffline ? <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> : <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />}
-                    <span className="hidden sm:inline ml-1 sm:mr-2">مزامنة ({offlineOrders.length})</span>
-                  </Button>
-                )}
-                
-                <Button 
-                  variant={soundEnabled ? "outline" : "secondary"}
-                  size="icon"
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className="h-9 w-9"
-                  title={soundEnabled ? "إيقاف الصوت" : "تشغيل الصوت"}
-                  data-testid="button-toggle-sound"
-                >
-                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                </Button>
-                
-                <Button 
-                  variant={alertsEnabled ? "outline" : "secondary"}
-                  size="icon"
-                  onClick={() => setAlertsEnabled(!alertsEnabled)}
-                  className="h-9 w-9"
-                  title={alertsEnabled ? "إيقاف التنبيهات" : "تشغيل التنبيهات"}
-                  data-testid="button-toggle-alerts"
-                >
-                  {alertsEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    setShowLiveOrders(true);
-                    setNewOrdersCount(0);
-                    setActiveAlerts([]); // Clear alerts when clicking orders button
-                  }} 
-                  className="text-xs sm:text-sm relative"
-                  data-testid="button-live-orders"
-                >
-                  <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
-                  <span className="hidden sm:inline">الطلبات</span>
-                  {activeAlerts.length > 0 && (
-                    <Badge variant="destructive" className="absolute -top-2 -left-2 h-5 w-5 p-0 flex items-center justify-center text-xs animate-pulse">
-                      {activeAlerts.length > 9 ? '9+' : activeAlerts.length}
-                    </Badge>
-                  )}
-                </Button>
-
-                <Button 
-                  variant={splitViewMode ? "default" : "outline"}
-                  size="sm" 
-                  onClick={() => setSplitViewMode(!splitViewMode)} 
-                  className="text-xs sm:text-sm"
-                  data-testid="button-split-view"
-                >
-                  <Columns2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
-                  <span className="hidden sm:inline">{splitViewMode ? 'عرض كامل' : 'عرض مقسم'}</span>
-                </Button>
-
-                <Badge 
-                  variant={posConnected ? "default" : "secondary"} 
-                  className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
-                >
-                  <MonitorSmartphone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">{posConnected ? "متصل" : "غير متصل"}</span>
+    <div className="flex flex-col h-screen bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground" dir="rtl">
+      <header className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-6 sm:py-3 border-b bg-card gap-2 sm:gap-0">
+        <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-2">
+            <div className="bg-primary/10 p-1.5 sm:p-2 rounded-lg">
+              <Coffee className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            </div>
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-primary">CLUNY</h1>
+          </div>
+          
+          <div className="flex items-center gap-2 sm:hidden">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowOrdersPanel(true)}
+              className="relative"
+              data-testid="button-mobile-orders"
+            >
+              <ClipboardList className="w-4 h-4" />
+              {newOrdersCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 px-1.5 min-w-[18px] h-[18px] bg-red-500 animate-pulse">
+                  {newOrdersCount}
                 </Badge>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setShowParkedOrders(true)} 
-                  className={`text-xs sm:text-sm ${parkedOrders.length > 0 ? 'animate-pulse' : ''}`}
-                  data-testid="button-parked-orders"
-                >
-                  <PauseCircle className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
-                  <span className="hidden sm:inline">معلق</span>
-                  {parkedOrders.length > 0 && (
-                    <Badge variant="secondary" className="text-xs mr-1 sm:mr-2 ml-0.5">
-                      {parkedOrders.length}
-                    </Badge>
-                  )}
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={openCashDrawer} 
-                  className="text-xs sm:text-sm"
-                  data-testid="button-open-drawer"
-                >
-                  <Receipt className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 flex-shrink-0" />
-                  <span className="hidden sm:inline">فتح</span>
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setLocation("/employee/dashboard")} 
-                  className="h-9 w-9 sm:h-10 sm:w-10"
-                  data-testid="button-back"
-                >
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
-                </Button>
-              </div>
-            </div>
-          </header>
-
-          {/* Order Suspension Banner */}
-          {isOrdersSuspended && (
-            <div className="bg-destructive/10 border-b border-destructive/30 px-4 py-3 flex items-center justify-center gap-3">
-              <Lock className="w-5 h-5 text-destructive" />
-              <span className="text-destructive font-bold text-lg">
-                الطلبات معلقة مؤقتاً - لا يمكن إنشاء طلبات جديدة
-              </span>
-            </div>
-          )}
-
-          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-0">
-            {/* Products Section */}
-            <div className="flex-1 flex flex-col p-3 sm:p-6 overflow-hidden min-w-0">
-              <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6 flex-wrap">
-                <div className="relative flex-1 min-w-0">
-                  <Search className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground flex-shrink-0" />
-                  <Input
-                    placeholder="بحث..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pr-10 sm:pr-12 h-10 sm:h-12 text-sm sm:text-lg rounded-xl"
-                    data-testid="input-search"
-                  />
-                </div>
-                
-                {searchQuery && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => setSearchQuery("")}
-                    className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0"
-                  >
-                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 overflow-x-auto pb-2">
-                {categoryPage > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setCategoryPage(p => p - 1)}
-                    className="shrink-0 h-10 w-10 sm:h-14 sm:w-auto"
-                  >
-                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </Button>
-                )}
-                
-                <div className="flex gap-1 sm:gap-2 flex-1 min-w-0 overflow-x-auto pb-1">
-                  {visibleCategories.map((cat: any) => (
-                    <Button
-                      key={cat.id}
-                      variant={selectedCategory === cat.id ? "default" : "outline"}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      size="sm"
-                      className={`shrink-0 h-10 sm:h-14 text-xs sm:text-base rounded-xl transition-all ${
-                        selectedCategory === cat.id ? `${cat.color} shadow-lg` : ""
-                      }`}
-                      data-testid={`button-category-${cat.id}`}
-                    >
-                      <cat.icon className="w-3 h-3 sm:w-5 sm:h-5 ml-0.5 sm:ml-2" />
-                      <span className="hidden sm:inline font-medium">{cat.name}</span>
-                    </Button>
-                  ))}
-                </div>
-                
-                {categoryPage < totalPages - 1 && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setCategoryPage(p => p + 1)}
-                    className="shrink-0 h-10 w-10 sm:h-14 sm:w-auto"
-                  >
-                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </Button>
-                )}
-              </div>
-
-              <ScrollArea className="flex-1 -mx-2 sm:-mx-2 px-2 sm:px-2">
-                {isLoading ? (
-                  <LoadingState message="جاري تحميل المنتجات..." />
-                ) : !Array.isArray(filteredItems) || filteredItems.length === 0 ? (
-                  <EmptyState 
-                    title="لا توجد منتجات مطابقة"
-                    description="جرب البحث بكلمات أخرى"
-                    icon={<Coffee className="w-10 h-10 text-muted-foreground" />}
-                  />
-                ) : (
-                  <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-4">
-                    {filteredItems.map((item: any) => {
-                      if (!item || !item.id) return null;
-                      const inCart = orderItems.find(oi => oi.coffeeItem && oi.coffeeItem.id === item.id);
-                      return (
-                        <Card
-                          key={item.id}
-                          className={`relative cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-xl rounded-xl overflow-hidden group hover-elevate ${
-                            inCart ? 'ring-2 ring-primary' : ''
-                          }`}
-                          onClick={() => addToOrder(item)}
-                          data-testid={`card-item-${item.id}`}
-                        >
-                          {inCart && (
-                            <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                              {inCart.quantity}
-                            </div>
-                          )}
-                          <CardContent className="p-4">
-                            <div className="aspect-square bg-muted rounded-xl mb-3 flex items-center justify-center transition-all overflow-hidden">
-                              {item.imageUrl ? (
-                                <img 
-                                  src={item.imageUrl} 
-                                  alt={item.nameAr}
-                                  className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                  }}
-                                />
-                              ) : null}
-                              <Coffee className={`w-12 h-12 text-primary/60 group-hover:text-primary/80 transition-all ${item.imageUrl ? 'hidden' : ''}`} />
-                            </div>
-                            <h3 className="text-sm font-semibold text-foreground truncate mb-1">{item.nameAr}</h3>
-                            {item.nameEn && (
-                              <p className="text-xs text-muted-foreground truncate mb-2">{item.nameEn}</p>
-                            )}
-                            <p className="text-xl font-bold text-foreground">{Number(item.price).toFixed(2)} <span className="text-sm text-muted-foreground">ر.س</span></p>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-
-            {/* Order Panel - Responsive */}
-            <div className="w-full lg:w-[420px] bg-card/90 backdrop-blur-sm border-t lg:border-r lg:border-t-0 border-border flex flex-col max-h-[50vh] lg:max-h-none">
-              <div className="p-5 border-b border-border">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5" />
-                    الفاتورة
-                  </h2>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => setShowParkDialog(true)} 
-                      disabled={orderItems.length === 0}
-                      data-testid="button-park-order"
-                    >
-                      <PauseCircle className="w-5 h-5" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={resetForm}
-                      data-testid="button-clear-order"
-                    >
-                      <RotateCcw className="w-5 h-5" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="5xxxxxxxx"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
-                        className="pr-10 rounded-lg"
-                        data-testid="input-phone"
-                      />
-                    </div>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => setShowBarcodeScanner(true)}
-                      title="مسح بطاقة الولاء"
-                      data-testid="button-scan-loyalty-card"
-                    >
-                      <ScanLine className="w-4 h-4" />
-                    </Button>
-                    {isCheckingCustomer && <Loader2 className="w-5 h-5 animate-spin text-primary self-center" />}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="relative">
-                      <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="اسم العميل"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="pr-10 rounded-lg"
-                        data-testid="input-customer-name"
-                      />
-                    </div>
-                      <Select value={tableNumber} onValueChange={(val) => {
-                        setTableNumber(val);
-                        const table = tablesData.find(t => t.tableNumber === val);
-                        if (table) setSelectedTable(table);
-                      }}>
-                        <SelectTrigger className="rounded-lg" data-testid="select-table">
-                          <Table2 className="w-4 h-4 ml-2 text-muted-foreground" />
-                          <SelectValue placeholder="اختر طاولة" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">بدون طاولة</SelectItem>
-                          {tablesData.map((table) => (
-                            <SelectItem 
-                              key={table.id || table._id} 
-                              value={table.tableNumber}
-                            >
-                              طاولة {table.tableNumber} ({table.capacity || table.seats} مقاعد)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                  </div>
-                  
-                  {loyaltyCard && (
-                    <div className="flex items-center gap-2 bg-primary/10 rounded-lg p-2 border border-primary/20">
-                      <Coffee className="w-4 h-4 text-primary" />
-                      <span className="text-sm text-primary">
-                        {loyaltyCard.stamps || 0} أختام | {customerPoints} نقطة
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <ScrollArea className="flex-1 p-5">
-                {orderItems.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-12">
-                    <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                    <p className="text-lg">اضغط على المنتجات لإضافتها</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {orderItems.map((item, itemIndex) => {
-                      if (!item || !item.coffeeItem) return null;
-                      const basePrice = Number(item.coffeeItem.price || 0);
-                      const addonsPrice = item.customization?.totalAddonsPrice || 0;
-                      const itemTotalBeforeDiscount = (basePrice + addonsPrice) * item.quantity;
-                      const itemTotal = itemTotalBeforeDiscount - (item.itemDiscount || 0);
-                      
-                      return (
-                        <div 
-                          key={item.lineItemId} 
-                          className="bg-muted/50 rounded-xl p-4 border border-border"
-                          data-testid={`order-item-${item.lineItemId}`}
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-foreground">{item.coffeeItem.nameAr}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {basePrice.toFixed(2)} ر.س
-                                {addonsPrice > 0 && <span className="text-primary"> +{addonsPrice.toFixed(2)}</span>}
-                                {' × '}{item.quantity}
-                              </p>
-                              {item.customization?.selectedAddons && item.customization.selectedAddons.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {item.customization.selectedAddons.map(addon => (
-                                    <Badge key={addon.addonId} variant="outline" className="text-xs">
-                                      {addon.nameAr} {addon.quantity > 1 && `×${addon.quantity}`}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                              {item.itemDiscount && item.itemDiscount > 0 && (
-                                <Badge variant="secondary" className="mt-1">
-                                  خصم: {item.itemDiscount.toFixed(2)} ر.س
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 bg-background rounded-lg p-1">
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                onClick={() => updateQuantity(item.lineItemId, item.quantity - 1)} 
-                                data-testid={`button-decrease-${item.lineItemId}`}
-                              >
-                                <Minus className="w-4 h-4" />
-                              </Button>
-                              <span className="w-8 text-center font-bold text-lg">{item.quantity}</span>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                onClick={() => updateQuantity(item.lineItemId, item.quantity + 1)} 
-                                data-testid={`button-increase-${item.lineItemId}`}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-foreground">
-                              {itemTotal.toFixed(2)} ر.س
-                            </span>
-                            <div className="flex gap-1">
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                onClick={() => openEditCustomization(item)} 
-                                data-testid={`button-edit-${item.lineItemId}`}
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                onClick={() => { setItemDiscountId(item.lineItemId); setShowDiscountDialog(true); }} 
-                                data-testid={`button-item-discount-${item.lineItemId}`}
-                              >
-                                <Tag className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                onClick={() => setOrderItems(orderItems.filter(i => i.lineItemId !== item.lineItemId))} 
-                                data-testid={`button-remove-${item.lineItemId}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    <Separator className="my-4" />
-
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="كود الخصم"
-                        value={discountCode}
-                        onChange={(e) => setDiscountCode(e.target.value)}
-                        className="rounded-lg"
-                        data-testid="input-discount-code"
-                      />
-                      <Button 
-                        onClick={validateDiscountCode} 
-                        disabled={isValidatingDiscount || !discountCode.trim()} 
-                        data-testid="button-apply-discount"
-                      >
-                        {isValidatingDiscount ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      </Button>
-                    </div>
-
-                    {appliedDiscount && (
-                      <div className="flex items-center justify-between bg-accent/50 rounded-lg px-4 py-2 border border-border">
-                        <div className="flex items-center gap-2">
-                          <Percent className="w-4 h-4 text-primary" />
-                          <span className="text-sm text-foreground">{appliedDiscount.reason} ({appliedDiscount.percentage}%)</span>
-                        </div>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          onClick={() => { setAppliedDiscount(null); setDiscountCode(""); }} 
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="خصم على الفاتورة"
-                        value={invoiceDiscount || ""}
-                        onChange={(e) => setInvoiceDiscount(parseFloat(e.target.value) || 0)}
-                        className="rounded-lg"
-                        data-testid="input-invoice-discount"
-                      />
-                      <Button 
-                        variant={invoiceDiscountType === 'fixed' ? 'default' : 'outline'}
-                        size="icon"
-                        onClick={() => setInvoiceDiscountType('fixed')}
-                      >
-                        <span className="text-xs font-bold">ر.س</span>
-                      </Button>
-                      <Button 
-                        variant={invoiceDiscountType === 'percentage' ? 'default' : 'outline'}
-                        size="icon"
-                        onClick={() => setInvoiceDiscountType('percentage')}
-                      >
-                        <Percent className="w-4 h-4" />
-                      </Button>
-                    </div>
-
-                    <Separator className="my-4" />
-
-                    <div className="space-y-2 text-sm bg-muted/50 rounded-lg p-3">
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>المجموع الفرعي:</span>
-                        <span className="text-foreground font-medium">{calculateSubtotal().toFixed(2)} ر.س</span>
-                      </div>
-                      {appliedDiscount && (
-                        <div className="flex justify-between text-primary">
-                          <span>خصم الكود ({appliedDiscount.percentage}%):</span>
-                          <span>-{calculateCodeDiscount().toFixed(2)} ر.س</span>
-                        </div>
-                      )}
-                      {calculateInvoiceDiscount() > 0 && (
-                        <div className="flex justify-between text-primary">
-                          <span>خصم الفاتورة{invoiceDiscountType === 'percentage' ? ` (${invoiceDiscount}%)` : ''}:</span>
-                          <span>-{calculateInvoiceDiscount().toFixed(2)} ر.س</span>
-                        </div>
-                      )}
-                      <Separator className="my-2" />
-                      <div className="flex justify-between text-xl font-bold text-primary">
-                        <span>الإجمالي:</span>
-                        <span>{calculateTotal()} ر.س</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 mt-6 pt-4 border-t border-border">
-                      <div className="space-y-2">
-                        <span className="text-sm text-muted-foreground font-medium">نوع الطلب</span>
-                        <div className="grid grid-cols-3 gap-2">
-                          {ORDER_TYPES.map((type) => (
-                            <Button
-                              key={type.id}
-                              variant={orderType === type.id ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setOrderType(type.id)}
-                              className={`flex items-center justify-center gap-1.5 h-11 font-bold text-xs ${
-                                orderType === type.id ? "shadow-lg" : ""
-                              }`}
-                              data-testid={`button-order-type-${type.id}`}
-                            >
-                              <type.icon className="w-4 h-4" />
-                              <span className="hidden sm:inline">{type.name}</span>
-                              <span className="sm:hidden">{type.nameEn}</span>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground font-medium">طريقة الدفع</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setShowSplitPayment(!showSplitPayment)}
-                            className="h-7 px-2 text-xs"
-                          >
-                            <SplitSquareVertical className="w-3 h-3 ml-1" />
-                            {showSplitPayment ? 'إلغاء' : 'تقسيم'}
-                          </Button>
-                        </div>
-                        
-                        {!showSplitPayment ? (
-                          <>
-                            <div className="grid grid-cols-4 gap-1.5">
-                              {PAYMENT_METHODS.map((method) => (
-                                <Button
-                                  key={method.id}
-                                  variant={paymentMethod === method.id ? "default" : "outline"}
-                                  size="sm"
-                                  onClick={() => {
-                                    setPaymentMethod(method.id);
-                                    if (method.id !== 'qahwa-card') setUsedFreeDrinks(0);
-                                  }}
-                                  className={`flex flex-col h-14 gap-0.5 p-1 ${method.id === 'apple_pay' ? 'bg-black text-white hover:bg-black/90 border-0' : ''}`}
-                                  data-testid={`button-payment-${method.id}`}
-                                >
-                                  {method.id === 'apple_pay' ? (
-                                    <div className="flex flex-col items-center justify-center">
-                                      <span className="text-[10px] font-black tracking-tighter"> Pay</span>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <method.icon className="w-4 h-4" />
-                                      <span className="text-[9px] leading-tight text-center">{method.name}</span>
-                                    </>
-                                  )}
-                                </Button>
-                              ))}
-                            </div>
-                            
-                            {paymentMethod === 'cash' && (
-                              <div className="space-y-4 mt-2 p-3 bg-muted/30 rounded-lg">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1">
-                                    <Label className="text-xs font-bold mb-1 block text-right">المبلغ المستلم</Label>
-                                    <div className="relative">
-                                      <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                      <Input
-                                        type="number"
-                                        value={cashReceived || ''}
-                                        onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
-                                        className="pr-10 h-10 text-lg font-bold text-center"
-                                        placeholder="0.00"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex-1">
-                                    <Label className="text-xs font-bold mb-1 block text-right">المبلغ المتبقي</Label>
-                                    <div className="h-10 flex items-center justify-center bg-primary/10 rounded-lg border border-primary/20">
-                                      <span className="text-lg font-bold text-primary">
-                                        {changeAmount.toFixed(2)} ر.س
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="grid grid-cols-3 gap-1.5">
-                                  {[10, 20, 50, 100, 200, 500].map(amount => (
-                                    <Button 
-                                      key={amount}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setCashReceived((cashReceived || 0) + amount)}
-                                      className="h-8 text-[10px] font-bold"
-                                    >
-                                      +{amount}
-                                    </Button>
-                                  ))}
-                                  <Button 
-                                    variant="destructive" 
-                                    size="sm" 
-                                    onClick={() => setCashReceived(0)}
-                                    className="h-8 text-[10px] font-bold col-span-3"
-                                  >
-                                    مسح المبلغ
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-
-                            {paymentMethod === 'cash' && (
-                              <div className="space-y-4 mt-2 p-3 bg-muted/30 rounded-lg" dir="rtl">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1">
-                                    <Label className="text-xs font-bold mb-1 block text-right">المبلغ المستلم</Label>
-                                    <div className="relative">
-                                      <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                      <Input
-                                        type="number"
-                                        value={cashReceived || ''}
-                                        onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
-                                        className="pr-10 h-10 text-lg font-bold text-center"
-                                        placeholder="0.00"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex-1">
-                                    <Label className="text-xs font-bold mb-1 block text-right">المبلغ المتبقي</Label>
-                                    <div className="h-10 flex items-center justify-center bg-primary/10 rounded-lg border border-primary/20">
-                                      <span className="text-lg font-bold text-primary">
-                                        {changeAmount.toFixed(2)} ر.س
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="grid grid-cols-3 gap-1.5">
-                                  {[10, 20, 50, 100, 200, 500].map(amount => (
-                                    <Button 
-                                      key={amount}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setCashReceived((cashReceived || 0) + amount)}
-                                      className="h-8 text-[10px] font-bold"
-                                    >
-                                      +{amount}
-                                    </Button>
-                                  ))}
-                                  <Button 
-                                    variant="destructive" 
-                                    size="sm" 
-                                    onClick={() => setCashReceived(0)}
-                                    className="h-8 text-[10px] font-bold col-span-3"
-                                  >
-                                    مسح المبلغ
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-
-                            {paymentMethod === 'qahwa-card' && loyaltyCard && (() => {
-                              const availableFreeDrinks = Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0));
-                              const totalDrinks = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-                              const maxUsable = Math.min(availableFreeDrinks, totalDrinks);
-                              
-                              if (availableFreeDrinks <= 0) return (
-                                <div className="p-2 bg-muted rounded-lg text-center text-sm text-muted-foreground">
-                                  لا يوجد مشروبات مجانية متاحة
-                                </div>
-                              );
-                              
-                              return (
-                                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                                      <Gift className="w-4 h-4 inline ml-1" />
-                                      مشروبات مجانية متاحة: {availableFreeDrinks}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-green-600 dark:text-green-400">استخدام:</span>
-                                    <div className="flex items-center gap-1 bg-background rounded-lg p-1">
-                                      <Button 
-                                        size="icon" 
-                                        variant="ghost"
-                                        onClick={() => setUsedFreeDrinks(Math.max(0, usedFreeDrinks - 1))}
-                                        disabled={usedFreeDrinks <= 0}
-                                        data-testid="button-decrease-free-drinks"
-                                      >
-                                        <Minus className="w-4 h-4" />
-                                      </Button>
-                                      <span className="w-8 text-center font-bold">{usedFreeDrinks}</span>
-                                      <Button 
-                                        size="icon" 
-                                        variant="ghost"
-                                        onClick={() => setUsedFreeDrinks(Math.min(maxUsable, usedFreeDrinks + 1))}
-                                        disabled={usedFreeDrinks >= maxUsable}
-                                        data-testid="button-increase-free-drinks"
-                                      >
-                                        <Plus className="w-4 h-4" />
-                                      </Button>
-                                    </div>
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      onClick={() => setUsedFreeDrinks(maxUsable)}
-                                      className="text-xs"
-                                      data-testid="button-use-all-free"
-                                    >
-                                      استخدام الكل ({maxUsable})
-                                    </Button>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-                          </>
-                        ) : (
-                          <div className="space-y-2">
-                            {splitPayments.map((payment, index) => (
-                              <div key={index} className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
-                                <div className="flex items-center gap-2">
-                                  {PAYMENT_METHODS.find(m => m.id === payment.method)?.icon && (
-                                    <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-                                      {(() => {
-                                        const IconComponent = PAYMENT_METHODS.find(m => m.id === payment.method)?.icon;
-                                        return IconComponent ? <IconComponent className="w-3.5 h-3.5 text-primary-foreground" /> : null;
-                                      })()}
-                                    </div>
-                                  )}
-                                  <span className="text-xs">{PAYMENT_METHODS.find(m => m.id === payment.method)?.name}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-sm">{payment.amount.toFixed(2)} ر.س</span>
-                                  <Button size="icon" variant="ghost" onClick={() => removeSplitPayment(index)}>
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                            
-                            {getRemainingAmount() > 0 && (
-                              <div className="flex gap-1.5">
-                                <select 
-                                  value={currentSplitMethod}
-                                  onChange={(e) => setCurrentSplitMethod(e.target.value as PaymentMethod)}
-                                  className="bg-background border border-border text-foreground rounded-lg px-2 py-1.5 text-xs flex-1"
-                                >
-                                  {PAYMENT_METHODS.map(m => (
-                                    <option key={m.id} value={m.id}>{m.name}</option>
-                                  ))}
-                                </select>
-                                <Input
-                                  type="number"
-                                  placeholder={`${getRemainingAmount().toFixed(2)}`}
-                                  value={currentSplitAmount || ""}
-                                  onChange={(e) => setCurrentSplitAmount(parseFloat(e.target.value) || 0)}
-                                  className="h-8 text-xs flex-1"
-                                />
-                                <Button onClick={addSplitPayment} size="sm">
-                                  <Plus className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            )}
-                            
-                            <div className="text-center py-1.5 bg-muted/30 rounded-lg">
-                              <span className="text-xs text-muted-foreground">المتبقي: </span>
-                              <span className={`font-bold text-sm ${getRemainingAmount() > 0 ? 'text-destructive' : 'text-primary'}`}>
-                                {getRemainingAmount().toFixed(2)} ر.س
-                              </span>
-                            </div>
-                            
-                            {splitPayments.some(p => p.method === 'qahwa-card') && loyaltyCard && (() => {
-                              const availableFreeDrinks = Math.max(0, (loyaltyCard.freeCupsEarned || 0) - (loyaltyCard.freeCupsRedeemed || 0));
-                              const totalDrinks = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-                              const maxUsable = Math.min(availableFreeDrinks, totalDrinks);
-                              
-                              if (availableFreeDrinks <= 0) return null;
-                              
-                              return (
-                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-green-700 dark:text-green-400">
-                                      <Gift className="w-3 h-3 inline ml-1" />
-                                      مجاني: {availableFreeDrinks}
-                                    </span>
-                                    <div className="flex items-center gap-1 bg-background rounded p-0.5">
-                                      <Button 
-                                        size="icon" 
-                                        variant="ghost"
-                                        className="h-6 w-6"
-                                        onClick={() => setUsedFreeDrinks(Math.max(0, usedFreeDrinks - 1))}
-                                        disabled={usedFreeDrinks <= 0}
-                                      >
-                                        <Minus className="w-3 h-3" />
-                                      </Button>
-                                      <span className="w-6 text-center font-bold text-sm">{usedFreeDrinks}</span>
-                                      <Button 
-                                        size="icon" 
-                                        variant="ghost"
-                                        className="h-6 w-6"
-                                        onClick={() => setUsedFreeDrinks(Math.min(maxUsable, usedFreeDrinks + 1))}
-                                        disabled={usedFreeDrinks >= maxUsable}
-                                      >
-                                        <Plus className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
-                      </div>
-
-                <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-border">
-                  <Button 
-                    variant="outline" 
-                    className="h-14 text-lg font-bold rounded-xl flex items-center justify-center gap-2"
-                    onClick={handlePrintDraft}
-                    disabled={orderItems.length === 0 || isOrdersSuspended}
-                  >
-                    <Printer className="w-5 h-5" />
-                    فاتورة مبدئية
-                  </Button>
-                  <Button 
-                    className="h-14 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                    onClick={() => handleSubmitOrder("pending")}
-                    disabled={orderItems.length === 0 || isOrdersSuspended}
-                    data-testid="button-submit-order"
-                  >
-                    <CheckCircle className="w-5 h-5" />
-                    {(tableNumber && tableNumber !== "none") ? "إرسال للمطبخ" : "إرسال للمطبخ"}
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 gap-3 mt-3">
-                  <Button 
-                    className="h-16 text-xl font-bold bg-accent hover:bg-accent/90 text-white rounded-xl flex items-center justify-center gap-3 shadow-xl shadow-accent/20 transition-all active:scale-[0.98]"
-                    onClick={() => handleSubmitOrder("in_progress")}
-                    disabled={orderItems.length === 0 || isOrdersSuspended}
-                    data-testid="button-checkout"
-                  >
-                    <CreditCard className="w-6 h-6" />
-                    دفع وإغلاق الفاتورة
-                  </Button>
-                </div>
-                    </div>
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
+              )}
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowPOSSettings(true)}
+              data-testid="button-mobile-settings"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+            {splitViewMode && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSplitViewMode(false)}
+                data-testid="button-mobile-back"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
-      </div>
 
-      <Dialog open={showParkedOrders} onOpenChange={setShowParkedOrders}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <Archive className="w-6 h-6" />
-              الطلبات المعلقة ({parkedOrders.length})
-            </DialogTitle>
-            <DialogDescription>
-              يمكنك استئناف أي طلب معلق أو حذفه
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            {parkedOrders.length === 0 ? (
-              <EmptyState 
-                title="لا توجد طلبات معلقة"
-                icon={<Clock className="w-10 h-10 text-muted-foreground" />}
+        <div className="hidden sm:flex items-center gap-3">
+          <Tabs value={orderType} onValueChange={(v) => setOrderType(v as OrderType)} className="w-[400px]">
+            <TabsList className="grid grid-cols-4 w-full h-10 p-1">
+              {ORDER_TYPES.map((type) => (
+                <TabsTrigger key={type.id} value={type.id} className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid={`tab-order-type-${type.id}`}>
+                  <type.icon className="w-3.5 h-3.5 ml-1.5" />
+                  {type.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <div className="flex items-center flex-wrap gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+          <Button
+            variant={posTerminalConnected ? "default" : "outline"}
+            size="sm"
+            onClick={() => setPosTerminalConnected(!posTerminalConnected)}
+            className="hidden sm:flex gap-1"
+            data-testid="button-pos-terminal-toggle"
+          >
+            <MonitorSmartphone className="w-4 h-4" />
+            <span className="text-xs">{posTerminalConnected ? "الشبكة متصلة" : "الشبكة غير متصلة"}</span>
+            <div className={`w-2 h-2 rounded-full ${posTerminalConnected ? 'bg-green-400' : 'bg-orange-400'}`} />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowPOSSettings(true)}
+            className="hidden sm:flex"
+            data-testid="button-pos-settings"
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="hidden sm:flex"
+            data-testid="button-sound-toggle"
+          >
+            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </Button>
+
+          <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} title={wsConnected ? 'متصل' : 'غير متصل'} />
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowOrdersPanel(true)}
+            className="relative hidden sm:flex"
+            data-testid="button-desktop-orders"
+          >
+            <ClipboardList className="w-4 h-4 ml-2" />
+            الطلبات
+            {newOrdersCount > 0 && (
+              <Badge className="absolute -top-2 -right-2 px-1.5 min-w-[18px] h-[18px] bg-red-500 animate-pulse">
+                {newOrdersCount}
+              </Badge>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTablesDialog(true)}
+            className="hidden sm:flex"
+            data-testid="button-tables-grid"
+          >
+            <Grid3X3 className="w-4 h-4 ml-2" />
+            الطاولات
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowOpenBillsDialog(true)}
+            className="relative hidden sm:flex"
+            data-testid="button-open-bills"
+          >
+            <Receipt className="w-4 h-4 ml-2" />
+            فواتير مفتوحة
+            {openTableOrders.length > 0 && (
+              <Badge className="absolute -top-2 -right-2 px-1.5 min-w-[18px] h-[18px] bg-orange-500">
+                {openTableOrders.length}
+              </Badge>
+            )}
+          </Button>
+
+          <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-full border">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[10px] sm:text-xs font-medium">{employee?.fullName || 'موظف'}</span>
+          </div>
+          
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/employee/dashboard")} className="h-8 w-8 sm:h-9 sm:w-9" data-testid="button-back-dashboard" title="العودة للوحة التحكم">
+            <ArrowRight className="w-5 h-5 text-muted-foreground" />
+          </Button>
+        </div>
+      </header>
+
+      <main className="flex-1 flex overflow-hidden">
+        <aside className={`${splitViewMode ? 'hidden lg:flex' : 'flex'} w-16 sm:w-24 border-l bg-muted/30 flex-col py-4 gap-4 overflow-y-auto shrink-0`}>
+          <Button
+            variant={selectedCategory === "all" ? "default" : "ghost"}
+            className="flex-col gap-1 h-16 sm:h-20 w-full rounded-none"
+            onClick={() => setSelectedCategory("all")}
+            data-testid="button-category-all"
+          >
+            <Grid3X3 className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-[10px] sm:text-xs font-bold">الكل</span>
+          </Button>
+          {visibleCategories.map((cat: any) => (
+            <Button
+              key={cat.id}
+              variant={selectedCategory === cat.id ? "default" : "ghost"}
+              className="flex-col gap-1 h-16 sm:h-20 w-full rounded-none"
+              onClick={() => setSelectedCategory(cat.id)}
+              data-testid={`button-category-${cat.id}`}
+            >
+              <cat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-[10px] sm:text-xs font-bold truncate max-w-full px-1">{cat.name}</span>
+            </Button>
+          ))}
+        </aside>
+
+        <section className={`${splitViewMode ? 'hidden md:flex' : 'flex'} flex-1 flex-col overflow-hidden`}>
+          <div className="p-2 sm:p-4 border-b bg-card/50 flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="ابحث عن منتج..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pr-10 h-9 sm:h-12 text-sm sm:text-base rounded-xl border-2 focus-visible:ring-primary"
+                data-testid="input-search-products"
               />
+            </div>
+            <div className="flex gap-2 sm:hidden overflow-x-auto whitespace-nowrap pb-1 no-scrollbar">
+              {ORDER_TYPES.map((type) => (
+                <Button
+                  key={type.id}
+                  variant={orderType === type.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setOrderType(type.id as OrderType)}
+                  className="whitespace-nowrap shrink-0 h-9"
+                  data-testid={`button-mobile-order-type-${type.id}`}
+                >
+                  <type.icon className="w-4 h-4 ml-1" />
+                  {type.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1 p-2 sm:p-4 lg:p-6">
+            {isLoadingProducts ? (
+              <LoadingState message="جاري تحميل المنتجات..." />
             ) : (
-              <div className="space-y-3">
-                {parkedOrders.sort((a, b) => {
-                  if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
-                  if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
-                  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                }).map((order) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+                {filteredItemsList.map((item: any) => (
                   <Card 
-                    key={order.id} 
-                    className={order.priority === 'urgent' ? 'border-destructive/50' : ''}
+                    key={item.id}
+                    className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 ${
+                      item.isAvailable === false ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:border-primary/50'
+                    }`}
+                    onClick={() => item.isAvailable !== false && addToOrder(item)}
+                    data-testid={`card-product-${item.id}`}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-foreground">{order.name}</h4>
-                            {order.priority === 'urgent' && (
-                              <Badge variant="destructive" className="text-xs">
-                                <AlertTriangle className="w-3 h-3 ml-1" />
-                                عاجل
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>{order.items.length} عنصر</span>
-                            <span>{order.items.reduce((sum, i) => sum + i.quantity, 0)} قطعة</span>
-                            {order.tableNumber && <span>طاولة {order.tableNumber}</span>}
-                          </div>
-                          {order.note && (
-                            <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                              <MessageSquare className="w-3 h-3" />
-                              {order.note}
-                            </div>
-                          )}
+                    <div className="aspect-square relative overflow-hidden">
+                      {item.imageUrl ? (
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.nameAr}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <Coffee className="w-10 h-10 text-muted-foreground/30" />
                         </div>
-                        <div className="text-left">
-                          <Badge variant="secondary" className="text-xs">
-                            {new Date(order.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
-                          </Badge>
-                          <p className="text-lg font-bold text-foreground mt-1">
-                            {order.items.reduce((sum, i) => sum + (Number(i.coffeeItem.price) * i.quantity - (i.itemDiscount || 0)), 0).toFixed(2)} ر.س
-                          </p>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {item.isAvailable === false && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                          <Badge variant="destructive" className="text-[10px] sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1">نفذت الكمية</Badge>
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => resumeParkedOrder(order)} 
-                          className="flex-1"
-                          data-testid={`button-resume-${order.id}`}
-                        >
-                          <PlayCircle className="w-4 h-4 ml-1" />
-                          استئناف
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => updateParkedOrderPriority(order.id, order.priority === 'urgent' ? 'normal' : 'urgent')}
-                        >
-                          <AlertTriangle className={`w-4 h-4 ${order.priority === 'urgent' ? 'text-destructive' : ''}`} />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive" 
-                          onClick={() => deleteParkedOrder(order.id)}
-                          data-testid={`button-delete-parked-${order.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      )}
+                    </div>
+                    <CardContent className="p-2 sm:p-3">
+                      <h3 className="font-bold text-xs sm:text-base mb-1 line-clamp-1 group-hover:text-primary transition-colors">{item.nameAr}</h3>
+                      <div className="flex justify-between items-center">
+                        <p className="text-primary font-black text-xs sm:text-base">{Number(item.price).toFixed(2)} ر.س{showVatLabel && <span className="text-muted-foreground font-medium text-[9px] sm:text-[10px] mr-1">(شامل الضريبة)</span>}</p>
+                        <div className="bg-primary/10 text-primary rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Plus className="w-3.5 h-3.5" />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -2320,389 +676,683 @@ export default function POSSystem() {
               </div>
             )}
           </ScrollArea>
-        </DialogContent>
-      </Dialog>
+        </section>
 
-      <Dialog open={showParkDialog} onOpenChange={setShowParkDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>تعليق الطلب</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>ملاحظة (اختياري)</Label>
-              <Input
-                value={parkOrderNote}
-                onChange={(e) => setParkOrderNote(e.target.value)}
-                placeholder="أضف ملاحظة للطلب المعلق..."
-                className="mt-2"
-                data-testid="input-park-note"
-              />
+        <aside className={`${splitViewMode ? 'flex' : 'hidden md:flex'} w-full md:w-80 lg:w-[420px] border-r flex flex-col bg-card shrink-0 overflow-y-auto`}>
+          <div className="p-2 sm:p-4 border-b flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="bg-primary p-1.5 rounded-lg">
+                <ShoppingBag className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <h2 className="font-bold text-sm sm:text-lg">تفاصيل الطلب</h2>
             </div>
-            <div className="bg-muted/30 rounded-lg p-3">
-              <p className="text-sm text-muted-foreground">سيتم حفظ:</p>
-              <ul className="text-sm text-foreground mt-2 space-y-1">
-                <li>{orderItems.length} منتج</li>
-                <li>المجموع: {calculateTotal()} ر.س</li>
-                {customerName && <li>العميل: {customerName}</li>}
-                {tableNumber && <li>طاولة: {tableNumber}</li>}
-              </ul>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" onClick={() => setSplitViewMode(!splitViewMode)} className="hidden md:flex" data-testid="button-split-view">
+                <Columns2 className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setOrderItems([])} className="text-destructive" data-testid="button-clear-order">
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowParkDialog(false)}>
-              إلغاء
-            </Button>
-            <Button onClick={parkOrder} data-testid="button-confirm-park">
-              <PauseCircle className="w-4 h-4 ml-1" />
-              تعليق الطلب
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      <Dialog open={showDiscountDialog} onOpenChange={setShowDiscountDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>خصم على المنتج</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>نوع الخصم</Label>
-              <div className="flex gap-2 mt-2">
-                <Button 
-                  variant={itemDiscountType === 'fixed' ? 'default' : 'outline'}
-                  onClick={() => setItemDiscountType('fixed')}
-                  className="flex-1"
-                >
-                  مبلغ ثابت (ر.س)
-                </Button>
-                <Button 
-                  variant={itemDiscountType === 'percentage' ? 'default' : 'outline'}
-                  onClick={() => setItemDiscountType('percentage')}
-                  className="flex-1"
-                >
-                  نسبة مئوية (%)
-                </Button>
+          <ScrollArea className="flex-1 px-2 sm:px-4 py-2">
+            {orderItems.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50 py-20">
+                <ShoppingBag className="w-12 h-12 mb-4" />
+                <p className="text-sm font-bold">السلة فارغة</p>
               </div>
-            </div>
-            <div>
-              <Label>
-                قيمة الخصم {itemDiscountType === 'percentage' ? '(%)' : '(ر.س)'}
-              </Label>
-              <Input
-                type="number"
-                value={itemDiscountAmount}
-                onChange={(e) => setItemDiscountAmount(parseFloat(e.target.value) || 0)}
-                placeholder="0"
-                className="mt-2 text-xl text-center"
-                data-testid="input-item-discount-amount"
-              />
-            </div>
-            {itemDiscountType === 'percentage' && (
-              <div className="grid grid-cols-4 gap-2">
-                {[5, 10, 15, 20, 25, 30, 50, 100].map(p => (
-                  <Button 
-                    key={p} 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setItemDiscountAmount(p)}
-                  >
-                    {p}%
-                  </Button>
+            ) : (
+              <div className="space-y-3 sm:space-y-4">
+                {orderItems.map((item) => (
+                  <div key={item.lineItemId} className="group flex flex-col gap-2 p-2 sm:p-3 rounded-xl border-2 hover:border-primary/30 bg-muted/20 transition-all" data-testid={`order-item-${item.lineItemId}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-xs sm:text-sm line-clamp-2">{item.coffeeItem.nameAr}</h4>
+                        <p className="text-primary font-black text-[10px] sm:text-xs">{(Number(item.coffeeItem.price) * item.quantity).toFixed(2)} ر.س</p>
+                      </div>
+                      <div className="flex items-center bg-background rounded-full border shadow-sm p-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                          onClick={() => updateQuantity(item.lineItemId, item.quantity - 1)}
+                          data-testid={`button-decrease-${item.lineItemId}`}
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-black">{item.quantity}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                          onClick={() => updateQuantity(item.lineItemId, item.quantity + 1)}
+                          data-testid={`button-increase-${item.lineItemId}`}
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowDiscountDialog(false); setItemDiscountId(null); }}>
-              إلغاء
-            </Button>
-            <Button 
-              onClick={() => { if (itemDiscountId) applyItemDiscount(itemDiscountId, itemDiscountAmount, itemDiscountType); }} 
-              data-testid="button-confirm-item-discount"
-            >
-              <Check className="w-4 h-4 ml-1" />
-              تطبيق الخصم
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ScrollArea>
 
-      <Dialog open={showLiveOrders} onOpenChange={setShowLiveOrders}>
-        <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ClipboardList className="w-6 h-6 text-primary" />
-                إدارة الطلبات المباشرة
-                {wsConnected && (
-                  <Badge variant="outline" className="text-xs">
-                    <div className="w-2 h-2 bg-green-500 rounded-full ml-1 animate-pulse" />
-                    مباشر
-                  </Badge>
+          <div className="px-2 sm:px-4 py-2 border-t space-y-2">
+            <Input
+              placeholder="اسم العميل"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="h-9 text-sm"
+              data-testid="input-pos-customer-name"
+            />
+            <Input
+              placeholder="رقم الجوال"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className="h-9 text-sm"
+              dir="ltr"
+              data-testid="input-pos-customer-phone"
+            />
+            {orderType === "dine_in" && (
+              <Input
+                placeholder="رقم الطاولة"
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                className="h-9 text-sm"
+                data-testid="input-pos-table-number"
+              />
+            )}
+          </div>
+
+          <div className="px-2 sm:px-4 py-2 border-t">
+            <p className="text-xs sm:text-sm font-bold text-muted-foreground mb-2">طريقة الدفع</p>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              {PAYMENT_METHODS.map((method) => (
+                <Button
+                  key={method.id}
+                  variant={paymentMethod === method.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPaymentMethod(method.id as PaymentMethod)}
+                  className={`flex flex-col gap-0.5 h-auto py-2 text-[10px] sm:text-xs ${
+                    paymentMethod === method.id ? '' : ''
+                  }`}
+                  data-testid={`button-payment-${method.id}`}
+                >
+                  <method.icon className="w-4 h-4" />
+                  <span className="font-bold">{method.name}</span>
+                </Button>
+              ))}
+            </div>
+            {paymentMethod === "card" && (
+              <div className="mt-2 space-y-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
+                  سيتم عرض المبلغ على جهاز الشبكة
+                </p>
+                {posTerminalConnected ? (
+                  <div className="flex items-center justify-center gap-1.5 text-green-600 text-[10px] sm:text-xs" data-testid="status-terminal-connected">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="font-medium">جهاز الشبكة متصل</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-1.5 text-orange-500 text-[10px] sm:text-xs" data-testid="status-terminal-disconnected">
+                    <AlertTriangle className="w-3 h-3" />
+                    <span className="font-medium">جهاز الشبكة غير متصل</span>
+                  </div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">
-                  {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length} طلب نشط
-                </Badge>
+            )}
+          </div>
+
+          <div className="p-2 sm:p-4 border-t bg-muted/10 gap-2 sm:gap-3 flex flex-col">
+            <div className="space-y-2">
+              <div className="flex justify-between text-[10px] sm:text-sm">
+                <span className="text-muted-foreground">المجموع الفرعي</span>
+                <span className="font-bold">{calculateSubtotal().toFixed(2)} ر.س</span>
               </div>
+              <div className="flex justify-between text-[10px] sm:text-sm">
+                <span className="text-muted-foreground">الضريبة (15%)</span>
+                <span className="font-bold">{(calculateTotal() - calculateSubtotal()).toFixed(2)} ر.س</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center pt-1">
+                <span className="font-black text-sm sm:text-lg">الإجمالي</span>
+                <span className="font-black text-lg sm:text-2xl text-primary">{calculateTotal().toFixed(2)} ر.س</span>
+              </div>
+            </div>
+
+            <Button 
+              className="w-full h-11 sm:h-14 md:h-16 text-xs sm:text-base md:text-lg font-black rounded-xl shadow-lg shadow-primary/20 gap-2"
+              disabled={orderItems.length === 0 || syncing}
+              onClick={handleCheckout}
+              data-testid="button-checkout"
+            >
+              {syncing ? (
+                <Loader2 className="w-4 h-4 sm:w-6 sm:h-6 animate-spin" />
+              ) : (
+                <>
+                  {PAYMENT_METHODS.find(m => m.id === paymentMethod)?.icon && (() => {
+                    const IconComp = PAYMENT_METHODS.find(m => m.id === paymentMethod)!.icon;
+                    return <IconComp className="w-4 h-4 sm:w-6 sm:h-6" />;
+                  })()}
+                </>
+              )}
+              الدفع {PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod}
+            </Button>
+          </div>
+        </aside>
+      </main>
+
+      {!splitViewMode && orderItems.length > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 md:hidden">
+          <Button 
+            className="w-full h-14 rounded-2xl shadow-2xl flex items-center justify-between px-6"
+            onClick={() => setSplitViewMode(true)}
+            data-testid="button-mobile-cart-fab"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5" />
+              <span className="font-bold">{orderItems.length} أصناف</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-black">{calculateTotal().toFixed(2)} ر.س</span>
+              <ChevronLeft className="w-5 h-5" />
+            </div>
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={showOrdersPanel} onOpenChange={setShowOrdersPanel}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5" />
+              الطلبات الحية ({liveOrders?.length || 0})
             </DialogTitle>
-            <DialogDescription>
-              متابعة وتحكم في الطلبات النشطة في النظام - اضغط على الطلب لعرض التفاصيل
-            </DialogDescription>
           </DialogHeader>
-          
-          <div className="flex gap-4 flex-1 min-h-0 mt-4">
-            <ScrollArea className="flex-1">
-              <div className="space-y-3 pr-4">
-                {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').map((order: any) => {
+          <ScrollArea className="flex-1 max-h-[65vh]">
+            <div className="space-y-3 p-1">
+              {!liveOrders || liveOrders.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="font-bold">لا توجد طلبات حية حالياً</p>
+                </div>
+              ) : (
+                liveOrders.map((order: any) => {
+                  const orderCustomerName = order.customerName || order.customerInfo?.customerName || order.customerInfo?.name || '';
+                  const orderCustomerPhone = order.customerPhone || order.customerInfo?.customerPhone || order.customerInfo?.phone || '';
                   const statusColors: Record<string, string> = {
-                    pending: 'border-r-4 border-r-orange-500',
-                    in_progress: 'border-r-4 border-r-blue-500',
-                    ready: 'border-r-4 border-r-green-500',
-                    open: 'border-r-4 border-r-purple-500'
+                    'pending': 'border-yellow-500 bg-yellow-500/5',
+                    'in_progress': 'border-blue-500 bg-blue-500/5',
+                    'ready': 'border-green-500 bg-green-500/5',
                   };
                   const statusLabels: Record<string, string> = {
-                    pending: 'في الانتظار',
-                    in_progress: 'قيد التجهيز',
-                    ready: 'جاهز للاستلام',
-                    open: 'طاولة مفتوحة'
+                    'pending': 'قيد الانتظار',
+                    'payment_confirmed': 'مؤكد',
+                    'in_progress': 'جاري التحضير',
+                    'ready': 'جاهز',
                   };
+                  const carInfo = order.carType || order.carInfo?.carType;
+                  const carColor = order.carColor || order.carInfo?.carColor;
+                  
                   return (
-                    <Card 
-                      key={order.id || order._id} 
-                      className={`overflow-hidden cursor-pointer hover-elevate ${statusColors[order.status] || ''} ${selectedOrderDetails?.id === order.id || selectedOrderDetails?._id === order._id ? 'ring-2 ring-primary' : ''}`}
-                      onClick={() => setSelectedOrderDetails(order)}
-                    >
+                    <Card key={order.id || order._id} className={`border-2 ${statusColors[order.status] || 'border-border'}`} data-testid={`order-card-${order.id}`}>
                       <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <Badge variant="outline" className="text-base font-bold px-2 py-0.5">
-                              #{order.orderNumber}
-                            </Badge>
-                            <div>
-                              <p className="font-medium text-foreground text-sm">{order.customerInfo?.customerName || "عميل"}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Clock className="w-3 h-3" />
-                                {new Date(order.createdAt).toLocaleTimeString('ar-SA')}
-                                {order.tableNumber && (
-                                  <>
-                                    <span className="mx-1">•</span>
-                                    <Table2 className="w-3 h-3" />
-                                    طاولة {order.tableNumber}
-                                  </>
-                                )}
-                              </div>
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-black text-lg">#{order.dailyNumber || order.orderNumber}</span>
+                              <Badge variant={order.status === 'ready' ? 'default' : 'secondary'} className="text-xs">
+                                {statusLabels[order.status] || order.status}
+                              </Badge>
+                              {order.orderType && (
+                                <Badge variant="outline" className="text-xs">
+                                  {order.orderType === 'dine_in' || order.orderType === 'dine-in' ? 'محلي' : 
+                                   order.orderType === 'takeaway' || order.orderType === 'pickup' ? 'سفري' : 
+                                   order.orderType === 'car_pickup' || order.orderType === 'car-pickup' ? 'سيارة' : 
+                                   order.orderType === 'delivery' ? 'توصيل' : order.orderType}
+                                </Badge>
+                              )}
                             </div>
+                            {orderCustomerName && (
+                              <p className="text-sm text-muted-foreground">
+                                <span className="font-medium">{orderCustomerName}</span>
+                                {orderCustomerPhone && <span className="mr-2 text-xs">({orderCustomerPhone})</span>}
+                              </p>
+                            )}
+                            {order.tableNumber && (
+                              <p className="text-xs text-muted-foreground">طاولة: {order.tableNumber}</p>
+                            )}
+                            {carInfo && (
+                              <div className="flex items-center gap-1 mt-1 text-xs text-purple-500">
+                                <Navigation className="w-3 h-3" />
+                                <span>{carInfo} - {carColor}</span>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <Badge variant={order.status === 'pending' ? 'destructive' : order.status === 'ready' ? 'default' : 'secondary'}>
-                              {statusLabels[order.status] || order.status}
-                            </Badge>
-                            <p className="font-bold text-primary text-sm">{Number(order.totalAmount).toFixed(2)} ر.س</p>
+                          <div className="text-left">
+                            <span className="font-black text-primary text-lg">{Number(order.totalAmount).toFixed(2)}</span>
+                            <span className="text-xs text-muted-foreground mr-1">ر.س</span>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap gap-1.5 mt-3">
+                        <div className="mb-3">
+                          {(Array.isArray(order.items) ? order.items : []).map((item: any, idx: number) => (
+                            <div key={idx} className="flex justify-between text-xs py-0.5">
+                              <span>{item.name || item.nameAr || item.coffeeItem?.nameAr} x{item.quantity}</span>
+                              <span className="text-muted-foreground">{Number(item.price || item.unitPrice || 0).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-2 flex-wrap">
                           {order.status === 'pending' && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async (e) => {
-                              e.stopPropagation();
-                              await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "in_progress" });
-                              if (soundEnabled) playNotificationSound('statusChange', 0.3);
-                              queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-                            }}>
-                              <PlayCircle className="w-3 h-3 ml-1" />
-                              بدء التجهيز
+                            <Button 
+                              size="sm" 
+                              onClick={() => updateOrderStatusMutation.mutate({ orderId: order.id || order._id, status: 'in_progress' })}
+                              disabled={updateOrderStatusMutation.isPending}
+                              className="bg-blue-600 hover:bg-blue-700"
+                              data-testid={`button-start-prep-${order.id}`}
+                            >
+                              <Clock className="w-3 h-3 ml-1" />
+                              بدء التحضير
                             </Button>
                           )}
                           {order.status === 'in_progress' && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async (e) => {
-                              e.stopPropagation();
-                              await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "ready" });
-                              if (soundEnabled) playNotificationSound('success', 0.5);
-                              queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-                            }}>
+                            <Button 
+                              size="sm" 
+                              onClick={() => updateOrderStatusMutation.mutate({ orderId: order.id || order._id, status: 'ready' })}
+                              disabled={updateOrderStatusMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700"
+                              data-testid={`button-ready-${order.id}`}
+                            >
                               <Check className="w-3 h-3 ml-1" />
                               جاهز
                             </Button>
                           )}
-                          {(order.status === 'ready' || order.status === 'in_progress') && (
-                            <Button size="sm" className="h-7 text-xs" onClick={async (e) => {
-                              e.stopPropagation();
-                              await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "completed" });
-                              if (soundEnabled) playNotificationSound('success', 0.5);
-                              queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-                              toast({ title: "تم إكمال الطلب", description: `طلب #${order.orderNumber}` });
-                            }}>
+                          {order.status === 'ready' && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => updateOrderStatusMutation.mutate({ orderId: order.id || order._id, status: 'completed' })}
+                              disabled={updateOrderStatusMutation.isPending}
+                              data-testid={`button-delivered-${order.id}`}
+                            >
                               <CheckCircle className="w-3 h-3 ml-1" />
-                              إكمال
+                              تم التسليم
                             </Button>
                           )}
-                          <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:bg-destructive/10" onClick={async (e) => {
-                            e.stopPropagation();
-                            if (confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
-                              await apiRequest("PATCH", `/api/orders/${order.id || order._id}/status`, { status: "cancelled" });
-                              queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-                              toast({ title: "تم إلغاء الطلب", variant: "destructive" });
-                            }
-                          }}>
-                            <XCircle className="w-3 h-3 ml-1" />
-                            إلغاء
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handlePrintLiveOrder(order)}
+                            data-testid={`button-print-order-${order.id}`}
+                          >
+                            <Printer className="w-3 h-3 ml-1" />
+                            طباعة
                           </Button>
+                          {order.status !== 'cancelled' && (
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => updateOrderStatusMutation.mutate({ orderId: order.id || order._id, status: 'cancelled' })}
+                              disabled={updateOrderStatusMutation.isPending}
+                              data-testid={`button-cancel-${order.id}`}
+                            >
+                              <X className="w-3 h-3 ml-1" />
+                              إلغاء
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
                   );
-                })}
-                {liveOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length === 0 && (
-                  <EmptyState title="لا توجد طلبات نشطة" description="ستظهر الطلبات الجديدة هنا تلقائياً" />
-                )}
-              </div>
-            </ScrollArea>
-            
-            {selectedOrderDetails && (
-              <Card className="w-80 flex-shrink-0 flex flex-col">
-                <CardContent className="p-4 flex-1 flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-lg">تفاصيل الطلب</h3>
-                    <Button size="icon" variant="ghost" onClick={() => setSelectedOrderDetails(null)}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-3 flex-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">رقم الطلب:</span>
-                      <span className="font-bold">#{selectedOrderDetails.orderNumber}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">العميل:</span>
-                      <span>{selectedOrderDetails.customerInfo?.customerName || 'عميل'}</span>
-                    </div>
-                    {selectedOrderDetails.customerInfo?.phoneNumber && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">الهاتف:</span>
-                        <span dir="ltr">{selectedOrderDetails.customerInfo.phoneNumber}</span>
-                      </div>
-                    )}
-                    {selectedOrderDetails.tableNumber && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">الطاولة:</span>
-                        <span>طاولة {selectedOrderDetails.tableNumber}</span>
-                      </div>
-                    )}
-                    <Separator className="my-2" />
-                    <div className="text-sm font-medium mb-2">الأصناف:</div>
-                    <ScrollArea className="h-40">
-                      <div className="space-y-2">
-                        {selectedOrderDetails.items?.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm bg-muted/30 rounded p-2">
-                            <span>{item.quantity}x {item.name || item.coffeeItem?.name || 'صنف'}</span>
-                            <span className="font-medium">{Number(item.price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between font-bold">
-                      <span>الإجمالي:</span>
-                      <span className="text-primary">{Number(selectedOrderDetails.totalAmount).toFixed(2)} ر.س</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t">
-                    <Button variant="outline" size="sm" onClick={() => {
-                      printSimpleReceipt(selectedOrderDetails);
-                      toast({ title: "جاري الطباعة..." });
-                    }}>
-                      <Printer className="w-4 h-4 ml-1" />
-                      طباعة
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => {
-                      printTaxInvoice(selectedOrderDetails);
-                      toast({ title: "جاري طباعة الفاتورة..." });
-                    }}>
-                      <FileText className="w-4 h-4 ml-1" />
-                      فاتورة
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                })
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showReceipt && !!lastOrder} onOpenChange={setShowReceipt}>
-        <DialogContent className="max-w-md">
+      <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="w-6 h-6 text-primary" />
-              تم إنشاء الطلب بنجاح
+            <DialogTitle className="flex items-center gap-2 text-center justify-center">
+              <Receipt className="w-5 h-5 text-primary" />
+              إيصال الطلب
             </DialogTitle>
           </DialogHeader>
           {lastOrder && (
             <div className="space-y-4">
-              <div className="bg-muted/50 rounded-xl p-6 text-center">
-                <p className="text-muted-foreground text-sm mb-1">رقم الطلب</p>
-                <p className="text-3xl font-bold text-primary">{lastOrder.orderNumber}</p>
-                <p className="text-2xl font-bold text-foreground mt-3">{lastOrder.total} ر.س</p>
-                {lastOrder.offline && (
-                  <Badge variant="secondary" className="mt-2">
-                    <WifiOff className="w-3 h-3 ml-1" />
-                    محفوظ محلياً
-                  </Badge>
+              <div className="text-center space-y-1 border-b pb-3">
+                <h3 className="font-black text-xl text-primary">CLUNY CAFE</h3>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(lastOrder.date).toLocaleDateString('ar-SA')} - {new Date(lastOrder.date).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+                <Badge variant="secondary" className="text-sm font-black" data-testid="text-receipt-order-number">
+                  طلب #{lastOrder.orderNumber}
+                </Badge>
+              </div>
+
+              {(lastOrder.customerName || lastOrder.customerPhone) && (
+                <div className="text-xs space-y-0.5 border-b pb-2">
+                  {lastOrder.customerName && <p>العميل: <span className="font-bold">{lastOrder.customerName}</span></p>}
+                  {lastOrder.customerPhone && <p>الجوال: <span className="font-bold" dir="ltr">{lastOrder.customerPhone}</span></p>}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                {lastOrder.items.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center text-sm" data-testid={`receipt-item-${idx}`}>
+                    <div className="flex-1">
+                      <span className="font-medium">{item.coffeeItem.nameAr}</span>
+                      <span className="text-muted-foreground mr-1">x{item.quantity}</span>
+                    </div>
+                    <span className="font-bold">{(Number(item.coffeeItem.price) * item.quantity).toFixed(2)} ر.س</span>
+                  </div>
+                ))}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">المجموع الفرعي</span>
+                  <span className="font-bold">{lastOrder.subtotal.toFixed(2)} ر.س</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">الضريبة (15%)</span>
+                  <span className="font-bold">{lastOrder.tax.toFixed(2)} ر.س</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center">
+                  <span className="font-black text-base">الإجمالي</span>
+                  <span className="font-black text-lg text-primary">{lastOrder.total.toFixed(2)} ر.س</span>
+                </div>
+              </div>
+
+              <div className="text-xs space-y-0.5 border-t pt-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">طريقة الدفع</span>
+                  <span className="font-bold">{PAYMENT_METHOD_LABELS[lastOrder.paymentMethod] || lastOrder.paymentMethod}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">الموظف</span>
+                  <span className="font-bold">{lastOrder.employeeName}</span>
+                </div>
+                {lastOrder.tableNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">رقم الطاولة</span>
+                    <span className="font-bold">{lastOrder.tableNumber}</span>
+                  </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Button onClick={handlePrintReceipt} className="h-14" data-testid="button-print-receipt">
-                  <Printer className="w-5 h-5 ml-2" />
-                  طباعة الإيصال
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={handlePrintReceipt}
+                  data-testid="button-print-receipt"
+                >
+                  <Printer className="w-4 h-4" />
+                  طباعة الفاتورة
                 </Button>
-                <Button onClick={handlePrintTaxInvoice} variant="outline" className="h-14" data-testid="button-print-tax">
-                  <FileText className="w-5 h-5 ml-2" />
-                  فاتورة ضريبية
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => setShowReceiptDialog(false)}
+                  data-testid="button-new-order"
+                >
+                  <Plus className="w-4 h-4" />
+                  طلب جديد
                 </Button>
               </div>
-              <Button onClick={() => setShowReceipt(false)} variant="ghost" className="w-full" data-testid="button-close-receipt">
-                إغلاق
-              </Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showBarcodeScanner} onOpenChange={setShowBarcodeScanner}>
-        <DialogContent className="max-w-lg">
+      <Dialog open={showTablesDialog} onOpenChange={setShowTablesDialog}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              مسح بطاقة الولاء
+              <Grid3X3 className="w-5 h-5" />
+              الطاولات ({tables.length})
             </DialogTitle>
           </DialogHeader>
-          <BarcodeScanner 
-            onCustomerFound={handleCustomerFoundFromScanner}
-            onClose={() => setShowBarcodeScanner(false)}
-            showManualInput={true}
-          />
+          <ScrollArea className="flex-1 max-h-[65vh]">
+            {tables.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Grid3X3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-bold">لا توجد طاولات مسجلة</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-1">
+                {tables.map((table: any) => {
+                  const isOccupied = table.isOccupied === 1 || table.isOccupied === true;
+                  const isReserved = !!table.reservationInfo;
+                  const isAvailable = !isOccupied && !isReserved;
+                  const borderColor = isAvailable ? 'border-green-500' : isReserved ? 'border-yellow-500' : 'border-red-500';
+                  const bgColor = isAvailable ? 'bg-green-500/5' : isReserved ? 'bg-yellow-500/5' : 'bg-red-500/5';
+
+                  return (
+                    <Card
+                      key={table.id || table._id}
+                      className={`border-2 ${borderColor} ${bgColor} cursor-pointer transition-all`}
+                      onClick={() => {
+                        if (isAvailable) {
+                          setTableNumber(String(table.tableNumber || table.number));
+                          setOrderType("dine_in");
+                          setShowTablesDialog(false);
+                          toast({ title: "تم اختيار الطاولة", description: `طاولة رقم ${table.tableNumber || table.number}` });
+                        }
+                      }}
+                      data-testid={`table-card-${table.id || table._id}`}
+                    >
+                      <CardContent className="p-3 text-center space-y-2">
+                        <div className="text-2xl font-black">{table.tableNumber || table.number}</div>
+                        <Badge
+                          variant={isAvailable ? "default" : "secondary"}
+                          className={`text-[10px] ${isAvailable ? 'bg-green-600' : isReserved ? 'bg-yellow-500 text-black' : 'bg-red-600'}`}
+                          data-testid={`table-status-${table.id || table._id}`}
+                        >
+                          {isAvailable ? 'متاحة' : isReserved ? 'محجوزة' : 'مشغولة'}
+                        </Badge>
+                        {table.capacity && (
+                          <p className="text-[10px] text-muted-foreground">{table.capacity} أشخاص</p>
+                        )}
+                        {isOccupied && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="w-full text-[10px]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              emptyTableMutation.mutate(table.id || table._id);
+                            }}
+                            disabled={emptyTableMutation.isPending}
+                            data-testid={`button-empty-table-${table.id || table._id}`}
+                          >
+                            <X className="w-3 h-3 ml-1" />
+                            إفراغ الطاولة
+                          </Button>
+                        )}
+                        {isReserved && table.reservationInfo && (
+                          <p className="text-[10px] text-yellow-600 font-medium">
+                            {table.reservationInfo.customerName || 'حجز نشط'}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
-      <DrinkCustomizationDialog
-        coffeeItem={customizingItem}
-        open={showCustomizationDialog}
-        onClose={() => {
-          setShowCustomizationDialog(false);
-          setCustomizingItem(null);
-          setEditingLineItemId(null);
-        }}
-        onConfirm={handleCustomizationConfirm}
-        initialCustomization={editingLineItemId ? orderItems.find(i => i.lineItemId === editingLineItemId)?.customization : undefined}
-        initialQuantity={editingLineItemId ? (orderItems.find(i => i.lineItemId === editingLineItemId)?.quantity || 1) : 1}
-      />
+      <Dialog open={showOpenBillsDialog} onOpenChange={(open) => { setShowOpenBillsDialog(open); if (!open) setSelectedTableForBill(null); }}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5" />
+              فواتير مفتوحة ({openTableOrders.length})
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 max-h-[65vh]">
+            {openTableOrders.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Receipt className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-bold">لا توجد فواتير مفتوحة</p>
+              </div>
+            ) : (
+              <div className="space-y-3 p-1">
+                {openTableOrders.map((order: any) => {
+                  const orderItems = Array.isArray(order.items) ? order.items : [];
+                  const total = Number(order.totalAmount || 0);
+                  const elapsed = order.createdAt ? Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 60000) : 0;
+                  const isSelectedForClose = selectedTableForBill?.id === order.id;
+                  const statusLabels: Record<string, string> = {
+                    'pending': 'قيد الانتظار',
+                    'in_progress': 'جاري التحضير',
+                    'ready': 'جاهز',
+                  };
 
+                  return (
+                    <Card key={order.id || order._id} className="border-2" data-testid={`open-bill-${order.id}`}>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-black text-lg">طاولة {order.tableNumber}</span>
+                              <Badge variant="secondary" className="text-xs">#{order.dailyNumber || order.orderNumber}</Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {statusLabels[order.status] || order.status}
+                              </Badge>
+                            </div>
+                            {elapsed > 0 && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                <Clock className="w-3 h-3" />
+                                منذ {elapsed} دقيقة
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-left">
+                            <span className="font-black text-primary text-lg">{total.toFixed(2)}</span>
+                            <span className="text-xs text-muted-foreground mr-1">ر.س</span>
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-2">
+                          {orderItems.slice(0, 5).map((item: any, idx: number) => (
+                            <div key={idx} className="flex justify-between text-xs py-0.5">
+                              <span>{item.name || item.nameAr || item.coffeeItem?.nameAr} x{item.quantity || 1}</span>
+                              <span className="text-muted-foreground">{Number(item.price || item.unitPrice || 0).toFixed(2)}</span>
+                            </div>
+                          ))}
+                          {orderItems.length > 5 && (
+                            <p className="text-xs text-muted-foreground mt-1">+{orderItems.length - 5} أصناف أخرى</p>
+                          )}
+                        </div>
+
+                        {isSelectedForClose ? (
+                          <div className="border-t pt-3 space-y-3">
+                            <p className="text-sm font-bold">اختر طريقة الدفع:</p>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {PAYMENT_METHODS.map((method) => (
+                                <Button
+                                  key={method.id}
+                                  variant={billPaymentMethod === method.id ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setBillPaymentMethod(method.id as PaymentMethod)}
+                                  className="flex flex-col gap-0.5 h-auto py-2 text-[10px]"
+                                  data-testid={`bill-payment-${method.id}`}
+                                >
+                                  <method.icon className="w-4 h-4" />
+                                  <span className="font-bold">{method.name}</span>
+                                </Button>
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                className="flex-1 gap-2"
+                                onClick={() => closeBillMutation.mutate({ orderId: order.id || order._id, payMethod: billPaymentMethod })}
+                                disabled={closeBillMutation.isPending}
+                                data-testid={`button-confirm-close-bill-${order.id}`}
+                              >
+                                {closeBillMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                تأكيد وطباعة
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setSelectedTableForBill(null)}
+                                data-testid={`button-cancel-close-bill-${order.id}`}
+                              >
+                                إلغاء
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2 flex-wrap border-t pt-2">
+                            <Button
+                              size="sm"
+                              onClick={() => { setSelectedTableForBill(order); setBillPaymentMethod("cash"); }}
+                              data-testid={`button-close-bill-${order.id}`}
+                            >
+                              <Banknote className="w-3 h-3 ml-1" />
+                              إغلاق الفاتورة
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handlePrintLiveOrder(order)}
+                              data-testid={`button-print-bill-${order.id}`}
+                            >
+                              <Printer className="w-3 h-3 ml-1" />
+                              طباعة
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPOSSettings} onOpenChange={setShowPOSSettings}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right font-bold text-xl">إعدادات نقاط البيع</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="auto-print" className="text-sm font-bold cursor-pointer">الطباعة التلقائية للإيصال</Label>
+              <Switch id="auto-print" checked={autoPrint} onCheckedChange={setAutoPrint} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="sound-notif" className="text-sm font-bold cursor-pointer">تنبيهات الأصوات</Label>
+              <Switch id="sound-notif" checked={soundEnabled} onCheckedChange={setSoundEnabled} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-vat" className="text-sm font-bold cursor-pointer">عرض "شامل الضريبة" بجانب السعر</Label>
+              <Switch id="show-vat" checked={showVatLabel} onCheckedChange={setShowVatLabel} />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="pos-terminal" className="text-sm font-bold cursor-pointer block">اتصال جهاز الشبكة</Label>
+                <p className="text-xs text-muted-foreground mt-1">{posTerminalConnected ? "متصل" : "غير متصل"}</p>
+              </div>
+              <Switch id="pos-terminal" checked={posTerminalConnected} onCheckedChange={setPosTerminalConnected} />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

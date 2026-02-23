@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Table as TableIcon, Plus, Trash2, Download, QrCode, Power } from "lucide-react";
+import { Table as TableIcon, Plus, Trash2, Download, QrCode, Power, Edit } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { TableQRCard, downloadQRCard } from "@/components/table-qr-card";
 
 interface ITable {
-  _id: string;
+  id: string;
   tableNumber: string;
   qrToken: string;
   branchId?: string;
@@ -47,7 +47,7 @@ interface ITable {
 }
 
 interface IBranch {
-  _id: string;
+  id: string;
   nameAr: string;
   nameEn?: string;
   address: string;
@@ -83,10 +83,24 @@ export default function ManagerTables() {
     queryKey: ["/api/branches"],
   });
 
+  // Auto-select branch if user has a branchId or there's only one branch
+  useEffect(() => {
+    if (branches && branches.length > 0 && selectedBranch === "none") {
+      if (userBranchId) {
+        const userBranch = branches.find(b => b.id === userBranchId);
+        if (userBranch) {
+          setSelectedBranch(userBranch.id);
+        }
+      } else if (branches.length === 1) {
+        setSelectedBranch(branches[0].id);
+      }
+    }
+  }, [branches, userBranchId, selectedBranch]);
+
   // Update branch manager info when selectedBranch changes
   useEffect(() => {
     if (selectedBranch !== "none" && selectedBranch && branches) {
-      const branch = branches.find(b => b._id === selectedBranch);
+      const branch = branches.find(b => b.id === selectedBranch);
       if (branch) {
         setCurrentBranchName(branch.nameAr);
         setCurrentBranchManager(branch.managerName || "غير محدد");
@@ -95,29 +109,65 @@ export default function ManagerTables() {
   }, [selectedBranch, branches]);
 
   // Fetch tables - filter by selected branch
-  const { data: tables = [], isLoading } = useQuery<ITable[]>({
+  const { data: tables = [], isLoading, refetch } = useQuery<ITable[]>({
     queryKey: ["/api/tables", selectedBranch],
     queryFn: async () => {
       let url = "/api/tables";
-      if (selectedBranch !== "none" && selectedBranch) {
+      if (selectedBranch && selectedBranch !== "none") {
         url += `?branchId=${selectedBranch}`;
       }
+      
+      const employeeData = localStorage.getItem("currentEmployee");
+      const employee = employeeData ? JSON.parse(employeeData) : null;
+      const tenantId = employee?.tenantId || 'demo-tenant';
+      
+      console.log("[TABLES_DEBUG] API Request:", url, "Tenant Header:", tenantId);
+
       const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'x-tenant-id': tenantId,
+          'Cache-Control': 'no-cache'
+        },
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Failed to fetch tables");
-      return response.json();
+      
+      if (!response.ok) {
+        console.error("[TABLES_DEBUG] API Error:", response.status);
+        throw new Error(`Failed to fetch tables (${response.status})`);
+      }
+      
+      const data = await response.json();
+      console.log("[TABLES_DEBUG] API Response Data:", data);
+      
+      if (!Array.isArray(data)) {
+        console.error("[TABLES_DEBUG] Data is not an array:", data);
+        return [];
+      }
+      
+      console.log("[TABLES_DEBUG] Successfully loaded count:", data.length);
+      return data;
     },
-    enabled: selectedBranch !== "none" && !!selectedBranch, // Only fetch if branch is selected
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    // Add interval to ensure UI stays updated
+    refetchInterval: 15000, 
   });
 
   // Create single table mutation
   const createTableMutation = useMutation({
     mutationFn: async (tableNumber: string) => {
+      const employeeData = localStorage.getItem("currentEmployee");
+      const employee = employeeData ? JSON.parse(employeeData) : null;
+      const tenantId = employee?.tenantId || 'demo-tenant';
+
       const response = await fetch("/api/tables", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tableNumber }),
+        headers: { 
+          "Content-Type": "application/json",
+          "x-tenant-id": tenantId
+        },
+        body: JSON.stringify({ tableNumber, branchId: selectedBranch }),
       });
       if (!response.ok) throw new Error("Failed to create table");
       return response.json();
@@ -141,27 +191,45 @@ export default function ManagerTables() {
   // Bulk create tables mutation
   const bulkCreateMutation = useMutation({
     mutationFn: async ({ count, branchId }: { count: number; branchId: string }) => {
+      console.log("Bulk creating tables:", { count, branchId });
+      
+      const employeeData = localStorage.getItem("currentEmployee");
+      const employee = employeeData ? JSON.parse(employeeData) : null;
+      const tenantId = employee?.tenantId || 'demo-tenant';
+
       const response = await fetch("/api/tables/bulk-create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-tenant-id": tenantId
+        },
         body: JSON.stringify({ count, branchId }),
       });
       if (!response.ok) {
         const error = await response.json();
+        console.error("Bulk create error response:", error);
         throw new Error(error.error || "Failed to bulk create tables");
       }
       return response.json();
     },
     onSuccess: (data: any) => {
+      console.log("Bulk create success data:", data);
+      
+      // Invalidate the queries to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
-      const createdCount = data.results?.created?.length || data.details?.created?.length || 0;
+      
+      const createdCount = data.details?.created?.length || data.results?.created?.length || 0;
       toast({
         title: "تم إنشاء الطاولات",
         description: `تم إنشاء ${createdCount} طاولة بنجاح`,
       });
       setBulkCount("10");
+      
+      // Explicitly refetch the tables for the current branch to be sure
+      refetch();
     },
     onError: (error: Error) => {
+      console.error("Bulk create mutation error:", error);
       toast({
         title: "خطأ",
         description: error.message || "فشل إنشاء الطاولات",
@@ -175,7 +243,10 @@ export default function ManagerTables() {
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/tables/${id}/toggle-active`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-tenant-id": "demo-tenant"
+        },
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to toggle table status");
@@ -197,11 +268,44 @@ export default function ManagerTables() {
     },
   });
 
+  // Empty table mutation
+  const emptyTableMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/tables/${id}/empty`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-tenant-id": "demo-tenant"
+        },
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to empty table");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+      toast({
+        title: "تم إفراغ الطاولة",
+        description: "الطاولة الآن متاحة للزبائن الجدد",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل إفراغ الطاولة",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Delete table mutation
   const deleteTableMutation = useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/tables/${id}`, {
         method: "DELETE",
+        headers: {
+          "x-tenant-id": "demo-tenant"
+        },
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to delete table");
@@ -227,17 +331,22 @@ export default function ManagerTables() {
   const getQRCodeMutation = useMutation({
     mutationFn: async (tableId: string) => {
       const response = await fetch(`/api/tables/${tableId}/qr-code`);
-      if (!response.ok) throw new Error("Failed to get QR code");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to get QR code");
+      }
       return response.json();
     },
     onSuccess: (data) => {
+      console.log("QR Code loaded:", data);
       setQrCodeData(data);
       setQrDialogOpen(true);
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("QR Code error:", error);
       toast({
         title: "خطأ",
-        description: "فشل تحميل رمز QR",
+        description: error.message || "فشل تحميل رمز QR",
         variant: "destructive",
       });
     },
@@ -266,12 +375,44 @@ export default function ManagerTables() {
 
   const handleViewQR = (table: ITable) => {
     setSelectedTable(table);
-    getQRCodeMutation.mutate(table._id);
+    getQRCodeMutation.mutate(table.id);
   };
 
   const handleDownloadQRCode = () => {
     if (!selectedTable || !qrCardRef.current) return;
     downloadQRCard(qrCardRef.current, selectedTable.tableNumber);
+  };
+
+  const deleteAllTablesMutation = useMutation({
+    mutationFn: async (branchId: string) => {
+      const response = await fetch(`/api/tables/branch/${branchId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to delete all tables");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+      toast({
+        title: "تم الحذف",
+        description: data.message || "تم حذف جميع الطاولات بنجاح",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل حذف جميع الطاولات",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteAll = () => {
+    if (!selectedBranch || selectedBranch === "none") return;
+    if (window.confirm("هل أنت متأكد من رغبتك في حذف جميع طاولات هذا الفرع؟ لا يمكن التراجع عن هذا الإجراء.")) {
+      deleteAllTablesMutation.mutate(selectedBranch);
+    }
   };
 
   return (
@@ -307,7 +448,7 @@ export default function ManagerTables() {
                   </SelectTrigger>
                   <SelectContent>
                     {branches?.map((branch) => (
-                      <SelectItem key={branch._id} value={branch._id}>
+                      <SelectItem key={branch.id} value={branch.id}>
                         {branch.nameAr}
                       </SelectItem>
                     ))}
@@ -334,6 +475,15 @@ export default function ManagerTables() {
               >
                 <Plus className="w-4 h-4 ml-2" />
                 إنشاء الطاولات
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAll}
+                disabled={deleteAllTablesMutation.isPending || !selectedBranch || tables.length === 0}
+                data-testid="button-delete-all-tables"
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                حذف الكل
               </Button>
             </div>
           </CardContent>
@@ -382,7 +532,7 @@ export default function ManagerTables() {
                 </TableHeader>
                 <TableBody>
                   {tables.map((table) => (
-                    <TableRow key={table._id}>
+                    <TableRow key={table.id}>
                       <TableCell className="font-medium">
                         طاولة {table.tableNumber}
                       </TableCell>
@@ -390,7 +540,7 @@ export default function ManagerTables() {
                         <Button
                           size="sm"
                           variant={table.isActive ? "default" : "outline"}
-                          onClick={() => toggleActiveStatusMutation.mutate(table._id)}
+                          onClick={() => toggleActiveStatusMutation.mutate(table.id)}
                           disabled={toggleActiveStatusMutation.isPending}
                           className="w-full justify-center"
                           data-testid={`button-toggle-active-${table.tableNumber}`}
@@ -403,7 +553,18 @@ export default function ManagerTables() {
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${table.isOccupied ? 'bg-red-500' : 'bg-emerald-500'}`} />
                           {table.isOccupied ? (
-                            <Badge variant="destructive" className="bg-red-600 hover:bg-red-700">محجوزة</Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="destructive" className="bg-red-600 hover:bg-red-700">محجوزة</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-7 px-2 text-xs"
+                                onClick={() => emptyTableMutation.mutate(table.id)}
+                                disabled={emptyTableMutation.isPending}
+                              >
+                                إفراغ
+                              </Button>
+                            </div>
                           ) : (
                             <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white">متاحة</Badge>
                           )}
@@ -422,10 +583,34 @@ export default function ManagerTables() {
                           </Button>
                           <Button
                             size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const newNum = window.prompt("أدخل رقم الطاولة الجديد:", table.tableNumber);
+                              if (newNum && newNum !== table.tableNumber) {
+                                apiRequest("PATCH", `/api/tables/${table.id}`, { tableNumber: newNum })
+                                  .then(() => {
+                                    queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+                                    toast({ title: "تم التحديث", description: "تم تغيير رقم الطاولة بنجاح" });
+                                  })
+                                  .catch((error) => {
+                                    toast({ 
+                                      title: "خطأ", 
+                                      description: "فشل تحديث الطاولة", 
+                                      variant: "destructive" 
+                                    });
+                                  });
+                              }
+                            }}
+                            data-testid={`button-edit-${table.tableNumber}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
                             variant="destructive"
                             onClick={() => {
                               if (window.confirm(`هل أنت متأكد من حذف الطاولة ${table.tableNumber}؟`)) {
-                                deleteTableMutation.mutate(table._id);
+                                deleteTableMutation.mutate(table.id);
                               }
                             }}
                             disabled={deleteTableMutation.isPending || table.isOccupied === 1}

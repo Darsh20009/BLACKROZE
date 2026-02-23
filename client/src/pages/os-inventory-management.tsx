@@ -163,7 +163,7 @@ export default function OSInventoryManagement() {
                 </TableHeader>
                 <TableBody>
                   {ingredients?.map((item: any) => (
-                    <TableRow key={item._id}>
+                    <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.nameAr}</TableCell>
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>{item.unitCost} ريال</TableCell>

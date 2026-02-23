@@ -18,7 +18,7 @@ interface CarPickupFormProps {
 
 export function CarPickupForm({ order, customer }: CarPickupFormProps) {
  const { toast } = useToast();
- const customerId = customer?._id || customer?.id;
+ const customerId = customer?.id;
 
  const [carType, setCarType] = useState(customer?.carType || "");
  const [carColor, setCarColor] = useState(customer?.carColor || "");

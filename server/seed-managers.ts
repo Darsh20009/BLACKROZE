@@ -11,8 +11,14 @@ async function seedManagersAndBranches() {
     console.log("Connected to MongoDB");
 
     // First, create branches if they don't exist
+    const demoTenantId = "demo-tenant";
+    const demoCafeId = "cafe-demo";
+
     const branches = [
       {
+        id: "branch-olaya",
+        tenantId: demoTenantId,
+        cafeId: demoCafeId,
         nameAr: "فرع العليا",
         nameEn: "Olaya Branch",
         address: "حي العليا، شارع التحلية",
@@ -22,6 +28,9 @@ async function seedManagersAndBranches() {
         managerName: "درويش",
       },
       {
+        id: "branch-malaz",
+        tenantId: demoTenantId,
+        cafeId: demoCafeId,
         nameAr: "فرع الملز",
         nameEn: "Malaz Branch",
         address: "حي الملز، طريق الملك فهد",
@@ -31,6 +40,9 @@ async function seedManagersAndBranches() {
         managerName: "محمد",
       },
       {
+        id: "branch-rawdah",
+        tenantId: demoTenantId,
+        cafeId: demoCafeId,
         nameAr: "فرع الروضة",
         nameEn: "Rawdah Branch",
         address: "حي الروضة، شارع العروبة",
@@ -58,6 +70,8 @@ async function seedManagersAndBranches() {
     let owner = await EmployeeModel.findOne({ username: "owner" });
     if (!owner) {
       owner = await EmployeeModel.create({
+        id: "owner-demo",
+        tenantId: demoTenantId,
         username: "owner",
         password: ownerPassword,
         fullName: "صاحب الكافيه",
@@ -82,6 +96,8 @@ async function seedManagersAndBranches() {
     let admin = await EmployeeModel.findOne({ username: "admin" });
     if (!admin) {
       admin = await EmployeeModel.create({
+        id: "admin-demo",
+        tenantId: demoTenantId,
         username: "admin",
         password: adminPassword,
         fullName: "مدير النظام",
@@ -135,6 +151,8 @@ async function seedManagersAndBranches() {
       let manager = await EmployeeModel.findOne({ username: managerData.username });
       if (!manager) {
         manager = await EmployeeModel.create({
+          id: `manager-${managerData.username}`,
+          tenantId: demoTenantId,
           ...managerData,
           isActivated: 1,
           commissionPercentage: 0,

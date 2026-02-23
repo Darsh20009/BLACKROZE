@@ -1,4 +1,4 @@
-# Master Checklist — Café Operating System (BLACK ROSE Engine)
+# Master Checklist — Café Operating System (CLUNY CAFE Engine)
 ## VERIFICATION & DEFINITION OF DONE (DoD)
 
 ---

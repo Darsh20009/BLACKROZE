@@ -71,7 +71,7 @@ export const coffeeCategories = [
  }
 ];
 
-// Perfectly matched coffee menu data with BLACK ROSE images
+// Perfectly matched coffee menu data with CLUNY CAFE images
 export const defaultCoffeeMenu: CoffeeItem[] = [
  // Basic Coffee
  {
@@ -259,30 +259,21 @@ export const defaultCoffeeMenu: CoffeeItem[] = [
  strengthLevel: undefined
  },
  {
- id: "iced-matcha-latte",
- nameAr: "آيس لاتيه ماتشا",
- nameEn: "Iced Matcha Latte",
- description: "إبداع ياباني ساحر يجمع بين نعومة الحليب المثلج وسحر الماتشا الأخضر النقي، تجربة بصرية وذوقية استثنائية تأخذك في رحلةإلى عالم من الهدوء والتميز",
+ id: "matcha-latte",
+ nameAr: "لاتيه ماتشا",
+ nameEn: "Matcha Latte",
+ description: "إبداع ياباني ساحر يجمع بين نعومة الحليب وسحر الماتشا الأخضر النقي، تجربة بصرية وذوقية استثنائية تأخذك في رحلة إلى عالم من الهدوء والتميز",
  price: 10.00,
  oldPrice: undefined,
  category: "specialty",
  imageUrl: getCoffeeImage("iced-matcha-latte"),
  isAvailable: 1,
  coffeeStrength: "classic",
- strengthLevel: undefined
- },
- {
- id: "hot-matcha-latte",
- nameAr: "لاتيه ماتشا حار",
- nameEn: "Hot Matcha Latte",
- description: "دفء ساحر يلتقي مع نكهةالماتشا الاستثنائية في لحن متناغم من الكريمة والطعم الياباني الأصيل، يُقدم ساخناً بفن لاتيه مبهر يسعد العين قبل أن يأسر الذوق",
- price: 11.00,
- oldPrice: undefined,
- category: "specialty",
- imageUrl: getCoffeeImage("hot-matcha-latte"),
- isAvailable: 1,
- coffeeStrength: "classic",
- strengthLevel: undefined
+ strengthLevel: undefined,
+ availableSizes: [
+   { nameAr: "بارد", nameEn: "Iced", price: 10.00, imageUrl: getCoffeeImage("iced-matcha-latte") },
+   { nameAr: "حار", nameEn: "Hot", price: 11.00, imageUrl: getCoffeeImage("hot-matcha-latte") }
+ ]
  },
  
  // Cold Coffee
@@ -381,7 +372,7 @@ export const defaultCoffeeMenu: CoffeeItem[] = [
  // Desserts
  {
  id: "coffee-dessert-cup",
- nameAr: "حلى BLACK ROSE",
+ nameAr: "حلى CLUNY CAFE",
  nameEn: "Coffee Dessert Cup",
  description: "حلى قهوة فاخر في كوب، طبقات من الكريمة والقهوة والبسكويت المطحون، تجربة حلوةلا تُنسى",
  price: 8.00,

@@ -18,9 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { playNotificationSound } from "@/lib/notification-sounds";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface Employee {
-  _id: string;
+  id: string;
   username: string;
   fullName: string;
   role: string;
@@ -47,7 +48,7 @@ interface IOrder {
 }
 
 interface IBranch {
-  _id: string;
+  id: string;
   nameAr: string;
 }
 
@@ -62,10 +63,6 @@ export default function CashierTableOrders() {
     const storedEmployee = localStorage.getItem("currentEmployee");
     if (storedEmployee) {
       const parsed = JSON.parse(storedEmployee);
-      // Ensure employee has an _id field for compatibility
-      if (!parsed._id && parsed.id) {
-        parsed._id = parsed.id;
-      }
       setEmployee(parsed);
     } else {
       setLocation("/employee/gateway");
@@ -75,7 +72,7 @@ export default function CashierTableOrders() {
   // Fetch unassigned orders
   const { data: unassignedOrders } = useQuery<IOrder[]>({
     queryKey: ["/api/orders/table/unassigned"],
-    refetchInterval: 3000, // Poll every 3 seconds
+    refetchInterval: 8000, // Poll every 8 seconds
     enabled: !!employee,
   });
 
@@ -118,27 +115,27 @@ export default function CashierTableOrders() {
 
   // Fetch cashier's assigned orders
   const { data: myOrders } = useQuery<IOrder[]>({
-    queryKey: ["/api/cashier", employee?._id, "orders"],
-    enabled: !!employee?._id,
+    queryKey: ["/api/cashier", employee?.id, "orders"],
+    enabled: !!employee?.id,
     queryFn: async () => {
-      const response = await fetch(`/api/cashier/${employee?._id}/orders`);
+      const response = await fetch(`/api/cashier/${employee?.id}/orders`);
       if (!response.ok) throw new Error("Failed to fetch orders");
       return response.json();
     },
-    refetchInterval: 3000, // Poll every 3 seconds
+    refetchInterval: 8000, // Poll every 8 seconds
   });
 
   // Assign order to cashier mutation
   const assignOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      if (!employee?._id) {
+      if (!employee?.id) {
         throw new Error("معرف الكاشير غير متاح. يرجى تسجيل الدخول مجدداً");
       }
       const response = await fetch(`/api/orders/${orderId}/assign-cashier`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
-        body: JSON.stringify({ cashierId: employee._id }),
+        body: JSON.stringify({ cashierId: employee.id }),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -148,7 +145,7 @@ export default function CashierTableOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders/table/unassigned"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cashier", employee?._id, "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cashier", employee?.id, "orders"] });
       
       // Play success sound when accepting order
       if (soundEnabled) {
@@ -183,7 +180,7 @@ export default function CashierTableOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders/table/unassigned"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cashier", employee?._id, "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cashier", employee?.id, "orders"] });
       toast({
         title: "تم رفض الطلب",
         description: "تم إلغاء الطلب بنجاح",
@@ -201,7 +198,7 @@ export default function CashierTableOrders() {
   // Update order status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
-      if (!employee?._id) {
+      if (!employee?.id) {
         throw new Error("معرف الكاشير غير متاح. يرجى تسجيل الدخول مجدداً");
       }
       const response = await fetch(`/api/orders/${orderId}/table-status`, {
@@ -214,7 +211,7 @@ export default function CashierTableOrders() {
       return response.json();
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cashier", employee?._id, "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cashier", employee?.id, "orders"] });
       
       // Play different sounds based on status
       if (soundEnabled) {
@@ -303,7 +300,7 @@ export default function CashierTableOrders() {
   const filteredMyOrders = myOrders || [];
 
   return (
-    <div className="min-h-screen p-4 bg-[#e3e1c5] text-[#111112]" dir="rtl">
+    <div className="min-h-screen p-4 pb-20 sm:pb-4 bg-[#e3e1c5] text-[#111112]" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -359,7 +356,7 @@ export default function CashierTableOrders() {
                   <div className="space-y-4">
                     {filteredUnassignedOrders.map((order) => {
                       const StatusIcon = getStatusIcon(order.tableStatus);
-                      const branch = branches.find(b => b._id === order.branchId);
+                      const branch = branches.find(b => b.id === order.branchId);
                       return (
                         <Card key={order.id} className="bg-[#1a1410] border-primary/10">
                           <CardContent className="p-4">
@@ -549,6 +546,7 @@ export default function CashierTableOrders() {
           </TabsContent>
         </Tabs>
       </div>
+      <MobileBottomNav employeeRole={employee?.role} />
     </div>
   );
 }

@@ -213,7 +213,7 @@ export default function ManagerDrivers() {
  ? "bg-green-500"
  : "bg-gray-500"
  }
- data-testid={`badge-status-${driver._id}`}
+ data-testid={`badge-status-${driver.id}`}
  >
  {driver.isAvailableForDelivery === 1 ? "متاح" : "غير متاح"}
  </Badge>
@@ -233,14 +233,14 @@ export default function ManagerDrivers() {
  </div>
  <div className="bg-[#1a1410] p-2 rounded-lg">
  <p className="text-xs text-gray-400">لوح� المركب� </p>
- <p className="text-white font-mono font-semibold" data-testid={`text-plate-${driver._id}`}>
+ <p className="text-white font-mono font-semibold" data-testid={`text-plate-${driver.id}`}>
  {driver.vehiclePlateNumber}
  </p>
  </div>
  {driver.licenseNumber && (
  <div className="bg-[#1a1410] p-2 rounded-lg">
  <p className="text-xs text-gray-400">رقم الر� ص� </p>
- <p className="text-white font-mono" data-testid={`text-license-${driver._id}`}>
+ <p className="text-white font-mono" data-testid={`text-license-${driver.id}`}>
  {driver.licenseNumber}
  </p>
  </div>
@@ -258,7 +258,7 @@ export default function ManagerDrivers() {
  : "border-gray-500/30 text-gray-500"
  }`}
  disabled={toggleAvailabilityMutation.isPending}
- data-testid={`button-toggle-${driver._id}`}
+ data-testid={`button-toggle-${driver.id}`}
  >
  {driver.isAvailableForDelivery === 1 ? (
  <>
@@ -277,7 +277,7 @@ export default function ManagerDrivers() {
  variant="outline"
  onClick={() => handleEdit(driver)}
  className="border-blue-500/30 text-blue-500"
- data-testid={`button-edit-${driver._id}`}
+ data-testid={`button-edit-${driver.id}`}
  >
  <Edit2 className="w-4 h-4" />
  </Button>

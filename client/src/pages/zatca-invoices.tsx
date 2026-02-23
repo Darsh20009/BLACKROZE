@@ -379,7 +379,7 @@ export default function ZATCAInvoicesPage() {
                       {filteredInvoices.map((invoice) => {
                         const StatusIcon = statusConfig[invoice.status]?.icon || Clock;
                         return (
-                          <TableRow key={invoice.id || invoice._id}>
+                          <TableRow key={invoice.id}>
                             <TableCell className="font-mono font-medium">{invoice.invoiceNumber}</TableCell>
                             <TableCell>
                               <Badge variant="outline">
@@ -413,7 +413,7 @@ export default function ZATCAInvoicesPage() {
                                     variant="ghost" 
                                     size="icon" 
                                     className="h-8 w-8 text-green-600"
-                                    onClick={() => submitInvoiceMutation.mutate(invoice.id || invoice._id || '')}
+                                    onClick={() => submitInvoiceMutation.mutate(invoice.id || '')}
                                     disabled={submitInvoiceMutation.isPending}
                                   >
                                     <Send className="w-4 h-4" />

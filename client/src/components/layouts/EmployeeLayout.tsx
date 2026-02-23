@@ -11,11 +11,14 @@ import {
   TableIcon,
   ArrowRight,
   ClipboardList,
-  SplitSquareVertical
+  SplitSquareVertical,
+  Utensils
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useNotifications } from "@/hooks/use-notifications";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import {
   Sidebar,
   SidebarContent,
@@ -60,10 +63,27 @@ export function EmployeeLayout({
     }
   }, []);
 
+  const { requestPermission, isSubscribed } = useNotifications({
+    userType: 'employee',
+    userId: employee?.id,
+    branchId: employee?.branchId,
+    autoSubscribe: true,
+  });
+
+  useEffect(() => {
+    if (employee && !isSubscribed && Notification.permission === 'default') {
+      const timer = setTimeout(() => {
+        requestPermission();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [employee, isSubscribed, requestPermission]);
+
   const [isSplitView, setIsSplitView] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("currentEmployee");
+    localStorage.removeItem("cluny-restore-key");
     setLocation("/employee/gateway");
   };
 
@@ -74,7 +94,8 @@ export function EmployeeLayout({
     { path: "/employee/pos", icon: CreditCard, label: "نقطة البيع", roles: ["cashier", "manager", "admin"] },
     { path: "/employee/kitchen", icon: ChefHat, label: "المطبخ", roles: ["barista", "manager", "admin"] },
     { path: "/employee/table-orders", icon: TableIcon, label: "الطاولات", roles: ["all"] },
-    { path: "/employee/menu-management", icon: Coffee, label: "القائمة", roles: ["manager", "admin"] },
+    { path: "/employee/menu-management", icon: Coffee, label: "المشروبات", roles: ["manager", "admin"] },
+    { path: "/employee/menu-management?type=food", icon: Utensils, label: "المأكولات", roles: ["manager", "admin"] },
     { path: "/employee/loyalty", icon: Users, label: "الولاء", roles: ["all"] },
   ];
 
@@ -120,7 +141,10 @@ export function EmployeeLayout({
               <SidebarGroupContent>
                 <SidebarMenu>
                   {filteredNavItems.map((item) => {
-                    const isActive = location === item.path;
+                    const fullPath = location + window.location.search;
+                    const isActive = item.path.includes('?')
+                      ? fullPath === item.path
+                      : location === item.path && !window.location.search;
                     return (
                       <SidebarMenuItem key={item.path}>
                         <SidebarMenuButton 
@@ -200,7 +224,7 @@ export function EmployeeLayout({
             )}
           </header>
 
-          <main className="flex-1 overflow-hidden">
+          <main className="flex-1 overflow-hidden pb-14 sm:pb-0">
             {isSplitView ? (
               <div className="flex h-full w-full divide-x divide-x-reverse">
                 <div className="w-1/2 overflow-auto">
@@ -224,6 +248,7 @@ export function EmployeeLayout({
           </main>
         </div>
       </div>
+      <MobileBottomNav employeeRole={employee?.role} onLogout={handleLogout} />
     </SidebarProvider>
   );
 }

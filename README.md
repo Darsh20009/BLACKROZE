@@ -1,4 +1,4 @@
-# ☕ Café Operating System (BLACK ROSE Engine)
+# ☕ Café Operating System (CLUNY CAFE Engine)
 
 **Status**: 80% Complete - All core business logic implemented with 14 REST API routes  
 **Mode**: Fast Mode (Completed in 10 turns)  
@@ -135,7 +135,7 @@ POST   /api/accounting/snapshot          Save daily snapshot
 **Create a new recipe with ingredient costs**
 
 ```bash
-curl -X POST https://BLACKROSE.com.sa/api/recipes \
+curl -X POST https://cluny.ma3k.online/api/recipes \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -166,7 +166,7 @@ curl -X POST https://BLACKROSE.com.sa/api/recipes \
 **Get today's financial snapshot**
 
 ```bash
-curl https://BLACKROSE.com.sa/api/accounting/daily-snapshot/branch-1 \
+curl https://cluny.ma3k.online/api/accounting/daily-snapshot/branch-1 \
   -H "Authorization: Bearer TOKEN"
 ```
 
@@ -190,7 +190,7 @@ curl https://BLACKROSE.com.sa/api/accounting/daily-snapshot/branch-1 \
 **Get profit breakdown by drink item**
 
 ```bash
-curl "https://BLACKROSE.com.sa/api/accounting/profit-by-item/branch-1?startDate=2025-12-01&endDate=2025-12-28" \
+curl "https://cluny.ma3k.online/api/accounting/profit-by-item/branch-1?startDate=2025-12-01&endDate=2025-12-28" \
   -H "Authorization: Bearer TOKEN"
 ```
 

@@ -13,6 +13,7 @@ export interface LoyaltyCard {
   cardNumber: string;
   qrToken: string;
   points?: number;
+  pendingPoints?: number;
   tier?: string;
   totalSpent?: number;
   discountCount?: number;

@@ -205,7 +205,7 @@ const mockFAQs: FAQItem[] = [
 const mockArticles: Article[] = [
   {
     id: "art-1",
-    title: "دليل البدء السريع لنظام BLACK ROSE",
+    title: "دليل البدء السريع لنظام CLUNY CAFE",
     category: "البداية",
     excerpt: "تعرف على كيفية إعداد نظامك في 5 دقائق فقط...",
     views: 1250,
@@ -567,7 +567,7 @@ export default function SupportSystemPage() {
                   </div>
                   <h3 className="text-white font-bold text-lg mb-2">البريد الإلكتروني</h3>
                   <p className="text-white/60 text-sm mb-4">رد خلال 24 ساعة</p>
-                  <p className="text-white font-mono">support@BLACKROSE.com.sa</p>
+                  <p className="text-white font-mono">support@cluny.com</p>
                 </CardContent>
               </Card>
             </div>

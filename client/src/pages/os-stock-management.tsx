@@ -114,7 +114,7 @@ export default function OSStockManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   {ingredients.map((ing: any) => (
-                    <SelectItem key={ing._id} value={ing._id}>{ing.nameAr}</SelectItem>
+                    <SelectItem key={ing.id} value={ing.id}>{ing.nameAr}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

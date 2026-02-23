@@ -1,5 +1,5 @@
 # PHASE 0 — Product Re-Architecture ✅ COMPLETE
-## BLACK ROSE Engine: Operating System for Cafés
+## CLUNY CAFE Engine: Operating System for Cafés
 
 **Status:** ✅ FOUNDATION COMPLETE (Ready for Phase 1)
 **Date:** December 29, 2025
@@ -300,7 +300,7 @@ in (Purchase) → order_deduction (Sale) → waste (Loss) ✅
 
 **Phase 0 Status: ✅ COMPLETE**
 
-The BLACK ROSE Engine now has:
+The CLUNY CAFE Engine now has:
 - Clear domain model with 10 core entities
 - Proper layer separation (Frontend/Logic/Data)
 - Multi-tenant architecture

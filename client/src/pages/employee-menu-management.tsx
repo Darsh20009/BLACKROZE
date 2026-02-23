@@ -18,6 +18,7 @@ import { getCoffeeImage } from "@/lib/coffee-data-clean";
 import { nanoid } from "nanoid";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { CoffeeItem, Employee, Ingredient, RawItem, RecipeItem, Branch } from "@shared/schema";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface RecipeIngredient {
   rawItemId: string;
@@ -31,9 +32,14 @@ interface BranchAvailability {
   isAvailable: number;
 }
 
+const FOOD_CATEGORIES = ['food', 'bakery', 'desserts', 'cake', 'croissant', 'sandwiches'];
+const DRINK_CATEGORIES = ['hot', 'cold', 'specialty', 'drinks', 'basic', 'additional_drinks'];
+
 export default function EmployeeMenuManagement() {
  const [, setLocation] = useLocation();
  const [employee, setEmployee] = useState<Employee | null>(null);
+ const managementType = new URLSearchParams(window.location.search).get('type') === 'food' ? 'food' : 'drinks';
+ const isFood = managementType === 'food';
  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
  const [editingItem, setEditingItem] = useState<CoffeeItem | null>(null);
@@ -54,7 +60,7 @@ export default function EmployeeMenuManagement() {
  const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false);
  const [editingRecipeItem, setEditingRecipeItem] = useState<CoffeeItem | null>(null);
  const [addStep, setAddStep] = useState<1 | 2>(1);
- const [selectedCategory, setSelectedCategory] = useState<string>("hot");
+ const [selectedCategory, setSelectedCategory] = useState<string>(new URLSearchParams(window.location.search).get('type') === 'food' ? 'food' : 'hot');
  const [selectedCoffeeStrength, setSelectedCoffeeStrength] = useState<string>("classic");
  const [selectedBranches, setSelectedBranches] = useState<BranchAvailability[]>([]);
  const [skipRecipeConfirmOpen, setSkipRecipeConfirmOpen] = useState(false);
@@ -227,7 +233,7 @@ export default function EmployeeMenuManagement() {
    const res = await apiRequest("POST", "/api/coffee-items", itemData);
    const createdItem = await res.json();
    
-   const newItemId = createdItem.id || createdItem._id;
+   const newItemId = createdItem.id;
    
    // Create recipe items (new system using RawItems)
    if (newItemId && recipeList && recipeList.length > 0) {
@@ -779,15 +785,22 @@ export default function EmployeeMenuManagement() {
    }
  };
 
- const categoryNames = {
+ const categoryNames: Record<string, string> = {
  basic: "قهوة أساسية",
  hot: "قهوة ساخنة",
  cold: "قهوة باردة",
- specialty: "مشروبات إضافية ",
+ specialty: "مشروبات إضافية",
+ drinks: "المشروبات",
  desserts: "الحلويات",
+ food: "المأكولات",
+ bakery: "المخبوزات",
  };
 
- const categorizedItems = coffeeItems.reduce((acc, item) => {
+ const allowedCategories = isFood ? FOOD_CATEGORIES : DRINK_CATEGORIES;
+
+ const filteredItems = coffeeItems.filter(item => allowedCategories.includes(item.category));
+
+ const categorizedItems = filteredItems.reduce((acc, item) => {
  if (!acc[item.category]) {
  acc[item.category] = [];
  }
@@ -800,7 +813,7 @@ export default function EmployeeMenuManagement() {
  }
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4">
+ <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4 pb-20 sm:pb-4">
  {/* Header */}
          <div className="max-w-7xl mx-auto mb-6">
          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -809,8 +822,8 @@ export default function EmployeeMenuManagement() {
          <Coffee className="w-6 h-6 text-white" />
          </div>
          <div>
-         <h1 className="text-2xl font-bold text-accent">إدارة المشروبات</h1>
-         <p className="text-gray-400 text-sm">تحديث حالة توفر المشروبات</p>
+         <h1 className="text-2xl font-bold text-accent">{isFood ? 'إدارة المأكولات' : 'إدارة المشروبات'}</h1>
+         <p className="text-gray-400 text-sm">{isFood ? 'تحديث حالة توفر المأكولات' : 'تحديث حالة توفر المشروبات'}</p>
          </div>
          </div>
          <div className="flex flex-wrap gap-2">
@@ -823,7 +836,7 @@ export default function EmployeeMenuManagement() {
       nameAr: '',
       nameEn: '',
       description: '',
-      category: 'hot',
+      category: isFood ? 'food' : 'hot',
       price: '0',
       oldPrice: '0',
       coffeeStrength: 'classic',
@@ -837,7 +850,7 @@ export default function EmployeeMenuManagement() {
     setStep1Data(null);
     setSelectedIngredients([]);
     resetImageState();
-    setSelectedCategory("hot");
+    setSelectedCategory(isFood ? "food" : "hot");
     setSelectedCoffeeStrength("classic");
   }
 }}>
@@ -847,7 +860,7 @@ export default function EmployeeMenuManagement() {
  data-testid="button-add-item"
  >
  <Plus className="w-4 h-4 ml-2" />
- إضافة مشروب جديد
+ {isFood ? 'إضافة صنف جديد' : 'إضافة مشروب جديد'}
  </Button>
  </DialogTrigger>
  <DialogContent className="bg-[#2d1f1a] border-primary/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -915,12 +928,23 @@ export default function EmployeeMenuManagement() {
                            <SelectValue placeholder="اختر القسم" />
                          </SelectTrigger>
                          <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
-                           <SelectItem value="basic">قهوة أساسية</SelectItem>
-                           <SelectItem value="hot">قهوة ساخنة</SelectItem>
-                           <SelectItem value="cold">قهوة باردة </SelectItem>
-                           <SelectItem value="specialty">مشروبات إضافية </SelectItem>
-                           <SelectItem value="drinks">المشروبات</SelectItem>
-                           <SelectItem value="desserts">الحلويات</SelectItem>
+                           {isFood ? (
+                             <>
+                               <SelectItem value="food">السندوتشات والمأكولات</SelectItem>
+                               <SelectItem value="bakery">المخبوزات والكرواسون</SelectItem>
+                               <SelectItem value="cake">الكيك</SelectItem>
+                               <SelectItem value="desserts">الحلويات</SelectItem>
+                             </>
+                           ) : (
+                             <>
+                               <SelectItem value="hot">قهوة ساخنة</SelectItem>
+                               <SelectItem value="cold">قهوة باردة</SelectItem>
+                               <SelectItem value="specialty">مشروبات مميزة</SelectItem>
+                               <SelectItem value="drinks">المشروبات</SelectItem>
+                               <SelectItem value="additional_drinks">مشروبات إضافية</SelectItem>
+                               <SelectItem value="basic">قهوة كلاسيك</SelectItem>
+                             </>
+                           )}
                          </SelectContent>
                        </Select>
                      </div>
@@ -1303,7 +1327,7 @@ export default function EmployeeMenuManagement() {
  {isLoading ? (
  <div className="text-center text-accent py-12">
  <Coffee className="w-12 h-12 animate-spin mx-auto mb-4" />
- <p>جاري تحميل المشروبات...</p>
+ <p>{isFood ? 'جاري تحميل المأكولات...' : 'جاري تحميل المشروبات...'}</p>
  </div>
  ) : (
  Object.entries(categorizedItems).map(([category, items]) => (
@@ -1522,11 +1546,21 @@ export default function EmployeeMenuManagement() {
  <SelectValue placeholder="اختر القسم" />
  </SelectTrigger>
  <SelectContent className="bg-[#2d1f1a] border-primary/20 text-white">
- <SelectItem value="basic">قهوة أساسية</SelectItem>
- <SelectItem value="hot">قهوة ساخنة</SelectItem>
- <SelectItem value="cold">قهوة باردة </SelectItem>
- <SelectItem value="specialty">مشروبات إضافية </SelectItem>
- <SelectItem value="desserts">الحلويات</SelectItem>
+ {isFood ? (
+   <>
+     <SelectItem value="food">المأكولات</SelectItem>
+     <SelectItem value="bakery">المخبوزات</SelectItem>
+     <SelectItem value="desserts">الحلويات</SelectItem>
+   </>
+ ) : (
+   <>
+     <SelectItem value="basic">قهوة أساسية</SelectItem>
+     <SelectItem value="hot">قهوة ساخنة</SelectItem>
+     <SelectItem value="cold">قهوة باردة</SelectItem>
+     <SelectItem value="specialty">مشروبات إضافية</SelectItem>
+     <SelectItem value="drinks">المشروبات</SelectItem>
+   </>
+ )}
  </SelectContent>
  </Select>
  </div>
@@ -1975,6 +2009,7 @@ export default function EmployeeMenuManagement() {
      </AlertDialogFooter>
    </AlertDialogContent>
  </AlertDialog>
+ <MobileBottomNav employeeRole={employee?.role} />
  </div>
  );
 }

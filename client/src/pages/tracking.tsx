@@ -81,7 +81,7 @@ export default function OrderTrackingPage() {
  return res.json();
  },
  enabled: !!trackingOrderNumber,
- refetchInterval: 5000,
+ refetchInterval: 10000,
  });
  
  const { data: branch } = useQuery<any>({
@@ -199,7 +199,7 @@ export default function OrderTrackingPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                       <span className="text-muted-foreground">{t("tracking.order_number")}:</span>
-                      <span className="font-bold text-primary" dir="ltr">{order.orderNumber}</span>
+                      <span className="font-bold text-primary" dir="ltr">{order.orderNumber.includes('-') ? order.orderNumber.split('-').pop() : order.orderNumber}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                       <span className="text-muted-foreground">{t("tracking.total_amount")}:</span>

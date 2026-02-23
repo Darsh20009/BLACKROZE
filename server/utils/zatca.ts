@@ -3,9 +3,9 @@ import { TaxInvoiceModel, type ITaxInvoice } from '@shared/schema';
 
 // ZATCA Configuration from environment variables for security
 const VAT_RATE = parseFloat(process.env.VAT_RATE || '0.15');
-const SELLER_NAME = process.env.ZATCA_SELLER_NAME || 'BLACK ROSE';
-const SELLER_NAME_EN = process.env.ZATCA_SELLER_NAME_EN || 'BLACK ROSE';
-const SELLER_VAT_NUMBER = process.env.ZATCA_VAT_NUMBER || '300000000000003';
+const SELLER_NAME = process.env.ZATCA_SELLER_NAME || 'CLUNY CAFE';
+const SELLER_NAME_EN = process.env.ZATCA_SELLER_NAME_EN || 'CLUNY CAFE';
+const SELLER_VAT_NUMBER = process.env.ZATCA_VAT_NUMBER || '311234567890003';
 const SELLER_ADDRESS = process.env.ZATCA_SELLER_ADDRESS || 'الرياض، المملكة العربية السعودية';
 const SELLER_CR_NUMBER = process.env.ZATCA_CR_NUMBER || '';
 const SELLER_BUILDING_NUMBER = process.env.ZATCA_BUILDING_NUMBER || '';
@@ -296,7 +296,7 @@ export async function createZATCAInvoice(params: CreateInvoiceParams): Promise<I
     return {
       itemId: item.itemId,
       nameAr: item.nameAr,
-      nameEn: item.nameEn,
+      nameEn: item.nameEn || '',
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       discountAmount: item.discountAmount || 0,

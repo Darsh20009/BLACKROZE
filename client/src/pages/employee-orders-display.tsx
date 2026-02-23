@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,9 +13,16 @@ import { Clock, ChefHat, CheckCircle2, ArrowLeft } from "lucide-react";
 import type { Employee } from "@shared/schema";
 
 interface Order {
-  _id: string;
+  id: string;
   orderNumber: string;
   status: string;
+  orderType: string;
+  tableNumber?: string;
+  carInfo?: {
+    model: string;
+    color: string;
+    plateNumber: string;
+  };
   totalAmount: number;
   branchId?: string;
   createdAt?: string;
@@ -137,9 +145,14 @@ export default function EmployeeOrdersDisplay() {
     <div className={`p-3 rounded-lg shadow-sm ${getOrderCardBg(statusSection)} hover:shadow-md transition-shadow min-w-0`}>
       <div className="text-center flex flex-col items-center justify-center overflow-hidden">
         <div className="flex justify-between items-start w-full mb-1">
-          {order.tableNumber && (
+          {order.orderType === 'dine-in' && order.tableNumber && (
             <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
               طاولة {order.tableNumber}
+            </Badge>
+          )}
+          {order.orderType === 'car-pickup' && order.carInfo && (
+            <Badge variant="outline" className="text-[10px] bg-blue-100 text-blue-700 border-blue-200">
+              سيارة: {order.carInfo.model} ({order.carInfo.color}) - {order.carInfo.plateNumber}
             </Badge>
           )}
           <span className="text-[10px] text-muted-foreground">{new Date(order.createdAt || "").toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -170,7 +183,7 @@ export default function EmployeeOrdersDisplay() {
           {orders_list.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               {orders_list.map((order) => (
-                <OrderCard key={order._id} order={order} statusSection={status} />
+                <OrderCard key={order.id} order={order} statusSection={status} />
               ))}
             </div>
           ) : (
@@ -210,7 +223,7 @@ export default function EmployeeOrdersDisplay() {
             </SelectTrigger>
             <SelectContent>
               {branches.map((branch) => (
-                <SelectItem key={branch._id} value={branch._id}>
+                <SelectItem key={branch.id} value={branch.id}>
                   {branch.nameAr}
                 </SelectItem>
               ))}

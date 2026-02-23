@@ -39,7 +39,7 @@ export class QahwaDatabase extends Dexie {
   syncQueue!: Table<SyncItem>;
 
   constructor() {
-    super('BLACK ROSEDB');
+    super('CLUNY CAFEDB');
     this.version(1).stores({
       products: 'id, nameAr, category, tenantId, updatedAt',
       invoices: '++id, tempId, status, tenantId, branchId, createdAt',

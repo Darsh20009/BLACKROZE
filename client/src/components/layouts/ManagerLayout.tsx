@@ -82,6 +82,7 @@ export function ManagerLayout({
 
   const navItems = [
     { path: "/manager/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" },
+    { path: "/admin/settings", icon: Settings, label: "إدارة النظام" },
     { path: "/manager/employees", icon: Users, label: "الموظفين" },
     { path: "/manager/tables", icon: TableIcon, label: "الطاولات" },
     { path: "/manager/drivers", icon: Truck, label: "السائقين" },

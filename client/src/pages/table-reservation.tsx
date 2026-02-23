@@ -17,7 +17,7 @@ import { Coffee, Calendar, User, Phone, MapPin, CheckCircle2 } from "lucide-reac
 import { useLocation } from "wouter";
 
 interface Branch {
-  _id: string;
+  id: string;
   nameAr: string;
   city: string;
   address: string;
@@ -25,7 +25,7 @@ interface Branch {
 }
 
 interface Table {
-  _id: string;
+  id: string;
   tableNumber: string;
   branchId: string;
   isOccupied: number;
@@ -74,6 +74,26 @@ export default function TableReservation() {
       numberOfGuests: number;
       branchId: string;
     }) => {
+      // First create the appointment in the new system
+      const appointmentResponse = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          branchId: data.branchId,
+          customerName: data.customerName,
+          customerPhone: data.customerPhone,
+          appointmentDate: `${data.reservationDate}T${data.reservationTime}`,
+          numberOfPeople: data.numberOfGuests,
+          serviceType: 'table',
+          notes: `Table ${data.tableId}`
+        }),
+      });
+
+      if (!appointmentResponse.ok) {
+        throw new Error("فشل تسجيل الموعد في النظام الجديد");
+      }
+
+      // Then call the legacy table reservation for compatibility
       const response = await fetch("/api/tables/customer-reserve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -228,7 +248,7 @@ export default function TableReservation() {
                 </SelectTrigger>
                 <SelectContent>
                   {branches.map((branch) => (
-                    <SelectItem key={branch._id} value={branch._id}>
+                    <SelectItem key={branch.id} value={branch.id}>
                       {branch.nameAr} - {branch.city}
                     </SelectItem>
                   ))}
@@ -255,7 +275,7 @@ export default function TableReservation() {
                     </SelectTrigger>
                     <SelectContent>
                       {availableTables.map((table) => (
-                        <SelectItem key={table._id} value={table._id}>
+                        <SelectItem key={table.id} value={table.id}>
                           طاولة رقم {table.tableNumber}
                         </SelectItem>
                       ))}

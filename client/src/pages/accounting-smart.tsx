@@ -93,8 +93,7 @@ interface DashboardData {
 }
 
 interface Branch {
-  id?: string;
-  _id?: string;
+  id: string;
   nameAr: string;
 }
 
@@ -271,7 +270,7 @@ export default function AccountingSmartPage() {
             <SelectContent>
               <SelectItem value="all">جميع الفروع</SelectItem>
               {branches.map((branch) => (
-                <SelectItem key={branch.id || branch._id} value={branch.id || branch._id || ""}>
+                <SelectItem key={branch.id} value={branch.id}>
                   {branch.nameAr}
                 </SelectItem>
               ))}
@@ -786,11 +785,11 @@ export default function AccountingSmartPage() {
                   </div>
                 ) : (
                   allOrders.map((order: any) => (
-                    <Card key={order._id || order.id} className="border shadow-sm" data-testid={`card-order-${order._id || order.id}`}>
+                    <Card key={order.id} className="border shadow-sm" data-testid={`card-order-${order.id}`}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline">#{order.orderNumber || order._id?.slice(-6)}</Badge>
+                            <Badge variant="outline">#{order.orderNumber || order.id?.slice(-6)}</Badge>
                             <Badge 
                               variant={order.status === "completed" ? "default" : "secondary"}
                               className={order.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}
@@ -851,7 +850,7 @@ export default function AccountingSmartPage() {
                   </div>
                 ) : (
                   allExpenses.map((expense: any) => (
-                    <Card key={expense._id || expense.id} className="border shadow-sm" data-testid={`card-expense-${expense._id || expense.id}`}>
+                    <Card key={expense.id} className="border shadow-sm" data-testid={`card-expense-${expense.id}`}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
                           <Badge variant="outline">

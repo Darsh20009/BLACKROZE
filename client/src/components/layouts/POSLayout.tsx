@@ -59,6 +59,7 @@ export function POSLayout({
 
   const handleLogout = () => {
     localStorage.removeItem("currentEmployee");
+    localStorage.removeItem("cluny-restore-key");
     setLocation("/employee/gateway");
   };
 
