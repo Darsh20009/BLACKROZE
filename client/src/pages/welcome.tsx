@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Coffee, Star, MapPin, ChevronLeft, ChevronRight, LogOut, Sparkles, User, KeyRound, X as XIcon } from "lucide-react";
 import blackroseLogo from "@assets/blackrose-logo.png";
-import bannerImage1 from "@assets/banner-coffee-1.png";
-import bannerImage2 from "@assets/banner-coffee-2.png";
+import bannerImage1 from "@assets/Screenshot_2026-02-04_200214_1771855798638.png";
+import bannerImage2 from "@assets/Screenshot_2026-02-04_200804_1771855809761.png";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useTranslation } from "react-i18next";
 import CurrentOrderBanner from "@/components/current-order-banner";
@@ -24,45 +24,45 @@ export default function WelcomePage() {
     customerId: customer?.id,
     onPointsVerificationCode: (data) => {
       setVerificationCode(data);
-      // Auto-hide after 5 minutes or based on expiry
       setTimeout(() => setVerificationCode(null), 5 * 60 * 1000);
     },
     enabled: !!customer?.id
   });
 
   const features = [
-    { icon: Coffee, title: t("welcome.specialty"), desc: t("welcome.specialty_desc"), color: "from-primary to-primary/70" },
-    { icon: Star, title: t("welcome.luxury"), desc: t("welcome.luxury_desc"), color: "from-accent to-accent/70" },
-    { icon: MapPin, title: t("welcome.locations"), desc: t("welcome.locations_desc"), color: "from-primary to-accent" },
+    { icon: Coffee, title: t("welcome.specialty"), desc: t("welcome.specialty_desc"), color: "from-gray-800 to-gray-600" },
+    { icon: Star, title: t("welcome.luxury"), desc: t("welcome.luxury_desc"), color: "from-gray-900 to-gray-700" },
+    { icon: MapPin, title: t("welcome.locations"), desc: t("welcome.locations_desc"), color: "from-gray-700 to-gray-900" },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary/5 text-foreground overflow-hidden font-ibm-arabic">
+    <div className="min-h-screen bg-black text-foreground overflow-hidden font-ibm-arabic">
       {/* Hero Section with Background Image */}
       <div className="relative min-h-[100dvh] flex flex-col">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <img 
             src={bannerImage1} 
-            alt="Coffee Background" 
-            className="w-full h-full object-cover"
+            alt="Black Rose Cafe" 
+            className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/50 to-black/85" />
         </div>
 
-        {/* Floating decorative elements */}
+        {/* Floating rose petal decorative elements */}
         <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 right-10 w-20 h-20 bg-primary/20 rounded-full blur-2xl animate-pulse" />
-          <div className="absolute bottom-40 left-10 w-32 h-32 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-20 right-10 w-24 h-24 bg-white/5 rounded-full blur-2xl animate-pulse" />
+          <div className="absolute bottom-40 left-10 w-36 h-36 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 right-20 w-16 h-16 bg-white/5 rounded-full blur-xl animate-pulse delay-500" />
         </div>
 
         {/* Header */}
         <header className="relative z-20 flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xl p-1 border border-white/30">
+            <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-xl p-1 border border-white/20">
               <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
-            <span className="text-white font-bold text-lg tracking-wide">BLACK ROSE</span>
+            <span className="text-white font-bold text-lg tracking-[0.15em]">BLACK ROSE</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export default function WelcomePage() {
                   initial={{ opacity: 0, scale: 0.9, x: 20 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.9, x: 20 }}
-                  className="bg-accent/90 backdrop-blur-md border border-white/20 rounded-xl p-2 px-3 flex items-center gap-3 shadow-xl"
+                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-2 px-3 flex items-center gap-3 shadow-xl"
                 >
                   <div className="bg-white/20 p-1.5 rounded-lg">
                     <KeyRound className="w-4 h-4 text-white" />
@@ -135,7 +135,7 @@ export default function WelcomePage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-xl p-2 border border-white/20 shadow-xl bg-[#a7b0b1]/30"
+              className="w-28 h-28 mx-auto mb-8 rounded-2xl overflow-hidden backdrop-blur-xl p-2 border border-white/20 shadow-2xl bg-black/40"
             >
               <img src={blackroseLogo} alt="Logo" className="w-full h-full object-contain rounded-2xl" />
             </motion.div>
@@ -145,13 +145,14 @@ export default function WelcomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <h1 className="text-5xl md:text-6xl font-bold mb-3 text-white drop-shadow-lg">
-                {t("app.name")}
+              <h1 className="text-5xl md:text-6xl font-bold mb-2 text-white drop-shadow-lg tracking-[0.1em]">
+                BLACK ROSE
               </h1>
+              <p className="text-white/60 text-sm tracking-[0.3em] uppercase mb-6">C A F E</p>
               <div className="flex items-center justify-center gap-2 mb-8">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-white/80 text-lg tracking-wider">{t("app.tagline")}</span>
-                <Sparkles className="w-4 h-4 text-primary" />
+                <Sparkles className="w-4 h-4 text-white/60" />
+                <span className="text-white/70 text-base tracking-wider">{t("app.tagline")}</span>
+                <Sparkles className="w-4 h-4 text-white/60" />
               </div>
             </motion.div>
 
@@ -165,7 +166,7 @@ export default function WelcomePage() {
                 <p className="text-white text-2xl mb-2 font-semibold">
                   {t("welcome.greeting", { name: customer?.name })}
                 </p>
-                <p className="text-white/70 text-base">
+                <p className="text-white/60 text-base">
                   {t("welcome.missed_you")}
                 </p>
               </motion.div>
@@ -174,7 +175,7 @@ export default function WelcomePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="text-white/80 text-xl mb-10"
+                className="text-white/70 text-xl mb-10"
               >
                 {t("welcome.stories")}
               </motion.p>
@@ -188,7 +189,7 @@ export default function WelcomePage() {
             >
               <Button
                 onClick={() => setLocation("/menu")}
-                className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-xl shadow-primary/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full h-14 bg-white text-black hover:bg-white/90 rounded-2xl text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
                 {t(isAuthenticated ? "menu.order_now" : "welcome.explore")}
                 {i18n.language === 'ar' ? <ChevronLeft className="mr-2 w-5 h-5" /> : <ChevronRight className="ml-2 w-5 h-5" />}
@@ -198,7 +199,7 @@ export default function WelcomePage() {
                 <Button
                   variant="outline"
                   onClick={() => setLocation("/auth")}
-                  className="w-full h-14 bg-white/10 backdrop-blur-md border-white/30 text-white rounded-2xl text-lg hover:bg-white/20"
+                  className="w-full h-14 bg-white/5 backdrop-blur-md border-white/20 text-white rounded-2xl text-lg hover:bg-white/10"
                 >
                   {t("welcome.login")}
                 </Button>
@@ -206,7 +207,7 @@ export default function WelcomePage() {
                 <Button
                   variant="outline"
                   onClick={() => setLocation("/profile")}
-                  className="w-full h-14 bg-white/10 backdrop-blur-md border-white/30 text-white rounded-2xl text-lg hover:bg-white/20"
+                  className="w-full h-14 bg-white/5 backdrop-blur-md border-white/20 text-white rounded-2xl text-lg hover:bg-white/10"
                 >
                   {t("welcome.my_account")}
                 </Button>
@@ -221,13 +222,14 @@ export default function WelcomePage() {
           transition={{ duration: 2, repeat: Infinity }}
           className="relative z-20 pb-8 text-center"
         >
-          <div className="w-6 h-10 mx-auto border-2 border-white/30 rounded-full flex justify-center pt-2">
-            <div className="w-1.5 h-3 bg-white/50 rounded-full" />
+          <div className="w-6 h-10 mx-auto border-2 border-white/20 rounded-full flex justify-center pt-2">
+            <div className="w-1.5 h-3 bg-white/40 rounded-full" />
           </div>
         </motion.div>
       </div>
+
       {/* Features Section */}
-      <section className="py-20 px-6 bg-gradient-to-b from-white to-slate-50">
+      <section className="py-20 px-6 bg-black">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -235,10 +237,15 @@ export default function WelcomePage() {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-foreground mb-3">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="h-px w-16 bg-white/20" />
+              <span className="text-white/40 text-xs tracking-[0.3em] uppercase">لماذا</span>
+              <div className="h-px w-16 bg-white/20" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-3">
               {t("welcome.why")}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-white/50">
               {t("welcome.experience")}
             </p>
           </motion.div>
@@ -251,41 +258,55 @@ export default function WelcomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.15 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-border hover:shadow-xl transition-shadow"
+                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-white/20 hover:bg-white/8 transition-all duration-300"
               >
-                <div className={`w-14 h-14 mb-4 flex items-center justify-center rounded-xl bg-gradient-to-br ${f.color}`}>
+                <div className="w-14 h-14 mb-4 flex items-center justify-center rounded-xl bg-white/10 border border-white/10">
                   <f.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">{f.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+                <h3 className="text-xl font-bold text-white mb-2">{f.title}</h3>
+                <p className="text-white/50 text-sm leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
+
       {/* Gallery Section */}
-      <section className="py-16 px-6 bg-slate-50">
+      <section className="py-16 px-6 bg-black">
         <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-10"
+          >
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="h-px w-12 bg-white/20" />
+              <span className="text-white/40 text-xs tracking-[0.3em] uppercase">معرض الصور</span>
+              <div className="h-px w-12 bg-white/20" />
+            </div>
+          </motion.div>
           <div className="grid grid-cols-2 gap-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="rounded-2xl overflow-hidden shadow-lg"
+              className="rounded-2xl overflow-hidden shadow-2xl border border-white/10"
             >
-              <img src={bannerImage1} alt="Coffee" className="w-full h-48 object-cover" />
+              <img src={bannerImage1} alt="Black Rose Cafe" className="w-full h-56 object-cover hover:scale-105 transition-transform duration-700" />
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="rounded-2xl overflow-hidden shadow-lg"
+              className="rounded-2xl overflow-hidden shadow-2xl border border-white/10"
             >
-              <img src={bannerImage2} alt="Coffee" className="w-full h-48 object-cover" />
+              <img src={bannerImage2} alt="Black Rose Cafe" className="w-full h-56 object-cover hover:scale-105 transition-transform duration-700" />
             </motion.div>
           </div>
         </div>
       </section>
+
       {/* Footer */}
       <CustomerFooter />
     </div>
