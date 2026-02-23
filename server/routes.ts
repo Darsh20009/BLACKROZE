@@ -1567,36 +1567,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- DELIVERY INTEGRATION MOCK API ---
-  app.get("/api/integrations/delivery/mock-status", requireAuth, async (req: AuthRequest, res) => {
-    res.json({
-      hungerstation: { status: 'connected', latency: '120ms', ordersToday: 45 },
-      jahez: { status: 'connected', latency: '95ms', ordersToday: 32 },
-      toyou: { status: 'disconnected', lastActive: '2025-12-29' }
-    });
-  });
-
-  // Real service status endpoint
+  // Service status endpoint - returns real integration data only
   app.get("/api/integrations/delivery/service-status", requireAuth, async (req: AuthRequest, res) => {
     try {
       const integrations = await DeliveryIntegrationModel.find({}).lean();
       const services = integrations.map((int: any) => ({
         provider: int.provider || 'unknown',
         status: int.isActive ? 'connected' : 'disconnected',
-        latency: Math.random() > 0.3 ? `${Math.floor(Math.random() * 200 + 50)}ms` : undefined,
-        ordersToday: Math.floor(Math.random() * 100),
         lastActive: int.lastSyncAt ? new Date(int.lastSyncAt).toLocaleDateString('ar-SA') : 'لم يتم التزامن'
       }));
-      res.json(services.length > 0 ? services : [
-        { provider: 'hungerstation', status: 'connected', latency: '120ms', ordersToday: 45 },
-        { provider: 'jahez', status: 'connected', latency: '95ms', ordersToday: 32 },
-        { provider: 'toyou', status: 'disconnected', lastActive: '2025-12-29' }
-      ]);
+      res.json(services);
     } catch (error) {
-      res.json([
-        { provider: 'hungerstation', status: 'connected', latency: '120ms', ordersToday: 45 },
-        { provider: 'jahez', status: 'connected', latency: '95ms', ordersToday: 32 },
-        { provider: 'toyou', status: 'disconnected', lastActive: '2025-12-29' }
-      ]);
+      res.json([]);
     }
   });
 
@@ -7120,7 +7102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: temporaryPassword,
           fullName: `مدير ${branchNameAr}`,
           role: 'manager',
-          phone: branchData.phone || `05${Math.floor(Math.random() * 100000000)}`,
+          phone: branchData.phone || '',
           jobTitle: 'مدير الفرع',
           isActivated: 1,
           branchId: branchId,
@@ -13076,7 +13058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes: req.body.notes,
         issuedBy,
         sellerName: req.body.sellerName || "بلاك روز CAFE",
-        sellerVatNumber: req.body.sellerVatNumber || "311234567890003",
+        sellerVatNumber: req.body.sellerVatNumber || "312718675800003",
       });
       res.json({ success: true, invoice: serializeDoc(invoice) });
     } catch (error: any) {

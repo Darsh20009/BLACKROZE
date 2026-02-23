@@ -5,13 +5,13 @@ import { TaxInvoiceModel, type ITaxInvoice } from '@shared/schema';
 const VAT_RATE = parseFloat(process.env.VAT_RATE || '0.15');
 const SELLER_NAME = process.env.ZATCA_SELLER_NAME || 'BLACK ROSE CAFE';
 const SELLER_NAME_EN = process.env.ZATCA_SELLER_NAME_EN || 'BLACK ROSE CAFE';
-const SELLER_VAT_NUMBER = process.env.ZATCA_VAT_NUMBER || '311234567890003';
-const SELLER_ADDRESS = process.env.ZATCA_SELLER_ADDRESS || 'الرياض، المملكة العربية السعودية';
-const SELLER_CR_NUMBER = process.env.ZATCA_CR_NUMBER || '';
+const SELLER_VAT_NUMBER = process.env.ZATCA_VAT_NUMBER || '312718675800003';
+const SELLER_ADDRESS = process.env.ZATCA_SELLER_ADDRESS || 'ينبع، المملكة العربية السعودية';
+const SELLER_CR_NUMBER = process.env.ZATCA_CR_NUMBER || '4700114396';
 const SELLER_BUILDING_NUMBER = process.env.ZATCA_BUILDING_NUMBER || '';
 const SELLER_POSTAL_CODE = process.env.ZATCA_POSTAL_CODE || '';
 const SELLER_DISTRICT = process.env.ZATCA_DISTRICT || '';
-const SELLER_CITY = process.env.ZATCA_CITY || 'الرياض';
+const SELLER_CITY = process.env.ZATCA_CITY || 'ينبع';
 
 // ZATCA Phase 2 Integration Settings
 const ZATCA_API_URL = process.env.ZATCA_API_URL || 'https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal';
@@ -217,7 +217,7 @@ export function generateZATCAXML(invoice: ITaxInvoice): string {
       <cac:PostalAddress>
         <cbc:StreetName>${invoice.sellerAddress}</cbc:StreetName>
         <cbc:BuildingNumber>${invoice.sellerBuildingNumber || ''}</cbc:BuildingNumber>
-        <cbc:CityName>${invoice.sellerCity || 'الرياض'}</cbc:CityName>
+        <cbc:CityName>${invoice.sellerCity || 'ينبع'}</cbc:CityName>
         <cbc:PostalZone>${invoice.sellerPostalCode || ''}</cbc:PostalZone>
         <cbc:CountrySubentity>${invoice.sellerDistrict || ''}</cbc:CountrySubentity>
         <cac:Country>
