@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useCartStore } from "@/lib/cart-store";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -14,7 +14,7 @@ import PaymentMethods from "@/components/payment-methods";
 import { customerStorage } from "@/lib/customer-storage";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
-import { User, Gift, CheckCircle, Sparkles, Shield, Loader2, KeyRound } from "lucide-react";
+import { User, Gift, CheckCircle, Sparkles, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { PaymentMethodInfo, PaymentMethod } from "@shared/schema";
 
@@ -41,12 +41,6 @@ export default function CheckoutPage() {
   const [pointsRedeemed, setPointsRedeemed] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
   const [pointsVerified, setPointsVerified] = useState(false);
-  const [pointsVerificationToken, setPointsVerificationToken] = useState("");
-  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [isRequestingCode, setIsRequestingCode] = useState(false);
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [devCode, setDevCode] = useState<string | null>(null);
   const { card: loyaltyCard, refetch: refetchLoyaltyCard } = useLoyaltyCard();
 
   const pointsToSar = (pts: number) => (pts / 100) * 5;
@@ -56,7 +50,7 @@ export default function CheckoutPage() {
     if (appliedDiscount) {
       total = total * (1 - appliedDiscount.percentage / 100);
     }
-    if (usePoints && pointsVerified) {
+    if (usePoints && pointsRedeemed > 0) {
       total = Math.max(0, total - pointsToSar(pointsRedeemed));
     }
     return total;
@@ -186,7 +180,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({ 
           code: codeToUse, 
           customerId: customer?.id,
-          amount: total
+          amount: getFinalTotal()
         }),
       });
       const data = await response.json();
@@ -211,84 +205,25 @@ export default function CheckoutPage() {
     } finally { setIsValidatingDiscount(false); }
   };
 
-  const handleRequestVerificationCode = async () => {
+  const handleApplyPoints = () => {
     if (!pointsRedeemed || pointsRedeemed <= 0) {
       toast({ variant: "destructive", title: t("points.enter_points_amount") });
       return;
     }
-
-    const phone = customer?.phone || customerPhone;
-    if (!phone) {
-      toast({ variant: "destructive", title: t("points.phone_required") });
+    const maxPoints = loyaltyCard?.points || 0;
+    if (pointsRedeemed > maxPoints) {
+      toast({ variant: "destructive", title: `لا يمكن استخدام أكثر من ${maxPoints} نقطة` });
       return;
     }
-
-    setIsRequestingCode(true);
-    try {
-      const response = await apiRequest("POST", "/api/loyalty/points/request-code", {
-        phone,
-        points: pointsRedeemed,
-        requestedBy: 'customer',
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setShowVerificationDialog(true);
-        if (data.devCode) setDevCode(data.devCode);
-        toast({
-          title: t("points.code_sent"),
-          description: data.maskedEmail
-            ? t("points.code_sent_to_email", { email: data.maskedEmail })
-            : t("points.code_generated"),
-        });
-      } else {
-        toast({ variant: "destructive", title: data.error || t("points.code_error") });
-      }
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("points.code_error") });
-    } finally {
-      setIsRequestingCode(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    if (!verificationCode.trim() || verificationCode.length < 4) {
-      toast({ variant: "destructive", title: t("points.enter_valid_code") });
-      return;
-    }
-
-    const phone = customer?.phone || customerPhone;
-    setIsVerifyingCode(true);
-    try {
-      const response = await apiRequest("POST", "/api/loyalty/points/verify-code", {
-        phone,
-        code: verificationCode.trim(),
-      });
-      const data = await response.json();
-      if (response.ok && data.verified) {
-        setPointsVerified(true);
-        setUsePoints(true);
-        setPointsVerificationToken(data.verificationToken);
-        setShowVerificationDialog(false);
-        setVerificationCode("");
-        setDevCode(null);
-        toast({ title: t("points.verified_success"), description: t("points.points_will_be_deducted", { amount: pointsToSar(pointsRedeemed).toFixed(2) }) });
-      } else {
-        toast({ variant: "destructive", title: data.error || t("points.invalid_code") });
-      }
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("points.verification_error") });
-    } finally {
-      setIsVerifyingCode(false);
-    }
+    setUsePoints(true);
+    setPointsVerified(true);
+    toast({ title: t("points.verified_success"), description: `تم تطبيق خصم ${pointsToSar(pointsRedeemed).toFixed(2)} ر.س` });
   };
 
   const handleCancelPoints = () => {
     setUsePoints(false);
     setPointsVerified(false);
-    setPointsVerificationToken("");
     setPointsRedeemed(0);
-    setVerificationCode("");
-    setDevCode(null);
   };
 
   const handleProceedPayment = () => {
@@ -352,9 +287,8 @@ export default function CheckoutPage() {
       deliveryType: deliveryInfo?.type === 'car-pickup' ? 'car_pickup' : deliveryInfo?.type || 'pickup',
       customerNotes: customerNotes,
       discountCode: appliedDiscount?.code,
-      pointsRedeemed: (usePoints && pointsVerified) ? pointsRedeemed : 0,
-      pointsValue: (usePoints && pointsVerified) ? pointsToSar(pointsRedeemed) : 0,
-      pointsVerificationToken: (usePoints && pointsVerified) ? pointsVerificationToken : undefined,
+      pointsRedeemed: (usePoints && pointsRedeemed > 0) ? pointsRedeemed : 0,
+      pointsValue: (usePoints && pointsRedeemed > 0) ? pointsToSar(pointsRedeemed) : 0,
       ...(deliveryInfo?.type === 'car-pickup' && deliveryInfo?.carInfo ? {
         carType: deliveryInfo.carInfo.carType,
         carColor: deliveryInfo.carInfo.carColor,
@@ -598,11 +532,11 @@ export default function CheckoutPage() {
                         <span className="text-sm font-bold text-blue-800 dark:text-blue-300">≈ {pointsToSar(loyaltyCard.points || 0).toFixed(2)} {t("currency")}</span>
                       </div>
 
-                      {pointsVerified ? (
+                      {usePoints && pointsRedeemed > 0 ? (
                         <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 space-y-2">
                           <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                            <Shield className="w-4 h-4" />
-                            <span className="text-sm font-semibold">{t("points.verified_and_active")}</span>
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm font-semibold">تم تطبيق النقاط</span>
                           </div>
                           <div className="flex justify-between items-center gap-2 flex-wrap">
                             <span className="text-sm">{pointsRedeemed} {t("points.points_unit")} = {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}</span>
@@ -633,22 +567,19 @@ export default function CheckoutPage() {
                               data-testid="input-points-redeem"
                             />
                             <Button 
-                              onClick={handleRequestVerificationCode}
-                              disabled={isRequestingCode || !pointsRedeemed || pointsRedeemed <= 0}
-                              data-testid="button-request-points-code"
+                              onClick={handleApplyPoints}
+                              disabled={!pointsRedeemed || pointsRedeemed <= 0}
+                              data-testid="button-apply-points"
                             >
-                              {isRequestingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                              <span className="mr-1">{t("points.send_code")}</span>
+                              <Sparkles className="w-4 h-4" />
+                              <span className="mr-1">استخدام</span>
                             </Button>
                           </div>
                           {pointsRedeemed > 0 && (
                             <p className="text-xs text-blue-600 dark:text-blue-400">
-                              {t("points.will_deduct", { amount: pointsToSar(pointsRedeemed).toFixed(2) })}
+                              ستحصل على خصم {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground">
-                            {t("points.verification_required")}
-                          </p>
                         </>
                       )}
                     </div>
@@ -662,57 +593,6 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
-        <DialogContent dir={isAr ? 'rtl' : 'ltr'} className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-blue-600" />
-              {t("points.verify_title")}
-            </DialogTitle>
-            <DialogDescription>{t("points.verify_desc")}</DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="text-center bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground">{t("points.redeeming")}</p>
-              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{pointsRedeemed} {t("points.points_unit")}</p>
-              <p className="text-sm text-blue-600">=  {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}</p>
-            </div>
-            <div className="space-y-2">
-              <Label>{t("points.enter_code")}</Label>
-              <Input
-                type="text"
-                maxLength={4}
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="1234"
-                className="text-center text-2xl tracking-widest font-bold"
-                dir="ltr"
-                data-testid="input-verification-code"
-              />
-            </div>
-            {devCode && (
-              <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-2 text-center">
-                <p className="text-xs text-yellow-700 dark:text-yellow-400">{t("points.dev_code")}: <span className="font-bold text-lg">{devCode}</span></p>
-              </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowVerificationDialog(false)} className="flex-1" data-testid="button-cancel-verify">
-              {t("points.cancel")}
-            </Button>
-            <Button 
-              onClick={handleVerifyCode} 
-              disabled={isVerifyingCode || verificationCode.length < 4}
-              className="flex-1"
-              data-testid="button-confirm-verify"
-            >
-              {isVerifyingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {t("points.verify")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <DialogContent dir={isAr ? 'rtl' : 'ltr'}>
           <DialogHeader>
@@ -721,8 +601,8 @@ export default function CheckoutPage() {
           <div className="py-4 text-center">
             <p className="text-lg">{t("checkout.confirm_question")}</p>
             <p className="text-2xl font-bold text-primary mt-2">{getFinalTotalWithPoints().toFixed(2)} {t("currency")}</p>
-            {usePoints && pointsVerified && (
-              <p className="text-sm text-blue-600 mt-1">{t("points.includes_points_discount", { points: pointsRedeemed, amount: pointsToSar(pointsRedeemed).toFixed(2) })}</p>
+            {usePoints && pointsRedeemed > 0 && (
+              <p className="text-sm text-blue-600 mt-1">يشمل خصم {pointsRedeemed} نقطة = {pointsToSar(pointsRedeemed).toFixed(2)} ر.س</p>
             )}
           </div>
           <DialogFooter className="gap-2">

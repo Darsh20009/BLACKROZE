@@ -122,15 +122,6 @@ export function useOrderWebSocket({
           switch (message.type) {
             case "new_order":
               onNewOrder?.(message.order);
-              // Play notification sound
-              import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
-                const isOnline = message.order?.orderType === 'delivery' || message.order?.orderType === 'takeaway' || !message.order?.employeeId;
-                if (isOnline) {
-                  playNotificationSound('onlineOrderVoice', 1.0);
-                } else {
-                  playNotificationSound('newOrder', 1.0);
-                }
-              });
               // Trigger local notification if in foreground but not looking at orders
               if (Notification.permission === 'granted' && window.location.pathname !== '/employee/orders') {
                 const n = new Notification(message.title || 'طلب جديد', {

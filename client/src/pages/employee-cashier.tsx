@@ -90,6 +90,8 @@ export default function EmployeeCashier() {
  const [isPosSettingsOpen, setIsPosSettingsOpen] = useState(false);
  const [isTogglingPos, setIsTogglingPos] = useState(false);
  const [stampsToUse, setStampsToUse] = useState(0);
+ const [pointsToRedeem, setPointsToRedeem] = useState(0);
+ const [usePointsDiscount, setUsePointsDiscount] = useState(false);
  const [orderType, setOrderType] = useState<'dine-in' | 'pickup' | 'delivery'>('pickup');
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
  
@@ -149,13 +151,17 @@ export default function EmployeeCashier() {
  // Check for existing customer when phone number is entered
  useEffect(() => {
  const checkCustomer = async () => {
- if (customerPhone.length === 9 && customerPhone.startsWith('5')) {
+ // Accept 9-digit (5xxxxxxxx) or 10-digit (05xxxxxxxx) Saudi numbers
+ const cleanPhone = customerPhone.startsWith('0') ? customerPhone.slice(1) : customerPhone;
+ const isValidPhone = (cleanPhone.length === 9 && cleanPhone.startsWith('5')) ||
+                      (customerPhone.length === 10 && customerPhone.startsWith('05'));
+ if (isValidPhone) {
  setIsCheckingCustomer(true);
  try {
  const response = await fetch(`/api/customers/lookup-by-phone`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ phone: customerPhone })
+ body: JSON.stringify({ phone: cleanPhone })
  });
  
  if (response.ok) {
@@ -184,6 +190,8 @@ export default function EmployeeCashier() {
  setCustomerName("");
  setCustomerEmail("");
  setCustomerPoints(0);
+ setPointsToRedeem(0);
+ setUsePointsDiscount(false);
  setShowRegisterDialog(true);
  }
  } else {
@@ -192,6 +200,8 @@ export default function EmployeeCashier() {
  setCustomerName("");
  setCustomerEmail("");
  setCustomerPoints(0);
+ setPointsToRedeem(0);
+ setUsePointsDiscount(false);
  setShowRegisterDialog(true);
  }
  } catch (error) {
@@ -201,6 +211,8 @@ export default function EmployeeCashier() {
  setCustomerName("");
  setCustomerEmail("");
  setCustomerPoints(0);
+ setPointsToRedeem(0);
+ setUsePointsDiscount(false);
  } finally {
  setIsCheckingCustomer(false);
  }
@@ -212,6 +224,8 @@ export default function EmployeeCashier() {
  setCustomerName("");
  setCustomerEmail("");
  setCustomerPoints(0);
+ setPointsToRedeem(0);
+ setUsePointsDiscount(false);
  setShowRegisterDialog(false);
  }
  }
@@ -379,6 +393,8 @@ export default function EmployeeCashier() {
  setCustomerPhone("");
  setCustomerEmail("");
  setCustomerPoints(0);
+ setPointsToRedeem(0);
+ setUsePointsDiscount(false);
  setCustomerId(null);
  setLoyaltyCard(null);
  setShowRegisterDialog(false);
@@ -443,10 +459,13 @@ export default function EmployeeCashier() {
  return (subtotal * appliedDiscount.percentage) / 100;
  };
 
+ const pointsToSar = (pts: number) => (pts / 100) * 5;
+
  const calculateTotal = () => {
  const subtotal = calculateSubtotal();
  const discount = calculateDiscount();
- return (subtotal - discount).toFixed(2);
+ const pointsDiscount = (usePointsDiscount && pointsToRedeem > 0) ? pointsToSar(pointsToRedeem) : 0;
+ return Math.max(0, subtotal - discount - pointsDiscount).toFixed(2);
  };
 
  const validateDiscountCode = async () => {
@@ -741,6 +760,8 @@ export default function EmployeeCashier() {
      branchId: employee?.branchId,
      discountCode: appliedDiscount?.code,
      discountPercentage: appliedDiscount?.percentage || 0,
+     pointsRedeemed: (usePointsDiscount && pointsToRedeem > 0) ? pointsToRedeem : 0,
+     pointsValue: (usePointsDiscount && pointsToRedeem > 0) ? pointsToSar(pointsToRedeem) : 0,
    };
 
    try {
@@ -1175,13 +1196,51 @@ export default function EmployeeCashier() {
  )}
 
  {customerId && customerPoints > 0 && (
- <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-3 rounded-lg border border-purple-500/30">
+ <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-3 rounded-lg border border-purple-500/30 space-y-3">
  <div className="flex items-center justify-between">
  <Badge variant="outline" className="border-purple-400 text-purple-300">
- {customerPoints} نقطة
+ {customerPoints} نقطة ≈ {pointsToSar(customerPoints).toFixed(2)} ر.س
  </Badge>
  <span className="text-purple-300 text-sm">نقاط العميل</span>
  </div>
+ {!usePointsDiscount ? (
+ <div className="space-y-2">
+ <div className="flex gap-2 items-center">
+ <Input
+ type="number"
+ min={0}
+ max={customerPoints}
+ value={pointsToRedeem || ''}
+ onChange={(e) => setPointsToRedeem(Math.min(Math.max(0, parseInt(e.target.value) || 0), customerPoints))}
+ placeholder="عدد النقاط للخصم"
+ className="flex-1 bg-[#1a1410] border-purple-500/30 text-white text-right text-sm"
+ data-testid="input-points-to-redeem"
+ />
+ <Button
+ size="sm"
+ onClick={() => {
+ if (pointsToRedeem > 0) {
+ setUsePointsDiscount(true);
+ toast({ title: "تم تطبيق خصم النقاط", description: `خصم ${pointsToSar(pointsToRedeem).toFixed(2)} ر.س`, className: "bg-purple-600 text-white" });
+ }
+ }}
+ disabled={!pointsToRedeem || pointsToRedeem <= 0}
+ className="bg-purple-600 hover:bg-purple-700 text-white whitespace-nowrap"
+ data-testid="button-apply-points-discount"
+ >
+ تطبيق
+ </Button>
+ </div>
+ {pointsToRedeem > 0 && (
+ <p className="text-xs text-purple-400">= خصم {pointsToSar(pointsToRedeem).toFixed(2)} ر.س من الإجمالي</p>
+ )}
+ </div>
+ ) : (
+ <div className="flex items-center justify-between bg-purple-900/40 rounded p-2">
+ <span className="text-purple-300 text-sm">{pointsToRedeem} نقطة = -{pointsToSar(pointsToRedeem).toFixed(2)} ر.س</span>
+ <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 h-7 px-2" onClick={() => { setUsePointsDiscount(false); setPointsToRedeem(0); }} data-testid="button-cancel-points-discount">إلغاء</Button>
+ </div>
+ )}
  </div>
  )}
 
@@ -1445,6 +1504,13 @@ export default function EmployeeCashier() {
  <span className="text-green-400" data-testid="text-discount-amount">
  -{calculateDiscount().toFixed(2)} ريال
  </span>
+ </div>
+ )}
+
+ {usePointsDiscount && pointsToRedeem > 0 && (
+ <div className="flex justify-between items-center text-sm">
+ <span className="text-purple-400">خصم النقاط ({pointsToRedeem} نقطة):</span>
+ <span className="text-purple-400" data-testid="text-points-discount">-{pointsToSar(pointsToRedeem).toFixed(2)} ريال</span>
  </div>
  )}
 
