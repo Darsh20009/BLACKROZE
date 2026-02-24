@@ -84,7 +84,7 @@ export default function EmployeeSplash() {
             <img
               src={blackroseLogoStaff}
               alt="BLACK ROSE"
-              className="w-24 h-24 object-contain brightness-0 invert"
+              className="w-24 h-24 object-contain"
             />
           </div>
         </motion.div>

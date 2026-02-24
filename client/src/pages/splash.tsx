@@ -83,7 +83,7 @@ export default function SplashScreen() {
                 <img
                   src={blackroseLogo}
                   alt="BLACK ROSE"
-                  className="w-20 h-20 object-contain brightness-0 invert"
+                  className="w-20 h-20 object-contain"
                 />
               </div>
             </motion.div>
