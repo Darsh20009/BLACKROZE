@@ -4,7 +4,7 @@ import { sendPushToEmployee, sendPushToCustomer } from "./push-service";
 
 interface WSClient {
   ws: WebSocket;
-  type: "kitchen" | "display" | "order-tracking" | "pos" | "inventory" | "delivery-driver" | "delivery-tracking" | "customer";
+  type: "kitchen" | "display" | "order-tracking" | "pos" | "inventory" | "delivery-driver" | "delivery-tracking" | "customer" | "customer-display";
   orderId?: string;
   branchId?: string;
   driverId?: string;
@@ -129,6 +129,12 @@ class OrderWebSocketManager {
       case "driver_location_update":
         if (client && client.type === "delivery-driver" && client.driverId) {
           this.broadcastDriverLocation(client.driverId, message.location, message.deliveryOrderId);
+        }
+        break;
+
+      case "customer_display_update":
+        if (client && client.type === "pos") {
+          this.broadcastToCustomerDisplay(client.branchId || "", message.payload);
         }
         break;
 
@@ -411,6 +417,30 @@ class OrderWebSocketManager {
       if (ws.readyState === WebSocket.OPEN) {
         const branchMatches = !normalizedBranchId || 
           (client.branchId && client.branchId === normalizedBranchId);
+        if (branchMatches) {
+          try {
+            ws.send(message);
+          } catch (e) {
+            this.clients.delete(ws);
+          }
+        }
+      }
+    });
+  }
+
+  broadcastToCustomerDisplay(branchId: string, payload: any) {
+    if (!this.wss) return;
+    this.cleanupStaleClients();
+
+    const message = JSON.stringify({
+      type: "customer_display_state",
+      payload,
+      timestamp: Date.now(),
+    });
+
+    this.clients.forEach((client, ws) => {
+      if (ws.readyState === WebSocket.OPEN && client.type === "customer-display") {
+        const branchMatches = !branchId || !client.branchId || client.branchId === branchId;
         if (branchMatches) {
           try {
             ws.send(message);

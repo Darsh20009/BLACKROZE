@@ -100,7 +100,7 @@ export default function PosSystem() {
   const [autoPrint, setAutoPrint] = useState(() => localStorage.getItem("pos-auto-print") !== "false");
   const [showVatLabel, setShowVatLabel] = useState(() => localStorage.getItem("pos-show-vat-label") === "true");
 
-  const { isConnected: wsConnected } = useOrderWebSocket({
+  const { isConnected: wsConnected, sendMessage: wsSend } = useOrderWebSocket({
     clientType: "pos",
     branchId: employee?.branchId?.toString(),
     onNewOrder: (order) => {
@@ -127,6 +127,13 @@ export default function PosSystem() {
     enabled: true,
   });
 
+  const syncCustomerDisplay = (payload: any) => {
+    wsSend({
+      type: "customer_display_update",
+      payload,
+    });
+  };
+
   useEffect(() => {
     localStorage.setItem("pos-terminal-connected", String(posTerminalConnected));
   }, [posTerminalConnected]);
@@ -139,6 +146,30 @@ export default function PosSystem() {
       requestPushPermission();
     }
   }, [employee, requestPushPermission]);
+
+  // Sync cart state to customer display via WebSocket
+  useEffect(() => {
+    if (orderItems.length === 0) {
+      syncCustomerDisplay({ mode: "idle" });
+    } else {
+      const total = orderItems.reduce((s, i) => s + Number(i.coffeeItem.price) * i.quantity, 0);
+      const subtotal = total / 1.15;
+      const tax = total - subtotal;
+      syncCustomerDisplay({
+        mode: "order_review",
+        items: orderItems.map(i => ({
+          nameAr: i.coffeeItem.nameAr,
+          nameEn: i.coffeeItem.nameEn,
+          price: Number(i.coffeeItem.price),
+          quantity: i.quantity,
+          lastAdded: i.lastAdded,
+        })),
+        subtotal,
+        tax,
+        total,
+      });
+    }
+  }, [orderItems]);
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
@@ -258,23 +289,26 @@ export default function PosSystem() {
   };
 
   const addToOrder = (product: CoffeeItem) => {
+    const ts = Date.now();
     setOrderItems(prev => {
       const existing = prev.find(item => item.coffeeItem.id === product.id);
       if (existing) {
         return prev.map(item => 
           item.coffeeItem.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 } 
-            : item
+            ? { ...item, quantity: item.quantity + 1, lastAdded: ts } 
+            : { ...item, lastAdded: undefined }
         );
       }
-      return [...prev, { 
-        lineItemId: Math.random().toString(36).substr(2, 9),
-        coffeeItem: product, 
-        quantity: 1 
-      }];
+      return [
+        ...prev.map(i => ({ ...i, lastAdded: undefined })),
+        { 
+          lineItemId: Math.random().toString(36).substr(2, 9),
+          coffeeItem: product, 
+          quantity: 1,
+          lastAdded: ts,
+        }
+      ];
     });
-    if (soundEnabled) {
-    }
   };
 
   const updateQuantity = (lineItemId: string, newQty: number) => {
@@ -295,6 +329,9 @@ export default function PosSystem() {
       const total = calculateTotal();
       const subtotal = calculateSubtotal();
       const tax = total - subtotal;
+
+      // Notify customer display: payment in progress
+      syncCustomerDisplay({ mode: "payment_processing" });
 
       const orderData = {
         items: orderItems.map(item => ({
@@ -342,6 +379,15 @@ export default function PosSystem() {
         tableNumber: orderType === "dine_in" ? tableNumber : undefined,
         orderType,
       });
+      // Notify customer display: payment success
+      syncCustomerDisplay({
+        mode: "payment_success",
+        orderNumber: result.orderNumber || result.dailyNumber || '',
+        total,
+      });
+      // Return to idle after 5 seconds
+      setTimeout(() => syncCustomerDisplay({ mode: "idle" }), 5000);
+
       if (autoPrint) {
         printTaxInvoice({
           orderNumber: result.orderNumber || result.dailyNumber || '',
@@ -1349,6 +1395,22 @@ export default function PosSystem() {
                 <p className="text-xs text-muted-foreground mt-1">{posTerminalConnected ? "متصل" : "غير متصل"}</p>
               </div>
               <Switch id="pos-terminal" checked={posTerminalConnected} onCheckedChange={setPosTerminalConnected} />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-bold block">شاشة العميل</Label>
+                <p className="text-xs text-muted-foreground mt-1">افتح على شاشة ثانية</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open("/customer-display", "_blank")}
+                data-testid="button-open-customer-display"
+              >
+                <MonitorSmartphone className="w-4 h-4 ml-2" />
+                فتح
+              </Button>
             </div>
           </div>
         </DialogContent>

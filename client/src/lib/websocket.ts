@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-type WSClientType = "kitchen" | "display" | "order-tracking" | "pos";
+type WSClientType = "kitchen" | "display" | "order-tracking" | "pos" | "customer-display";
 
 interface WSMessage {
   type: string;
   order?: any;
+  payload?: any;
   timestamp?: number;
   [key: string]: any;
 }
@@ -18,6 +19,7 @@ interface UseOrderWebSocketOptions {
   onOrderUpdated?: (order: any) => void;
   onOrderReady?: (order: any) => void;
   onPointsVerificationCode?: (data: any) => void;
+  onCustomerDisplayState?: (payload: any) => void;
   enabled?: boolean;
 }
 
@@ -30,6 +32,7 @@ export function useOrderWebSocket({
   onOrderUpdated,
   onOrderReady,
   onPointsVerificationCode,
+  onCustomerDisplayState,
   enabled = true,
 }: UseOrderWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -172,6 +175,9 @@ export function useOrderWebSocket({
             case "points_verification_code":
               onPointsVerificationCode?.(message);
               break;
+            case "customer_display_state":
+              onCustomerDisplayState?.(message.payload);
+              break;
             case "welcome":
               sendSubscribe(ws);
               break;
@@ -210,7 +216,13 @@ export function useOrderWebSocket({
         }, 5000);
       }
     }
-  }, [enabled, clearTimers, sendSubscribe, onNewOrder, onOrderUpdated, onOrderReady]);
+  }, [enabled, clearTimers, sendSubscribe, onNewOrder, onOrderUpdated, onOrderReady, onCustomerDisplayState]);
+
+  const sendMessage = useCallback((data: object) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(data));
+    }
+  }, []);
 
   const disconnect = useCallback(() => {
     clearTimers();
@@ -244,5 +256,6 @@ export function useOrderWebSocket({
     error,
     reconnect: connect,
     disconnect,
+    sendMessage,
   };
 }

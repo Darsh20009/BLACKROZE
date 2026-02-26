@@ -74,6 +74,7 @@ const KitchenDisplay = lazy(() => import("@/pages/kitchen-display"));
 const AccountingDashboard = lazy(() => import("@/pages/accounting-dashboard"));
 const IngredientsRecipesInventory = lazy(() => import("@/pages/ingredients-recipes-inventory"));
 const OrderStatusDisplay = lazy(() => import("@/pages/order-status-display"));
+const CustomerDisplay = lazy(() => import("@/pages/customer-display"));
 const InventorySmartPage = lazy(() => import("@/pages/inventory-smart"));
 const AccountingSmartPage = lazy(() => import("@/pages/accounting-smart"));
 const EmployeeAvailability = lazy(() => import("@/pages/employee-availability"));
@@ -202,6 +203,11 @@ function AppRouter() {
 
       {/* Notifications - for all users */}
       <Route path="/notifications"><NotificationsPage /></Route>
+
+      {/* Customer Display — standalone, no auth required */}
+      <Route path="/customer-display"><CustomerDisplay /></Route>
+      {/* /pos shortcut — redirect to employee POS */}
+      <Route path="/pos">{() => { window.location.replace("/employee/pos"); return null; }}</Route>
 
       {/* Customer protected routes */}
       <Route path="/copy-card"><AuthGuard userType="customer"><CopyCard /></AuthGuard></Route>
