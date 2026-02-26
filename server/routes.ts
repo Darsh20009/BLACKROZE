@@ -263,39 +263,6 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
       })) || []
     }));
 
-    // Reward points for order items using configurable points per drink
-    const tenantCfg = await BusinessConfigModel.findOne({ tenantId: order.tenantId || 'demo-tenant' }).lean();
-    const pointsPerDrink = (tenantCfg as any)?.loyaltyConfig?.pointsPerDrink ?? 10;
-    const totalPointsToAward = orderItems.reduce((acc: any, item: any) => acc + (item.quantity * pointsPerDrink), 0);
-    
-    // Update customer pending points
-    if (order.customerId) {
-      await CustomerModel.findByIdAndUpdate(order.customerId, {
-        $inc: { 
-          points: totalPointsToAward,
-          pendingPoints: Math.max(0, -totalPointsToAward) 
-        }
-      });
-      
-      // Also award stamps/points to loyalty card if exists
-      try {
-        const loyaltyCard = await mongoose.model('LoyaltyCard').findOne({ 
-          $or: [
-            { customerId: order.customerId },
-            { customerId: order.customerId?.toString() }
-          ]
-        });
-        if (loyaltyCard) {
-          loyaltyCard.points = (loyaltyCard.points || 0) + totalPointsToAward;
-          loyaltyCard.stamps = (loyaltyCard.stamps || 0) + orderItems.length;
-          await loyaltyCard.save();
-          console.log(`[LOYALTY] Awarded ${totalPointsToAward} points to loyalty card for customer ${order.customerId}`);
-        }
-      } catch (e) {
-        console.error("[LOYALTY] Failed to update loyalty card:", e);
-      }
-    }
-
     // Call storage method to deduct inventory for order
     const result = await storage.deductInventoryForOrder(orderId, branchId, orderItems, employeeId);
 
@@ -688,8 +655,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const orderItemsList = Array.isArray(orderData.items) ? orderData.items : [];
             const ptsToAward = orderItemsList.reduce((acc: number, item: any) => acc + ((item.quantity || 1) * ptsPerDrink), 0);
             if (ptsToAward > 0) {
+              // Add to pendingPoints only at creation — confirmed when order completes
               await CustomerModel.findByIdAndUpdate(orderCustomerId, {
-                $inc: { points: ptsToAward, pendingPoints: ptsToAward }
+                $inc: { pendingPoints: ptsToAward }
               });
               const lCard = await mongoose.model('LoyaltyCard').findOne({
                 $or: [
@@ -698,11 +666,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 ]
               });
               if (lCard) {
-                lCard.points = (lCard.points || 0) + ptsToAward;
+                lCard.pendingPoints = (lCard.pendingPoints || 0) + ptsToAward;
                 lCard.stamps = (lCard.stamps || 0) + orderItemsList.length;
                 await lCard.save();
               }
-              console.log(`[LOYALTY] Awarded ${ptsToAward} points to customer ${orderCustomerId} on order creation`);
+              console.log(`[LOYALTY] Pending ${ptsToAward} points for customer ${orderCustomerId} on order creation`);
             }
           } catch (e) {
             console.error('[LOYALTY] Failed to award points on order creation:', e);
@@ -8619,6 +8587,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const customerInfo = typeof order.customerInfo === 'string' ? JSON.parse(order.customerInfo) : order.customerInfo;
         const customerPhone = customerInfo?.phone || customerInfo?.phoneNumber;
         
+        // Fetch configured pointsPerDrink for accurate calculation
+        const completionBizCfg = await BusinessConfigModel.findOne({ tenantId: order.tenantId || 'demo-tenant' }).lean();
+        const completionPtsPerDrink = (completionBizCfg as any)?.loyaltyConfig?.pointsPerDrink ?? 10;
+
         if (customerPhone) {
           try {
             const cleanPhone = customerPhone.replace(/\D/g, '').slice(-9);
@@ -8627,17 +8599,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (loyaltyCard) {
               const orderItems = Array.isArray(order.items) ? order.items : 
                                 (typeof order.items === 'string' ? JSON.parse(order.items) : []);
-              const totalPointsToAward = orderItems.reduce((acc: number, item: any) => acc + ((item.quantity || 1) * 10), 0);
+              const totalPointsToAward = orderItems.reduce(
+                (acc: number, item: any) => acc + ((item.quantity || 1) * completionPtsPerDrink), 0
+              );
               
               const currentPoints = Number(loyaltyCard.points) || 0;
               const currentPendingPoints = Number(loyaltyCard.pendingPoints) || 0;
               
+              // Move pending → confirmed (do not add new points, just confirm them)
               await storage.updateLoyaltyCard(loyaltyCard.id, {
                 points: currentPoints + totalPointsToAward,
                 pendingPoints: Math.max(0, currentPendingPoints - totalPointsToAward)
               });
 
-              // Create transaction for confirmed points
+              // Create transaction record for confirmed points
               await storage.createLoyaltyTransaction({
                 cardId: loyaltyCard.id,
                 type: 'points_earned',
@@ -8655,9 +8630,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Also update CustomerModel if exists
+        // Also confirm points in CustomerModel (move pending → confirmed)
         if (order.customerId) {
-          const totalPointsToAward = order.items.reduce((acc: number, item: any) => acc + ((item.quantity || 1) * 10), 0);
+          const orderItemsForCustomer = Array.isArray(order.items) ? order.items :
+            (typeof order.items === 'string' ? JSON.parse(order.items || '[]') : []);
+          const totalPointsToAward = orderItemsForCustomer.reduce(
+            (acc: number, item: any) => acc + ((item.quantity || 1) * completionPtsPerDrink), 0
+          );
           await CustomerModel.findByIdAndUpdate(order.customerId, {
             $inc: { 
               points: totalPointsToAward,

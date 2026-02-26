@@ -102,7 +102,7 @@ function IdleMode({ products, businessConfig }: { products: CoffeeItem[]; busine
   const qrDataUrl = useQRCode(siteUrl);
 
   const logoSrc = businessConfig?.logoUrl || blackroseLogo;
-  const businessName = businessConfig?.businessName || "BLACK ROSE CAFÉ";
+  const businessName = businessConfig?.tradeNameEn || businessConfig?.tradeNameAr || businessConfig?.businessName || "BLACK ROSE CAFÉ";
 
   useEffect(() => {
     const t = setInterval(
