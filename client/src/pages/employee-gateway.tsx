@@ -28,7 +28,7 @@ export default function EmployeeGateway() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password === "c2030") {
+    if (password === "b2030") {
       localStorage.setItem("blackrose-gateway-passed", "true");
       setLocation("/employee/login");
     } else {
