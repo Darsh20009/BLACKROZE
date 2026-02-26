@@ -14,6 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import BranchLocationPicker from "@/components/branch-location-picker";
 import CouponManagement from "@/components/coupon-management";
+import { InlineErrorBoundary } from "@/components/error-boundary";
 import { DeliveryManagement } from "@/components/delivery-management";
 import { 
  Coffee, Users, ShoppingBag, TrendingUp, DollarSign, 
@@ -1512,7 +1513,9 @@ export default function ManagerDashboard() {
  </div>
  </CardHeader>
  <CardContent>
- <CouponManagement employeeId={manager?.id || ''} />
+ <InlineErrorBoundary featureName="إدارة الكوبونات">
+                  <CouponManagement employeeId={manager?.id || ''} />
+                 </InlineErrorBoundary>
  </CardContent>
  </Card>
  </TabsContent>

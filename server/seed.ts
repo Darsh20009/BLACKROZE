@@ -1,6 +1,8 @@
 import { storage } from "./storage";
 import { TenantModel } from "@shared/tenant-schema";
-import type { InsertEmployee } from "@shared/schema";
+import { EmployeeModel } from "@shared/schema";
+import bcrypt from "bcryptjs";
+import { nanoid } from "nanoid";
 
 export async function runSeeds() {
   console.log("🌱 Starting clean re-initialization...");
@@ -25,24 +27,49 @@ export async function runSeeds() {
       console.log("✅ Created clean tenant: demo-tenant");
     }
 
-    // 2. Create Super Admin Employee
+    // 2. Create or repair Super Admin Employee
     const adminPhone = "0500000000";
-    const existingAdmin = await storage.getEmployeeByPhone(adminPhone);
-    
-    if (!existingAdmin) {
-      const superAdmin: any = {
+    const rawAdmin = await EmployeeModel.findOne({ username: "admin" }).lean();
+
+    if (!rawAdmin) {
+      // Admin doesn't exist at all — create fresh
+      const hashedPassword = await bcrypt.hash("admin", 10);
+      await EmployeeModel.create({
+        id: nanoid(12),
         username: "admin",
         fullName: "مدير النظام",
         role: "admin",
         phone: adminPhone,
         jobTitle: "Super Admin",
-        password: "admin", // User can change this later
+        password: hashedPassword,
         isActivated: 1,
         tenantId: "demo-tenant"
-      };
-      
-      await storage.createEmployee(superAdmin);
+      });
       console.log("✅ Created Super Admin: admin / admin");
+    } else {
+      // Admin exists — ensure id field is present and password is correct
+      const updates: Record<string, any> = {};
+
+      if (!rawAdmin.id) {
+        updates.id = (rawAdmin._id as any).toString();
+        console.log("✅ Fixed missing id field on admin account");
+      }
+
+      // If phone doesn't match our seed phone, this admin was created externally
+      // with an unknown password — reset it to default "admin"
+      if (!rawAdmin.phone || rawAdmin.phone !== adminPhone) {
+        updates.password = await bcrypt.hash("admin", 10);
+        updates.phone = adminPhone;
+        console.log("✅ Reset admin password to default: admin / admin");
+      } else if (rawAdmin.password && !rawAdmin.password.startsWith("$2")) {
+        // Password is plain text — re-hash it
+        updates.password = await bcrypt.hash(rawAdmin.password, 10);
+        console.log("✅ Fixed admin password: converted plain text to bcrypt hash");
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await EmployeeModel.updateOne({ username: "admin" }, { $set: updates });
+      }
     }
 
     console.log("✅ System re-initialized successfully with clean state.");

@@ -263,25 +263,33 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
       })) || []
     }));
 
-    // Reward points for order items (10 points per drink)
-    const totalPointsToAward = orderItems.reduce((acc: any, item: any) => acc + (item.quantity * 10), 0);
+    // Reward points for order items using configurable points per drink
+    const tenantCfg = await BusinessConfigModel.findOne({ tenantId: order.tenantId || 'demo-tenant' }).lean();
+    const pointsPerDrink = (tenantCfg as any)?.loyaltyConfig?.pointsPerDrink ?? 10;
+    const totalPointsToAward = orderItems.reduce((acc: any, item: any) => acc + (item.quantity * pointsPerDrink), 0);
     
     // Update customer pending points
     if (order.customerId) {
       await CustomerModel.findByIdAndUpdate(order.customerId, {
         $inc: { 
           points: totalPointsToAward,
-          pendingPoints: -totalPointsToAward 
+          pendingPoints: Math.max(0, -totalPointsToAward) 
         }
       });
       
       // Also award stamps/points to loyalty card if exists
       try {
-        const loyaltyCard = await mongoose.model('LoyaltyCard').findOne({ customerId: order.customerId });
+        const loyaltyCard = await mongoose.model('LoyaltyCard').findOne({ 
+          $or: [
+            { customerId: order.customerId },
+            { customerId: order.customerId?.toString() }
+          ]
+        });
         if (loyaltyCard) {
           loyaltyCard.points = (loyaltyCard.points || 0) + totalPointsToAward;
           loyaltyCard.stamps = (loyaltyCard.stamps || 0) + orderItems.length;
           await loyaltyCard.save();
+          console.log(`[LOYALTY] Awarded ${totalPointsToAward} points to loyalty card for customer ${order.customerId}`);
         }
       } catch (e) {
         console.error("[LOYALTY] Failed to update loyalty card:", e);
@@ -669,6 +677,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.status(201).json(serializeDoc(order));
+
+      // Award loyalty points directly on order creation (async, non-blocking)
+      const orderCustomerId = orderData.customerId || (order as any).customerId;
+      if (orderCustomerId) {
+        (async () => {
+          try {
+            const bizCfg = await BusinessConfigModel.findOne({ tenantId: tenantId }).lean();
+            const ptsPerDrink = (bizCfg as any)?.loyaltyConfig?.pointsPerDrink ?? 10;
+            const orderItemsList = Array.isArray(orderData.items) ? orderData.items : [];
+            const ptsToAward = orderItemsList.reduce((acc: number, item: any) => acc + ((item.quantity || 1) * ptsPerDrink), 0);
+            if (ptsToAward > 0) {
+              await CustomerModel.findByIdAndUpdate(orderCustomerId, {
+                $inc: { points: ptsToAward, pendingPoints: ptsToAward }
+              });
+              const lCard = await mongoose.model('LoyaltyCard').findOne({
+                $or: [
+                  { customerId: orderCustomerId },
+                  { customerId: orderCustomerId.toString() }
+                ]
+              });
+              if (lCard) {
+                lCard.points = (lCard.points || 0) + ptsToAward;
+                lCard.stamps = (lCard.stamps || 0) + orderItemsList.length;
+                await lCard.save();
+              }
+              console.log(`[LOYALTY] Awarded ${ptsToAward} points to customer ${orderCustomerId} on order creation`);
+            }
+          } catch (e) {
+            console.error('[LOYALTY] Failed to award points on order creation:', e);
+          }
+        })();
+      }
 
       // Deduct inventory for this order asynchronously after response
       if (order.branchId) {

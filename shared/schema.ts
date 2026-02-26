@@ -630,6 +630,14 @@ export interface IStoreHours {
   sunday: { open: string; close: string; isOpen: boolean };
 }
 
+export interface ILoyaltyConfig {
+  enabled?: boolean;
+  pointsPerSar?: number;
+  pointsEarnedPerSar?: number;
+  pointsPerDrink?: number;
+  minPointsForRedemption?: number;
+}
+
 export interface IBusinessConfig extends Document {
   tenantId: string;
   tradeNameAr: string;
@@ -650,6 +658,8 @@ export interface IBusinessConfig extends Document {
   plateNumber?: string;
   saveCarInfo?: number;
   paymentGateway?: IPaymentGatewayConfig;
+  loyaltyConfig?: ILoyaltyConfig;
+  offersConfig?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -723,9 +733,23 @@ const BusinessConfigSchema = new Schema<IBusinessConfig>({
     stcPayEnabled: false,
   })},
   employeeInvoiceEnabled: { type: Boolean, default: false },
+  loyaltyConfig: {
+    type: Schema.Types.Mixed,
+    default: () => ({
+      enabled: true,
+      pointsPerSar: 20,
+      pointsEarnedPerSar: 1,
+      pointsPerDrink: 10,
+      minPointsForRedemption: 100,
+    })
+  },
+  offersConfig: {
+    type: Schema.Types.Mixed,
+    default: () => ({})
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
-});
+}, { strict: false });
 
 export const BusinessConfigModel = mongoose.model<IBusinessConfig>("BusinessConfig", BusinessConfigSchema);
 

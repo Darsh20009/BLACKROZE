@@ -568,16 +568,18 @@ export class DBStorage implements IStorage {
 
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
     const employmentNumber = insertEmployee.employmentNumber || nanoid(10);
+    const employeeId = (insertEmployee as any).id || nanoid(12);
     if (insertEmployee.password) {
       const hashedPassword = await bcrypt.hash(insertEmployee.password, 10);
       const newEmployee = await EmployeeModel.create({
         ...insertEmployee,
+        id: employeeId,
         employmentNumber,
         password: hashedPassword,
       });
       const result: any = {
         ...newEmployee.toObject(),
-        id: (newEmployee._id as any).toString(),
+        id: newEmployee.id || (newEmployee._id as any).toString(),
       };
       delete result._id;
       delete result.__v;
@@ -585,11 +587,12 @@ export class DBStorage implements IStorage {
     } else {
       const newEmployee = await EmployeeModel.create({
         ...insertEmployee,
+        id: employeeId,
         employmentNumber,
       });
       const result: any = {
         ...newEmployee.toObject(),
-        id: (newEmployee._id as any).toString(),
+        id: newEmployee.id || (newEmployee._id as any).toString(),
       };
       delete result._id;
       delete result.__v;

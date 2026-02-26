@@ -1,11 +1,14 @@
 import { Component, type ReactNode } from "react";
+import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  inline?: boolean;
+  featureName?: string;
 }
 
 interface State {
@@ -39,6 +42,20 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
+      }
+
+      if (this.props.inline) {
+        return (
+          <div className="flex items-center gap-2 p-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
+            <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0" />
+            <span className="text-sm text-orange-700 dark:text-orange-300">
+              {this.props.featureName || "هذه الميزة"} قيد التطوير
+            </span>
+            <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-600 mr-auto">
+              قيد التطوير
+            </Badge>
+          </div>
+        );
       }
 
       return (
@@ -78,7 +95,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 </Button>
               </div>
 
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <details className="mt-4 text-xs text-gray-500 bg-gray-100 p-3 rounded">
                   <summary className="cursor-pointer font-medium">تفاصيل الخطأ (للمطورين)</summary>
                   <pre className="mt-2 whitespace-pre-wrap overflow-auto max-h-40">
@@ -96,4 +113,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
+}
+
+export function InlineErrorBoundary({ children, featureName }: { children: ReactNode; featureName?: string }) {
+  return (
+    <ErrorBoundary inline featureName={featureName}>
+      {children}
+    </ErrorBoundary>
+  );
 }

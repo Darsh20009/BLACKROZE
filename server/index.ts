@@ -9,6 +9,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import { initWebPush } from "./push-service";
+import { runSeeds } from "./seed";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +45,8 @@ async function connectDatabase() {
     isDbConnected = true;
     connectionRetries = 0;
     console.log("✅ MongoDB connected successfully");
+    // Run seeds to ensure admin account and tenant exist
+    runSeeds().catch((err) => console.error("❌ Seed error:", err));
   } catch (error: any) {
     isDbConnected = false;
     console.error("❌ MongoDB connection error:", error);

@@ -207,6 +207,7 @@ export default function AdminSettings() {
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(true);
   const [pointsPerSar, setPointsPerSar] = useState(20);
   const [pointsEarnedPerSar, setPointsEarnedPerSar] = useState(1);
+  const [pointsPerDrink, setPointsPerDrink] = useState(10);
   const [minPointsForRedemption, setMinPointsForRedemption] = useState(100);
 
   const [firstOrderEnabled, setFirstOrderEnabled] = useState(true);
@@ -238,6 +239,7 @@ export default function AdminSettings() {
       setLoyaltyEnabled(config.loyaltyConfig.enabled ?? true);
       setPointsPerSar(config.loyaltyConfig.pointsPerSar ?? 20);
       setPointsEarnedPerSar(config.loyaltyConfig.pointsEarnedPerSar ?? 1);
+      setPointsPerDrink(config.loyaltyConfig.pointsPerDrink ?? 10);
       setMinPointsForRedemption(config.loyaltyConfig.minPointsForRedemption ?? 100);
     }
     if (config?.offersConfig) {
@@ -280,6 +282,7 @@ export default function AdminSettings() {
         enabled: loyaltyEnabled,
         pointsPerSar,
         pointsEarnedPerSar,
+        pointsPerDrink,
         minPointsForRedemption,
       },
       offersConfig: {
@@ -1454,9 +1457,20 @@ export default function AdminSettings() {
                   data-testid="switch-loyalty-enabled"
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">كل كم نقطة = ريال</Label>
+                  <Label className="text-xs font-semibold">نقاط لكل مشروب</Label>
+                  <Input
+                    type="number"
+                    value={pointsPerDrink}
+                    onChange={(e) => setPointsPerDrink(Number(e.target.value))}
+                    min={1}
+                    data-testid="input-points-per-drink"
+                  />
+                  <p className="text-[10px] text-muted-foreground">كم نقطة يكسب العميل لكل مشروب يطلبه</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">كل كم نقطة = ريال</Label>
                   <Input
                     type="number"
                     value={pointsPerSar}
@@ -1464,9 +1478,10 @@ export default function AdminSettings() {
                     min={1}
                     data-testid="input-points-per-sar"
                   />
+                  <p className="text-[10px] text-muted-foreground">عدد النقاط اللازمة لاستبدال ريال واحد</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">نقاط مكتسبة لكل ريال</Label>
+                  <Label className="text-xs font-semibold">نقاط مكتسبة لكل ريال</Label>
                   <Input
                     type="number"
                     value={pointsEarnedPerSar}
@@ -1476,7 +1491,7 @@ export default function AdminSettings() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">الحد الأدنى لاستبدال النقاط</Label>
+                  <Label className="text-xs font-semibold">الحد الأدنى لاستبدال النقاط</Label>
                   <Input
                     type="number"
                     value={minPointsForRedemption}
