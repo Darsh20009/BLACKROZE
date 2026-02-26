@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useOrderWebSocket } from "@/lib/websocket";
@@ -100,39 +100,48 @@ export default function PosSystem() {
   const [autoPrint, setAutoPrint] = useState(() => localStorage.getItem("pos-auto-print") !== "false");
   const [showVatLabel, setShowVatLabel] = useState(() => localStorage.getItem("pos-show-vat-label") === "true");
 
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
+
+  const handleNewOrder = useCallback((order: any) => {
+    queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+    setNewOrdersCount(prev => prev + 1);
+    if (soundEnabledRef.current) {
+      import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
+        const isOnline = order?.orderType === 'delivery' || order?.orderType === 'takeaway' || !order?.employeeId;
+        if (isOnline) {
+          playNotificationSound('onlineOrderVoice', 1.0);
+        } else {
+          playNotificationSound('newOrder', 1.0);
+        }
+      });
+    }
+    toast({
+      title: "طلب جديد! 🔔",
+      description: `طلب رقم #${order?.orderNumber || ''} بقيمة ${order?.totalAmount || 0} ر.س`,
+    });
+  }, [queryClient, toast]);
+
+  const handleOrderUpdated = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+  }, [queryClient]);
+
   const { isConnected: wsConnected, sendMessage: wsSend } = useOrderWebSocket({
     clientType: "pos",
     branchId: employee?.branchId?.toString(),
-    onNewOrder: (order) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-      setNewOrdersCount(prev => prev + 1);
-      if (soundEnabled) {
-        import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
-          const isOnline = order?.orderType === 'delivery' || order?.orderType === 'takeaway' || !order?.employeeId;
-          if (isOnline) {
-            playNotificationSound('onlineOrderVoice', 1.0);
-          } else {
-            playNotificationSound('newOrder', 1.0);
-          }
-        });
-      }
-      toast({
-        title: "طلب جديد! 🔔",
-        description: `طلب رقم #${order?.orderNumber || ''} بقيمة ${order?.totalAmount || 0} ر.س`,
-      });
-    },
-    onOrderUpdated: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
-    },
+    onNewOrder: handleNewOrder,
+    onOrderUpdated: handleOrderUpdated,
     enabled: true,
   });
 
-  const syncCustomerDisplay = (payload: any) => {
-    wsSend({
-      type: "customer_display_update",
-      payload,
-    });
-  };
+  const syncCustomerDisplay = useCallback((payload: any) => {
+    if (typeof wsSend === "function") {
+      wsSend({
+        type: "customer_display_update",
+        payload,
+      });
+    }
+  }, [wsSend]);
 
   useEffect(() => {
     localStorage.setItem("pos-terminal-connected", String(posTerminalConnected));
@@ -169,7 +178,7 @@ export default function PosSystem() {
         total,
       });
     }
-  }, [orderItems]);
+  }, [orderItems, syncCustomerDisplay]);
 
   const { data: productsData, isLoading: isLoadingProducts } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
