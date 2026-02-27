@@ -152,10 +152,18 @@ function speakNewOrder(isOnline = false): void {
  * Play a notification sound
  */
 export async function playNotificationSound(type: NotificationSoundType = 'newOrder', volume: number = 0.8): Promise<void> {
-  const employeePaths = ['/employee', '/manager', '/kitchen', '/pos', '/cashier', '/admin', '/owner', '/executive', '/0'];
+  // Sound only plays on operational employee screens — NOT on admin/dashboard/config pages
+  const soundAllowedPaths = [
+    '/employee/orders',
+    '/employee/orders-display',
+    '/employee/cashier',
+    '/employee/pos',
+    '/employee/kitchen',
+    '/employee/table-orders',
+  ];
   const currentPath = window.location.pathname;
-  const isEmployeePath = employeePaths.some(p => currentPath === p || currentPath.startsWith(p + '/'));
-  if (!isEmployeePath) return;
+  const isAllowedPath = soundAllowedPaths.some(p => currentPath === p || currentPath.startsWith(p + '/'));
+  if (!isAllowedPath) return;
 
   // Use speech synthesis for new order notifications
   if (type === 'newOrder' || type === 'onlineOrderVoice') {

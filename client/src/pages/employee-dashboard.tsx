@@ -84,14 +84,6 @@ export default function EmployeeDashboard() {
         timestamp: new Date(),
       });
       setTimeout(() => setNewOrderAlert(null), 15000);
-      import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
-        const isOnline = order?.orderType === 'delivery' || order?.orderType === 'takeaway' || !order?.employeeId;
-        if (isOnline) {
-          playNotificationSound('onlineOrderVoice', 1.0);
-        } else {
-          playNotificationSound('newOrder', 1.0);
-        }
-      });
     },
     onOrderUpdated: () => {
       fetchPendingOrders();

@@ -143,16 +143,6 @@ export function useOrderWebSocket({
               }
               break;
             case "push_alert":
-              if (message.sound) {
-                // Play notification sound if requested
-                import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
-                  if (message.isOnlineOrder) {
-                    playNotificationSound('onlineOrderVoice', 1.0);
-                  } else {
-                    playNotificationSound('newOrder', 1.0);
-                  }
-                });
-              }
               if (Notification.permission === 'granted') {
                 const n = new Notification(message.title, {
                   body: message.body,
