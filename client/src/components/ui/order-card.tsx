@@ -52,6 +52,7 @@ interface OrderCardProps {
     estimatedPrepTimeMinutes?: number;
     prepStartedAt?: string;
     priority?: 'normal' | 'rush' | 'vip';
+    dailyNumber?: number;
   };
   variant?: "compact" | "detailed" | "kds";
   showActions?: boolean;
@@ -452,7 +453,7 @@ export function OrderCard({
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
             <span className="text-2xl font-bold font-mono" data-testid="text-order-number">
-              #{lastThreeDigits}
+              {displayOrderNumber}
             </span>
           </CardTitle>
           <div className="flex items-center gap-2">
