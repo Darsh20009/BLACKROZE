@@ -44,7 +44,7 @@ export default function EmployeeMenuManagement() {
  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
  const [editingItem, setEditingItem] = useState<CoffeeItem | null>(null);
  const [editableSizes, setEditableSizes] = useState<Array<{nameAr: string; price: number}>>([]);
- const [editableAddons, setEditableAddons] = useState<Array<{nameAr: string; price: number; category?: string}>>([]);
+ const [editableAddons, setEditableAddons] = useState<Array<{id?: string; nameAr: string; nameEn?: string; price: number; category?: string; imageUrl?: string}>>([]);
  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -698,7 +698,14 @@ setIsUploadingImage(false);
  const handleEdit = (item: CoffeeItem) => {
  setEditingItem(item);
  setEditableSizes(item.availableSizes || []);
- setEditableAddons(item.addons || []);
+ setEditableAddons((item.addons || []).map((a: any) => ({
+  id: a.id || nanoid(10),
+  nameAr: a.nameAr || '',
+  nameEn: a.nameEn,
+  price: a.price || 0,
+  category: a.category || 'other',
+  imageUrl: a.imageUrl,
+ })));
  setExistingImages((item as any).images?.filter((url: string) => url !== item.imageUrl) || []);
  resetEditImageState();
  setIsEditDialogOpen(true);
@@ -1821,45 +1828,108 @@ setIsUploadingImage(false);
  </div>
 
  {/* Editable Addons */}
- <div className="space-y-2">
-   <Label className="text-gray-300">الإضافات المتاحة</Label>
-   <div className="space-y-2">
+ <div className="space-y-3">
+   <Label className="text-gray-300 text-base font-semibold">الإضافات المتاحة</Label>
+   <div className="space-y-3">
      {editableAddons.map((addon, idx) => (
-       <div key={idx} className="flex gap-2 items-end">
-         <Input
-           type="text"
-           placeholder="اسم الإضافة"
-           value={addon.nameAr}
-           onChange={(e) => {
-             const newAddons = [...editableAddons];
-             newAddons[idx].nameAr = e.target.value;
-             setEditableAddons(newAddons);
-           }}
-           className="bg-[#1a1410] border-primary/30 text-white flex-1"
-           data-testid={`input-edit-addon-name-${idx}`}
-         />
-         <Input
-           type="number"
-           placeholder="السعر"
-           value={addon.price}
-           onChange={(e) => {
-             const newAddons = [...editableAddons];
-             newAddons[idx].price = parseFloat(e.target.value) || 0;
-             setEditableAddons(newAddons);
-           }}
-           className="bg-[#1a1410] border-primary/30 text-white w-24"
-           data-testid={`input-edit-addon-price-${idx}`}
-         />
-         <Button
-           type="button"
-           size="sm"
-           variant="outline"
-           onClick={() => setEditableAddons(editableAddons.filter((_, i) => i !== idx))}
-           className="border-red-500/30 text-red-500"
-           data-testid={`button-delete-addon-${idx}`}
-         >
-           <X className="w-4 h-4" />
-         </Button>
+       <div key={addon.id || idx} className="bg-[#1a1410] border border-primary/20 rounded-lg p-3 space-y-2">
+         <div className="flex gap-2 items-center">
+           <div className="flex-1 space-y-2">
+             <div className="flex gap-2">
+               <Input
+                 type="text"
+                 placeholder="اسم الإضافة بالعربي"
+                 value={addon.nameAr}
+                 onChange={(e) => {
+                   const newAddons = [...editableAddons];
+                   newAddons[idx] = { ...newAddons[idx], nameAr: e.target.value };
+                   setEditableAddons(newAddons);
+                 }}
+                 className="bg-[#0d0a08] border-primary/30 text-white flex-1"
+                 data-testid={`input-edit-addon-name-${idx}`}
+               />
+               <Input
+                 type="number"
+                 placeholder="السعر"
+                 value={addon.price}
+                 min={0}
+                 step={0.5}
+                 onChange={(e) => {
+                   const newAddons = [...editableAddons];
+                   newAddons[idx] = { ...newAddons[idx], price: parseFloat(e.target.value) || 0 };
+                   setEditableAddons(newAddons);
+                 }}
+                 className="bg-[#0d0a08] border-primary/30 text-white w-24"
+                 data-testid={`input-edit-addon-price-${idx}`}
+               />
+             </div>
+             <div className="flex gap-2">
+               <select
+                 value={addon.category || 'other'}
+                 onChange={(e) => {
+                   const newAddons = [...editableAddons];
+                   newAddons[idx] = { ...newAddons[idx], category: e.target.value };
+                   setEditableAddons(newAddons);
+                 }}
+                 className="flex-1 bg-[#0d0a08] border border-primary/30 text-white rounded-md px-3 py-2 text-sm"
+                 data-testid={`select-edit-addon-category-${idx}`}
+               >
+                 <option value="sugar">سكر</option>
+                 <option value="milk">حليب</option>
+                 <option value="shot">شوت قهوة</option>
+                 <option value="syrup">نكهة/شراب</option>
+                 <option value="topping">إضافة</option>
+                 <option value="other">أخرى</option>
+               </select>
+               <div className="flex gap-1 items-center">
+                 <input
+                   type="file"
+                   accept="image/*"
+                   style={{ display: 'none' }}
+                   id={`addon-img-${idx}`}
+                   onChange={async (e) => {
+                     const file = e.target.files?.[0];
+                     if (!file) return;
+                     const formData = new FormData();
+                     formData.append('image', file);
+                     const res = await fetch('/api/upload-drink-image', { method: 'POST', body: formData, credentials: 'include' });
+                     if (res.ok) {
+                       const data = await res.json();
+                       const newAddons = [...editableAddons];
+                       newAddons[idx] = { ...newAddons[idx], imageUrl: data.url };
+                       setEditableAddons(newAddons);
+                     }
+                     e.target.value = '';
+                   }}
+                 />
+                 <label htmlFor={`addon-img-${idx}`} className="cursor-pointer">
+                   {addon.imageUrl ? (
+                     <img src={addon.imageUrl.startsWith('/') ? addon.imageUrl : `/${addon.imageUrl}`} alt="addon" className="w-10 h-10 rounded object-cover border border-primary/30" />
+                   ) : (
+                     <div className="w-10 h-10 rounded border border-dashed border-primary/30 flex items-center justify-center hover:border-primary/60 transition-colors" title="رفع صورة">
+                       <ImageIcon className="w-4 h-4 text-gray-500" />
+                     </div>
+                   )}
+                 </label>
+                 {addon.imageUrl && (
+                   <button type="button" onClick={() => { const a = [...editableAddons]; a[idx] = {...a[idx], imageUrl: undefined}; setEditableAddons(a); }} className="text-red-400 hover:text-red-300">
+                     <X className="w-3 h-3" />
+                   </button>
+                 )}
+               </div>
+             </div>
+           </div>
+           <Button
+             type="button"
+             size="sm"
+             variant="ghost"
+             onClick={() => setEditableAddons(editableAddons.filter((_, i) => i !== idx))}
+             className="text-red-400 hover:text-red-300 hover:bg-red-500/10 shrink-0"
+             data-testid={`button-delete-addon-${idx}`}
+           >
+             <X className="w-4 h-4" />
+           </Button>
+         </div>
        </div>
      ))}
    </div>
@@ -1867,12 +1937,12 @@ setIsUploadingImage(false);
      type="button"
      size="sm"
      variant="outline"
-     onClick={() => setEditableAddons([...editableAddons, {nameAr: '', price: 0, category: 'other'}])}
+     onClick={() => setEditableAddons([...editableAddons, {id: nanoid(10), nameAr: '', price: 0, category: 'other'}])}
      className="border-green-500/30 text-green-400 w-full"
      data-testid="button-add-edit-addon"
    >
      <Plus className="w-4 h-4 ml-1" />
-     إضافة إضافة
+     إضافة إضافة جديدة
    </Button>
  </div>
 

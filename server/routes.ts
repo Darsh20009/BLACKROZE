@@ -4329,6 +4329,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.id = nanoid();
       }
 
+      // Pre-assign IDs to inline addons before saving so they're persisted in the item record
+      if ((validatedData as any).addons && Array.isArray((validatedData as any).addons)) {
+        (validatedData as any).addons = (validatedData as any).addons.map((a: any) => ({
+          ...a,
+          id: a.id || nanoid(8),
+          category: (['sugar','milk','shot','syrup','topping','size','other','flavor'].includes(a.category)) ? a.category : 'other',
+        }));
+      }
+
       // Create coffee item using MongoDB directly to ensure all fields including imageUrl, availableSizes, and addons are saved
       const newCoffeeItem = new CoffeeItemModel({
         id: validatedData.id,
@@ -4420,6 +4429,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedItem) {
         return res.status(404).json({ error: "المنتج غير موجود" });
       }
+
+      // Sync inline addons to ProductAddon + CoffeeItemAddon collections
+      const { ProductAddonModel, CoffeeItemAddonModel } = await import("@shared/schema");
+      const inlineAddons = (req.body.addons || []) as Array<{id?: string; nameAr: string; nameEn?: string; price: number; category?: string; imageUrl?: string}>;
+      if (inlineAddons.length > 0) {
+        const { nanoid } = await import("nanoid");
+        const itemId = (updatedItem as any).id || req.params.id;
+        const savedAddonIds: string[] = [];
+
+        for (const addon of inlineAddons) {
+          if (!addon.nameAr) continue;
+          const addonId = addon.id || nanoid(10);
+          const category = addon.category || 'other';
+          const validCategories = ['sugar', 'milk', 'shot', 'syrup', 'topping', 'size', 'other', 'flavor'];
+          const safeCategory = validCategories.includes(category) ? category : 'other';
+
+          await ProductAddonModel.findOneAndUpdate(
+            { id: addonId },
+            { $set: { id: addonId, nameAr: addon.nameAr, nameEn: addon.nameEn, price: addon.price || 0, category: safeCategory, imageUrl: addon.imageUrl, isAvailable: 1, createdAt: new Date() } },
+            { upsert: true, new: true }
+          );
+          await CoffeeItemAddonModel.findOneAndUpdate(
+            { coffeeItemId: itemId, addonId },
+            { $set: { coffeeItemId: itemId, addonId, isDefault: 0, minQuantity: 0, maxQuantity: 10, createdAt: new Date() } },
+            { upsert: true }
+          );
+          savedAddonIds.push(addonId);
+        }
+
+        // Remove links for addons that were deleted
+        await CoffeeItemAddonModel.deleteMany({ coffeeItemId: itemId, addonId: { $nin: savedAddonIds } });
+      } else if (req.body.addons !== undefined) {
+        // Addons explicitly set to empty — remove all links
+        const itemId = (updatedItem as any).id || req.params.id;
+        await CoffeeItemAddonModel.deleteMany({ coffeeItemId: itemId });
+      }
+
       res.json(updatedItem);
     } catch (error) {
       console.error("[PATCH /api/coffee-items/:id] Error:", error);
@@ -11895,12 +11941,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = links.map(link => {
         const addon = addons.find(a => a.id === link.addonId);
         return addon ? {
-          ...addon.toObject(),
-          id: addon.id,
-          isDefault: link.isDefault,
+          coffeeItemId: link.coffeeItemId,
+          addonId: link.addonId,
+          isDefault: link.isDefault ?? 0,
           defaultValue: link.defaultValue,
-          minQuantity: link.minQuantity,
-          maxQuantity: link.maxQuantity,
+          minQuantity: link.minQuantity ?? 0,
+          maxQuantity: link.maxQuantity ?? 10,
         } : null;
       }).filter(Boolean);
       

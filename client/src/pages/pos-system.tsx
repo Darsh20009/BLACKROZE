@@ -34,6 +34,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
+import DrinkCustomizationDialog, { type DrinkCustomization } from "@/components/drink-customization-dialog";
 
 type OrderType = "dine_in" | "takeaway" | "delivery" | "car_pickup";
 type PaymentMethod = "cash" | "card" | "qahwa-card";
@@ -104,6 +105,7 @@ export default function PosSystem() {
   const [selectedTableForBill, setSelectedTableForBill] = useState<any>(null);
   const [billPaymentMethod, setBillPaymentMethod] = useState<PaymentMethod>("cash");
   const [showPOSSettings, setShowPOSSettings] = useState(false);
+  const [posCustomizingItem, setPosCustomizingItem] = useState<CoffeeItem | null>(null);
   const [autoPrint, setAutoPrint] = useState(() => localStorage.getItem("pos-auto-print") !== "false");
   const [showVatLabel, setShowVatLabel] = useState(() => localStorage.getItem("pos-show-vat-label") === "true");
 
@@ -304,27 +306,31 @@ export default function PosSystem() {
     return calculateTotal() / 1.15;
   };
 
-  const addToOrder = (product: CoffeeItem) => {
+  const addToOrder = (product: CoffeeItem, customization?: DrinkCustomization, qty: number = 1) => {
     const ts = Date.now();
-    setOrderItems(prev => {
-      const existing = prev.find(item => item.coffeeItem.id === product.id);
-      if (existing) {
-        return prev.map(item => 
-          item.coffeeItem.id === product.id 
-            ? { ...item, quantity: item.quantity + 1, lastAdded: ts } 
-            : { ...item, lastAdded: undefined }
-        );
+    const lineItemId = Math.random().toString(36).substr(2, 9);
+    const unitPrice = customization
+      ? (customization.selectedSize
+          ? Number(product.availableSizes?.find(s => s.nameAr === customization.selectedSize)?.price || product.price)
+          : Number(product.price)) + (customization.totalAddonsPrice || 0)
+      : Number(product.price);
+
+    setOrderItems(prev => [
+      ...prev.map(i => ({ ...i, lastAdded: undefined })),
+      {
+        lineItemId,
+        coffeeItem: { ...product, price: unitPrice },
+        quantity: qty,
+        customization: customization || {},
+        lastAdded: ts,
       }
-      return [
-        ...prev.map(i => ({ ...i, lastAdded: undefined })),
-        { 
-          lineItemId: Math.random().toString(36).substr(2, 9),
-          coffeeItem: product, 
-          quantity: 1,
-          lastAdded: ts,
-        }
-      ];
-    });
+    ]);
+  };
+
+  const handleConfirmPOSCustomization = (customization: DrinkCustomization, quantity: number) => {
+    if (!posCustomizingItem) return;
+    addToOrder(posCustomizingItem, customization, quantity);
+    setPosCustomizingItem(null);
   };
 
   const updateQuantity = (lineItemId: string, newQty: number) => {
@@ -702,7 +708,7 @@ export default function PosSystem() {
                     className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 ${
                       item.isAvailable === false ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:border-primary/50'
                     }`}
-                    onClick={() => item.isAvailable !== false && addToOrder(item)}
+                    onClick={() => item.isAvailable !== false && setPosCustomizingItem(item)}
                     data-testid={`card-product-${item.id}`}
                   >
                     <div className="aspect-square relative overflow-hidden">
@@ -1450,6 +1456,13 @@ export default function PosSystem() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <DrinkCustomizationDialog
+        coffeeItem={posCustomizingItem}
+        open={posCustomizingItem !== null}
+        onClose={() => setPosCustomizingItem(null)}
+        onConfirm={handleConfirmPOSCustomization}
+      />
     </div>
   );
 }
