@@ -410,7 +410,7 @@ export default function EmployeeDashboard() {
                   <div className="text-right">
                     <p className="font-bold text-green-800 dark:text-green-300">طلب جديد وارد!</p>
                     <p className="text-sm text-green-700 dark:text-green-400">
-                      {newOrderAlert.orderNumber ? `طلب #${newOrderAlert.orderNumber}` : 'طلب جديد'}
+                      {newOrderAlert.orderNumber ? `New Order / طلب ${newOrderAlert.orderNumber.includes('-') ? `ORD#${newOrderAlert.orderNumber.split('-').pop()}` : `ORD#${newOrderAlert.orderNumber.slice(-4)}`}` : 'New Order / طلب جديد'}
                       {newOrderAlert.orderType === 'delivery' ? ' - توصيل' : newOrderAlert.orderType === 'takeaway' ? ' - استلام' : ''}
                     </p>
                   </div>

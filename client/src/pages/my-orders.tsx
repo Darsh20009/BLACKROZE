@@ -172,7 +172,7 @@ export default function MyOrders() {
                           <div className="flex items-center gap-2 mb-2">
                             <Coffee className="h-5 w-5 text-accent" />
                             <h3 className="text-lg font-cairo font-bold text-accent">
-                              {t("orders.order_number")} #{order.orderNumber.includes('-') ? order.orderNumber.split('-').pop() : order.orderNumber}
+                              {order.dailyNumber ? `ORD#${String(order.dailyNumber).padStart(4,'0')}` : `ORD#${order.orderNumber.includes('-') ? order.orderNumber.split('-').pop() : order.orderNumber.slice(-4)}`}
                             </h3>
                           </div>
                           <p className="text-sm text-accent font-cairo">

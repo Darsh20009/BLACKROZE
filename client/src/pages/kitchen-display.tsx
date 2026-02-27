@@ -111,9 +111,10 @@ export default function KitchenDisplay() {
     queryClient.invalidateQueries({ queryKey: ["/api/orders/kitchen"] });
     if (soundEnabled) {
       playNotificationSound('newOrder', 0.7);
+      const dispNum = (order as any).dailyNumber ? `ORD#${String((order as any).dailyNumber).padStart(4,'0')}` : `ORD#${order.orderNumber.split('-').pop()||order.orderNumber.slice(-4)}`;
       toast({
-        title: "طلب جديد!",
-        description: `وصل طلب جديد #${order.orderNumber}`,
+        title: "New Order! / طلب جديد!",
+        description: `${dispNum}`,
       });
     }
   }, [soundEnabled, toast]);
@@ -146,9 +147,11 @@ export default function KitchenDisplay() {
       if (soundEnabled) {
         playNotificationSound('newOrder', 1.0);
       }
+      const latestOrder = orders.find(o => o.status === 'pending' || o.status === 'payment_confirmed' || o.status === 'in_progress');
+      const latestDispNum = latestOrder ? ((latestOrder as any).dailyNumber ? `ORD#${String((latestOrder as any).dailyNumber).padStart(4,'0')}` : `ORD#${latestOrder.orderNumber.split('-').pop()||latestOrder.orderNumber.slice(-4)}`) : '';
       toast({
-        title: "طلب جديد!",
-        description: `وصل طلب جديد #${orders.find(o => o.status === 'pending' || o.status === 'payment_confirmed' || o.status === 'in_progress')?.orderNumber || ''}`,
+        title: "New Order! / طلب جديد!",
+        description: latestDispNum,
       });
     }
     

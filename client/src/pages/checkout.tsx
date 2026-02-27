@@ -153,7 +153,7 @@ export default function CheckoutPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/loyalty/cards/phone"] });
       refetchLoyaltyCard();
-      const displayNum = data.orderNumber.includes('-') ? data.orderNumber.split('-').pop() : data.orderNumber;
+      const displayNum = data.dailyNumber ? `ORD#${String(data.dailyNumber).padStart(4,'0')}` : (data.orderNumber.includes('-') ? `ORD#${data.orderNumber.split('-').pop()}` : `ORD#${data.orderNumber.slice(-4)}`);
       toast({ title: t("checkout.order_success"), description: `${t("tracking.order_number")}: ${displayNum}` });
     },
     onError: (error) => toast({ variant: "destructive", title: t("checkout.order_error"), description: error.message }),
@@ -335,7 +335,7 @@ export default function CheckoutPage() {
         <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl text-center space-y-6">
           <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
           <h2 className="text-3xl font-bold text-accent">{t("nav.thank_you")}</h2>
-          <p>{t("checkout.order_desc")} <span className="font-bold text-primary">#{orderDetails?.orderNumber?.includes('-') ? orderDetails.orderNumber.split('-').pop() : orderDetails?.orderNumber}</span></p>
+          <p>{t("checkout.order_desc")} <span className="font-bold text-primary">{orderDetails?.dailyNumber ? `ORD#${String(orderDetails.dailyNumber).padStart(4,'0')}` : (orderDetails?.orderNumber?.includes('-') ? `ORD#${orderDetails.orderNumber.split('-').pop()}` : `ORD#${orderDetails?.orderNumber?.slice(-4)}`)}</span></p>
           <Button onClick={() => setLocation("/menu")} className="w-full h-12 bg-primary" data-testid="button-back-to-menu">{t("cart.continue_shopping")}</Button>
         </div>
       </div>

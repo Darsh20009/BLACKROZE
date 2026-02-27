@@ -199,7 +199,7 @@ export default function OrderTrackingPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                       <span className="text-muted-foreground">{t("tracking.order_number")}:</span>
-                      <span className="font-bold text-primary" dir="ltr">{order.orderNumber.includes('-') ? order.orderNumber.split('-').pop() : order.orderNumber}</span>
+                      <span className="font-bold text-primary" dir="ltr">{(order as any).dailyNumber ? `ORD#${String((order as any).dailyNumber).padStart(4,'0')}` : (order.orderNumber.includes('-') ? `ORD#${order.orderNumber.split('-').pop()}` : `ORD#${order.orderNumber.slice(-4)}`)}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                       <span className="text-muted-foreground">{t("tracking.total_amount")}:</span>

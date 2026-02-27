@@ -32,13 +32,14 @@ interface Order {
   deliveryType?: 'pickup' | 'delivery' | 'dine-in';
 }
 
-const getLastThreeDigits = (orderNumber: string): string => {
-  if (!orderNumber) return "000";
+const getLastThreeDigits = (orderNumber: string, dailyNumber?: number): string => {
+  if (dailyNumber) return `ORD#${String(dailyNumber).padStart(4, '0')}`;
+  if (!orderNumber) return "ORD#0000";
   if (orderNumber.includes('-')) {
-    return orderNumber.split('-').pop() || "000";
+    return `ORD#${orderNumber.split('-').pop() || '0000'}`;
   }
   const digits = orderNumber.replace(/\D/g, '');
-  return digits.slice(-4).padStart(4, '0');
+  return `ORD#${digits.slice(-4).padStart(4, '0')}`;
 };
 
 const getOrderTypeDisplay = (order: Order) => {
@@ -59,7 +60,7 @@ const getOrderTypeDisplay = (order: Order) => {
 function OrderCard({ order, isReady, isFullscreen }: { order: Order; isReady: boolean; isFullscreen: boolean }) {
   const orderType = getOrderTypeDisplay(order);
   const OrderIcon = orderType.icon;
-  const lastThree = getLastThreeDigits(order.orderNumber);
+  const lastThree = getLastThreeDigits(order.orderNumber, (order as any).dailyNumber);
   
   return (
     <Card 

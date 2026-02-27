@@ -367,7 +367,7 @@ export default function EmployeeOrders() {
                     <CardContent className="p-4 space-y-3">
                       <div className="flex justify-between items-start gap-2">
                         <div>
-                          <h3 className="font-bold text-lg">طلب #{order.orderNumber}</h3>
+                          <h3 className="font-bold text-lg">{(order as any).dailyNumber ? `ORD#${String((order as any).dailyNumber).padStart(4,'0')}` : `ORD#${(order.orderNumber||'').split('-').pop()||order.orderNumber}`}</h3>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                             <Clock className="w-3 h-3" />
                             {order.createdAt ? new Date(order.createdAt).toLocaleString('ar-SA') : 'تاريخ غير معروف'}
@@ -604,7 +604,7 @@ export default function EmployeeOrders() {
             </div>
             <DialogTitle className="text-2xl font-bold text-center">تحصيل مبلغ نقدي</DialogTitle>
             <DialogDescription className="text-center">
-              طلب رقم #{currentOrder?.orderNumber}
+              {(currentOrder as any)?.dailyNumber ? `ORD#${String((currentOrder as any).dailyNumber).padStart(4,'0')}` : `ORD#${(currentOrder?.orderNumber||'').split('-').pop()||currentOrder?.orderNumber}`}
             </DialogDescription>
           </DialogHeader>
           

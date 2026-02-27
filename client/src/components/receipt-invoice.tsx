@@ -118,7 +118,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
             <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px;">
               <h2 style="margin: 5px 0;">طلب تحضير</h2>
               <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">
-                #${order.orderNumber.includes('-') ? order.orderNumber.split('-').pop() : order.orderNumber}
+                ${order.orderNumber.includes('-') ? `ORD#${order.orderNumber.split('-').pop()}` : `ORD#${order.orderNumber.slice(-4)}`}
               </div>
             </div>
             <div style="padding-top: 10px;">

@@ -370,7 +370,7 @@ export const TaxInvoicePrint = forwardRef<HTMLDivElement, TaxInvoiceProps>(
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs font-bold text-gray-600 mb-1">ملخص الطلب السريع</p>
               <p className="text-3xl font-black text-gray-900 mb-2">
-                #{orderNumber.includes('-') ? orderNumber.split('-').pop() : orderNumber}
+                {orderNumber.includes('-') ? `ORD#${orderNumber.split('-').pop()}` : `ORD#${orderNumber.slice(-4)}`}
               </p>
               <div className="text-right space-y-1">
                 {items.map((item, idx) => (

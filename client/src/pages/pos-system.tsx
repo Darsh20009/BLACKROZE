@@ -41,20 +41,27 @@ type PaymentMethod = "cash" | "card" | "qahwa-card";
 const ORDER_TYPES = [
   { id: "dine_in", name: "محلي", nameEn: "Dine-in", icon: Coffee },
   { id: "takeaway", name: "سفري", nameEn: "Takeaway", icon: ShoppingBag },
-  { id: "car_pickup", name: "توصيل للسيارة", nameEn: "Car Pickup", icon: Navigation },
+  { id: "car_pickup", name: "سيارة", nameEn: "Car Pickup", icon: Navigation },
   { id: "delivery", name: "توصيل", nameEn: "Delivery", icon: ShoppingBag },
 ];
 
 const PAYMENT_METHODS = [
-  { id: "cash", name: "كاش", icon: Banknote },
-  { id: "card", name: "شبكة", icon: CreditCard },
-  { id: "qahwa-card", name: "بطاقة قهوة", icon: Gift },
+  { id: "cash", name: "كاش", nameEn: "Cash", icon: Banknote },
+  { id: "card", name: "Geidea", nameEn: "Geidea Card", icon: CreditCard },
+  { id: "qahwa-card", name: "نقاط", nameEn: "Loyalty", icon: Gift },
 ];
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  cash: "كاش",
-  card: "شبكة",
-  "qahwa-card": "بطاقة قهوة",
+  cash: "كاش / Cash",
+  card: "Geidea / شبكة",
+  "qahwa-card": "بطاقة نقاط / Loyalty",
+};
+
+const formatPosOrderNumber = (order: any): string => {
+  if (order?.dailyNumber) return `ORD#${String(order.dailyNumber).padStart(4, '0')}`;
+  const num = order?.orderNumber || '';
+  if (num.includes('-')) return `ORD#${num.split('-').pop()}`;
+  return `ORD#${num.slice(-4) || '0000'}`;
 };
 
 export default function PosSystem() {
@@ -117,8 +124,8 @@ export default function PosSystem() {
       });
     }
     toast({
-      title: "طلب جديد! 🔔",
-      description: `طلب رقم #${order?.orderNumber || ''} بقيمة ${order?.totalAmount || 0} ر.س`,
+      title: "New Order! / طلب جديد! 🔔",
+      description: `${formatPosOrderNumber(order)} - ${order?.totalAmount || 0} SAR / ر.س`,
     });
   }, [queryClient, toast]);
 
@@ -529,12 +536,12 @@ export default function PosSystem() {
         </div>
 
         <div className="hidden sm:flex items-center gap-3">
-          <Tabs value={orderType} onValueChange={(v) => setOrderType(v as OrderType)} className="w-[400px]">
+          <Tabs value={orderType} onValueChange={(v) => setOrderType(v as OrderType)} className="w-[440px]">
             <TabsList className="grid grid-cols-4 w-full h-10 p-1">
               {ORDER_TYPES.map((type) => (
-                <TabsTrigger key={type.id} value={type.id} className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid={`tab-order-type-${type.id}`}>
-                  <type.icon className="w-3.5 h-3.5 ml-1.5" />
-                  {type.name}
+                <TabsTrigger key={type.id} value={type.id} className="text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex-col gap-0 h-full px-1" data-testid={`tab-order-type-${type.id}`}>
+                  <type.icon className="w-3.5 h-3.5" />
+                  <span>{type.name}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -739,7 +746,10 @@ export default function PosSystem() {
               <div className="bg-primary p-1.5 rounded-lg">
                 <ShoppingBag className="w-4 h-4 text-primary-foreground" />
               </div>
-              <h2 className="font-bold text-sm sm:text-lg">تفاصيل الطلب</h2>
+              <div>
+                <h2 className="font-bold text-sm sm:text-base leading-tight">Order / الطلب</h2>
+                <p className="text-[9px] text-muted-foreground">{orderItems.length} item(s)</p>
+              </div>
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" onClick={() => setSplitViewMode(!splitViewMode)} className="hidden md:flex" data-testid="button-split-view">
@@ -758,35 +768,45 @@ export default function PosSystem() {
                 <p className="text-sm font-bold">السلة فارغة</p>
               </div>
             ) : (
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2 sm:space-y-3">
                 {orderItems.map((item) => (
-                  <div key={item.lineItemId} className="group flex flex-col gap-2 p-2 sm:p-3 rounded-xl border-2 hover:border-primary/30 bg-muted/20 transition-all" data-testid={`order-item-${item.lineItemId}`}>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-bold text-xs sm:text-sm line-clamp-2">{item.coffeeItem.nameAr}</h4>
-                        <p className="text-primary font-black text-[10px] sm:text-xs">{(Number(item.coffeeItem.price) * item.quantity).toFixed(2)} ر.س</p>
-                      </div>
-                      <div className="flex items-center bg-background rounded-full border shadow-sm p-0.5">
+                  <div key={item.lineItemId} className="flex items-center gap-2 p-2 sm:p-3 rounded-xl border-2 hover:border-primary/30 bg-muted/20 transition-all" data-testid={`order-item-${item.lineItemId}`}>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-xs sm:text-sm leading-tight line-clamp-1">{item.coffeeItem.nameAr}</h4>
+                      {item.coffeeItem.nameEn && <p className="text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1">{item.coffeeItem.nameEn}</p>}
+                      <p className="text-primary font-black text-[10px] sm:text-xs mt-0.5">{(Number(item.coffeeItem.price) * item.quantity).toFixed(2)} SAR</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center bg-background rounded-full border shadow-sm">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                          className="h-7 w-7 rounded-full"
                           onClick={() => updateQuantity(item.lineItemId, item.quantity - 1)}
                           data-testid={`button-decrease-${item.lineItemId}`}
                         >
                           <Minus className="w-3 h-3" />
                         </Button>
-                        <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-black">{item.quantity}</span>
+                        <span className="w-6 text-center text-xs font-black">{item.quantity}</span>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                          className="h-7 w-7 rounded-full"
                           onClick={() => updateQuantity(item.lineItemId, item.quantity + 1)}
                           data-testid={`button-increase-${item.lineItemId}`}
                         >
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => updateQuantity(item.lineItemId, 0)}
+                        data-testid={`button-delete-${item.lineItemId}`}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -796,14 +816,14 @@ export default function PosSystem() {
 
           <div className="px-2 sm:px-4 py-2 border-t space-y-2">
             <Input
-              placeholder="اسم العميل"
+              placeholder="Customer Name / اسم العميل"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               className="h-9 text-sm"
               data-testid="input-pos-customer-name"
             />
             <Input
-              placeholder="رقم الجوال"
+              placeholder="Phone / رقم الجوال"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
               className="h-9 text-sm"
@@ -812,7 +832,7 @@ export default function PosSystem() {
             />
             {orderType === "dine_in" && (
               <Input
-                placeholder="رقم الطاولة"
+                placeholder="Table No. / رقم الطاولة"
                 value={tableNumber}
                 onChange={(e) => setTableNumber(e.target.value)}
                 className="h-9 text-sm"
@@ -822,7 +842,7 @@ export default function PosSystem() {
           </div>
 
           <div className="px-2 sm:px-4 py-2 border-t">
-            <p className="text-xs sm:text-sm font-bold text-muted-foreground mb-2">طريقة الدفع</p>
+            <p className="text-xs sm:text-sm font-bold text-muted-foreground mb-2">Payment Method / طريقة الدفع</p>
             <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               {PAYMENT_METHODS.map((method) => (
                 <Button
@@ -841,19 +861,25 @@ export default function PosSystem() {
               ))}
             </div>
             {paymentMethod === "card" && (
-              <div className="mt-2 space-y-1">
-                <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
-                  سيتم عرض المبلغ على جهاز الشبكة
+              <div className="mt-2 space-y-1 bg-blue-50 dark:bg-blue-950/20 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <CreditCard className="w-3 h-3 text-blue-600" />
+                  <p className="text-[10px] sm:text-xs font-bold text-blue-700 dark:text-blue-400">
+                    Geidea Terminal / جهاز جيديا
+                  </p>
+                </div>
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground text-center">
+                  Amount will appear on Geidea terminal / سيتم عرض المبلغ على جهاز جيديا
                 </p>
                 {posTerminalConnected ? (
                   <div className="flex items-center justify-center gap-1.5 text-green-600 text-[10px] sm:text-xs" data-testid="status-terminal-connected">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="font-medium">جهاز الشبكة متصل</span>
+                    <span className="font-medium">Geidea Connected / متصل</span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-1.5 text-orange-500 text-[10px] sm:text-xs" data-testid="status-terminal-disconnected">
                     <AlertTriangle className="w-3 h-3" />
-                    <span className="font-medium">جهاز الشبكة غير متصل</span>
+                    <span className="font-medium">Geidea Not Connected / غير متصل</span>
                   </div>
                 )}
               </div>
@@ -863,22 +889,22 @@ export default function PosSystem() {
           <div className="p-2 sm:p-4 border-t bg-muted/10 gap-2 sm:gap-3 flex flex-col">
             <div className="space-y-2">
               <div className="flex justify-between text-[10px] sm:text-sm">
-                <span className="text-muted-foreground">المجموع الفرعي</span>
-                <span className="font-bold">{calculateSubtotal().toFixed(2)} ر.س</span>
+                <span className="text-muted-foreground">Subtotal / المجموع</span>
+                <span className="font-bold">{calculateSubtotal().toFixed(2)} SAR</span>
               </div>
               <div className="flex justify-between text-[10px] sm:text-sm">
-                <span className="text-muted-foreground">الضريبة (15%)</span>
-                <span className="font-bold">{(calculateTotal() - calculateSubtotal()).toFixed(2)} ر.س</span>
+                <span className="text-muted-foreground">VAT 15% / ضريبة</span>
+                <span className="font-bold">{(calculateTotal() - calculateSubtotal()).toFixed(2)} SAR</span>
               </div>
               <Separator />
               <div className="flex justify-between items-center pt-1">
-                <span className="font-black text-sm sm:text-lg">الإجمالي</span>
-                <span className="font-black text-lg sm:text-2xl text-primary">{calculateTotal().toFixed(2)} ر.س</span>
+                <span className="font-black text-sm sm:text-lg">Total / الإجمالي</span>
+                <span className="font-black text-lg sm:text-2xl text-primary">{calculateTotal().toFixed(2)} SAR</span>
               </div>
             </div>
 
             <Button 
-              className="w-full h-11 sm:h-14 md:h-16 text-xs sm:text-base md:text-lg font-black rounded-xl shadow-lg shadow-primary/20 gap-2"
+              className="w-full h-11 sm:h-14 md:h-16 text-sm sm:text-base md:text-lg font-black rounded-xl shadow-lg shadow-primary/20 gap-2"
               disabled={orderItems.length === 0 || syncing}
               onClick={handleCheckout}
               data-testid="button-checkout"
@@ -889,11 +915,11 @@ export default function PosSystem() {
                 <>
                   {PAYMENT_METHODS.find(m => m.id === paymentMethod)?.icon && (() => {
                     const IconComp = PAYMENT_METHODS.find(m => m.id === paymentMethod)!.icon;
-                    return <IconComp className="w-4 h-4 sm:w-6 sm:h-6" />;
+                    return <IconComp className="w-4 h-4 sm:w-5 sm:h-5" />;
                   })()}
                 </>
               )}
-              الدفع {PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod}
+              {syncing ? 'Processing...' : `Charge ${calculateTotal().toFixed(2)} SAR`}
             </Button>
           </div>
         </aside>
@@ -957,7 +983,7 @@ export default function PosSystem() {
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-black text-lg">#{order.dailyNumber || order.orderNumber}</span>
+                              <span className="font-black text-lg">{formatPosOrderNumber(order)}</span>
                               <Badge variant={order.status === 'ready' ? 'default' : 'secondary'} className="text-xs">
                                 {statusLabels[order.status] || order.status}
                               </Badge>
@@ -1085,7 +1111,7 @@ export default function PosSystem() {
                   {new Date(lastOrder.date).toLocaleDateString('ar-SA')} - {new Date(lastOrder.date).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                 </p>
                 <Badge variant="secondary" className="text-sm font-black" data-testid="text-receipt-order-number">
-                  طلب #{lastOrder.orderNumber}
+                  {formatPosOrderNumber(lastOrder)}
                 </Badge>
               </div>
 
@@ -1281,7 +1307,7 @@ export default function PosSystem() {
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-black text-lg">طاولة {order.tableNumber}</span>
-                              <Badge variant="secondary" className="text-xs">#{order.dailyNumber || order.orderNumber}</Badge>
+                              <Badge variant="secondary" className="text-xs">{formatPosOrderNumber(order)}</Badge>
                               <Badge variant="outline" className="text-xs">
                                 {statusLabels[order.status] || order.status}
                               </Badge>
@@ -1382,34 +1408,34 @@ export default function PosSystem() {
       <Dialog open={showPOSSettings} onOpenChange={setShowPOSSettings}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right font-bold text-xl">إعدادات نقاط البيع</DialogTitle>
+            <DialogTitle className="text-right font-bold text-xl">POS Settings / إعدادات نقاط البيع</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="auto-print" className="text-sm font-bold cursor-pointer">الطباعة التلقائية للإيصال</Label>
+              <Label htmlFor="auto-print" className="text-sm font-bold cursor-pointer">Auto Print Receipt / الطباعة التلقائية</Label>
               <Switch id="auto-print" checked={autoPrint} onCheckedChange={setAutoPrint} />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="sound-notif" className="text-sm font-bold cursor-pointer">تنبيهات الأصوات</Label>
+              <Label htmlFor="sound-notif" className="text-sm font-bold cursor-pointer">Sound Alerts / تنبيهات الصوت</Label>
               <Switch id="sound-notif" checked={soundEnabled} onCheckedChange={setSoundEnabled} />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="show-vat" className="text-sm font-bold cursor-pointer">عرض "شامل الضريبة" بجانب السعر</Label>
+              <Label htmlFor="show-vat" className="text-sm font-bold cursor-pointer">Show "Incl. VAT" / عرض "شامل الضريبة"</Label>
               <Switch id="show-vat" checked={showVatLabel} onCheckedChange={setShowVatLabel} />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="pos-terminal" className="text-sm font-bold cursor-pointer block">اتصال جهاز الشبكة</Label>
-                <p className="text-xs text-muted-foreground mt-1">{posTerminalConnected ? "متصل" : "غير متصل"}</p>
+                <Label htmlFor="pos-terminal" className="text-sm font-bold cursor-pointer block">Geidea Terminal / جهاز جيديا</Label>
+                <p className="text-xs text-muted-foreground mt-1">{posTerminalConnected ? "Connected / متصل" : "Disconnected / غير متصل"}</p>
               </div>
               <Switch id="pos-terminal" checked={posTerminalConnected} onCheckedChange={setPosTerminalConnected} />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm font-bold block">شاشة العميل</Label>
-                <p className="text-xs text-muted-foreground mt-1">افتح على شاشة ثانية</p>
+                <Label className="text-sm font-bold block">Customer Display / شاشة العميل</Label>
+                <p className="text-xs text-muted-foreground mt-1">Open on second screen / افتح على شاشة ثانية</p>
               </div>
               <Button
                 variant="outline"

@@ -92,9 +92,11 @@ export default function EmployeeOrdersDisplay() {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
-  const getLastThreeDigits = (orderNumber: string) => {
+  const getLastThreeDigits = (orderNumber: string, dailyNumber?: number) => {
+    if (dailyNumber) return `ORD#${String(dailyNumber).padStart(4, '0')}`;
+    if (orderNumber.includes('-')) return `ORD#${orderNumber.split('-').pop() || '0000'}`;
     const numbers = orderNumber.replace(/\D/g, "");
-    return numbers.slice(-3) || orderNumber.slice(-3);
+    return `ORD#${numbers.slice(-4).padStart(4,'0') || orderNumber.slice(-4)}`;
   };
 
   const filterOrdersByStatus = (status: string) => {
@@ -158,7 +160,7 @@ export default function EmployeeOrdersDisplay() {
           <span className="text-[10px] text-muted-foreground">{new Date(order.createdAt || "").toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         <p className="text-3xl sm:text-4xl font-bold text-gray-900 font-mono mb-1 truncate w-full">
-          {getLastThreeDigits(order.orderNumber)}
+          {getLastThreeDigits(order.orderNumber, (order as any).dailyNumber)}
         </p>
         <div className="flex items-center justify-center gap-1 flex-wrap w-full">
           <p className="text-base sm:text-lg font-bold text-gray-900 leading-none truncate max-w-[70%]">

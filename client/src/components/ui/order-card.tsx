@@ -167,9 +167,9 @@ export function OrderCard({
   const isWarning = elapsedMinutes >= 5 && !isDelayed;
   const displayStatus = order.tableStatus || order.status;
   
-  const displayOrderNumber = order.orderNumber.includes('-') 
-    ? order.orderNumber.split('-').pop() 
-    : order.orderNumber.slice(-4);
+  const displayOrderNumber = order.dailyNumber
+    ? `ORD#${String(order.dailyNumber).padStart(4, '0')}`
+    : `ORD#${order.orderNumber.includes('-') ? order.orderNumber.split('-').pop() : order.orderNumber.slice(-4)}`;
 
   const cardBorderClass = isDelayed 
     ? "border-red-500/50" 

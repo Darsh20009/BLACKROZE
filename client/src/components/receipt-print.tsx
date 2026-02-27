@@ -114,7 +114,7 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, ReceiptProps>(
     const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
     const [barcodeUrl, setBarcodeUrl] = useState<string>("");
 
-    const displayOrderNumber = orderNumber.includes('-') ? orderNumber.split('-').pop() : orderNumber;
+    const displayOrderNumber = orderNumber.includes('-') ? `ORD#${orderNumber.split('-').pop()}` : `ORD#${orderNumber.slice(-4)}`;
     const totalAmount = parseNumber(total);
 
     const codeDiscountAmount = discount ? parseNumber(discount.amount) : 0;
