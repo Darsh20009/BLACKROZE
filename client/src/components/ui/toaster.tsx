@@ -1,6 +1,4 @@
 import { useToast } from "@/hooks/use-toast"
-import { useAudio } from "@/hooks/use-audio"
-import { useEffect } from "react"
 import {
  Toast,
  ToastClose,
@@ -12,21 +10,6 @@ import {
 
 export function Toaster() {
  const { toasts } = useToast()
- const { playSound } = useAudio()
-
-  useEffect(() => {
-    if (toasts.length > 0) {
-      const lastToast = toasts[toasts.length - 1];
-      const title = lastToast.title?.toString().toLowerCase() || "";
-      const description = lastToast.description?.toString().toLowerCase() || "";
-      
-      if (title.includes('order') || description.includes('order') || title.includes('طلب')) {
-        playSound('new_order');
-      } else {
-        playSound('notification');
-      }
-    }
-  }, [toasts, playSound]);
 
  return (
  <ToastProvider>
