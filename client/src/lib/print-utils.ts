@@ -1,5 +1,12 @@
 import QRCode from "qrcode";
 
+interface OrderItemAddon {
+  addonId?: string;
+  nameAr: string;
+  price: number;
+  quantity: number;
+}
+
 interface OrderItem {
   coffeeItem: {
     nameAr: string;
@@ -8,6 +15,12 @@ interface OrderItem {
   };
   quantity: number;
   itemDiscount?: number;
+  customization?: {
+    selectedSize?: string;
+    addons?: OrderItemAddon[];
+    selectedAddons?: OrderItemAddon[];
+    totalAddonsPrice?: number;
+  };
 }
 
 interface TaxInvoiceData {
@@ -483,6 +496,31 @@ export async function printBulkEmployeeInvoices(orders: any[]): Promise<void> {
   openPrintWindow(html, `Bulk Employee Invoices`, { paperWidth: '80mm', autoPrint: true });
 }
 
+function getItemAddons(item: OrderItem): OrderItemAddon[] {
+  const addons = item.customization?.addons || item.customization?.selectedAddons || [];
+  return addons.filter(a => a && a.nameAr);
+}
+
+function getItemTotalAddonsPrice(item: OrderItem): number {
+  if (item.customization?.totalAddonsPrice !== undefined) {
+    return parseNumber(item.customization.totalAddonsPrice);
+  }
+  return getItemAddons(item).reduce((sum, a) => sum + (parseNumber(a.price) * (a.quantity || 1)), 0);
+}
+
+function renderAddonsHtml(item: OrderItem, style: 'compact' | 'full' = 'compact'): string {
+  const addons = getItemAddons(item);
+  if (!addons.length) return '';
+  const sizeNote = item.customization?.selectedSize ? `<div style="font-size:9px;color:#888;padding-right:8px;">📏 ${item.customization.selectedSize}</div>` : '';
+  const addonsHtml = addons.map(a => {
+    const qty = a.quantity || 1;
+    const price = parseNumber(a.price);
+    const priceText = price > 0 ? ` (+${(price * qty).toFixed(2)} ر.س)` : '';
+    return `<div style="font-size:9px;color:#666;padding-right:${style === 'full' ? '10' : '6'}px;">+ ${a.nameAr}${qty > 1 ? ` x${qty}` : ''}${priceText}</div>`;
+  }).join('');
+  return sizeNote + addonsHtml;
+}
+
 function formatDate(dateStr: string): { date: string; time: string } {
   try {
     const d = new Date(dateStr);
@@ -555,13 +593,19 @@ export async function printTaxInvoice(data: TaxInvoiceData): Promise<void> {
   }
 
   const itemsHtml = data.items.map(item => {
-    const unitPrice = parseNumber(item.coffeeItem.price);
+    const basePrice = parseNumber(item.coffeeItem.price);
+    const addonsPrice = getItemTotalAddonsPrice(item);
+    const unitPrice = basePrice + addonsPrice;
     const lineTotal = unitPrice * item.quantity;
     const itemDiscount = parseNumber(item.itemDiscount);
     const lineAfterDiscount = lineTotal - itemDiscount;
+    const addonsHtml = renderAddonsHtml(item, 'compact');
     return `
       <tr>
-        <td>${item.coffeeItem.nameAr}${itemDiscount > 0 ? ` <span style="color:#16a34a;font-size:9px;">(-${itemDiscount.toFixed(2)})</span>` : ''}</td>
+        <td>
+          ${item.coffeeItem.nameAr}${itemDiscount > 0 ? ` <span style="color:#16a34a;font-size:9px;">(-${itemDiscount.toFixed(2)})</span>` : ''}
+          ${addonsHtml}
+        </td>
         <td>${item.quantity}</td>
         <td>${unitPrice.toFixed(2)}</td>
         <td>${lineAfterDiscount.toFixed(2)}</td>
@@ -683,12 +727,24 @@ export async function printTaxInvoice(data: TaxInvoiceData): Promise<void> {
       ${orderTypeLabel ? `<div class="emp-type">${orderTypeLabel}${data.tableNumber ? ' - طاولة ' + data.tableNumber : ''}</div>` : (data.tableNumber ? `<div class="emp-type">طاولة ${data.tableNumber}</div>` : '')}
       
       <div class="emp-items">
-        ${data.items.map(item => `
+        ${data.items.map(item => {
+          const addonsPrice = getItemTotalAddonsPrice(item);
+          const unitPrice = parseNumber(item.coffeeItem.price) + addonsPrice;
+          const addons = getItemAddons(item);
+          const addonsText = addons.length ? addons.map(a => `+ ${a.nameAr}${a.quantity > 1 ? ` x${a.quantity}` : ''}${parseNumber(a.price) > 0 ? ` (+${(parseNumber(a.price) * (a.quantity||1)).toFixed(2)})` : ''}`).join(', ') : '';
+          return `
           <div class="emp-item">
-            <span class="emp-item-name">${item.coffeeItem.nameAr}</span>
-            <span class="emp-item-qty">x${item.quantity}</span>
-          </div>
-        `).join('')}
+            <div class="emp-item-name">
+              ${item.coffeeItem.nameAr}
+              ${item.customization?.selectedSize ? `<div style="font-size:9px;color:#888;">${item.customization.selectedSize}</div>` : ''}
+              ${addonsText ? `<div style="font-size:9px;color:#666;">${addonsText}</div>` : ''}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <span class="emp-item-qty">x${item.quantity}</span>
+              ${addonsPrice > 0 ? `<span style="font-size:10px;color:#b45309;">${unitPrice.toFixed(2)} ر.س</span>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
       </div>
       
       <div class="emp-total"><span>الإجمالي:</span><span>${totalAmount.toFixed(2)} ر.س</span></div>
@@ -789,12 +845,20 @@ export async function printCustomerPickupReceipt(data: TaxInvoiceData & { delive
     </div>
 
     <div class="items-section">
-      ${data.items.map(item => `
-        <div class="item-row">
-          <span class="item-name">${item.coffeeItem.nameAr}</span>
-          <span class="item-qty">x${item.quantity}</span>
-        </div>
-      `).join('')}
+      ${data.items.map(item => {
+        const addonsPrice = getItemTotalAddonsPrice(item);
+        const unitPrice = parseNumber(item.coffeeItem.price) + addonsPrice;
+        const addonsHtml = renderAddonsHtml(item, 'full');
+        return `
+        <div class="item-row" style="flex-direction:column;align-items:flex-start;">
+          <div style="display:flex;justify-content:space-between;width:100%;">
+            <span class="item-name">${item.coffeeItem.nameAr}${item.customization?.selectedSize ? ` <span style="font-size:11px;color:#888;">(${item.customization.selectedSize})</span>` : ''}</span>
+            <span class="item-qty">x${item.quantity}</span>
+          </div>
+          ${addonsHtml}
+          ${addonsPrice > 0 ? `<div style="font-size:11px;color:#b45309;font-weight:600;margin-top:2px;">${unitPrice.toFixed(2)} ر.س/وحدة</div>` : ''}
+        </div>`;
+      }).join('')}
     </div>
 
     <div class="total-section">
@@ -874,11 +938,22 @@ export async function printCashierReceipt(data: TaxInvoiceData & { deliveryType?
 
     <div class="items">
       ${data.items.map(item => {
-        const price = parseNumber(item.coffeeItem.price);
+        const basePrice = parseNumber(item.coffeeItem.price);
+        const addonsPrice = getItemTotalAddonsPrice(item);
+        const unitPrice = basePrice + addonsPrice;
+        const addons = getItemAddons(item);
+        const addonsHtml = addons.map(a => {
+          const qty = a.quantity || 1;
+          const p = parseNumber(a.price);
+          return `<div style="font-size:10px;color:#666;padding-right:8px;">+ ${a.nameAr}${qty > 1 ? ` x${qty}` : ''}${p > 0 ? ` (+${(p*qty).toFixed(2)})` : ''}</div>`;
+        }).join('');
         return `
-        <div class="item-row">
-          <span>${item.coffeeItem.nameAr} x${item.quantity}</span>
-          <span>${(price * item.quantity).toFixed(2)}</span>
+        <div class="item-row" style="flex-direction:column;">
+          <div style="display:flex;justify-content:space-between;width:100%;">
+            <span>${item.coffeeItem.nameAr}${item.customization?.selectedSize ? ` (${item.customization.selectedSize})` : ''} x${item.quantity}</span>
+            <span>${(unitPrice * item.quantity).toFixed(2)}</span>
+          </div>
+          ${addonsHtml}
         </div>
         `;
       }).join('')}
@@ -919,11 +994,17 @@ export async function printAllReceipts(data: TaxInvoiceData & { deliveryType?: s
 
 export async function printSimpleReceipt(data: TaxInvoiceData): Promise<void> {
   const itemsHtml = data.items.map(item => {
-    const unitPrice = parseNumber(item.coffeeItem.price);
+    const basePrice = parseNumber(item.coffeeItem.price);
+    const addonsPrice = getItemTotalAddonsPrice(item);
+    const unitPrice = basePrice + addonsPrice;
     const lineTotal = unitPrice * item.quantity;
+    const addonsHtml = renderAddonsHtml(item, 'full');
     return `
       <tr style="border-bottom: 1px solid #e5e5e5;">
-        <td style="padding: 8px 4px; text-align: right;">${item.coffeeItem.nameAr}</td>
+        <td style="padding: 8px 4px; text-align: right;">
+          ${item.coffeeItem.nameAr}${item.customization?.selectedSize ? ` <span style="font-size:10px;color:#888;">(${item.customization.selectedSize})</span>` : ''}
+          ${addonsHtml}
+        </td>
         <td style="padding: 8px 4px; text-align: center;">${item.quantity}</td>
         <td style="padding: 8px 4px; text-align: left;">${lineTotal.toFixed(2)}</td>
       </tr>

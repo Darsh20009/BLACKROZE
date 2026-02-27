@@ -12,6 +12,7 @@ export interface ICoffeeItem extends Document {
   category: string;
   menuType?: 'drinks' | 'food';
   imageUrl?: string;
+  images?: string[];
   availabilityStatus?: 'available' | 'out_of_stock' | 'coming_soon' | 'unavailable' | 'new' | 'temporarily_unavailable';
   isAvailable: number; // 1 for available, 0 for unavailable
   isNewProduct?: number; // 1 for new, 0 for not new
@@ -54,6 +55,7 @@ const CoffeeItemSchema = new Schema<ICoffeeItem>({
   category: { type: String, required: true },
   menuType: { type: String, enum: ['drinks', 'food'], default: 'drinks' },
   imageUrl: { type: String },
+  images: [{ type: String }],
   isAvailable: { type: Number, default: 1, required: true },
   availabilityStatus: { type: String, default: "available" },
   coffeeStrength: { type: String, default: "classic" },
@@ -2190,6 +2192,7 @@ export const insertCoffeeItemSchema = z.object({
     imageUrl: z.string().optional(),
   })).optional(),
   isGiftable: z.boolean().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 export const insertEmployeeSchema = z.object({

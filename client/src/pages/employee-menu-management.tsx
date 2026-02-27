@@ -46,13 +46,20 @@ export default function EmployeeMenuManagement() {
  const [editableSizes, setEditableSizes] = useState<Array<{nameAr: string; price: number}>>([]);
  const [editableAddons, setEditableAddons] = useState<Array<{nameAr: string; price: number; category?: string}>>([]);
  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
- const [selectedImage, setSelectedImage] = useState<File | null>(null);
- const [imagePreview, setImagePreview] = useState<string | null>(null);
- const [isUploadingImage, setIsUploadingImage] = useState(false);
- const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
- const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
- const fileInputRef = useRef<HTMLInputElement>(null);
- const editFileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [additionalImages, setAdditionalImages] = useState<File[]>([]);
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
+  const [editAdditionalImages, setEditAdditionalImages] = useState<File[]>([]);
+  const [editAdditionalImagePreviews, setEditAdditionalImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const additionalFileInputRef = useRef<HTMLInputElement>(null);
+  const editAdditionalFileInputRef = useRef<HTMLInputElement>(null);
  const { toast } = useToast();
  const queryClient = useQueryClient();
  const [selectedIngredients, setSelectedIngredients] = useState<Array<{ingredientId: string, name: string, quantity: number, unit: string}>>([]);
@@ -463,14 +470,16 @@ export default function EmployeeMenuManagement() {
    }
    
    let imageUrl: string | undefined = undefined;
-   
+   let allImages: string[] = [];
+
    if (selectedImage) {
      setIsUploadingImage(true);
      const uploadedUrl = await uploadImage(selectedImage);
-     setIsUploadingImage(false);
      if (uploadedUrl) {
        imageUrl = uploadedUrl;
+       allImages.push(uploadedUrl);
      } else {
+       setIsUploadingImage(false);
        toast({
          title: "خطأ",
          description: "فشل رفع الصورة، يرجى المحاولة مرة أخرى",
@@ -479,7 +488,13 @@ export default function EmployeeMenuManagement() {
        return;
      }
    }
-   
+
+   for (const img of additionalImages) {
+     const url = await uploadImage(img);
+     if (url) allImages.push(url);
+   }
+   setIsUploadingImage(false);
+
    setStep1Data({
      nameAr,
      nameEn: formData.get("nameEn") as string || "",
@@ -490,10 +505,11 @@ export default function EmployeeMenuManagement() {
      coffeeStrength: selectedCoffeeStrength,
      imageUrl: imageUrl || step1Data?.imageUrl,
      branchAvailability: selectedBranches.length > 0 ? selectedBranches : undefined,
-     isGiftable: false, // Default value, will be updated by UI if needed
+     isGiftable: false,
      availableSizes: step1Data?.availableSizes || [],
      addons: (step1Data as any)?.addons || [],
-   });
+     images: allImages.length > 0 ? allImages : (step1Data as any)?.images || [],
+   } as any);
    setAddStep(2);
  };
 
@@ -531,6 +547,7 @@ export default function EmployeeMenuManagement() {
      availableSizes: step1Data.availableSizes || [],
      addons: (step1Data as any).addons || [],
      branchAvailability: step1Data.branchAvailability,
+     images: (step1Data as any).images || [],
      hasRecipe: 0,
      requiresRecipe: 0,
    };
@@ -565,6 +582,7 @@ export default function EmployeeMenuManagement() {
      availableSizes: step1Data.availableSizes || [],
      addons: (step1Data as any).addons || [],
      branchAvailability: step1Data.branchAvailability,
+     images: (step1Data as any).images || [],
      hasRecipe: hasRecipeItems ? 1 : 0,
      requiresRecipe: 1,
    };
@@ -635,36 +653,45 @@ export default function EmployeeMenuManagement() {
  const formData = new FormData(e.currentTarget);
  
  let imageUrl: string | undefined = editingItem.imageUrl;
- 
- if (editSelectedImage) {
-   setIsUploadingImage(true);
-   const uploadedUrl = await uploadImage(editSelectedImage);
-   setIsUploadingImage(false);
-   if (uploadedUrl) {
-     imageUrl = uploadedUrl;
-   } else {
-     toast({
-       title: "خطأ",
-       description: "فشل رفع الصورة، يرجى المحاولة مرة أخرى",
-       variant: "destructive"
-     });
-     return;
-   }
- }
- 
-    const updates = {
-      nameAr: formData.get("nameAr") as string,
-      nameEn: formData.get("nameEn") as string || undefined,
-      description: formData.get("description") as string,
-      price: parseFloat(formData.get("price") as string),
-      oldPrice: formData.get("oldPrice") ? parseFloat(formData.get("oldPrice") as string) : undefined,
-      category: formData.get("category") as string,
-      imageUrl: imageUrl, // Preserve or update image URL
-      availableSizes: editableSizes,
-      addons: editableAddons,
-    };
+let allImages: string[] = [...existingImages];
 
-    updateItemMutation.mutate({ id: editingItem.id, updates });
+if (editSelectedImage) {
+  setIsUploadingImage(true);
+  const uploadedUrl = await uploadImage(editSelectedImage);
+  if (uploadedUrl) {
+    imageUrl = uploadedUrl;
+    if (!allImages.includes(uploadedUrl)) allImages.unshift(uploadedUrl);
+  } else {
+    setIsUploadingImage(false);
+    toast({
+      title: "خطأ",
+      description: "فشل رفع الصورة، يرجى المحاولة مرة أخرى",
+      variant: "destructive"
+    });
+    return;
+  }
+}
+
+for (const img of editAdditionalImages) {
+  const url = await uploadImage(img);
+  if (url) allImages.push(url);
+}
+setIsUploadingImage(false);
+
+   const updates = {
+     nameAr: formData.get("nameAr") as string,
+     nameEn: formData.get("nameEn") as string || undefined,
+     description: formData.get("description") as string,
+     price: parseFloat(formData.get("price") as string),
+     oldPrice: formData.get("oldPrice") ? parseFloat(formData.get("oldPrice") as string) : undefined,
+     category: formData.get("category") as string,
+     imageUrl: imageUrl,
+     availableSizes: editableSizes,
+     addons: editableAddons,
+     images: allImages,
+   };
+
+   updateItemMutation.mutate({ id: editingItem.id, updates });
  resetEditImageState();
  };
 
@@ -672,6 +699,8 @@ export default function EmployeeMenuManagement() {
  setEditingItem(item);
  setEditableSizes(item.availableSizes || []);
  setEditableAddons(item.addons || []);
+ setExistingImages((item as any).images?.filter((url: string) => url !== item.imageUrl) || []);
+ resetEditImageState();
  setIsEditDialogOpen(true);
  };
 
@@ -769,21 +798,47 @@ export default function EmployeeMenuManagement() {
    }
  };
 
- const resetImageState = () => {
-   setSelectedImage(null);
-   setImagePreview(null);
-   if (fileInputRef.current) {
-     fileInputRef.current.value = '';
-   }
- };
+  const resetImageState = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setAdditionalImages([]);
+    setAdditionalImagePreviews([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (additionalFileInputRef.current) additionalFileInputRef.current.value = '';
+  };
 
- const resetEditImageState = () => {
-   setEditSelectedImage(null);
-   setEditImagePreview(null);
-   if (editFileInputRef.current) {
-     editFileInputRef.current.value = '';
-   }
- };
+  const resetEditImageState = () => {
+    setEditSelectedImage(null);
+    setEditImagePreview(null);
+    setEditAdditionalImages([]);
+    setEditAdditionalImagePreviews([]);
+    setExistingImages([]);
+    if (editFileInputRef.current) editFileInputRef.current.value = '';
+    if (editAdditionalFileInputRef.current) editAdditionalFileInputRef.current.value = '';
+  };
+
+  const handleAdditionalImageSelect = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const files = Array.from(e.target.files || []);
+    const currentCount = isEdit
+      ? (editAdditionalImages.length + existingImages.length + (editSelectedImage || editingItem?.imageUrl ? 1 : 0))
+      : (additionalImages.length + (selectedImage ? 1 : 0));
+    const maxAdditional = 5 - currentCount;
+    const toAdd = files.slice(0, maxAdditional);
+    toAdd.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEdit) {
+          setEditAdditionalImages(prev => [...prev, file]);
+          setEditAdditionalImagePreviews(prev => [...prev, reader.result as string]);
+        } else {
+          setAdditionalImages(prev => [...prev, file]);
+          setAdditionalImagePreviews(prev => [...prev, reader.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
 
  const categoryNames: Record<string, string> = {
  basic: "قهوة أساسية",
@@ -1024,6 +1079,38 @@ export default function EmployeeMenuManagement() {
  </div>
  </div>
  </div>
+
+{/* Additional Images - Add Form */}
+<div>
+  <Label className="text-gray-300">صور إضافية (حتى 5 إجمالاً)</Label>
+  <div className="mt-2">
+    <input
+      ref={additionalFileInputRef}
+      type="file"
+      accept="image/*"
+      multiple
+      onChange={(e) => handleAdditionalImageSelect(e, false)}
+      className="hidden"
+      data-testid="input-additional-images"
+    />
+    {additionalImagePreviews.length > 0 && (
+      <div className="grid grid-cols-3 gap-2 mb-2">
+        {additionalImagePreviews.map((preview, idx) => (
+          <div key={idx} className="relative">
+            <img src={preview} alt={`صورة ${idx + 2}`} className="w-full h-20 object-cover rounded-lg" />
+            <button type="button" onClick={() => { setAdditionalImages(prev => prev.filter((_, i) => i !== idx)); setAdditionalImagePreviews(prev => prev.filter((_, i) => i !== idx)); }} className="absolute top-1 left-1 bg-red-600 rounded-full p-0.5" data-testid={`button-remove-additional-image-${idx}`}><X className="w-3 h-3 text-white" /></button>
+          </div>
+        ))}
+      </div>
+    )}
+    {(additionalImages.length + (selectedImage ? 1 : 0)) < 5 && (
+      <button type="button" onClick={() => additionalFileInputRef.current?.click()} className="w-full border border-dashed border-primary/30 rounded-lg py-2 text-gray-400 text-sm hover:border-primary/60 transition-colors flex items-center justify-center gap-2" data-testid="button-add-more-images">
+        <ImageIcon className="w-4 h-4" />
+        إضافة صور أخرى
+      </button>
+    )}
+  </div>
+</div>
 
  <div>
  <Label htmlFor="coffeeStrength" className="text-gray-300">قوة القهوة</Label>
@@ -1634,6 +1721,48 @@ export default function EmployeeMenuManagement() {
  </div>
  </div>
  </div>
+
+{/* Additional Images - Edit Form */}
+<div>
+  <Label className="text-gray-300">صور إضافية (حتى 5 إجمالاً)</Label>
+  <div className="mt-2">
+    <input
+      ref={editAdditionalFileInputRef}
+      type="file"
+      accept="image/*"
+      multiple
+      onChange={(e) => handleAdditionalImageSelect(e, true)}
+      className="hidden"
+      data-testid="input-edit-additional-images"
+    />
+    {existingImages.length > 0 && (
+      <div className="grid grid-cols-3 gap-2 mb-2">
+        {existingImages.map((url, idx) => (
+          <div key={idx} className="relative">
+            <img src={url} alt={`صورة ${idx + 2}`} className="w-full h-20 object-cover rounded-lg" />
+            <button type="button" onClick={() => setExistingImages(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 left-1 bg-red-600 rounded-full p-0.5" data-testid={`button-remove-existing-image-${idx}`}><X className="w-3 h-3 text-white" /></button>
+          </div>
+        ))}
+      </div>
+    )}
+    {editAdditionalImagePreviews.length > 0 && (
+      <div className="grid grid-cols-3 gap-2 mb-2">
+        {editAdditionalImagePreviews.map((preview, idx) => (
+          <div key={idx} className="relative">
+            <img src={preview} alt={`جديدة ${idx + 1}`} className="w-full h-20 object-cover rounded-lg" />
+            <button type="button" onClick={() => { setEditAdditionalImages(prev => prev.filter((_, i) => i !== idx)); setEditAdditionalImagePreviews(prev => prev.filter((_, i) => i !== idx)); }} className="absolute top-1 left-1 bg-red-600 rounded-full p-0.5" data-testid={`button-remove-edit-additional-image-${idx}`}><X className="w-3 h-3 text-white" /></button>
+          </div>
+        ))}
+      </div>
+    )}
+    {(editAdditionalImages.length + existingImages.length + (editSelectedImage || editingItem?.imageUrl ? 1 : 0)) < 5 && (
+      <button type="button" onClick={() => editAdditionalFileInputRef.current?.click()} className="w-full border border-dashed border-primary/30 rounded-lg py-2 text-gray-400 text-sm hover:border-primary/60 transition-colors flex items-center justify-center gap-2" data-testid="button-edit-add-more-images">
+        <ImageIcon className="w-4 h-4" />
+        إضافة صور أخرى
+      </button>
+    )}
+  </div>
+</div>
 
  {/* Editable Sizes */}
  <div className="space-y-2">

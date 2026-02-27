@@ -4355,6 +4355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })),
         requiresRecipe: (validatedData as any).requiresRecipe !== undefined ? (validatedData as any).requiresRecipe : 1,
         hasRecipe: (validatedData as any).hasRecipe !== undefined ? (validatedData as any).hasRecipe : 0,
+        images: (validatedData as any).images || [],
         costOfGoods: 0,
         profitMargin: 0,
         updatedAt: new Date(),

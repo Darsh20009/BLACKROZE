@@ -17,19 +17,21 @@ import { useToast } from "@/hooks/use-toast";
 import { Coffee, ShoppingBag, User, Phone, Trash2, Plus, Minus, ArrowRight, Check, Scan, Search, X, Gift, Printer, MonitorSmartphone, Settings, Wifi, WifiOff, FileText, Store, Truck, MapPin, Wallet, CreditCard, Bell, BellOff } from "lucide-react";
 import QRScanner from "@/components/qr-scanner";
 import BarcodeScanner from "@/components/barcode-scanner";
+import DrinkCustomizationDialog, { type DrinkCustomization } from "@/components/drink-customization-dialog";
 import { TableOccupancyAlerts } from "@/components/table-occupancy-alerts";
 import { printTaxInvoice, printSimpleReceipt, printCustomerPickupReceipt, printCashierReceipt, printAllReceipts } from "@/lib/print-utils";
 import type { Employee, CoffeeItem, PaymentMethod, LoyaltyCard } from "@shared/schema";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface OrderItem {
- coffeeItem: CoffeeItem;
- quantity: number;
- customization?: {
-   selectedSize?: string;
-   addons?: any[];
-   totalAddonsPrice?: number;
- };
+  itemKey: string;
+  coffeeItem: CoffeeItem;
+  quantity: number;
+  customization?: {
+    selectedSize?: string;
+    addons?: any[];
+    totalAddonsPrice?: number;
+  };
 }
 
 interface WhatsAppMessageData {
@@ -94,8 +96,9 @@ export default function EmployeeCashier() {
  const [pointsToRedeem, setPointsToRedeem] = useState(0);
  const [usePointsDiscount, setUsePointsDiscount] = useState(false);
  const [orderType, setOrderType] = useState<'dine-in' | 'pickup' | 'delivery'>('pickup');
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
- const [soundEnabled, setSoundEnabled] = useState(true);
+   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [customizingItem, setCustomizingItem] = useState<CoffeeItem | null>(null);
  const [newOrdersCount, setNewOrdersCount] = useState(0);
  const previousOnlineOrderIdsRef = useRef<Set<string>>(new Set());
  const hasInitializedRef = useRef(false);
@@ -501,38 +504,37 @@ export default function EmployeeCashier() {
  setOrderType("pickup");
  };
 
- const addToOrder = (coffeeItem: CoffeeItem) => {
-   // Since the employee-cashier page doesn't seem to have a DrinkCustomizationDialog state defined like pos-system,
-   // we should ideally add it. But for now, let's fix the calculation logic if it's there.
-   // Looking at the code, it seems to add directly. 
-   const existingItem = orderItems.find(item => item.coffeeItem.id === coffeeItem.id);
-   
-   if (existingItem) {
-     setOrderItems(orderItems.map(item =>
-       item.coffeeItem.id === coffeeItem.id
-         ? { ...item, quantity: item.quantity + 1 }
-         : item
-     ));
-   } else {
-     setOrderItems([...orderItems, { coffeeItem, quantity: 1 }]);
-   }
- };
+  const handleConfirmCashierCustomization = (customization: DrinkCustomization, quantity: number) => {
+    if (!customizingItem) return;
+    const itemKey = `${customizingItem.id}-${Date.now()}`;
+    setOrderItems(prev => [...prev, {
+      itemKey,
+      coffeeItem: customizingItem,
+      quantity,
+      customization: {
+        selectedSize: customization.selectedSize,
+        addons: customization.selectedAddons || [],
+        totalAddonsPrice: customization.totalAddonsPrice || 0,
+      }
+    }]);
+    setCustomizingItem(null);
+  };
 
- const updateQuantity = (coffeeItemId: string, newQuantity: number) => {
-   if (newQuantity <= 0) {
-     setOrderItems(orderItems.filter(item => item.coffeeItem.id !== coffeeItemId));
-   } else {
-     setOrderItems(orderItems.map(item =>
-       item.coffeeItem.id === coffeeItemId
-         ? { ...item, quantity: newQuantity }
-         : item
-     ));
-   }
- };
+  const updateQuantity = (itemKey: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      setOrderItems(orderItems.filter(item => item.itemKey !== itemKey));
+    } else {
+      setOrderItems(orderItems.map(item =>
+        item.itemKey === itemKey
+          ? { ...item, quantity: newQuantity }
+          : item
+      ));
+    }
+  };
 
- const removeFromOrder = (coffeeItemId: string) => {
-   setOrderItems(orderItems.filter(item => item.coffeeItem.id !== coffeeItemId));
- };
+  const removeFromOrder = (itemKey: string) => {
+    setOrderItems(orderItems.filter(item => item.itemKey !== itemKey));
+  };
 
  const calculateSubtotal = () => {
    return orderItems.reduce((sum, item) => {
@@ -1117,12 +1119,12 @@ export default function EmployeeCashier() {
  </Badge>
  <Button
  size="sm"
- onClick={() => addToOrder(item)}
+ onClick={() => setCustomizingItem(item)}
  className="bg-green-600 hover:bg-green-700 text-white"
  data-testid={`button-add-${item.id}`}
  >
  <Plus className="w-4 h-4 ml-1" />
- إضافة 
+ إضافة
  </Button>
  </div>
  </CardContent>
@@ -1171,25 +1173,42 @@ export default function EmployeeCashier() {
  ) : (
  <>
  <div className="space-y-3 max-h-64 overflow-y-auto">
- {orderItems.map((item) => (
- <div key={item.coffeeItem.id} className="bg-[#1a1410] rounded-lg p-3">
+ {orderItems.map((item) => {
+   const addonsPrice = item.customization?.totalAddonsPrice || 0;
+   let basePrice = Number(item.coffeeItem.price);
+   if (item.customization?.selectedSize && item.coffeeItem.availableSizes) {
+     const sz = item.coffeeItem.availableSizes.find(s => s.nameAr === item.customization?.selectedSize);
+     if (sz) basePrice = Number(sz.price);
+   }
+   const unitPrice = basePrice + addonsPrice;
+   const addons: any[] = item.customization?.addons || [];
+   return (
+ <div key={item.itemKey} className="bg-[#1a1410] rounded-lg p-3">
  <div className="flex justify-between items-start mb-2">
  <div className="text-right flex-1">
  <div className="flex items-center gap-2">
- <h4 className="text-accent font-medium text-sm" data-testid={`text-order-item-${item.coffeeItem.id}`}>
+ <h4 className="text-accent font-medium text-sm" data-testid={`text-order-item-${item.itemKey}`}>
  {item.coffeeItem.nameAr}
+ {item.customization?.selectedSize && (
+   <span className="text-gray-400 text-xs mr-1">({item.customization.selectedSize})</span>
+ )}
  </h4>
  </div>
- <p className="text-gray-400 text-xs">
- {Number(item.coffeeItem.price).toFixed(2)} ريال
+ {addons.length > 0 && (
+   <div className="text-xs text-amber-400 mt-0.5">
+     {addons.map((a: any) => `+ ${a.nameAr}${Number(a.price) > 0 ? ` (+${Number(a.price).toFixed(2)})` : ''}`).join(' | ')}
+   </div>
+ )}
+ <p className="text-gray-400 text-xs mt-0.5">
+ {unitPrice.toFixed(2)} ريال/وحدة
  </p>
  </div>
  <Button
  size="sm"
  variant="ghost"
- onClick={() => removeFromOrder(item.coffeeItem.id)}
+ onClick={() => removeFromOrder(item.itemKey)}
  className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
- data-testid={`button-remove-${item.coffeeItem.id}`}
+ data-testid={`button-remove-${item.itemKey}`}
  >
  <Trash2 className="w-4 h-4" />
  </Button>
@@ -1199,31 +1218,32 @@ export default function EmployeeCashier() {
  <Button
  size="sm"
  variant="outline"
- onClick={() => updateQuantity(item.coffeeItem.id, item.quantity - 1)}
+ onClick={() => updateQuantity(item.itemKey, item.quantity - 1)}
  className="h-7 w-7 p-0 border-primary/30"
- data-testid={`button-decrease-${item.coffeeItem.id}`}
+ data-testid={`button-decrease-${item.itemKey}`}
  >
  <Minus className="w-3 h-3" />
  </Button>
- <span className="text-white font-bold min-w-[30px] text-center" data-testid={`text-quantity-${item.coffeeItem.id}`}>
+ <span className="text-white font-bold min-w-[30px] text-center" data-testid={`text-quantity-${item.itemKey}`}>
  {item.quantity}
  </span>
  <Button
  size="sm"
  variant="outline"
- onClick={() => updateQuantity(item.coffeeItem.id, item.quantity + 1)}
+ onClick={() => updateQuantity(item.itemKey, item.quantity + 1)}
  className="h-7 w-7 p-0 border-primary/30"
- data-testid={`button-increase-${item.coffeeItem.id}`}
+ data-testid={`button-increase-${item.itemKey}`}
  >
  <Plus className="w-3 h-3" />
  </Button>
  </div>
  <span className="font-bold text-accent">
- {(Number(item.coffeeItem.price) * item.quantity).toFixed(2)} ريال
+ {(unitPrice * item.quantity).toFixed(2)} ريال
  </span>
  </div>
  </div>
- ))}
+ );
+ })}
  </div>
 
  <Separator className="bg-background0/20" />
@@ -1677,6 +1697,13 @@ export default function EmployeeCashier() {
  </div>
 
  <MobileBottomNav employeeRole={employee?.role} />
+
+ <DrinkCustomizationDialog
+   coffeeItem={customizingItem}
+   open={customizingItem !== null}
+   onClose={() => setCustomizingItem(null)}
+   onConfirm={handleConfirmCashierCustomization}
+ />
  </div>
  );
 }
