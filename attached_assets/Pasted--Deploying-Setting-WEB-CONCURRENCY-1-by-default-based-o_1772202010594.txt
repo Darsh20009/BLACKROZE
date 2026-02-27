@@ -1,0 +1,214 @@
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:07:32 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ SMTP credentials not configured. Email service disabled.
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+⚠️ Email service not configured
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.
+==> Application exited early
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:07:55 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ SMTP credentials not configured. Email service disabled.
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+⚠️ Email service not configured
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:08:29 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+⚠️ SMTP credentials not configured. Email service disabled.
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+⚠️ Email service not configured
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:08:31 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ SMTP credentials not configured. Email service disabled.
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+⚠️ Email service not configured
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+✅ System re-initialized successfully with clean state.
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:08:54 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ SMTP credentials not configured. Email service disabled.
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+⚠️ Email service not configured
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:09:30 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ SMTP credentials not configured. Email service disabled.
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+⚠️ Email service not configured
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:10:16 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ SMTP credentials not configured. Email service disabled.
+⚠️ Email service not configured
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:11:30 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ Email service not configured
+⚠️ SMTP credentials not configured. Email service disabled.
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:13:19 PM [express] serving on port 10000
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ SMTP credentials not configured. Email service disabled.
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+⚠️ Email service not configured
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.
+==> Running 'npm run start'
+> blackrose-cafe@2.0.0 start
+> node dist/index.js
+🌱 Starting clean re-initialization...
+🔌 Attempting MongoDB connection (Attempt 1)...
+[PUSH] VAPID keys not configured. Web Push notifications disabled.
+✅ WebSocket server initialized at /ws/orders
+2:16:26 PM [express] serving on port 10000
+⚠️ SMTP credentials not configured. Email service disabled.
+   Required environment variables: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT
+❌ Mail service failed verification on startup. Check credentials and connectivity.
+📧 Performing startup email connection test...
+📧 Mail service initializing [PRODUCTION]:
+   SMTP_HOST: ✅ pro.eu.turbo-smtp.com
+   SMTP_PORT: 587
+   SMTP_USER: ❌
+   SMTP_PASS: ❌
+⚠️ Email service not configured
+✅ MongoDB connected successfully
+🌱 Starting clean re-initialization...
+✅ System re-initialized successfully with clean state.

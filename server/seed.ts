@@ -78,9 +78,3 @@ export async function runSeeds() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runSeeds().then(() => process.exit(0)).catch(err => {
-    console.error(err);
-    process.exit(1);
-  });
-}
