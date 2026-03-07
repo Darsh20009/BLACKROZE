@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Shield, Bell, Palette, Database, Plus, Store, Utensils, Coffee, AlertTriangle, Layout, ShieldAlert, Users, Loader2, Trash2, FolderTree, Flame, Snowflake, Star, Cake, Sparkles, GripVertical, Pencil, CreditCard, Wifi, WifiOff, Eye, EyeOff, ExternalLink, CheckCircle, XCircle, Banknote, Smartphone, Gift, Percent, Tag, Ticket } from 'lucide-react';
+import { Save, Shield, Bell, Palette, Database, Plus, Store, Utensils, Coffee, AlertTriangle, Layout, ShieldAlert, Users, Loader2, Trash2, FolderTree, Flame, Snowflake, Star, Cake, Sparkles, GripVertical, Pencil, CreditCard, Wifi, WifiOff, Eye, EyeOff, ExternalLink, CheckCircle, XCircle, Banknote, Smartphone, Gift, Percent, Tag, Ticket, MonitorSmartphone, ChevronDown, ChevronUp, Download, Globe } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -76,6 +76,7 @@ export default function AdminSettings() {
   const [geideaApiPassword, setGeideaApiPassword] = useState("");
   const [geideaBaseUrl, setGeideaBaseUrl] = useState("https://api.merchant.geidea.net");
   const [showSecrets, setShowSecrets] = useState(false);
+  const [showAppGuide, setShowAppGuide] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -1257,6 +1258,48 @@ export default function AdminSettings() {
                     <span>بيانات الاعتماد محفوظة</span>
                   </div>
                 )}
+
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800 text-xs space-y-2">
+                  <p className="font-bold text-amber-800 dark:text-amber-300">روابط جيديا — أضفها في لوحة تحكم التاجر:</p>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-amber-700 dark:text-amber-400 block">Callback URL (رابط الإشعار الفوري – Server-to-Server)</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        readOnly
+                        value={`${window.location.origin}/api/payments/geidea/webhook`}
+                        className="text-[11px] font-mono bg-white dark:bg-black"
+                        data-testid="input-geidea-webhook-url"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/api/payments/geidea/webhook`); toast({ title: 'تم النسخ' }); }}
+                        data-testid="button-copy-geidea-webhook"
+                      >
+                        نسخ
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-amber-700 dark:text-amber-400 block">Return URL (رابط إعادة التوجيه بعد الدفع)</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        readOnly
+                        value={`${window.location.origin}/checkout?payment=callback`}
+                        className="text-[11px] font-mono bg-white dark:bg-black"
+                        data-testid="input-geidea-return-url"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/checkout?payment=callback`); toast({ title: 'تم النسخ' }); }}
+                        data-testid="button-copy-geidea-return-url"
+                      >
+                        نسخ
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1889,6 +1932,115 @@ export default function AdminSettings() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* App Publishing Guide Section */}
+      <div className="mt-8">
+        <button
+          data-testid="button-app-guide-toggle"
+          onClick={() => setShowAppGuide(v => !v)}
+          className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 hover:border-indigo-400 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/40 dark:hover:to-purple-900/40 transition-all duration-200 group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/60 transition-colors">
+              <MonitorSmartphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="text-right">
+              <p className="font-bold text-base text-gray-900 dark:text-gray-100">دليل نشر التطبيق</p>
+              <p className="text-xs text-muted-foreground">نشر الموقع كتطبيق على App Store و Google Play</p>
+            </div>
+          </div>
+          {showAppGuide
+            ? <ChevronUp className="w-5 h-5 text-indigo-500" />
+            : <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-indigo-500 transition-colors" />
+          }
+        </button>
+
+        {showAppGuide && (
+          <div className="mt-4 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-gray-900 space-y-6">
+            <div className="space-y-2">
+              <h3 className="font-bold text-lg text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                نشر موقع بلاك روز كتطبيق
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                يمكنك تحويل الموقع إلى تطبيق احترافي على متجري App Store و Google Play باستخدام PWA Builder أو Capacitor.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                    <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <p className="font-bold text-sm text-blue-800 dark:text-blue-200">Google Play</p>
+                </div>
+                <ol className="text-xs text-blue-700 dark:text-blue-300 space-y-1.5 list-decimal list-inside">
+                  <li>افتح <span className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded">pwabuilder.com</span></li>
+                  <li>أدخل رابط الموقع وانقر Analyze</li>
+                  <li>اختر Android Package ثم نزّل الملف</li>
+                  <li>ارفعه على Google Play Console</li>
+                </ol>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs border-blue-300 text-blue-700"
+                  onClick={() => window.open('https://www.pwabuilder.com/', '_blank')}
+                  data-testid="button-pwa-builder-link"
+                >
+                  <ExternalLink className="w-3 h-3 ml-1" />
+                  فتح PWA Builder
+                </Button>
+              </div>
+
+              <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                    <MonitorSmartphone className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <p className="font-bold text-sm text-gray-800 dark:text-gray-200">App Store (iOS)</p>
+                </div>
+                <ol className="text-xs text-gray-600 dark:text-gray-400 space-y-1.5 list-decimal list-inside">
+                  <li>افتح <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">pwabuilder.com</span></li>
+                  <li>أدخل رابط الموقع وانقر Analyze</li>
+                  <li>اختر iOS Package</li>
+                  <li>ارفعه عبر Xcode على App Store Connect</li>
+                </ol>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => window.open('https://appstoreconnect.apple.com/', '_blank')}
+                  data-testid="button-appstore-connect-link"
+                >
+                  <ExternalLink className="w-3 h-3 ml-1" />
+                  App Store Connect
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 text-xs space-y-2">
+              <p className="font-bold text-amber-800 dark:text-amber-300">رابط موقعك الحالي للنشر:</p>
+              <div className="flex items-center gap-1">
+                <Input
+                  readOnly
+                  value={window.location.origin}
+                  className="text-xs font-mono bg-white dark:bg-black"
+                  data-testid="input-site-url"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { navigator.clipboard.writeText(window.location.origin); toast({ title: 'تم نسخ الرابط' }); }}
+                  data-testid="button-copy-site-url"
+                >
+                  نسخ
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer Info */}

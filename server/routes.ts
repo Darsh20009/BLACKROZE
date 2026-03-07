@@ -5255,12 +5255,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
 
-          // Calculate points (10 points per drink)
+          // Calculate points using pointsPerDrink from business config, fallback to 10
           const itemsToProcess = Array.isArray(processedItems) ? processedItems : 
                                 (Array.isArray(items) ? items : []);
           
+          let pointsPerDrinkCfg = 10;
+          try {
+            const bizCfg = await BusinessConfigModel.findOne({ tenantId: tenantId }).lean();
+            if ((bizCfg as any)?.loyaltyConfig?.pointsPerDrink !== undefined) {
+              pointsPerDrinkCfg = Number((bizCfg as any).loyaltyConfig.pointsPerDrink) || 10;
+            }
+          } catch (e) {
+            console.warn("[LOYALTY] Could not read business config for pointsPerDrink, using default 10");
+          }
+
           const drinksCount = itemsToProcess.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
-          const pointsToAdd = drinksCount * 10; // 10 points per drink
+          const pointsToAdd = drinksCount * pointsPerDrinkCfg;
 
           console.log(`[LOYALTY] Points to add: ${pointsToAdd}, Drinks: ${drinksCount}, Current points: ${loyaltyCard.points || 0}`);
 

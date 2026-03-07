@@ -68,26 +68,52 @@ export default function CheckoutPage() {
     }
   }, [customer]);
 
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('payment') === 'callback') {
+    const isPaymentCallback = urlParams.get('payment') === 'callback';
+
+    const geideaResponseCode = urlParams.get('responseCode') || urlParams.get('Response') || urlParams.get('response_code');
+    const geideaOrderId = urlParams.get('orderId') || urlParams.get('order_id');
+    const geideaStatus = urlParams.get('status') || urlParams.get('Status');
+    const geideaSignature = urlParams.get('signature') || urlParams.get('Signature');
+    const geideaAmount = urlParams.get('amount') || urlParams.get('Amount') || urlParams.get('orderAmount');
+    const geideaCurrency = urlParams.get('currency') || urlParams.get('Currency');
+    const geideaMerchantRefId = urlParams.get('merchantReferenceId') || urlParams.get('MerchantReferenceId');
+    const hasGeideaParams = !!(geideaResponseCode || geideaOrderId || geideaStatus);
+
+    if (isPaymentCallback || hasGeideaParams) {
       const storedOrderData = sessionStorage.getItem('pendingOrderData');
       const storedSessionId = sessionStorage.getItem('paymentSessionId');
       const storedProvider = sessionStorage.getItem('paymentProvider');
 
-      if (storedOrderData && storedSessionId) {
+      if (storedOrderData && (storedSessionId || hasGeideaParams)) {
+        setIsVerifyingPayment(true);
         (async () => {
           try {
-            const verifyRes = await apiRequest("POST", "/api/payments/verify", {
+            const verifyPayload: Record<string, any> = {
               sessionId: storedSessionId,
               provider: storedProvider,
-            });
+            };
+
+            if (hasGeideaParams) {
+              if (geideaResponseCode) verifyPayload.geideaResponseCode = geideaResponseCode;
+              if (geideaOrderId) verifyPayload.geideaOrderId = geideaOrderId;
+              if (geideaStatus) verifyPayload.geideaStatus = geideaStatus;
+              if (geideaSignature) verifyPayload.geideaSignature = geideaSignature;
+              if (geideaAmount) verifyPayload.geideaAmount = geideaAmount;
+              if (geideaCurrency) verifyPayload.geideaCurrency = geideaCurrency;
+              if (geideaMerchantRefId) verifyPayload.geideaMerchantRefId = geideaMerchantRefId;
+            }
+
+            const verifyRes = await apiRequest("POST", "/api/payments/verify", verifyPayload);
             const verifyData = await verifyRes.json();
 
             if (verifyData.verified) {
               const orderData = JSON.parse(storedOrderData);
               orderData.paymentStatus = 'paid';
-              orderData.transactionId = verifyData.transactionId;
+              orderData.transactionId = verifyData.transactionId || geideaOrderId;
               sessionStorage.removeItem('pendingOrderData');
               sessionStorage.removeItem('paymentSessionId');
               sessionStorage.removeItem('paymentProvider');
@@ -100,6 +126,8 @@ export default function CheckoutPage() {
             }
           } catch {
             toast({ variant: "destructive", title: t("checkout.error"), description: t("checkout.payment_status_check_failed") });
+          } finally {
+            setIsVerifyingPayment(false);
           }
         })();
       }
@@ -165,10 +193,15 @@ export default function CheckoutPage() {
 
   const [showCouponSuggestions, setShowCouponSuggestions] = useState(false);
 
-  const filteredCoupons = coupons.filter(c => 
-    c.isActive && 
-    c.code.toLowerCase().includes(discountCode.toLowerCase())
-  );
+  const safeCoupons = Array.isArray(coupons) ? coupons : [];
+  const filteredCoupons = safeCoupons.filter(c => {
+    try {
+      return c && c.isActive && c.code && typeof c.code === 'string' &&
+        c.code.toLowerCase().includes(discountCode.toLowerCase());
+    } catch {
+      return false;
+    }
+  });
 
   const handleValidateDiscount = async (codeOverride?: string) => {
     const codeToUse = (codeOverride || discountCode.trim()).toUpperCase();

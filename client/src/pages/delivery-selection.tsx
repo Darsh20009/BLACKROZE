@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useCartStore } from '@/lib/cart-store';
 import { useToast } from '@/hooks/use-toast';
-import { Store, MapPin, ArrowRight, Phone, Map, Coffee, AlertCircle, Loader2, Navigation, Clock, Check, Car, Bookmark, Palette } from 'lucide-react';
+import { Store, MapPin, ArrowRight, Phone, Map, Coffee, AlertCircle, Loader2, Navigation, Clock, Check, Car, Bookmark, Palette, ShoppingBag } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
 
@@ -53,6 +53,8 @@ export default function DeliverySelectionPage() {
   }, [t]);
   const [dineIn, setDineIn] = useState<boolean>(false);
   const [carPickup, setCarPickup] = useState<boolean>(false);
+  const [scheduledPickup, setScheduledPickup] = useState<boolean>(false);
+  const [scheduledPickupTime, setScheduledPickupTime] = useState<string>('');
   const [saveCarInfo, setSaveCarInfo] = useState<boolean>(false);
   const [carInfo, setCarInfo] = useState(() => {
     try {
@@ -77,6 +79,21 @@ export default function DeliverySelectionPage() {
   const [arrivalTime, setArrivalTime] = useState<string>('');
   const [loadingTables, setLoadingTables] = useState(false);
   const [bookedTable, setBookedTable] = useState<{ tableNumber: string; bookingId: string } | null>(null);
+
+  const calculateScheduledPrepTime = (pickupTime: string): { prepStartTime: string; holdMinutes: number } | null => {
+    if (!pickupTime) return null;
+    try {
+      const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      const holdMinutes = Math.max(10, 10 + (totalItems - 2) * 2);
+      const [hours, minutes] = pickupTime.split(':').map(Number);
+      const arrivalDate = new Date();
+      arrivalDate.setHours(hours, minutes, 0, 0);
+      const prepDate = new Date(arrivalDate.getTime() - holdMinutes * 60 * 1000);
+      const prepHours = prepDate.getHours().toString().padStart(2, '0');
+      const prepMins = prepDate.getMinutes().toString().padStart(2, '0');
+      return { prepStartTime: `${prepHours}:${prepMins}`, holdMinutes };
+    } catch { return null; }
+  };
 
   // Get user location on mount
   useEffect(() => {
@@ -316,6 +333,15 @@ export default function DeliverySelectionPage() {
       }
     }
 
+    if (scheduledPickup && !scheduledPickupTime) {
+      toast({
+        title: t("product.error"),
+        description: "يرجى تحديد وقت وصولك المتوقع",
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Validate dine-in reservation if selected
     if (dineIn) {
       // Check if table is selected OR already booked
@@ -341,7 +367,7 @@ export default function DeliverySelectionPage() {
     }
 
     setDeliveryInfo({
-      type: carPickup ? 'car-pickup' : (dineIn ? 'dine-in' : 'pickup'),
+      type: carPickup ? 'car-pickup' : (dineIn ? 'dine-in' : scheduledPickup ? 'scheduled-pickup' : 'pickup'),
       branchId: branch.id,
       branchName: branch.nameAr,
       branchAddress: branch.address,
@@ -358,6 +384,7 @@ export default function DeliverySelectionPage() {
       tableId: selectedTableId || undefined,
       tableNumber: bookedTable?.tableNumber || undefined,
       arrivalTime: arrivalTime || undefined,
+      scheduledPickupTime: scheduledPickup ? scheduledPickupTime : undefined,
       deliveryFee: 0,
     });
     
@@ -783,6 +810,63 @@ export default function DeliverySelectionPage() {
                                     </div>
                                   </div>
                                 )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Scheduled Pickup Option */}
+                        <Card
+                          className={`cursor-pointer transition-all duration-200 ${scheduledPickup ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/30' : 'bg-accent/5 hover-elevate'}`}
+                          onClick={() => { setScheduledPickup(!scheduledPickup); if (!scheduledPickup) { setCarPickup(false); setDineIn(false); } }}
+                          data-testid="card-scheduled-pickup"
+                        >
+                          <CardContent className="p-4 space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className={`p-3 rounded-xl shrink-0 transition-colors ${scheduledPickup ? 'bg-blue-500/20' : 'bg-muted'}`}>
+                                  <ShoppingBag className={`w-6 h-6 ${scheduledPickup ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                                </div>
+                                <div className="flex-1">
+                                  <p className={`text-base font-bold ${scheduledPickup ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                                    استلام من الفرع (مجدول)
+                                  </p>
+                                  <p className="text-sm text-muted-foreground mt-0.5">
+                                    حدد وقت وصولك وسيبدأ تحضير طلبك قبل وصولك بوقت كافٍ
+                                  </p>
+                                </div>
+                              </div>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${scheduledPickup ? 'border-blue-500 bg-blue-500' : 'border-muted-foreground/30'}`}>
+                                {scheduledPickup && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                            </div>
+
+                            {scheduledPickup && (
+                              <div className="space-y-4 pt-4 border-t border-blue-500/20" onClick={(e) => e.stopPropagation()}>
+                                <div className="space-y-2">
+                                  <Label htmlFor="scheduled-pickup-time" className="text-sm font-semibold flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-blue-500" />
+                                    وقت وصولك المتوقع
+                                  </Label>
+                                  <Input
+                                    id="scheduled-pickup-time"
+                                    type="time"
+                                    value={scheduledPickupTime}
+                                    onChange={(e) => setScheduledPickupTime(e.target.value)}
+                                    data-testid="input-scheduled-pickup-time"
+                                    className="border-blue-500/30 focus:border-blue-500"
+                                  />
+                                </div>
+                                {scheduledPickupTime && (() => {
+                                  const prepInfo = calculateScheduledPrepTime(scheduledPickupTime);
+                                  return prepInfo ? (
+                                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                      <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold">
+                                        سيبدأ التحضير الساعة {prepInfo.prepStartTime} (قبل {prepInfo.holdMinutes} دقيقة من وصولك)
+                                      </p>
+                                    </div>
+                                  ) : null;
+                                })()}
                               </div>
                             )}
                           </CardContent>
