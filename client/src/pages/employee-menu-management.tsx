@@ -19,6 +19,7 @@ import { nanoid } from "nanoid";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { CoffeeItem, Employee, Ingredient, RawItem, RecipeItem, Branch } from "@shared/schema";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { ImageLibraryModal } from "@/components/ImageLibraryModal";
 
 interface RecipeIngredient {
   rawItemId: string;
@@ -56,6 +57,10 @@ export default function EmployeeMenuManagement() {
   const [editAdditionalImages, setEditAdditionalImages] = useState<File[]>([]);
   const [editAdditionalImagePreviews, setEditAdditionalImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [showImageLibrary, setShowImageLibrary] = useState(false);
+  const [showEditImageLibrary, setShowEditImageLibrary] = useState(false);
+  const [librarySelectedUrl, setLibrarySelectedUrl] = useState<string | null>(null);
+  const [editLibrarySelectedUrl, setEditLibrarySelectedUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const additionalFileInputRef = useRef<HTMLInputElement>(null);
@@ -469,15 +474,15 @@ export default function EmployeeMenuManagement() {
      return;
    }
    
-   let imageUrl: string | undefined = undefined;
-   let allImages: string[] = [];
+   let imageUrl: string | undefined = librarySelectedUrl || undefined;
+   let allImages: string[] = imageUrl ? [imageUrl] : [];
 
    if (selectedImage) {
      setIsUploadingImage(true);
      const uploadedUrl = await uploadImage(selectedImage);
      if (uploadedUrl) {
        imageUrl = uploadedUrl;
-       allImages.push(uploadedUrl);
+       allImages = [uploadedUrl];
      } else {
        setIsUploadingImage(false);
        toast({
@@ -652,7 +657,7 @@ export default function EmployeeMenuManagement() {
  
  const formData = new FormData(e.currentTarget);
  
- let imageUrl: string | undefined = editingItem.imageUrl;
+ let imageUrl: string | undefined = editLibrarySelectedUrl || editingItem.imageUrl;
 let allImages: string[] = [...existingImages];
 
 if (editSelectedImage) {
@@ -810,6 +815,7 @@ setIsUploadingImage(false);
     setImagePreview(null);
     setAdditionalImages([]);
     setAdditionalImagePreviews([]);
+    setLibrarySelectedUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (additionalFileInputRef.current) additionalFileInputRef.current.value = '';
   };
@@ -820,6 +826,7 @@ setIsUploadingImage(false);
     setEditAdditionalImages([]);
     setEditAdditionalImagePreviews([]);
     setExistingImages([]);
+    setEditLibrarySelectedUrl(null);
     if (editFileInputRef.current) editFileInputRef.current.value = '';
     if (editAdditionalFileInputRef.current) editAdditionalFileInputRef.current.value = '';
   };
@@ -1055,7 +1062,7 @@ setIsUploadingImage(false);
  </div>
  <div>
  <Label className="text-gray-300">صورة المشروب</Label>
- <div className="mt-2">
+ <div className="mt-2 space-y-2">
    <input
      ref={fileInputRef}
      type="file"
@@ -1075,6 +1082,13 @@ setIsUploadingImage(false);
            <span className="text-white text-sm">انقر لتغيير الصورة</span>
          </div>
        </div>
+     ) : librarySelectedUrl ? (
+       <div className="relative">
+         <img src={librarySelectedUrl} alt="Library" className="w-full h-32 object-cover rounded-lg" />
+         <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg opacity-0 hover:opacity-100 transition-opacity">
+           <span className="text-white text-sm">انقر لتغيير الصورة</span>
+         </div>
+       </div>
      ) : (
        <div className="py-4">
          <Upload className="w-8 h-8 text-accent/50 mx-auto mb-2" />
@@ -1083,6 +1097,17 @@ setIsUploadingImage(false);
        </div>
      )}
    </div>
+   <Button
+     type="button"
+     variant="outline"
+     size="sm"
+     className="w-full border-primary/30 text-gray-300"
+     onClick={() => setShowImageLibrary(true)}
+     data-testid="button-open-image-library"
+   >
+     <ImageIcon className="w-4 h-4 ml-2" />
+     اختيار من مكتبة الصور
+   </Button>
  </div>
  </div>
  </div>
@@ -1690,7 +1715,7 @@ setIsUploadingImage(false);
  </div>
  <div>
  <Label className="text-gray-300">صورة المشروب</Label>
- <div className="mt-2">
+ <div className="mt-2 space-y-2">
    <input
      ref={editFileInputRef}
      type="file"
@@ -1710,6 +1735,13 @@ setIsUploadingImage(false);
            <span className="text-white text-sm">انقر لتغيير الصورة</span>
          </div>
        </div>
+     ) : editLibrarySelectedUrl ? (
+       <div className="relative">
+         <img src={editLibrarySelectedUrl} alt="Library" className="w-full h-32 object-cover rounded-lg" />
+         <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg opacity-0 hover:opacity-100 transition-opacity">
+           <span className="text-white text-sm">انقر لتغيير الصورة</span>
+         </div>
+       </div>
      ) : editingItem.imageUrl ? (
        <div className="relative">
          <img src={editingItem.imageUrl} alt="Current" className="w-full h-32 object-cover rounded-lg" />
@@ -1725,6 +1757,17 @@ setIsUploadingImage(false);
        </div>
      )}
    </div>
+   <Button
+     type="button"
+     variant="outline"
+     size="sm"
+     className="w-full border-primary/30 text-gray-300"
+     onClick={() => setShowEditImageLibrary(true)}
+     data-testid="button-open-edit-image-library"
+   >
+     <ImageIcon className="w-4 h-4 ml-2" />
+     اختيار من مكتبة الصور
+   </Button>
  </div>
  </div>
  </div>
@@ -2208,6 +2251,18 @@ setIsUploadingImage(false);
      </AlertDialogFooter>
    </AlertDialogContent>
  </AlertDialog>
+ <ImageLibraryModal
+   open={showImageLibrary}
+   onClose={() => setShowImageLibrary(false)}
+   onSelect={(url) => { setLibrarySelectedUrl(url); setImagePreview(null); setSelectedImage(null); }}
+   currentUrl={librarySelectedUrl || undefined}
+ />
+ <ImageLibraryModal
+   open={showEditImageLibrary}
+   onClose={() => setShowEditImageLibrary(false)}
+   onSelect={(url) => { setEditLibrarySelectedUrl(url); setEditImagePreview(null); setEditSelectedImage(null); }}
+   currentUrl={editLibrarySelectedUrl || editingItem?.imageUrl || undefined}
+ />
  <MobileBottomNav employeeRole={employee?.role} />
  </div>
  );

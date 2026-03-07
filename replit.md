@@ -44,6 +44,9 @@ The system also includes:
 - **Drink Grouping by First Arabic Word**: Menu groups drinks by the first Arabic word.
 - **Drink Addon System**: Drinks can be linked as addons with display in add-to-cart modal.
 - **Cart Display Enhancement**: Cart badges show linked drink names and icons.
+- **Kitchen Display Scheduled Orders**: KDS tracks `scheduledPickupTime` and `preparationHoldUntil` fields on orders; a 30-second tick re-evaluates which scheduled orders are on hold vs. due for preparation. Sound/toast alerts fire when prep time arrives; a dedicated "مجدول" tab separates held orders from active queue.
+- **Image Library Modal**: Shared drink image library (`ImageLibraryModal.tsx`) with `/api/drink-images` GET endpoint; managers can upload or reuse existing images when adding/editing menu items. Integrates into both Add and Edit dialogs in employee-menu-management.tsx.
+- **PIN Field in Loyalty Transfer**: Transfer points dialog in my-card.tsx now includes an optional PIN security field, matching CLUNY parity.
 
 ### Technical Stack
 

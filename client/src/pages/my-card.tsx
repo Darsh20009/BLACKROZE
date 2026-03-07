@@ -332,6 +332,16 @@ export default function MyCardPage() {
                 {t("card.available_balance", { points }) || `الرصيد المتاح: ${points} نقطة`}
               </p>
             </div>
+            <div className="space-y-2">
+              <Label className="font-ibm-arabic">{t("card.pin") || "الرقم السري (اختياري)"}</Label>
+              <Input
+                type="password"
+                placeholder="****"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                data-testid="input-pin"
+              />
+            </div>
             {transferPoints && Number(transferPoints) > 0 && (
               <Card className="bg-muted/50">
                 <CardContent className="p-3 text-center">

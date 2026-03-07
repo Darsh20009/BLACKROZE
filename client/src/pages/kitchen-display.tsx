@@ -31,7 +31,8 @@ import {
   ShoppingBag,
   Truck,
   Printer,
-  Navigation
+  Navigation,
+  Clock
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -69,7 +70,7 @@ interface Order {
   updatedAt?: string;
   tableNumber?: string;
   orderType?: string;
-  deliveryType?: 'pickup' | 'delivery' | 'dine-in' | 'car-pickup' | 'car_pickup';
+  deliveryType?: 'pickup' | 'delivery' | 'dine-in' | 'car-pickup' | 'car_pickup' | 'scheduled-pickup';
   carInfo?: {
     carType: string;
     carColor: string;
@@ -80,6 +81,8 @@ interface Order {
   carPlate?: string;
   plateNumber?: string;
   arrivalTime?: string;
+  scheduledPickupTime?: string;
+  preparationHoldUntil?: string;
   customerNotes?: string;
   branchId?: string;
 }
@@ -101,6 +104,8 @@ export default function KitchenDisplay() {
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState<string>("all");
   const previousOrderCountRef = useRef<number>(0);
   const previousReadyCountRef = useRef<number>(0);
+  const alertedPrepNowIds = useRef<Set<string>>(new Set());
+  const [tick, setTick] = useState(0);
 
   const { data: orders = [], isLoading, refetch } = useQuery<Order[]>({
     queryKey: ["/api/orders/kitchen"],
@@ -224,28 +229,48 @@ export default function KitchenDisplay() {
     updateTimeMutation.mutate({ id, additionalMinutes });
   };
 
+  // Tick every 30 seconds to re-evaluate scheduled orders
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const filterByDeliveryType = useCallback((orderList: Order[]) => {
     if (deliveryTypeFilter === "all") return orderList;
     return orderList.filter(o => {
       const type = o.deliveryType || o.orderType;
       if (deliveryTypeFilter === "dine-in") return type === "dine-in" || type === "dine_in";
-      if (deliveryTypeFilter === "pickup") return type === "pickup" || type === "takeaway";
+      if (deliveryTypeFilter === "pickup") return type === "pickup" || type === "takeaway" || type === "scheduled-pickup";
       if (deliveryTypeFilter === "delivery") return type === "delivery";
       if (deliveryTypeFilter === "car-pickup") return type === "car-pickup" || type === "car_pickup";
       return true;
     });
   }, [deliveryTypeFilter]);
 
-  const { pendingOrders, preparingOrders, readyOrders, delayedOrders, delayedCount } = useMemo(() => {
+  const { pendingOrders, preparingOrders, readyOrders, delayedOrders, delayedCount, scheduledOrders, needsPrepNowOrders } = useMemo(() => {
+    void tick;
     const filteredOrders = filterByDeliveryType(orders);
-    
-    const pending = filteredOrders.filter(o => 
-      o.status === "pending" || o.status === "payment_confirmed" || o.status === "confirmed"
+    const now = Date.now();
+
+    const isOnHold = (o: Order) =>
+      !!(o.scheduledPickupTime && o.preparationHoldUntil && new Date(o.preparationHoldUntil).getTime() > now);
+    const isPrepDue = (o: Order) =>
+      !!(o.scheduledPickupTime && o.preparationHoldUntil && new Date(o.preparationHoldUntil).getTime() <= now);
+
+    const scheduled = filteredOrders.filter(o =>
+      isOnHold(o) && (o.status === "pending" || o.status === "payment_confirmed" || o.status === "confirmed")
+    );
+    const needsPrepNow = filteredOrders.filter(o =>
+      isPrepDue(o) && (o.status === "pending" || o.status === "payment_confirmed" || o.status === "confirmed")
+    );
+
+    const pending = filteredOrders.filter(o =>
+      (o.status === "pending" || o.status === "payment_confirmed" || o.status === "confirmed") && !isOnHold(o)
     );
     const preparing = filteredOrders.filter(o => o.status === "in_progress");
     const ready = filteredOrders.filter(o => o.status === "ready" || o.status === "completed");
-    
-    const delayed = [...pending, ...preparing].filter(o => 
+
+    const delayed = [...pending, ...preparing].filter(o =>
       getElapsedMinutes(o.createdAt) >= DELAY_THRESHOLD_MINUTES
     );
 
@@ -255,21 +280,38 @@ export default function KitchenDisplay() {
       readyOrders: ready,
       delayedOrders: delayed,
       delayedCount: delayed.length,
+      scheduledOrders: scheduled,
+      needsPrepNowOrders: needsPrepNow,
     };
-  }, [orders, filterByDeliveryType]);
+  }, [orders, filterByDeliveryType, tick]);
+
+  // Alert when scheduled orders are due for preparation
+  useEffect(() => {
+    if (!soundEnabled || needsPrepNowOrders.length === 0) return;
+    const newAlerts = needsPrepNowOrders.filter(o => !alertedPrepNowIds.current.has(o.id));
+    if (newAlerts.length === 0) return;
+    newAlerts.forEach(o => alertedPrepNowIds.current.add(o.id));
+    playNotificationSound('cashierOrder', 0.9);
+    toast({
+      title: "⏰ حان وقت التحضير!",
+      description: `${newAlerts.length} طلب مجدول يحتاج للتحضير الآن`,
+    });
+  }, [needsPrepNowOrders, soundEnabled]);
 
   const getFilteredOrders = () => {
     switch (activeTab) {
       case "pending":
-        return pendingOrders;
+        return [...needsPrepNowOrders, ...pendingOrders];
       case "preparing":
         return preparingOrders;
       case "ready":
         return readyOrders;
       case "delayed":
         return delayedOrders;
+      case "scheduled":
+        return scheduledOrders;
       default:
-        return [...pendingOrders, ...preparingOrders, ...readyOrders];
+        return [...needsPrepNowOrders, ...pendingOrders, ...preparingOrders, ...readyOrders];
     }
   };
 
@@ -318,7 +360,7 @@ export default function KitchenDisplay() {
                 {isConnected ? "متصل" : "غير متصل"}
               </Badge>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                   انتظار: {pendingOrders.length}
                 </Badge>
@@ -328,6 +370,18 @@ export default function KitchenDisplay() {
                 <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
                   جاهز: {readyOrders.length}
                 </Badge>
+                {scheduledOrders.length > 0 && (
+                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                    <Clock className="h-3 w-3 ml-1" />
+                    مجدول: {scheduledOrders.length}
+                  </Badge>
+                )}
+                {needsPrepNowOrders.length > 0 && (
+                  <Badge className="bg-orange-500 text-white animate-pulse">
+                    <Clock className="h-3 w-3 ml-1" />
+                    {needsPrepNowOrders.length} يحتاج تحضير الآن
+                  </Badge>
+                )}
               </div>
               
               <Select value={deliveryTypeFilter} onValueChange={setDeliveryTypeFilter}>
@@ -400,12 +454,12 @@ export default function KitchenDisplay() {
       
       <main className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
             <TabsTrigger value="all" data-testid="tab-all">
               الكل ({orders.length})
             </TabsTrigger>
             <TabsTrigger value="pending" data-testid="tab-pending">
-              انتظار ({pendingOrders.length})
+              انتظار ({pendingOrders.length + needsPrepNowOrders.length})
             </TabsTrigger>
             <TabsTrigger value="preparing" data-testid="tab-preparing">
               تحضير ({preparingOrders.length})
@@ -419,6 +473,14 @@ export default function KitchenDisplay() {
               className={delayedCount > 0 ? "text-destructive" : ""}
             >
               متأخر ({delayedCount})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="scheduled" 
+              data-testid="tab-scheduled"
+              className={scheduledOrders.length > 0 ? "text-blue-600" : ""}
+            >
+              <Clock className="h-3 w-3 ml-1" />
+              مجدول ({scheduledOrders.length})
             </TabsTrigger>
           </TabsList>
           

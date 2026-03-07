@@ -9033,6 +9033,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // List all drink images from library
+  app.get("/api/drink-images", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const drinksDir = path.resolve(__dirname, '..', 'attached_assets', 'drinks');
+      if (!fs.existsSync(drinksDir)) {
+        return res.json([]);
+      }
+      const files = fs.readdirSync(drinksDir)
+        .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f))
+        .sort((a, b) => {
+          const statA = fs.statSync(path.join(drinksDir, a));
+          const statB = fs.statSync(path.join(drinksDir, b));
+          return statB.mtimeMs - statA.mtimeMs;
+        })
+        .map(f => ({
+          filename: f,
+          url: `/attached_assets/drinks/${f}`,
+          uploadedAt: fs.statSync(path.join(drinksDir, f)).mtime.toISOString()
+        }));
+      res.json(files);
+    } catch (error) {
+      console.error("Error listing drink images:", error);
+      res.status(500).json({ error: "Failed to list drink images" });
+    }
+  });
+
   // Configure multer for size image uploads
   const sizesUploadsDir = path.resolve(__dirname, '..', 'attached_assets', 'sizes');
   const sizesStorage = multer.diskStorage({
