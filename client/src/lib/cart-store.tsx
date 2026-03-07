@@ -75,14 +75,32 @@ interface CartContextType {
  getFinalTotal: () => number;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+const defaultCartContext: CartContextType = {
+  cartItems: [],
+  isCartOpen: false,
+  isCheckoutOpen: false,
+  sessionId: '',
+  isLoading: false,
+  deliveryInfo: null,
+  addToCart: () => {},
+  removeFromCart: () => {},
+  updateQuantity: () => {},
+  clearCart: () => {},
+  setDeliveryInfo: () => {},
+  clearDeliveryInfo: () => {},
+  showCart: () => {},
+  hideCart: () => {},
+  showCheckout: () => {},
+  hideCheckout: () => {},
+  getTotalPrice: () => 0,
+  getTotalItems: () => 0,
+  getFinalTotal: () => 0,
+};
+
+const CartContext = createContext<CartContextType>(defaultCartContext);
 
 export const useCartStore = (): CartContextType => {
- const context = useContext(CartContext);
- if (!context) {
- throw new Error("useCartStore must be used within a CartProvider");
- }
- return context;
+  return useContext(CartContext);
 };
 
 // Safe JSON Parse Helper
