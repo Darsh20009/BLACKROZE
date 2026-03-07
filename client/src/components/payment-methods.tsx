@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Smartphone, CreditCard, University, Zap, Building, Banknote, Gift, Truck, Plus, Phone, Search, Coffee, Check, Wallet } from "lucide-react";
+import { Smartphone, CreditCard, University, Zap, Building, Banknote, Gift, Truck, Plus, Phone, Search, Coffee, Check, Wallet, Star } from "lucide-react";
 import type { PaymentMethodInfo, PaymentMethod } from "@shared/schema";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
+import { useQuery } from "@tanstack/react-query";
 
 interface PaymentMethodsProps {
  paymentMethods: PaymentMethodInfo[];
@@ -31,8 +32,14 @@ export default function PaymentMethods({
   const [isSearching, setIsSearching] = useState(false);
   const [isAddingCard, setIsAddingCard] = useState(false);
   const { card: autoCard, updateCardInCache } = useLoyaltyCard(propCustomerPhone);
+  const { data: businessConfig } = useQuery<any>({ queryKey: ["/api/business-config"] });
   
   const foundCard = autoCard || initialLoyaltyCard;
+  const pointsForFreeDrink: number = businessConfig?.loyaltyConfig?.pointsForFreeDrink ?? 100;
+  const currentPoints: number = Number(foundCard?.points) || 0;
+  const freeCupsAvailable: number = (Number(foundCard?.freeCupsEarned) || 0) - (Number(foundCard?.freeCupsRedeemed) || 0);
+  const progressPercent: number = Math.min(100, Math.round((currentPoints / pointsForFreeDrink) * 100));
+  const pointsNeeded: number = Math.max(0, pointsForFreeDrink - currentPoints);
 
   useEffect(() => {
     if (foundCard && cardMode === null) {
@@ -194,22 +201,49 @@ export default function PaymentMethods({
                        </div>
                      </CardHeader>
                      <CardContent className="space-y-4 relative z-10 pb-4">
+                       {/* مشروبات مجانية متاحة */}
                        <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-1">
                            <p className="text-xs opacity-75 font-medium font-ibm-arabic">مشروبات مجانية</p>
                            <h2 className="text-3xl font-bold font-ibm-arabic" data-testid="text-free-cups">
-                             {(foundCard?.freeCupsEarned || 0) - (foundCard?.freeCupsRedeemed || 0)}
+                             {freeCupsAvailable}
                            </h2>
-                           <p className="text-sm opacity-75 font-ibm-arabic">مشروب متاح</p>
+                           <p className="text-sm opacity-75 font-ibm-arabic">
+                             {freeCupsAvailable > 0 ? "مشروب متاح" : "لا يوجد حالياً"}
+                           </p>
                          </div>
                          <div className="space-y-1 text-left">
-                           <p className="text-xs opacity-75 font-medium font-ibm-arabic">نسبة الخصم</p>
-                           <h2 className="text-2xl font-bold font-ibm-arabic text-yellow-200" data-testid="text-discount-pct">
-                             {foundCard?.discountPercentage || 0}%
+                           <p className="text-xs opacity-75 font-medium font-ibm-arabic">رصيد النقاط</p>
+                           <h2 className="text-2xl font-bold font-ibm-arabic text-yellow-200" data-testid="text-points-balance-card">
+                             {currentPoints}
                            </h2>
-                           <p className="text-xs opacity-60 font-ibm-arabic">خصم على كل طلب</p>
+                           <p className="text-xs opacity-60 font-ibm-arabic">من {pointsForFreeDrink} نقطة</p>
                          </div>
                        </div>
+
+                       {/* شريط التقدم نحو المشروب المجاني */}
+                       <div className="space-y-1.5">
+                         <div className="flex justify-between items-center">
+                           <p className="text-[10px] opacity-70 font-ibm-arabic flex items-center gap-1">
+                             <Coffee className="w-3 h-3" />
+                             التقدم نحو مشروب مجاني
+                           </p>
+                           <p className="text-[10px] font-bold opacity-80">{progressPercent}%</p>
+                         </div>
+                         <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                           <div
+                             className="h-full bg-yellow-300 rounded-full transition-all duration-500"
+                             style={{ width: `${progressPercent}%` }}
+                             data-testid="progress-free-drink"
+                           />
+                         </div>
+                         <p className="text-[10px] opacity-60 font-ibm-arabic text-center">
+                           {pointsNeeded > 0
+                             ? `تحتاج ${pointsNeeded} نقطة أخرى للحصول على مشروب مجاني`
+                             : "🎉 مبروك! حصلت على مشروب مجاني"}
+                         </p>
+                       </div>
+
                        <div className="flex justify-between items-end">
                          <div className="space-y-1">
                            <p className="text-[10px] opacity-75 uppercase tracking-wider">رقم البطاقة</p>
@@ -223,6 +257,19 @@ export default function PaymentMethods({
                        </div>
                      </CardContent>
                    </Card>
+
+                   {/* تنبيه: لا يوجد مشروبات مجانية */}
+                   {freeCupsAvailable === 0 && (
+                     <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-start gap-2">
+                       <Star className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                       <div>
+                         <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">لا تملك مشروبات مجانية بعد</p>
+                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                           اجمع {pointsNeeded} نقطة إضافية للحصول على مشروبك المجاني الأول
+                         </p>
+                       </div>
+                     </div>
+                   )}
 
                    {/* زر تغيير البطاقة */}
                    <Button

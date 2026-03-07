@@ -210,6 +210,7 @@ export default function AdminSettings() {
   const [pointsEarnedPerSar, setPointsEarnedPerSar] = useState(1);
   const [pointsPerDrink, setPointsPerDrink] = useState(10);
   const [minPointsForRedemption, setMinPointsForRedemption] = useState(100);
+  const [pointsForFreeDrink, setPointsForFreeDrink] = useState(100);
 
   const [firstOrderEnabled, setFirstOrderEnabled] = useState(true);
   const [firstOrderDiscountType, setFirstOrderDiscountType] = useState<'percent' | 'amount'>('percent');
@@ -242,6 +243,7 @@ export default function AdminSettings() {
       setPointsEarnedPerSar(config.loyaltyConfig.pointsEarnedPerSar ?? 1);
       setPointsPerDrink(config.loyaltyConfig.pointsPerDrink ?? 10);
       setMinPointsForRedemption(config.loyaltyConfig.minPointsForRedemption ?? 100);
+      setPointsForFreeDrink(config.loyaltyConfig.pointsForFreeDrink ?? 100);
     }
     if (config?.offersConfig) {
       const oc = config.offersConfig;
@@ -285,6 +287,7 @@ export default function AdminSettings() {
         pointsEarnedPerSar,
         pointsPerDrink,
         minPointsForRedemption,
+        pointsForFreeDrink,
       },
       offersConfig: {
         firstOrderDiscount: {
@@ -1543,6 +1546,35 @@ export default function AdminSettings() {
                     data-testid="input-min-points-redemption"
                   />
                 </div>
+              </div>
+
+              {/* مشروب مجاني عند تجميع نقاط */}
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                    <Coffee className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-amber-800 dark:text-amber-300">نقاط المشروب المجاني</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">عند وصول العميل لهذا العدد من النقاط يحصل على مشروب مجاني وتُصفَّر نقاطه</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    value={pointsForFreeDrink}
+                    onChange={(e) => setPointsForFreeDrink(Number(e.target.value))}
+                    min={1}
+                    className="max-w-[140px]"
+                    data-testid="input-points-for-free-drink"
+                  />
+                  <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                    = مشروب مجاني واحد + تصفير النقاط
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  مثال: إذا كان {pointsForFreeDrink} نقطة، فعندما يجمع العميل {pointsForFreeDrink} نقطة يحصل على مشروب مجاني وتُعاد نقاطه إلى صفر تلقائياً
+                </p>
               </div>
             </div>
 

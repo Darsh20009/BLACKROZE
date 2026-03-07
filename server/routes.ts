@@ -8631,9 +8631,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const customerInfo = typeof order.customerInfo === 'string' ? JSON.parse(order.customerInfo) : order.customerInfo;
         const customerPhone = customerInfo?.phone || customerInfo?.phoneNumber;
         
-        // Fetch configured pointsPerDrink for accurate calculation
+        // Fetch configured pointsPerDrink and pointsForFreeDrink for accurate calculation
         const completionBizCfg = await BusinessConfigModel.findOne({ tenantId: order.tenantId || 'demo-tenant' }).lean();
         const completionPtsPerDrink = (completionBizCfg as any)?.loyaltyConfig?.pointsPerDrink ?? 10;
+        const pointsForFreeDrink = (completionBizCfg as any)?.loyaltyConfig?.pointsForFreeDrink ?? 100;
 
         if (customerPhone) {
           try {
@@ -8649,25 +8650,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               const currentPoints = Number(loyaltyCard.points) || 0;
               const currentPendingPoints = Number(loyaltyCard.pendingPoints) || 0;
-              
-              // Move pending → confirmed (do not add new points, just confirm them)
-              await storage.updateLoyaltyCard(loyaltyCard.id, {
-                points: currentPoints + totalPointsToAward,
+              const newTotalPoints = currentPoints + totalPointsToAward;
+
+              // Check if customer reached the free drink threshold
+              const freeDrinksEarned = Math.floor(newTotalPoints / pointsForFreeDrink);
+              const remainingPoints = newTotalPoints % pointsForFreeDrink;
+              const currentFreeCupsEarned = Number(loyaltyCard.freeCupsEarned) || 0;
+
+              const loyaltyUpdate: any = {
                 pendingPoints: Math.max(0, currentPendingPoints - totalPointsToAward)
-              });
+              };
 
-              // Create transaction record for confirmed points
-              await storage.createLoyaltyTransaction({
-                cardId: loyaltyCard.id,
-                type: 'points_earned',
-                pointsChange: totalPointsToAward,
-                discountAmount: 0,
-                orderAmount: Number(order.totalAmount),
-                orderId: order.id,
-                description: `تم إضافة ${totalPointsToAward} نقطة من الطلب رقم ${order.orderNumber}`,
-              });
+              if (freeDrinksEarned > 0) {
+                // Award free drinks and RESET points to remainder
+                loyaltyUpdate.points = remainingPoints;
+                loyaltyUpdate.freeCupsEarned = currentFreeCupsEarned + freeDrinksEarned;
 
-              console.log(`[LOYALTY] Confirmed ${totalPointsToAward} points for ${cleanPhone} on order completion`);
+                // Create transaction record for free drink award
+                await storage.createLoyaltyTransaction({
+                  cardId: loyaltyCard.id,
+                  type: 'points_earned',
+                  pointsChange: totalPointsToAward,
+                  discountAmount: 0,
+                  orderAmount: Number(order.totalAmount),
+                  orderId: order.id,
+                  description: `تم إضافة ${totalPointsToAward} نقطة من الطلب ${order.orderNumber} ← وصل للحد (${pointsForFreeDrink}) → حصل على ${freeDrinksEarned} مشروب مجاني وتصفيرت النقاط (تبقى ${remainingPoints})`,
+                });
+
+                console.log(`[LOYALTY] ${cleanPhone} earned ${freeDrinksEarned} free drink(s)! Points reset from ${newTotalPoints} → ${remainingPoints}`);
+              } else {
+                // Normal point accumulation
+                loyaltyUpdate.points = newTotalPoints;
+
+                await storage.createLoyaltyTransaction({
+                  cardId: loyaltyCard.id,
+                  type: 'points_earned',
+                  pointsChange: totalPointsToAward,
+                  discountAmount: 0,
+                  orderAmount: Number(order.totalAmount),
+                  orderId: order.id,
+                  description: `تم إضافة ${totalPointsToAward} نقطة من الطلب رقم ${order.orderNumber} (المجموع: ${newTotalPoints}/${pointsForFreeDrink})`,
+                });
+
+                console.log(`[LOYALTY] Confirmed ${totalPointsToAward} points for ${cleanPhone} (total: ${newTotalPoints}/${pointsForFreeDrink})`);
+              }
+
+              await storage.updateLoyaltyCard(loyaltyCard.id, loyaltyUpdate);
             }
           } catch (e) {
             console.error("[LOYALTY] Error confirming points:", e);

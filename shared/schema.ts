@@ -636,6 +636,7 @@ export interface ILoyaltyConfig {
   pointsEarnedPerSar?: number;
   pointsPerDrink?: number;
   minPointsForRedemption?: number;
+  pointsForFreeDrink?: number;
 }
 
 export interface IBusinessConfig extends Document {
