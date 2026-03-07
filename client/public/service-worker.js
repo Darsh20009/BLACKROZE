@@ -1,4 +1,4 @@
-const CACHE_NAME = 'black-rose-v1';
+const CACHE_NAME = 'black-rose-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

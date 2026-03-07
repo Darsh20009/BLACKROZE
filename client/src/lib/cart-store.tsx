@@ -100,7 +100,8 @@ const defaultCartContext: CartContextType = {
 const CartContext = createContext<CartContextType>(defaultCartContext);
 
 export const useCartStore = (): CartContextType => {
-  return useContext(CartContext);
+  const context = useContext(CartContext);
+  return context ?? defaultCartContext;
 };
 
 // Safe JSON Parse Helper

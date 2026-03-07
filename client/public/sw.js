@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `black-rose-cache-${CACHE_VERSION}`;
 
 // Essential shell files to pre-cache during install
