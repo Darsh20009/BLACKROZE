@@ -14,7 +14,7 @@ import PaymentMethods from "@/components/payment-methods";
 import { customerStorage } from "@/lib/customer-storage";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
-import { User, Gift, CheckCircle, Sparkles, Loader2, Ticket, Tag } from "lucide-react";
+import { User, Gift, CheckCircle, Sparkles, Loader2, Ticket, Tag, Star, CreditCard, Zap, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 import type { PaymentMethodInfo, PaymentMethod } from "@shared/schema";
@@ -187,8 +187,11 @@ export default function CheckoutPage() {
     onError: (error) => toast({ variant: "destructive", title: t("checkout.order_error"), description: error.message }),
   });
 
+  const isEmployee = !!localStorage.getItem('currentEmployee');
+
   const { data: coupons = [] } = useQuery<any[]>({
     queryKey: ["/api/discount-codes"],
+    enabled: isEmployee,
   });
 
   const [showCouponSuggestions, setShowCouponSuggestions] = useState(false);
@@ -479,50 +482,53 @@ export default function CheckoutPage() {
                           value={discountCode} 
                           onChange={e => {
                             setDiscountCode(e.target.value.toUpperCase());
-                            setShowCouponSuggestions(true);
+                            if (isEmployee) setShowCouponSuggestions(true);
                           }}
-                          onFocus={() => setShowCouponSuggestions(true)}
+                          onFocus={() => { if (isEmployee) setShowCouponSuggestions(true); }}
                           placeholder={t("checkout.enter_discount")}
                           disabled={!!appliedDiscount}
                           className="bg-white dark:bg-background"
                           data-testid="input-discount-code"
                         />
-                        {showCouponSuggestions && filteredCoupons.length > 0 && !appliedDiscount && (
-                          <div className="absolute z-50 bottom-full mb-2 left-0 right-0 bg-popover border-2 border-primary/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 zoom-in-95">
-                            <div className="p-3 border-b bg-primary/5 flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Ticket className="w-4 h-4 text-primary" />
-                                <span className="text-xs font-black uppercase tracking-wider text-primary">{t("checkout.available_coupons")}</span>
-                              </div>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-bold hover:bg-primary/10" onClick={() => setShowCouponSuggestions(false)}>{t("common.close")}</Button>
-                            </div>
-                            <div className="max-h-60 overflow-y-auto p-1">
-                              {filteredCoupons.map((coupon) => (
-                                <button
-                                  key={coupon.id}
-                                  onClick={() => {
-                                    setDiscountCode(coupon.code);
-                                    handleValidateDiscount(coupon.code);
-                                  }}
-                                  className="w-full p-4 flex items-center justify-between hover:bg-primary/10 rounded-xl transition-all group text-right mb-1 last:mb-0"
-                                >
-                                  <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                      <Tag className="w-5 h-5 text-primary" />
-                                    </div>
-                                    <div>
-                                      <p className="font-black text-sm uppercase tracking-wider">{coupon.code}</p>
-                                      <p className="text-[10px] font-medium text-muted-foreground line-clamp-1">{coupon.reason || t("checkout.exclusive_discount")}</p>
-                                    </div>
+                        {isEmployee && showCouponSuggestions && filteredCoupons.length > 0 && !appliedDiscount && (
+                          <div className="absolute z-50 bottom-full mb-2 left-0 right-0 overflow-hidden animate-in fade-in slide-in-from-bottom-4 zoom-in-95" style={{filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.25))'}}>
+                            <div className="bg-gradient-to-b from-[#1a1a2e] to-[#16213e] border border-white/10 rounded-2xl overflow-hidden">
+                              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/5">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center">
+                                    <Zap className="w-3.5 h-3.5 text-primary" />
                                   </div>
-                                  <div className="flex flex-col items-end gap-1">
-                                    <Badge className="bg-primary text-white border-0 font-black px-2 py-0.5">
-                                      {coupon.discountPercentage}%
-                                    </Badge>
-                                    <span className="text-[8px] font-bold text-primary/60 uppercase">{t("checkout.discount")}</span>
-                                  </div>
+                                  <span className="text-xs font-bold text-white/80 tracking-wider uppercase">كوبونات متاحة</span>
+                                  <Badge className="bg-primary/20 text-primary border-0 text-[9px] font-bold px-1.5 py-0">{filteredCoupons.length}</Badge>
+                                </div>
+                                <button onClick={() => setShowCouponSuggestions(false)} className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                                  <span className="text-white/60 text-xs leading-none">✕</span>
                                 </button>
-                              ))}
+                              </div>
+                              <div className="max-h-56 overflow-y-auto">
+                                {filteredCoupons.map((coupon, idx) => (
+                                  <button
+                                    key={coupon.id}
+                                    onClick={() => {
+                                      setDiscountCode(coupon.code);
+                                      handleValidateDiscount(coupon.code);
+                                    }}
+                                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors text-right group border-b border-white/5 last:border-0"
+                                    data-testid={`coupon-suggestion-${idx}`}
+                                  >
+                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform border border-primary/20">
+                                      <Tag className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0 text-right">
+                                      <p className="font-mono font-bold text-sm text-white tracking-widest">{coupon.code}</p>
+                                      <p className="text-[10px] text-white/40 truncate">{coupon.reason || 'خصم حصري'}</p>
+                                    </div>
+                                    <div className="shrink-0">
+                                      <span className="inline-flex items-center justify-center w-12 h-6 rounded-full bg-green-500/20 border border-green-500/30 text-green-400 text-[11px] font-black">{coupon.discountPercentage}%</span>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -555,68 +561,103 @@ export default function CheckoutPage() {
                 </div>
 
                 {customer && loyaltyCard && (loyaltyCard.points || 0) > 0 && (
-                  <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-800">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-5 h-5 text-blue-600" />
-                      <Label className="font-semibold text-blue-800 dark:text-blue-300">{t("points.black_rose_points")}</Label>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center gap-2 flex-wrap">
-                        <span className="text-sm text-blue-700 dark:text-blue-400">{t("points.your_balance")}: {loyaltyCard.points} {t("points.points_unit")}</span>
-                        <span className="text-sm font-bold text-blue-800 dark:text-blue-300">≈ {pointsToSar(loyaltyCard.points || 0).toFixed(2)} {t("currency")}</span>
+                  <div className="space-y-3">
+                    {/* بطاقة الولاء - نفس تصميم my-card */}
+                    <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/70 rounded-2xl p-5 overflow-hidden shadow-xl" data-testid="loyalty-card-checkout">
+                      {/* خلفية زخرفية */}
+                      <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20 blur-2xl pointer-events-none" />
+                      <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full -ml-14 -mb-14 blur-xl pointer-events-none" />
+                      <div className="absolute inset-0 opacity-5 pointer-events-none" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px'}} />
+
+                      {/* رأس البطاقة */}
+                      <div className="relative z-10 flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-white/60 text-[10px] uppercase tracking-widest font-medium mb-0.5">بطاقة بلاك روز</p>
+                          <p className="text-white font-bold text-sm font-ibm-arabic">{customer?.name}</p>
+                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-white/80" />
+                        </div>
                       </div>
 
-                      {usePoints && pointsRedeemed > 0 ? (
-                        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 space-y-2">
+                      {/* الرصيد */}
+                      <div className="relative z-10 flex items-end justify-between">
+                        <div>
+                          <p className="text-white/50 text-[10px] uppercase tracking-wider mb-0.5">{t("points.your_balance") || "رصيد النقاط"}</p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-4xl font-black text-white font-ibm-arabic" data-testid="text-loyalty-points">{loyaltyCard.points}</span>
+                            <span className="text-white/60 text-sm font-medium">{t("points.points_unit") || "نقطة"}</span>
+                          </div>
+                          <p className="text-yellow-200/90 text-sm font-semibold mt-0.5 font-ibm-arabic">≈ {pointsToSar(loyaltyCard.points || 0).toFixed(2)} {t("currency") || "ر.س"}</p>
+                        </div>
+                        <div className="text-right">
+                          {loyaltyCard.cardNumber && (
+                            <p className="text-white/40 text-[10px] font-mono tracking-widest">{loyaltyCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()}</p>
+                          )}
+                          <Badge className="bg-white/20 text-white border-0 text-[9px] font-bold mt-1">نشطة</Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* قسم استخدام النقاط */}
+                    {usePoints && pointsRedeemed > 0 ? (
+                      <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                        <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
                             <CheckCircle className="w-4 h-4" />
-                            <span className="text-sm font-semibold">تم تطبيق النقاط</span>
+                            <div>
+                              <p className="text-sm font-semibold">تم تطبيق {pointsRedeemed} نقطة</p>
+                              <p className="text-xs text-green-600 dark:text-green-500">خصم {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency") || "ر.س"}</p>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center gap-2 flex-wrap">
-                            <span className="text-sm">{pointsRedeemed} {t("points.points_unit")} = {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}</span>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={handleCancelPoints}
-                              data-testid="button-cancel-points"
-                            >
-                              {t("points.cancel_use")}
-                            </Button>
-                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={handleCancelPoints}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                            data-testid="button-cancel-points"
+                          >
+                            {t("points.cancel_use") || "إلغاء"}
+                          </Button>
                         </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-3">
-                            <Input
-                              type="number"
-                              min={0}
-                              max={loyaltyCard.points}
-                              value={pointsRedeemed || ''}
-                              onChange={(e) => {
-                                const val = Math.min(Math.max(0, Number(e.target.value)), loyaltyCard.points || 0);
-                                setPointsRedeemed(val);
-                              }}
-                              placeholder={t("points.enter_points")}
-                              className="bg-white dark:bg-background"
-                              data-testid="input-points-redeem"
-                            />
-                            <Button 
-                              onClick={handleApplyPoints}
-                              disabled={!pointsRedeemed || pointsRedeemed <= 0}
-                              data-testid="button-apply-points"
-                            >
-                              <Sparkles className="w-4 h-4" />
-                              <span className="mr-1">استخدام</span>
-                            </Button>
-                          </div>
-                          {pointsRedeemed > 0 && (
-                            <p className="text-xs text-blue-600 dark:text-blue-400">
-                              ستحصل على خصم {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency")}
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/40 border border-border rounded-xl p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Star className="w-4 h-4 text-amber-500" />
+                          <p className="text-sm font-semibold">{t("points.use_points") || "استخدم نقاطك"}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={loyaltyCard.points}
+                            value={pointsRedeemed || ''}
+                            onChange={(e) => {
+                              const val = Math.min(Math.max(0, Number(e.target.value)), loyaltyCard.points || 0);
+                              setPointsRedeemed(val);
+                            }}
+                            placeholder={t("points.enter_points") || "أدخل عدد النقاط"}
+                            className="bg-white dark:bg-background"
+                            data-testid="input-points-redeem"
+                          />
+                          <Button 
+                            onClick={handleApplyPoints}
+                            disabled={!pointsRedeemed || pointsRedeemed <= 0}
+                            className="shrink-0"
+                            data-testid="button-apply-points"
+                          >
+                            <Sparkles className="w-4 h-4 ml-1" />
+                            {t("checkout.apply") || "تطبيق"}
+                          </Button>
+                        </div>
+                        {pointsRedeemed > 0 && (
+                          <p className="text-xs text-primary font-medium">
+                            خصم {pointsToSar(pointsRedeemed).toFixed(2)} {t("currency") || "ر.س"} من الإجمالي
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
