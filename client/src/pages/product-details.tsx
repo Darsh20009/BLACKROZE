@@ -266,7 +266,7 @@ export default function ProductDetails() {
             </div>
 
             <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-product-description">
-              {i18n.language === 'ar' ? item.description : item.descriptionEn || item.description}
+              {i18n.language === 'ar' ? item.description : (item as any).descriptionEn || item.description}
             </p>
 
             {/* Category Badge */}

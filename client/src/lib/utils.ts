@@ -95,13 +95,13 @@ export function getCoffeeStrengthDisplay(
 export function sortCoffeeByStrength(items: CoffeeItem[], ascending = true): CoffeeItem[] {
  return [...items].sort((a, b) => {
  // Handle null values (classic goes first/last based on direction)
- if (a.strengthLevel === null && b.strengthLevel === null) return 0;
- if (a.strengthLevel === null) return ascending ? -1 : 1;
- if (b.strengthLevel === null) return ascending ? 1 : -1;
+ if (a.strengthLevel == null && b.strengthLevel == null) return 0;
+ if (a.strengthLevel == null) return ascending ? -1 : 1;
+ if (b.strengthLevel == null) return ascending ? 1 : -1;
  
  return ascending 
- ? a.strengthLevel - b.strengthLevel
- : b.strengthLevel - a.strengthLevel;
+ ? (a.strengthLevel ?? 0) - (b.strengthLevel ?? 0)
+ : (b.strengthLevel ?? 0) - (a.strengthLevel ?? 0);
  });
 }
 

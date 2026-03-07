@@ -137,7 +137,7 @@ export function useSession() {
       
       return {
         ...prev,
-        user: updated,
+        user: updated as typeof prev.user,
       };
     });
   }, []);

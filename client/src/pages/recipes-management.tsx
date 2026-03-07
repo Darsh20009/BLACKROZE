@@ -35,7 +35,7 @@ export default function RecipesManagement() {
     ingredients: [{ rawItemId: "", quantity: 0, unit: "g" }],
   });
 
-  const { data: recipes = [], isLoading } = useQuery({
+  const { data: recipes = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/recipes"],
   });
 

@@ -101,6 +101,7 @@ import {
   CoffeeItemAddonModel,
   StatusHistoryModel,
   AccountModel,
+  AppointmentModel,
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
@@ -149,7 +150,7 @@ export interface IStorage {
   deleteTable(id: string): Promise<boolean>;
   updateTableOccupancy(id: string, isOccupied: boolean, orderId?: string): Promise<Table | undefined>;
   getPendingTableOrders(branchId?: string): Promise<Order[]>;
-  getTableOrders(tableId: string): Promise<Order[]>;
+  getTableOrders(tableId?: string): Promise<Order[]>;
 
   getDeliveryZones(tenantId?: string): Promise<DeliveryZone[]>;
   getDeliveryZone(id: string): Promise<DeliveryZone | undefined>;
@@ -935,8 +936,8 @@ export class DBStorage implements IStorage {
     return (orders as any[]).map(serializeDoc);
   }
 
-  async getTableOrders(tableId: string): Promise<Order[]> {
-    const orders = await OrderModel.find({ tableId }).sort({ createdAt: -1 }).lean();
+  async getTableOrders(tableId?: string): Promise<Order[]> {
+    const orders = await OrderModel.find(tableId ? { tableId } : {}).sort({ createdAt: -1 }).lean();
     return (orders as any[]).map(serializeDoc);
   }
 
@@ -1226,7 +1227,7 @@ export class DBStorage implements IStorage {
     await card.save();
     codeDoc.isRedeemed = 1;
     codeDoc.redeemedAt = new Date();
-    codeDoc.cardId = cardId;
+    codeDoc.redeemedByCardId = cardId;
     await codeDoc.save();
     return { success: true, message: "تم إضافة الختم بنجاح", card: serializeDoc(card) };
   }
@@ -1575,10 +1576,10 @@ export class DBStorage implements IStorage {
     for (const item of invoice.items) {
       let stock = await BranchStockModel.findOne({ branchId: invoice.branchId, rawItemId: item.rawItemId });
       if (stock) {
-        stock.quantity += item.quantity;
+        stock.currentQuantity += item.quantity;
         await stock.save();
       } else {
-        await BranchStockModel.create({ branchId: invoice.branchId, rawItemId: item.rawItemId, quantity: item.quantity, id: nanoid() });
+        await BranchStockModel.create({ branchId: invoice.branchId, rawItemId: item.rawItemId, currentQuantity: item.quantity, id: nanoid() });
       }
     }
     
@@ -1903,6 +1904,24 @@ export class DBStorage implements IStorage {
       } catch (e) {
         // Invalid ObjectId format, ignore
       }
+    }
+    return updated ? serializeDoc(updated) : null;
+  }
+
+  async updateBranchMaintenance(branchId: string, isMaintenance: boolean): Promise<IBranch | null> {
+    let updated = await BranchModel.findOneAndUpdate(
+      { id: branchId },
+      { $set: { isMaintenance } },
+      { new: true }
+    ).lean();
+    if (!updated) {
+      try {
+        updated = await BranchModel.findByIdAndUpdate(
+          branchId,
+          { $set: { isMaintenance } },
+          { new: true }
+        ).lean();
+      } catch (e) {}
     }
     return updated ? serializeDoc(updated) : null;
   }

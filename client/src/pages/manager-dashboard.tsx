@@ -990,7 +990,7 @@ export default function ManagerDashboard() {
  <XAxis type="number" />
  <YAxis dataKey="name" type="category" width={100} />
  <Tooltip />
- <RechartsBar dataKey="count" name="عدد المبيعات" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+ <Bar dataKey="count" name="عدد المبيعات" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
  </RechartsBar>
  </ResponsiveContainer>
  </div>

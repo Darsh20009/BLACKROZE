@@ -72,7 +72,7 @@ export const coffeeCategories = [
 ];
 
 // Perfectly matched coffee menu data with BLACK ROSE CAFE images
-export const defaultCoffeeMenu: CoffeeItem[] = [
+export const defaultCoffeeMenu: Partial<CoffeeItem>[] = [
  // Basic Coffee
  {
  id: "espresso-single",

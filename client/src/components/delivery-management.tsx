@@ -86,19 +86,19 @@ export function DeliveryManagement() {
     isActive: 1,
   });
 
-  const { data: integrationsData, isLoading: loadingIntegrations } = useQuery({
+  const { data: integrationsData, isLoading: loadingIntegrations } = useQuery<any>({
     queryKey: ['/api/delivery/integrations'],
   });
 
-  const { data: driversData, isLoading: loadingDrivers } = useQuery({
+  const { data: driversData, isLoading: loadingDrivers } = useQuery<any>({
     queryKey: ['/api/delivery/drivers'],
   });
 
-  const { data: zonesData, isLoading: loadingZones } = useQuery({
+  const { data: zonesData, isLoading: loadingZones } = useQuery<any>({
     queryKey: ['/api/delivery/zones'],
   });
 
-  const { data: branchesData } = useQuery({
+  const { data: branchesData } = useQuery<any[]>({
     queryKey: ['/api/branches'],
   });
 

@@ -15,11 +15,11 @@ export default function ExternalIntegrationsPage() {
   const [, setLocation] = useLocation();
   const [apiKey, setApiKey] = useState("");
 
-  const { data: integrations = [] } = useQuery({
+  const { data: integrations = [] } = useQuery<any[]>({
     queryKey: ["/api/integrations/delivery"],
   });
 
-  const { data: mockStatus } = useQuery({
+  const { data: mockStatus } = useQuery<any>({
     queryKey: ["/api/integrations/delivery/mock-status"],
     refetchInterval: 30000,
   });

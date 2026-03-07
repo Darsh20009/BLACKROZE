@@ -19,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
 type CheckoutStep = 'review' | 'delivery' | 'payment' | 'confirmation' | 'success';
-type DeliveryType = 'pickup' | 'delivery' | 'curbside' | null;
+type DeliveryType = 'pickup' | 'delivery' | 'curbside' | 'car-pickup' | null;
 
 const CheckoutModal = memo(() => {
  const [, navigate] = useLocation();
@@ -174,8 +174,8 @@ const CheckoutModal = memo(() => {
      const config = configRes.ok ? await configRes.json() : null;
      
      if (config?.employeeInvoiceEnabled) {
-       const { printEmployeeInvoice } = await import("@/lib/print-utils");
-       await printEmployeeInvoice(order);
+       const { printAllReceipts } = await import("@/lib/print-utils");
+       await printAllReceipts(order);
      } else {
        const pdfBlob = await generatePDF(order, cartItems as any, selectedPaymentMethod as any);
        const url = URL.createObjectURL(pdfBlob);

@@ -39,7 +39,12 @@ import {
   AccountModel,
   JournalEntryModel,
   ExpenseErpModel,
-  VendorModel
+  VendorModel,
+  DiscountCodeModel,
+  TaxInvoiceModel,
+  PointTransferModel,
+  AppointmentModel as AppointmentSchemaModel,
+  LoyaltyCardModel,
 } from "@shared/schema";
 import { RecipeEngine } from "./recipe-engine";
 import { UnitsEngine } from "./units-engine";
@@ -330,7 +335,7 @@ async function deductInventoryForOrder(orderId: string, branchId: string, employ
     return { 
       success: result.success, 
       costOfGoods: result.costOfGoods, 
-      deductionDetails: result.deductionDetails.map(d => ({
+      deductionDetails: result.deductionDetails.map((d: any) => ({
         rawItemId: d.rawItemId,
         rawItemName: d.rawItemName,
         quantity: d.quantity,
@@ -502,7 +507,7 @@ const upload = multer({
 // Simple POS device status tracker
 let posDeviceStatus = { connected: false, lastCheck: Date.now() };
 
-import { BusinessConfigModel, AppointmentModel } from "./models";
+import { AppointmentModel } from "./models";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   registerObjectStorageRoutes(app);
@@ -638,7 +643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.createOrder(orderData);
       
       // Notify via WebSocket
-      wsManager.broadcastToBranch(order.branchId, {
+      wsManager.broadcastToBranch(order.branchId || '', {
         type: "NEW_ORDER",
         order: serializeDoc(order)
       });
@@ -703,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           url: '/employee/pos',
           tag: `new-order-${order.orderNumber}`,
           type: 'new_order',
-          orderNumber: order.orderNumber || order.dailyNumber,
+          orderNumber: String(order.orderNumber || order.dailyNumber || ''),
           orderStatus: 'pending',
           totalAmount: order.totalAmount,
           itemCount: orderItems.length,
@@ -721,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             url: '/my-orders',
             tag: `order-confirmed-${order.orderNumber}`,
             type: 'order_status',
-            orderNumber: order.orderNumber || order.dailyNumber,
+            orderNumber: String(order.orderNumber || order.dailyNumber || ''),
             orderStatus: 'pending',
             totalAmount: order.totalAmount,
             itemCount: orderItems.length,
@@ -1983,7 +1988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Payment Callback] Provider: ${provider}, Order: ${orderId}, Status: ${status}, TxID: ${transactionId}`);
 
       if (status === 'success' || status === 'paid') {
-        const order = await storage.getOrderByOrderNumber(orderId);
+        const order = await storage.getOrderByNumber(orderId);
         if (order) {
           await storage.updateOrderStatus(order.id || order._id, 'payment_confirmed');
         }
@@ -2226,7 +2231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create session (no password verification for QR)
       req.session.employee = {
-        id: employee._id.toString(),
+        id: (employee as any)._id?.toString() || (employee as any).id,
         username: employee.username,
         role: employee.role,
         branchId: employee.branchId,
@@ -2288,7 +2293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create session
       req.session.employee = {
-        id: employee._id.toString(),
+        id: (employee as any)._id?.toString() || (employee as any).id,
         username: employee.username,
         role: employee.role,
         branchId: employee.branchId,
@@ -3733,8 +3738,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/customer/:identifier", async (req, res) => {
     try {
       const { identifier } = req.params;
-      const { OrderModel, mongoose } = await import("@shared/schema");
-      
       // Clean phone number for consistent matching
       const cleanPhone = identifier.trim().replace(/\s/g, '').replace(/^\+966/, '').replace(/^00966/, '');
       
@@ -3772,13 +3775,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add customerId conditions
       if (customerId) {
-        queryConditions.push({ customerId: customerId });
-        queryConditions.push({ "customerId": customerId });
+        (queryConditions as any[]).push({ customerId: customerId });
+        (queryConditions as any[]).push({ "customerId": customerId });
       }
       
       // If it looks like a UUID, also search by id directly
       if (identifier.includes('-') || isMongoId) {
-        queryConditions.push({ "customerId": identifier });
+        (queryConditions as any[]).push({ "customerId": identifier });
       }
       
       const orders = await OrderModel.find({
@@ -5197,11 +5200,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             req.employee?.username || 'system'
           );
 
-          if (!deductionReport.success) {
-            if (deductionReport.warnings.length > 0) {
-              console.warn(`[ORDER ${order.orderNumber}] Inventory warnings:`, deductionReport.warnings);
+          if (deductionReport && !deductionReport.success) {
+            if ((deductionReport as any).warnings?.length > 0) {
+              console.warn(`[ORDER ${order.orderNumber}] Inventory warnings:`, (deductionReport as any).warnings);
             }
-            if (deductionReport.errors.length > 0) {
+            if ((deductionReport as any).errors?.length > 0) {
             }
           }
 
@@ -5354,8 +5357,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               discountAmount: invoiceData.discountAmount,
               taxAmount: invoiceTax,
               totalAmount: parseFloat(totalAmount.toString()),
-              paymentMethod: paymentMethod
-            }, invoiceNumber);
+              paymentMethod: paymentMethod,
+              invoiceNumber: invoiceNumber
+            });
           } catch (storageError) {
           }
         } catch (invoiceError) {
@@ -5408,7 +5412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Free up the table
       if (order.tableId) {
-        await storage.updateTableOccupancy(order.tableId, false, null);
+        await storage.updateTableOccupancy(order.tableId, false, undefined as any);
       }
 
       res.json(serializedOrder);
@@ -5469,7 +5473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/table", requireAuth, async (req: AuthRequest, res) => {
     try {
       const { status } = req.query;
-      const allOrders = await storage.getTableOrders(status as string | undefined);
+      const allOrders = await storage.getTableOrders((status as string) || undefined);
 
       // Filter by branch for non-admin managers
       const orders = filterByBranch(allOrders, req.employee);
@@ -5718,7 +5722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { BranchModel } = await import("@shared/schema");
           const branch = await BranchModel.findOne({ tenantId: req.employee.tenantId });
           if (branch) {
-            query.branchId = branch._id.toString();
+            query.branchId = (branch as any)._id?.toString() || (branch as any).id;
           }
         }
       }
@@ -5859,7 +5863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // If it's a dine-in order with a table number, mark table as occupied and set auto-clear alert
-      if ((order.orderType === 'dine-in' || order.orderType === 'table') && order.tableNumber) {
+      if ((order.orderType === 'dine-in' || (order.orderType as any) === 'table') && order.tableNumber) {
         const { TableModel } = await import("@shared/schema");
         const autoClearTime = new Date(Date.now() + 10 * 60 * 1000);
         
@@ -5912,7 +5916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (typeof wsManager !== 'undefined') {
-          wsManager.broadcast({
+          wsManager.broadcastToBranch(table.branchId || "all", {
             type: 'TABLE_AUTO_CLEARED',
             tableNumber: table.tableNumber,
             branchId: table.branchId
@@ -6677,7 +6681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify PIN
       const customer = await storage.getCustomerByPhone(cleanSenderPhone);
-      if (customer?.cardPassword && customer.cardPassword !== pin) {
+      if (customer?.password && customer.password !== pin) {
         return res.status(401).json({ error: "الرقم السري غير صحيح" });
       }
 
@@ -6881,7 +6885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // If ingredient is unavailable, mark all items using it as unavailable
           await storage.updateCoffeeItem(coffeeItem.id, {
             isAvailable: 0,
-            availabilityStatus: `نفذ ${ingredient.nameAr}`
+            availabilityStatus: 'out_of_stock' as any
           });
         } else {
           // If ingredient is now available, check if all other ingredients are available
@@ -6892,7 +6896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // All ingredients available, make the item available
             await storage.updateCoffeeItem(coffeeItem.id, {
               isAvailable: 1,
-              availabilityStatus: "متوفر"
+              availabilityStatus: "available" as any
             });
           }
         }
@@ -8189,12 +8193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/drivers/:id/availability", async (req, res) => {
     try {
       const { isAvailable } = req.body;
-      const driver = await storage.updateDriverAvailability(req.params.id, isAvailable);
-      if (!driver) {
-        return res.status(404).json({ error: "Driver not found" });
-      }
-      const { password: _, ...driverData } = driver;
-      res.json(driverData);
+      await storage.updateDriverAvailability(req.params.id, isAvailable);
+      res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to update driver availability" });
     }
@@ -8207,12 +8207,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Latitude and longitude required" });
       }
       
-      const driver = await storage.updateDriverLocation(req.params.id, { lat, lng });
-      if (!driver) {
-        return res.status(404).json({ error: "Driver not found" });
-      }
-      const { password: _, ...driverData } = driver;
-      res.json(driverData);
+      await storage.updateDriverLocation(req.params.id, lat, lng);
+      res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to update driver location" });
     }
@@ -8225,11 +8221,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Driver ID required" });
       }
 
-      const order = await storage.assignDriverToOrder(req.params.id, driverId);
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
-      res.json(order);
+      await storage.assignDriverToOrder(req.params.id, driverId);
+      res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to assign driver" });
     }
@@ -8237,11 +8230,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/orders/:id/start-delivery", async (req, res) => {
     try {
-      const order = await storage.startDelivery(req.params.id);
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
-      res.json(order);
+      await storage.startDelivery(req.params.id);
+      res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to start delivery" });
     }
@@ -8249,11 +8239,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/orders/:id/complete-delivery", async (req, res) => {
     try {
-      const order = await storage.completeDelivery(req.params.id);
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
-      res.json(order);
+      await storage.completeDelivery(req.params.id);
+      res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to complete delivery" });
     }
@@ -8710,7 +8697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       if (updatedOrder) {
-        wsManager.broadcastToBranch(updatedOrder.branchId, {
+        wsManager.broadcastToBranch(updatedOrder.branchId || '', {
           type: 'ORDER_UPDATED',
           order: serializeDoc(updatedOrder)
         });
@@ -11922,7 +11909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const customerLocation = { lat: Number(latitude), lng: Number(longitude) };
-      const branches = await storage.getBranches();
+      const branches = await storage.getBranches('all');
       
       const { checkDeliveryAvailability } = await import('./utils/geo');
       const result = checkDeliveryAvailability(customerLocation, branches);

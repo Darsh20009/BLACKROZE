@@ -23,12 +23,12 @@ export default function ReportsPage() {
   );
   const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
 
-  const { data: topItems = [], isLoading: topLoading } = useQuery({
+  const { data: topItems = [], isLoading: topLoading } = useQuery<any[]>({
     queryKey: [`/api/accounting/top-items/${selectedBranch}`, startDate, endDate],
     enabled: !!selectedBranch,
   });
 
-  const { data: worstItems = [], isLoading: worstLoading } = useQuery({
+  const { data: worstItems = [], isLoading: worstLoading } = useQuery<any[]>({
     queryKey: [`/api/accounting/worst-items/${selectedBranch}`, startDate, endDate],
     enabled: !!selectedBranch,
   });

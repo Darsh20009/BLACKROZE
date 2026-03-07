@@ -17,11 +17,11 @@ export default function WarehouseManagementPage() {
   const [selectedTarget, setSelectedTarget] = useState("");
   const [transferItems, setTransferItems] = useState([{ ingredientId: "", quantity: 0, unit: "g" }]);
 
-  const { data: warehouses = [] } = useQuery({
+  const { data: warehouses = [] } = useQuery<any[]>({
     queryKey: ["/api/warehouses"],
   });
 
-  const { data: branches = [] } = useQuery({
+  const { data: branches = [] } = useQuery<any[]>({
     queryKey: ["/api/branches"],
   });
 

@@ -72,11 +72,11 @@ function checkPickupAvailability(
   }
 
   const branchesWithDistance: BranchWithDistance[] = branches
-    .filter((b) => b.location && b.location.latitude && b.location.longitude)
+    .filter((b) => b.location && b.location.lat && b.location.lng)
     .map((branch) => {
       const branchPoint = {
-        lat: branch.location!.latitude,
-        lng: branch.location!.longitude,
+        lat: branch.location!.lat,
+        lng: branch.location!.lng,
       };
       const distanceMeters = calculateDistanceMeters(userLocation, branchPoint);
       return {
@@ -411,11 +411,11 @@ export default function MapAddressSelector({
           ))}
 
           {branches
-            .filter((b) => b.location?.latitude && b.location?.longitude)
+            .filter((b) => b.location?.lat && b.location?.lng)
             .map((branch) => (
               <Circle
                 key={`circle-${(branch as any).id || branch.nameAr}`}
-                center={[branch.location!.latitude, branch.location!.longitude]}
+                center={[branch.location!.lat, branch.location!.lng]}
                 radius={PICKUP_RADIUS_METERS}
                 pathOptions={{
                   color: "#f97316",
@@ -435,11 +435,11 @@ export default function MapAddressSelector({
             ))}
 
           {branches
-            .filter((b) => b.location?.latitude && b.location?.longitude)
+            .filter((b) => b.location?.lat && b.location?.lng)
             .map((branch) => (
               <Marker
                 key={`marker-${(branch as any).id || branch.nameAr}`}
-                position={[branch.location!.latitude, branch.location!.longitude]}
+                position={[branch.location!.lat, branch.location!.lng]}
                 icon={branchIcon}
               >
                 <Popup>

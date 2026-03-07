@@ -32,7 +32,7 @@ const ingredientSchema = z.object({
 
 export default function OSInventoryManagement() {
   const { toast } = useToast();
-  const { data: ingredients, isLoading } = useQuery({
+  const { data: ingredients, isLoading } = useQuery<any[]>({
     queryKey: ["/api/ingredients"],
   });
 

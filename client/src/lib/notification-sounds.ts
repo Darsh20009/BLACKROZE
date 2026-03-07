@@ -4,7 +4,7 @@
  * Requires user interaction before first sound plays
  */
 
-export type NotificationSoundType = 'newOrder' | 'onlineOrderVoice' | 'statusChange' | 'success' | 'alert';
+export type NotificationSoundType = 'newOrder' | 'onlineOrderVoice' | 'statusChange' | 'success' | 'alert' | 'cashierOrder';
 
 // Shared AudioContext singleton - browsers block new contexts until user interaction
 let sharedAudioCtx: AudioContext | null = null;
@@ -103,6 +103,11 @@ const SEQUENCES: Record<NotificationSoundType, Array<{ freq: number; dur: number
     { freq: 880, dur: 0.12 },
     { freq: 659, dur: 0.12, gap: 0.03 },
     { freq: 880, dur: 0.20, gap: 0.03 },
+  ],
+  cashierOrder: [
+    { freq: 659, dur: 0.15 },
+    { freq: 784, dur: 0.15, gap: 0.04 },
+    { freq: 523, dur: 0.25, gap: 0.04 },
   ],
 };
 

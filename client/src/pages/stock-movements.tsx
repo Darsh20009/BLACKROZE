@@ -19,7 +19,7 @@ export default function StockMovementsPage() {
   const [selectedItem, setSelectedItem] = useState("");
   const [limit, setLimit] = useState("50");
 
-  const { data: movements = [], isLoading } = useQuery({
+  const { data: movements = [], isLoading } = useQuery<any[]>({
     queryKey: [
       `/api/inventory/movements/${selectedBranch}/${selectedItem || "all"}`,
       parseInt(limit),

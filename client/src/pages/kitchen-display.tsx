@@ -84,7 +84,12 @@ interface Order {
   scheduledPickupTime?: string;
   preparationHoldUntil?: string;
   customerNotes?: string;
+  customerName?: string;
   branchId?: string;
+  estimatedPrepTimeMinutes?: number;
+  prepStartedAt?: string;
+  priority?: 'normal' | 'rush' | 'vip';
+  dailyNumber?: number;
 }
 
 const DELAY_THRESHOLD_MINUTES = 10;

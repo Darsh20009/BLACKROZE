@@ -20,10 +20,10 @@ export default function OSRecipeManagement() {
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [recipeIngredients, setRecipeIngredients] = useState<any[]>([]);
 
-  const { data: products } = useQuery({ queryKey: ["/api/coffee-items"] });
-  const { data: ingredients } = useQuery({ queryKey: ["/api/ingredients"] });
+  const { data: products } = useQuery<any[]>({ queryKey: ["/api/coffee-items"] });
+  const { data: ingredients } = useQuery<any[]>({ queryKey: ["/api/ingredients"] });
 
-  const { data: existingRecipe, isLoading: loadingRecipe } = useQuery({
+  const { data: existingRecipe, isLoading: loadingRecipe } = useQuery<any>({
     queryKey: ["/api/recipes/product", selectedProduct],
     enabled: !!selectedProduct,
   });

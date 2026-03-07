@@ -40,6 +40,16 @@ export interface ICoffeeItem extends Document {
   publishedBranches?: string[];
   isGiftable?: boolean;
   groupId?: string; // For grouping similar products (variants)
+  coffeeStrength?: string; // e.g., 'light', 'classic', 'strong', 'extra_strong'
+  strengthLevel?: number; // 1-4 numeric strength
+  addons?: Array<{
+    id?: string;
+    nameAr: string;
+    nameEn?: string;
+    price: number;
+    category?: string;
+    imageUrl?: string;
+  }>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -122,10 +132,6 @@ export interface IProductAddon extends Document {
   linkedCoffeeItemId?: string; // New field to link to a drink
   inventoryRawItemId?: string;
   linkedRawItemId?: string;
-  carType?: string;
-  carColor?: string;
-  plateNumber?: string;
-  saveCarInfo?: number;
   createdAt: Date;
 }
 
@@ -166,10 +172,6 @@ export interface IWarehouseTransfer extends Document {
   status: 'pending' | 'shipped' | 'received' | 'cancelled';
   notes?: string;
   createdBy: string;
-  carType?: string;
-  carColor?: string;
-  plateNumber?: string;
-  saveCarInfo?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -373,10 +375,6 @@ export interface ICustomer extends Document {
   pendingPoints?: number;
   walletBalance?: number;
   walletPin?: string;
-  carType?: string;
-  carColor?: string;
-  plateNumber?: string;
-  saveCarInfo?: number;
   carType?: string;
   carColor?: string;
   plateNumber?: string;
@@ -652,6 +650,8 @@ export interface IBusinessConfig extends Document {
   vatPercentage: number;
   currency: string;
   timezone: string;
+  isMaintenanceMode?: boolean;
+  maintenanceReason?: string;
   isEmergencyClosed: boolean;
   storeHours: IStoreHours;
   socialLinks: ISocialLinks;
@@ -987,10 +987,7 @@ export interface IBranch extends Document {
     showVat: boolean;
   };
   lateThresholdMinutes?: number; // عتبة التأخير بالدقائق
-  carType?: string;
-  carColor?: string;
-  plateNumber?: string;
-  saveCarInfo?: number;
+  city?: string;
   createdAt: Date;
 }
 
@@ -1029,6 +1026,9 @@ export interface IDiscountCode extends Document {
   employeeId: string;
   isActive: number;
   usageCount: number;
+  expiryDate?: Date;
+  usageLimit?: number;
+  minPurchase?: number;
   carType?: string;
   carColor?: string;
   plateNumber?: string;
@@ -1065,9 +1065,13 @@ export interface IOrder extends Document {
   carType?: string;
   carColor?: string;
   plateNumber?: string;
+  carPlate?: string;
   arrivalNoticeSent?: boolean;
   customerInfo?: any;
   customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
   employeeId?: string;
   assignedCashierId?: string;
   branchId?: string;
@@ -1076,6 +1080,21 @@ export interface IOrder extends Document {
   customerNotes?: string;
   cancellationReason?: string;
   cancelledBy?: 'customer' | 'cashier';
+  subtotal?: number;
+  tax?: number;
+  arrivalTime?: string;
+  dineIn?: boolean;
+  carInfo?: {
+    carType?: string;
+    carColor?: string;
+    plateNumber?: string;
+  };
+  statusHistory?: Array<{
+    status: string;
+    timestamp?: Date;
+    updatedBy?: string;
+    notes?: string;
+  }>;
   carPickup?: {
     carType?: string;
     carColor?: string;
@@ -1116,11 +1135,6 @@ export interface IOrder extends Document {
     unitCost: number;
     totalCost: number;
   }>;
-  carType?: string;
-  carColor?: string;
-  plateNumber?: string;
-  saveCarInfo?: number;
-  dailyNumber?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -1279,6 +1293,7 @@ export interface ILoyaltyCard extends Document {
   cardDesign?: string;
   reissuanceCount: number;
   stamps: number;
+  currentStamps?: number;
   freeCupsEarned: number;
   freeCupsRedeemed: number;
   points: number;
@@ -1389,10 +1404,12 @@ export interface ILoyaltyTransaction extends Document {
   orderAmount?: number;
   description?: string;
   employeeId?: string;
+  customerId?: string;
   carType?: string;
   carColor?: string;
   plateNumber?: string;
   saveCarInfo?: number;
+  timestamp?: string;
   createdAt: Date;
 }
 
@@ -1551,6 +1568,7 @@ export interface ITable extends Document {
   tableNumber: string;
   qrToken: string;
   branchId: string;
+  tenantId?: string;
   capacity?: number;
   location?: string;
   isActive: number;
@@ -2561,6 +2579,20 @@ export const insertDiscountCodeSchema = z.object({
 export const insertLoyaltyCardSchema = z.object({
   customerName: z.string().optional(),
   phoneNumber: z.string(),
+  customerId: z.string().optional(),
+  cardNumber: z.string().optional(),
+  qrToken: z.string().optional(),
+  stamps: z.number().optional(),
+  freeCupsEarned: z.number().optional(),
+  freeCupsRedeemed: z.number().optional(),
+  totalSpent: z.number().optional(),
+  points: z.number().optional(),
+  pendingPoints: z.number().optional(),
+  isActive: z.number().optional(),
+  tier: z.string().optional(),
+  status: z.string().optional(),
+  discountCount: z.number().optional(),
+  reissuanceCount: z.number().optional(),
 });
 
 export const insertCardCodeSchema = z.object({
@@ -2571,8 +2603,10 @@ export const insertCardCodeSchema = z.object({
 export const insertLoyaltyTransactionSchema = z.object({
   cardId: z.string(),
   orderId: z.string().optional(),
+  customerId: z.string().optional(),
   type: z.string(),
   pointsChange: z.number(),
+  points: z.number().optional(),
   discountAmount: z.union([z.string(), z.number()]).transform(val => typeof val === 'string' ? parseFloat(val) : val).optional(),
   orderAmount: z.union([z.string(), z.number()]).transform(val => typeof val === 'string' ? parseFloat(val) : val).optional(),
   description: z.string().optional(),
@@ -2790,6 +2824,7 @@ export interface IRawItem extends Document {
   category: 'ingredient' | 'packaging' | 'equipment' | 'consumable' | 'other';
   unit: 'kg' | 'g' | 'liter' | 'ml' | 'piece' | 'box' | 'bag';
   unitCost: number;
+  lastCost?: number;
   minStockLevel: number;
   maxStockLevel?: number;
   supplierId?: string;
@@ -2899,6 +2934,7 @@ export interface IStockTransfer extends Document {
   }>;
   requestedBy: string;
   approvedBy?: string;
+  completedBy?: string;
   requestDate: Date;
   approvalDate?: Date;
   completionDate?: Date;

@@ -1021,10 +1021,10 @@ setIsUploadingImage(false);
                        <Switch 
                          id="isGiftable" 
                          checked={step1Data?.isGiftable || false}
-                         onCheckedChange={(checked) => setStep1Data(prev => ({
-                           ...(prev || {}),
+                         onCheckedChange={(checked) => setStep1Data(prev => prev ? ({
+                           ...prev,
                            isGiftable: checked
-                         }))}
+                         }) : prev)}
                        />
                        <Label htmlFor="isGiftable" className="text-gray-300">قابل للإهداء</Label>
                      </div>

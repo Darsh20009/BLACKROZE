@@ -143,7 +143,7 @@ export function useNotifications(options?: UseNotificationsOptions) {
           badge: '/favicon.png',
           vibrate: [200, 100, 200],
           ...notifOptions,
-        });
+        } as NotificationOptions & { vibrate?: number[] });
       });
     }
   }, []);

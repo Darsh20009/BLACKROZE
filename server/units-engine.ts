@@ -20,7 +20,7 @@ export type SupportedUnit = "g" | "kg" | "ml" | "l" | "pcs" | "piece" | "box";
 /**
  * Conversion ratios
  */
-const CONVERSION_RULES: Record<string, Record<string, number>> = {
+const CONVERSION_RULES: Record<string, number> = {
   // Weight conversions (to grams as base)
   "g-kg": 1000,
   "kg-g": 0.001,

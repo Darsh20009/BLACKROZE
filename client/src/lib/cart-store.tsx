@@ -16,7 +16,7 @@ interface EnrichedCartItem {
 }
 
 export interface DeliveryInfo {
-  type: 'pickup' | 'delivery' | 'dine-in' | 'car-pickup';
+  type: 'pickup' | 'delivery' | 'dine-in' | 'car-pickup' | 'scheduled-pickup';
   branchId?: string;
   branchName?: string;
   branchAddress?: string;
@@ -25,6 +25,11 @@ export interface DeliveryInfo {
   tableNumber?: string;
   arrivalTime?: string;
   carPickup?: boolean;
+  carType?: string;
+  carColor?: string;
+  carPlate?: string;
+  plateNumber?: string;
+  scheduledPickupTime?: string;
   carInfo?: {
     carType: string;
     carColor: string;

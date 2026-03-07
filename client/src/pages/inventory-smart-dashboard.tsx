@@ -12,11 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowUpCircle, ArrowDownCircle, History, AlertCircle } from "lucide-react";
 
 export default function InventoryDashboard() {
-  const { data: movements, isLoading: loadingMovements } = useQuery({
+  const { data: movements, isLoading: loadingMovements } = useQuery<any[]>({
     queryKey: ["/api/inventory/movements"],
   });
 
-  const { data: alerts, isLoading: loadingAlerts } = useQuery({
+  const { data: alerts, isLoading: loadingAlerts } = useQuery<any[]>({
     queryKey: ["/api/inventory/alerts"],
   });
 

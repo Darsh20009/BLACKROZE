@@ -77,6 +77,8 @@ export interface PushPayload {
   orderType?: string;
   estimatedTime?: number;
   branchName?: string;
+  orderId?: string;
+  status?: string;
 }
 
 async function sendPushToSubscriptions(

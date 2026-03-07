@@ -27,7 +27,7 @@ export default function AdminEmail() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
-  const { data: customers, isLoading } = useQuery({
+  const { data: customers, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/customers-list"],
   });
 

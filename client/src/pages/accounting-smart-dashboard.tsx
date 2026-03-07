@@ -16,22 +16,22 @@ export default function AccountingSmartDashboard() {
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const { data: snapshot = {}, isLoading: snapshotLoading } = useQuery({
+  const { data: snapshot = {}, isLoading: snapshotLoading } = useQuery<any>({
     queryKey: [`/api/accounting/daily-snapshot/${selectedBranch}`],
     enabled: !!selectedBranch,
   });
 
-  const { data: profitByItem = [], isLoading: profitLoading } = useQuery({
+  const { data: profitByItem = [], isLoading: profitLoading } = useQuery<any[]>({
     queryKey: [`/api/accounting/profit-by-item/${selectedBranch}`, startDate, endDate],
     enabled: !!selectedBranch,
   });
 
-  const { data: topItems = [], isLoading: topLoading } = useQuery({
+  const { data: topItems = [], isLoading: topLoading } = useQuery<any[]>({
     queryKey: [`/api/accounting/top-items/${selectedBranch}`, startDate, endDate],
     enabled: !!selectedBranch,
   });
 
-  const { data: wasteReport = [], isLoading: wasteLoading } = useQuery({
+  const { data: wasteReport = [], isLoading: wasteLoading } = useQuery<any[]>({
     queryKey: [`/api/accounting/waste-report/${selectedBranch}`, startDate, endDate],
     enabled: !!selectedBranch,
   });

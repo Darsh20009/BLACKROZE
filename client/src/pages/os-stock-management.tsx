@@ -16,15 +16,15 @@ export default function OSStockManagement() {
   const [selectedIngredient, setSelectedIngredient] = useState("");
   const [quantity, setQuantity] = useState("");
 
-  const { data: ingredients = [], isLoading } = useQuery({
+  const { data: ingredients = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/ingredients"],
   });
 
-  const { data: movements = [] } = useQuery({
+  const { data: movements = [] } = useQuery<any[]>({
     queryKey: ["/api/inventory/movements"],
   });
 
-  const { data: alerts = [] } = useQuery({
+  const { data: alerts = [] } = useQuery<any[]>({
     queryKey: ["/api/inventory/alerts"],
   });
 

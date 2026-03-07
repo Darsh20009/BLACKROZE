@@ -36,7 +36,7 @@ interface OrderCardProps {
     updatedAt?: string;
     tableNumber?: string;
     orderType?: string;
-    deliveryType?: 'pickup' | 'delivery' | 'dine-in' | 'car-pickup' | 'car_pickup' | 'curbside';
+    deliveryType?: 'pickup' | 'delivery' | 'dine-in' | 'car-pickup' | 'car_pickup' | 'curbside' | 'scheduled-pickup';
     carInfo?: {
       carType: string;
       carColor: string;

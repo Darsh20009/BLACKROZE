@@ -1,4 +1,4 @@
-import { MapPin, Phone, MapOpen } from "lucide-react";
+import { MapPin, Phone, Map } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ export default function BranchCard({ branch, distance, onViewMap }: BranchCardPr
               className="w-full mt-2"
               data-testid={`button-view-map-${branch.id}`}
             >
-              <MapOpen className="w-4 h-4 ml-2" />
+              <Map className="w-4 h-4 ml-2" />
               عرض على الخريطة
             </Button>
           )}
