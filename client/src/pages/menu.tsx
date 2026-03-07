@@ -35,6 +35,8 @@ import type { CoffeeItem, IProductAddon, IPromoOffer } from "@shared/schema";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { MenuGridLayout } from "@/components/menu-layouts/MenuGridLayout";
+import { MenuMinimalLayout } from "@/components/menu-layouts/MenuMinimalLayout";
 
 interface MenuCategory {
   id: string;
@@ -473,6 +475,89 @@ export default function MenuPage() {
           <Coffee className="w-10 h-10 text-primary" />
         </motion.div>
       </div>
+    );
+  }
+
+  const menuLayout = businessConfig?.appearance?.menuLayout ?? 'classic';
+
+  const totalPrice = cartItems.reduce((sum, i) => {
+    let itemPrice = 0;
+    const basePrice = i.coffeeItem?.price || 0;
+    if (i.selectedSize && i.coffeeItem?.availableSizes) {
+      const size = i.coffeeItem.availableSizes.find((s: any) => s.nameAr === i.selectedSize);
+      itemPrice = size ? size.price : basePrice;
+    } else {
+      itemPrice = basePrice;
+    }
+    let price = 0;
+    if (typeof itemPrice === 'number') price = itemPrice;
+    else if (typeof itemPrice === 'string') price = parseFloat(itemPrice);
+    else if (itemPrice && typeof itemPrice === 'object' && '$numberDecimal' in (itemPrice as any)) price = parseFloat((itemPrice as any).$numberDecimal);
+    else price = parseFloat(String(itemPrice));
+    return sum + (isNaN(price) ? 0 : price * i.quantity);
+  }, 0).toFixed(2);
+
+  if (menuLayout === 'grid') {
+    return (
+      <>
+        <MenuGridLayout
+          sortedFilteredItems={sortedFilteredItems}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          handleAddToCartDirect={handleAddToCartDirect}
+          totalItems={totalItems}
+          totalPrice={totalPrice}
+          onViewCart={() => setLocation("/cart")}
+          t={t}
+          i18n={i18n}
+        />
+        <AddToCartModal
+          item={selectedItem}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          variants={selectedItem ? (groupedItems[getGroupingKey(selectedItem)] || [selectedItem]) : []}
+          onAddToCart={(data) => {
+            addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons);
+            setIsModalOpen(false);
+            toast({ title: t("menu.added_to_cart"), description: t("menu.added_to_cart_desc", { name: i18n.language === 'ar' ? selectedItem?.nameAr : selectedItem?.nameEn || selectedItem?.nameAr }), className: "bg-card border-primary/20 text-foreground font-medium" });
+          }}
+        />
+      </>
+    );
+  }
+
+  if (menuLayout === 'minimal') {
+    return (
+      <>
+        <MenuMinimalLayout
+          sortedFilteredItems={sortedFilteredItems}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          handleAddToCartDirect={handleAddToCartDirect}
+          totalItems={totalItems}
+          totalPrice={totalPrice}
+          onViewCart={() => setLocation("/cart")}
+          t={t}
+          i18n={i18n}
+        />
+        <AddToCartModal
+          item={selectedItem}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          variants={selectedItem ? (groupedItems[getGroupingKey(selectedItem)] || [selectedItem]) : []}
+          onAddToCart={(data) => {
+            addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons);
+            setIsModalOpen(false);
+            toast({ title: t("menu.added_to_cart"), description: t("menu.added_to_cart_desc", { name: i18n.language === 'ar' ? selectedItem?.nameAr : selectedItem?.nameEn || selectedItem?.nameAr }), className: "bg-card border-primary/20 text-foreground font-medium" });
+          }}
+        />
+      </>
     );
   }
 

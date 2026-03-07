@@ -1,5 +1,8 @@
 import { useEffect, useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { DashboardCommandLayout } from "@/components/dashboard-layouts/DashboardCommandLayout";
+import { DashboardSimpleLayout } from "@/components/dashboard-layouts/DashboardSimpleLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +54,10 @@ export default function EmployeeDashboard() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+
+  const { data: businessConfig } = useQuery<any>({
+    queryKey: ["/api/business-config"],
+  });
 
   // Set SEO metadata
   useEffect(() => {
@@ -365,6 +372,32 @@ export default function EmployeeDashboard() {
 
   const roleArabic = getRoleArabic(employee.role || "cashier");
   const roleVariant = getRoleVariant(employee.role || "cashier");
+
+  const dashboardLayout = businessConfig?.appearance?.dashboardLayout ?? 'classic';
+
+  if (dashboardLayout === 'command') {
+    return (
+      <DashboardCommandLayout
+        employee={employee}
+        notifications={notifications}
+        pendingOrdersCount={pendingOrders.length}
+        wsConnected={wsConnected}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (dashboardLayout === 'simple') {
+    return (
+      <DashboardSimpleLayout
+        employee={employee}
+        notifications={notifications}
+        pendingOrdersCount={pendingOrders.length}
+        wsConnected={wsConnected}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   return (
     <div dir="rtl" className="flex h-screen bg-background">

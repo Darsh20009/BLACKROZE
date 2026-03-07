@@ -236,6 +236,20 @@ export default function AdminSettings() {
   const [pointsRedemptionEnabled, setPointsRedemptionEnabled] = useState(true);
   const [pointsRedemptionMinPoints, setPointsRedemptionMinPoints] = useState(100);
 
+  const [menuLayout, setMenuLayout] = useState<'classic' | 'grid' | 'minimal'>('classic');
+  const [dashboardLayout, setDashboardLayout] = useState<'classic' | 'command' | 'simple'>('classic');
+
+  useEffect(() => {
+    if (config?.appearance) {
+      setMenuLayout(config.appearance.menuLayout ?? 'classic');
+      setDashboardLayout(config.appearance.dashboardLayout ?? 'classic');
+    }
+  }, [config]);
+
+  const handleSaveAppearance = () => {
+    mutation.mutate({ appearance: { menuLayout, dashboardLayout } });
+  };
+
   useEffect(() => {
     if (config?.loyaltyConfig) {
       setLoyaltyEnabled(config.loyaltyConfig.enabled ?? true);
@@ -2074,6 +2088,189 @@ export default function AdminSettings() {
           </div>
         )}
       </div>
+
+      {/* Layout Appearance Settings */}
+      <Card className="hover-elevate border-primary/20 shadow-lg" data-testid="card-layout-settings">
+        <CardHeader className="bg-primary/5 border-b">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Layout className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-bold">شكل العرض والواجهة</CardTitle>
+              <CardDescription>اختر شكل عرض المنيو ولوحة الموظفين</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 space-y-8">
+          {/* Menu Layout */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Coffee className="w-4 h-4 text-primary" />
+              <h3 className="font-bold text-foreground">شكل صفحة المنيو</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Classic */}
+              <button
+                onClick={() => setMenuLayout('classic')}
+                className={`flex flex-col gap-3 p-4 rounded-2xl border-2 text-right transition-all ${menuLayout === 'classic' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40 bg-card'}`}
+                data-testid="button-menu-layout-classic"
+              >
+                <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted/50 flex flex-col gap-1 p-2">
+                  <div className="w-full h-2 bg-primary/30 rounded" />
+                  <div className="w-full h-8 bg-muted rounded" />
+                  <div className="flex gap-1 mt-1">
+                    <div className="flex-1 h-4 bg-muted rounded" />
+                    <div className="flex-1 h-4 bg-muted rounded" />
+                  </div>
+                </div>
+                <div>
+                  <p className="font-bold text-sm">كلاسيك</p>
+                  <p className="text-xs text-muted-foreground">بانر كبير + قائمة بطاقات</p>
+                </div>
+                {menuLayout === 'classic' && <div className="w-4 h-4 rounded-full bg-primary self-end" />}
+              </button>
+
+              {/* Grid */}
+              <button
+                onClick={() => setMenuLayout('grid')}
+                className={`flex flex-col gap-3 p-4 rounded-2xl border-2 text-right transition-all ${menuLayout === 'grid' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40 bg-card'}`}
+                data-testid="button-menu-layout-grid"
+              >
+                <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted/50 grid grid-cols-3 gap-1 p-2">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="bg-muted rounded aspect-square" />
+                  ))}
+                </div>
+                <div>
+                  <p className="font-bold text-sm">شبكة</p>
+                  <p className="text-xs text-muted-foreground">بطاقات مربعة 3 أعمدة</p>
+                </div>
+                {menuLayout === 'grid' && <div className="w-4 h-4 rounded-full bg-primary self-end" />}
+              </button>
+
+              {/* Minimal */}
+              <button
+                onClick={() => setMenuLayout('minimal')}
+                className={`flex flex-col gap-3 p-4 rounded-2xl border-2 text-right transition-all ${menuLayout === 'minimal' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40 bg-card'}`}
+                data-testid="button-menu-layout-minimal"
+              >
+                <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted/50 flex flex-col gap-1 p-2">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <div className="w-5 h-5 bg-muted rounded shrink-0" />
+                      <div className="flex-1 h-1.5 bg-muted rounded" />
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="font-bold text-sm">مدمج</p>
+                  <p className="text-xs text-muted-foreground">قائمة صفوف بصورة صغيرة</p>
+                </div>
+                {menuLayout === 'minimal' && <div className="w-4 h-4 rounded-full bg-primary self-end" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Dashboard Layout */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              <MonitorSmartphone className="w-4 h-4 text-primary" />
+              <h3 className="font-bold text-foreground">شكل لوحة الموظفين</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Classic dashboard */}
+              <button
+                onClick={() => setDashboardLayout('classic')}
+                className={`flex flex-col gap-3 p-4 rounded-2xl border-2 text-right transition-all ${dashboardLayout === 'classic' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40 bg-card'}`}
+                data-testid="button-dashboard-layout-classic"
+              >
+                <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted/50 flex gap-1 p-2">
+                  <div className="w-8 h-full bg-muted rounded" />
+                  <div className="flex-1 space-y-1">
+                    <div className="w-full h-2 bg-muted rounded" />
+                    <div className="grid grid-cols-2 gap-1 mt-1">
+                      <div className="bg-muted rounded h-8" />
+                      <div className="bg-muted rounded h-8" />
+                      <div className="bg-muted rounded h-8" />
+                      <div className="bg-muted rounded h-8" />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-bold text-sm">كلاسيك</p>
+                  <p className="text-xs text-muted-foreground">شريط جانبي + شبكة خدمات</p>
+                </div>
+                {dashboardLayout === 'classic' && <div className="w-4 h-4 rounded-full bg-primary self-end" />}
+              </button>
+
+              {/* Command dashboard */}
+              <button
+                onClick={() => setDashboardLayout('command')}
+                className={`flex flex-col gap-3 p-4 rounded-2xl border-2 text-right transition-all ${dashboardLayout === 'command' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40 bg-card'}`}
+                data-testid="button-dashboard-layout-command"
+              >
+                <div className="w-full aspect-video rounded-lg overflow-hidden bg-[#111] flex flex-col gap-1 p-2">
+                  <div className="flex gap-1">
+                    <div className="flex-1 h-5 bg-white/10 rounded" />
+                    <div className="flex-1 h-5 bg-white/10 rounded" />
+                    <div className="flex-1 h-5 bg-white/10 rounded" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 mt-1">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="bg-white/5 rounded h-4" />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="font-bold text-sm">مركز القيادة</p>
+                  <p className="text-xs text-muted-foreground">ثيم داكن + بطاقات KPI</p>
+                </div>
+                {dashboardLayout === 'command' && <div className="w-4 h-4 rounded-full bg-primary self-end" />}
+              </button>
+
+              {/* Simple dashboard */}
+              <button
+                onClick={() => setDashboardLayout('simple')}
+                className={`flex flex-col gap-3 p-4 rounded-2xl border-2 text-right transition-all ${dashboardLayout === 'simple' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40 bg-card'}`}
+                data-testid="button-dashboard-layout-simple"
+              >
+                <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted/50 flex flex-col gap-1 p-2">
+                  <div className="w-full h-2 bg-muted rounded" />
+                  <div className="grid grid-cols-4 gap-1 mt-1">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="bg-muted rounded h-6 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-primary/30 rounded" />
+                      </div>
+                    ))}
+                  </div>
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex gap-1 items-center">
+                      <div className="w-3 h-3 bg-muted rounded" />
+                      <div className="flex-1 h-1.5 bg-muted rounded" />
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="font-bold text-sm">بسيط</p>
+                  <p className="text-xs text-muted-foreground">تنقل علوي نظيف ومبسّط</p>
+                </div>
+                {dashboardLayout === 'simple' && <div className="w-4 h-4 rounded-full bg-primary self-end" />}
+              </button>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleSaveAppearance}
+            disabled={mutation.isPending}
+            className="w-full sm:w-auto"
+            data-testid="button-save-appearance"
+          >
+            <Save className="w-4 h-4 ml-2" />
+            حفظ إعدادات العرض
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Footer Info */}
       <div className="text-center pt-10 text-muted-foreground text-xs font-ibm-arabic">

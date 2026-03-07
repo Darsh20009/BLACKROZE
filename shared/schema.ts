@@ -663,6 +663,10 @@ export interface IBusinessConfig extends Document {
   paymentGateway?: IPaymentGatewayConfig;
   loyaltyConfig?: ILoyaltyConfig;
   offersConfig?: Record<string, any>;
+  appearance?: {
+    menuLayout?: 'classic' | 'grid' | 'minimal';
+    dashboardLayout?: 'classic' | 'command' | 'simple';
+  };
   createdAt: Date;
   updatedAt: Date;
 }
