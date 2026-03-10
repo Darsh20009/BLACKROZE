@@ -586,7 +586,7 @@ export const CafeModel = mongoose.model<ICafe>("Cafe", CafeSchema);
 // --- NEW OPERATING SYSTEM CORE MODELS ---
 
 // 1. Business Configuration (Extended Cafe)
-export type PaymentGatewayProvider = 'none' | 'neoleap' | 'geidea';
+export type PaymentGatewayProvider = 'none' | 'neoleap' | 'geidea' | 'paymob';
 
 export interface IPaymentGatewayConfig {
   provider: PaymentGatewayProvider;
@@ -603,6 +603,13 @@ export interface IPaymentGatewayConfig {
     apiPassword?: string;
     baseUrl?: string;
     callbackUrl?: string;
+  };
+  paymob?: {
+    apiKey?: string;
+    integrationId?: string;
+    iframeId?: string;
+    walletIntegrationId?: string;
+    hmacSecret?: string;
   };
   cashEnabled: boolean;
   posEnabled: boolean;
@@ -674,7 +681,7 @@ export interface IBusinessConfig extends Document {
 export type BusinessConfig = IBusinessConfig;
 
 const PaymentGatewayConfigSchema = new Schema({
-  provider: { type: String, enum: ['none', 'neoleap', 'geidea'], default: 'none' },
+  provider: { type: String, enum: ['none', 'neoleap', 'geidea', 'paymob'], default: 'none' },
   enabledMethods: [{ type: String }],
   neoleap: {
     clientId: { type: String },
@@ -688,6 +695,13 @@ const PaymentGatewayConfigSchema = new Schema({
     apiPassword: { type: String },
     baseUrl: { type: String, default: 'https://api.merchant.geidea.net' },
     callbackUrl: { type: String },
+  },
+  paymob: {
+    apiKey: { type: String },
+    integrationId: { type: String },
+    iframeId: { type: String },
+    walletIntegrationId: { type: String },
+    hmacSecret: { type: String },
   },
   cashEnabled: { type: Boolean, default: true },
   posEnabled: { type: Boolean, default: true },

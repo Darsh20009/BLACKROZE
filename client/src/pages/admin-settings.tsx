@@ -75,6 +75,11 @@ export default function AdminSettings() {
   const [geideaPublicKey, setGeideaPublicKey] = useState("");
   const [geideaApiPassword, setGeideaApiPassword] = useState("");
   const [geideaBaseUrl, setGeideaBaseUrl] = useState("https://api.merchant.geidea.net");
+  const [paymobApiKey, setPaymobApiKey] = useState("");
+  const [paymobIntegrationId, setPaymobIntegrationId] = useState("");
+  const [paymobIframeId, setPaymobIframeId] = useState("");
+  const [paymobWalletIntegrationId, setPaymobWalletIntegrationId] = useState("");
+  const [paymobHmacSecret, setPaymobHmacSecret] = useState("");
   const [showSecrets, setShowSecrets] = useState(false);
   const [showAppGuide, setShowAppGuide] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -94,6 +99,11 @@ export default function AdminSettings() {
       }
       if (pgConfig.geidea) {
         setGeideaBaseUrl(pgConfig.geidea.baseUrl || 'https://api.merchant.geidea.net');
+      }
+      if (pgConfig.paymob) {
+        setPaymobIntegrationId(pgConfig.paymob.integrationId || '');
+        setPaymobIframeId(pgConfig.paymob.iframeId || '');
+        setPaymobWalletIntegrationId(pgConfig.paymob.walletIntegrationId || '');
       }
     }
   }, [pgConfig]);
@@ -130,6 +140,12 @@ export default function AdminSettings() {
     if (geideaPublicKey && !geideaPublicKey.startsWith('****')) updates.geideaPublicKey = geideaPublicKey;
     if (geideaApiPassword && !geideaApiPassword.startsWith('****')) updates.geideaApiPassword = geideaApiPassword;
     if (geideaBaseUrl) updates.geideaBaseUrl = geideaBaseUrl;
+
+    if (paymobApiKey && !paymobApiKey.startsWith('****')) updates.paymobApiKey = paymobApiKey;
+    if (paymobIntegrationId) updates.paymobIntegrationId = paymobIntegrationId;
+    if (paymobIframeId) updates.paymobIframeId = paymobIframeId;
+    if (paymobWalletIntegrationId) updates.paymobWalletIntegrationId = paymobWalletIntegrationId;
+    if (paymobHmacSecret && !paymobHmacSecret.startsWith('****')) updates.paymobHmacSecret = paymobHmacSecret;
 
     pgMutation.mutate(updates);
   };
@@ -1095,8 +1111,8 @@ export default function AdminSettings() {
                 </div>
               </div>
               {pgConfig && (
-                <Badge variant={pgConfig.provider !== 'none' && (pgConfig.neoleap?.configured || pgConfig.geidea?.configured) ? 'default' : 'secondary'}>
-                  {pgConfig.provider === 'neoleap' ? 'NeoLeap' : pgConfig.provider === 'geidea' ? 'Geidea' : 'غير مفعّل'}
+                <Badge variant={pgConfig.provider !== 'none' && (pgConfig.neoleap?.configured || pgConfig.geidea?.configured || pgConfig.paymob?.configured) ? 'default' : 'secondary'}>
+                  {pgConfig.provider === 'neoleap' ? 'NeoLeap' : pgConfig.provider === 'geidea' ? 'Geidea' : pgConfig.provider === 'paymob' ? 'Paymob' : 'غير مفعّل'}
                 </Badge>
               )}
             </div>
@@ -1104,11 +1120,12 @@ export default function AdminSettings() {
           <CardContent className="space-y-6 pt-2">
             <div className="space-y-3">
               <Label className="text-sm font-bold">مزود الدفع الإلكتروني</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                   { id: 'none', label: 'بدون بوابة', desc: 'كاش فقط', icon: Banknote },
                   { id: 'neoleap', label: 'NeoLeap (نيو ليب)', desc: 'مدى، فيزا، ماستر كارد', icon: CreditCard },
                   { id: 'geidea', label: 'Geidea (جيديا)', desc: 'مدى، فيزا، ماستر كارد', icon: CreditCard },
+                  { id: 'paymob', label: 'Paymob (بيموب)', desc: 'بطاقات، محافظ، Apple Pay', icon: CreditCard },
                 ].map((opt) => (
                   <div
                     key={opt.id}
@@ -1314,6 +1331,124 @@ export default function AdminSettings() {
                       >
                         نسخ
                       </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {pgProvider === 'paymob' && (
+              <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-lg border">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <Label className="text-sm font-bold text-indigo-700 dark:text-indigo-400">إعدادات Paymob (بيموب)</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open('https://my.paymob.com', '_blank')}
+                    data-testid="link-paymob-portal"
+                  >
+                    <ExternalLink className="w-3 h-3 ml-1" />
+                    لوحة تحكم Paymob
+                  </Button>
+                </div>
+
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded border border-blue-200 dark:border-blue-800 text-xs space-y-1">
+                  <p className="font-bold text-blue-800 dark:text-blue-300">كيف تحصل على بيانات Paymob:</p>
+                  <ol className="list-decimal list-inside space-y-0.5 text-blue-700 dark:text-blue-400">
+                    <li>سجّل في <span className="font-mono">my.paymob.com</span> وفعّل حسابك</li>
+                    <li>API Key: الإعدادات ← الأمان</li>
+                    <li>Integration ID: المدفوعات ← الدمج ← رقم الدمج</li>
+                    <li>iFrame ID: المدفوعات ← iFrames ← رقم الـ iframe</li>
+                    <li>HMAC Secret: الإعدادات ← الأمان ← HMAC Secret</li>
+                  </ol>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">API Key <span className="text-destructive">*</span></Label>
+                    <Input
+                      type={showSecrets ? "text" : "password"}
+                      value={paymobApiKey}
+                      onChange={e => setPaymobApiKey(e.target.value)}
+                      placeholder={pgConfig?.paymob?.configured ? pgConfig.paymob.apiKey : 'أدخل API Key'}
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-api-key"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Integration ID <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={paymobIntegrationId}
+                      onChange={e => setPaymobIntegrationId(e.target.value)}
+                      placeholder="مثال: 123456"
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-integration-id"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">iFrame ID <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={paymobIframeId}
+                      onChange={e => setPaymobIframeId(e.target.value)}
+                      placeholder="مثال: 789012"
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-iframe-id"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Wallet Integration ID (اختياري — للمحافظ)</Label>
+                    <Input
+                      value={paymobWalletIntegrationId}
+                      onChange={e => setPaymobWalletIntegrationId(e.target.value)}
+                      placeholder="مثال: 654321"
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-wallet-integration-id"
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs">HMAC Secret (للتحقق من الـ webhook)</Label>
+                    <Input
+                      type={showSecrets ? "text" : "password"}
+                      value={paymobHmacSecret}
+                      onChange={e => setPaymobHmacSecret(e.target.value)}
+                      placeholder={pgConfig?.paymob?.hmacSecret ? pgConfig.paymob.hmacSecret : 'أدخل HMAC Secret'}
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-hmac-secret"
+                    />
+                  </div>
+                </div>
+
+                {pgConfig?.paymob?.configured && (
+                  <div className="flex items-center gap-1 text-xs text-green-600">
+                    <CheckCircle className="w-3 h-3" />
+                    <span>بيانات الاعتماد محفوظة</span>
+                  </div>
+                )}
+
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800 text-xs space-y-2">
+                  <p className="font-bold text-amber-800 dark:text-amber-300">روابط Paymob — أضفها في لوحة تحكم بيموب:</p>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-amber-700 dark:text-amber-400 block">Transaction Processed Callback (إعادة التوجيه بعد الدفع)</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        readOnly
+                        value={`${window.location.origin}/api/payments/paymob/callback`}
+                        className="text-[11px] font-mono bg-white dark:bg-black"
+                        data-testid="input-paymob-callback-url"
+                      />
+                      <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/api/payments/paymob/callback`); toast({ title: 'تم النسخ' }); }} data-testid="button-copy-paymob-callback">نسخ</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-amber-700 dark:text-amber-400 block">Server-to-Server Webhook (HMAC-SHA512)</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        readOnly
+                        value={`${window.location.origin}/api/payments/paymob/webhook`}
+                        className="text-[11px] font-mono bg-white dark:bg-black"
+                        data-testid="input-paymob-webhook-url"
+                      />
+                      <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/api/payments/paymob/webhook`); toast({ title: 'تم النسخ' }); }} data-testid="button-copy-paymob-webhook">نسخ</Button>
                     </div>
                   </div>
                 </div>

@@ -1688,6 +1688,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           baseUrl: pg.geidea?.baseUrl || 'https://api.merchant.geidea.net',
           callbackUrl: pg.geidea?.callbackUrl || '',
         },
+        paymob: {
+          configured: !!(pg.paymob?.apiKey && pg.paymob?.integrationId && pg.paymob?.iframeId),
+          apiKey: maskSecret(pg.paymob?.apiKey),
+          integrationId: pg.paymob?.integrationId || '',
+          iframeId: pg.paymob?.iframeId || '',
+          walletIntegrationId: pg.paymob?.walletIntegrationId || '',
+          hmacSecret: maskSecret(pg.paymob?.hmacSecret),
+        },
       });
     } catch (error) {
       res.status(500).json({ error: "فشل في جلب إعدادات الدفع" });
@@ -1723,6 +1731,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (body.geideaApiPassword) updates['paymentGateway.geidea.apiPassword'] = body.geideaApiPassword;
       if (body.geideaBaseUrl) updates['paymentGateway.geidea.baseUrl'] = body.geideaBaseUrl;
       if (body.geideaCallbackUrl) updates['paymentGateway.geidea.callbackUrl'] = body.geideaCallbackUrl;
+
+      if (body.paymobApiKey) updates['paymentGateway.paymob.apiKey'] = body.paymobApiKey;
+      if (body.paymobIntegrationId) updates['paymentGateway.paymob.integrationId'] = body.paymobIntegrationId;
+      if (body.paymobIframeId) updates['paymentGateway.paymob.iframeId'] = body.paymobIframeId;
+      if (body.paymobWalletIntegrationId) updates['paymentGateway.paymob.walletIntegrationId'] = body.paymobWalletIntegrationId;
+      if (body.paymobHmacSecret) updates['paymentGateway.paymob.hmacSecret'] = body.paymobHmacSecret;
 
       updates['updatedAt'] = new Date();
 
@@ -1875,6 +1889,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (neoleapError: any) {
           console.error('[NeoLeap] API error:', neoleapError.message);
           return res.status(500).json({ error: "خطأ في الاتصال بنيو ليب", details: neoleapError.message });
+        }
+      }
+
+      if (pg.provider === 'paymob') {
+        const apiKey = pg.paymob?.apiKey;
+        const integrationId = pg.paymob?.integrationId;
+        const iframeId = pg.paymob?.iframeId;
+
+        if (!apiKey || !integrationId || !iframeId) {
+          return res.status(400).json({ error: "بيانات اعتماد Paymob غير مكتملة (API Key، Integration ID، iFrame ID مطلوبة)" });
+        }
+
+        try {
+          // Step 1: Authentication — get auth token
+          const authResponse = await fetch('https://accept.paymob.com/api/auth/tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: apiKey }),
+          });
+          const authData = await authResponse.json() as any;
+          if (!authResponse.ok || !authData.token) {
+            console.error('[Paymob] Auth failed:', authData);
+            return res.status(400).json({ error: "فشل مصادقة Paymob — تحقق من API Key", details: authData.detail || authData.message });
+          }
+          const authToken = authData.token;
+
+          // Step 2: Order Registration
+          const amountCents = Math.round(amount * 100);
+          const orderResponse = await fetch('https://accept.paymob.com/api/ecommerce/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              auth_token: authToken,
+              delivery_needed: 'false',
+              amount_cents: amountCents,
+              currency: currency || 'EGP',
+              merchant_order_id: orderId || sessionId,
+              items: [],
+            }),
+          });
+          const orderData = await orderResponse.json() as any;
+          if (!orderResponse.ok || !orderData.id) {
+            console.error('[Paymob] Order registration failed:', orderData);
+            return res.status(400).json({ error: "فشل تسجيل الطلب في Paymob", details: orderData.message });
+          }
+          const paymobOrderId = orderData.id;
+
+          // Step 3: Payment Key
+          const paymentKeyResponse = await fetch('https://accept.paymob.com/api/acceptance/payment_keys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              auth_token: authToken,
+              amount_cents: amountCents,
+              expiration: 3600,
+              order_id: paymobOrderId,
+              billing_data: {
+                apartment: 'NA',
+                email: customerEmail || 'customer@example.com',
+                floor: 'NA',
+                first_name: 'Customer',
+                street: 'NA',
+                building: 'NA',
+                phone_number: customerPhone || '+00000000000',
+                shipping_method: 'NA',
+                postal_code: 'NA',
+                city: 'NA',
+                country: 'NA',
+                last_name: 'NA',
+                state: 'NA',
+              },
+              currency: currency || 'EGP',
+              integration_id: integrationId,
+              lock_order_when_paid: 'false',
+            }),
+          });
+          const paymentKeyData = await paymentKeyResponse.json() as any;
+          if (!paymentKeyResponse.ok || !paymentKeyData.token) {
+            console.error('[Paymob] Payment key failed:', paymentKeyData);
+            return res.status(400).json({ error: "فشل الحصول على مفتاح الدفع من Paymob", details: paymentKeyData.message });
+          }
+          const paymentToken = paymentKeyData.token;
+
+          // Step 4: Build iFrame URL
+          const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
+
+          console.log(`[Paymob] Payment session created — Order: ${paymobOrderId}, iFrame: ${iframeUrl}`);
+          return res.json({
+            success: true,
+            sessionId,
+            redirectUrl: iframeUrl,
+            paymentUrl: iframeUrl,
+            provider: 'paymob',
+            externalId: String(paymobOrderId),
+            paymentToken,
+          });
+        } catch (paymobError: any) {
+          console.error('[Paymob] API error:', paymobError.message);
+          return res.status(500).json({ error: "خطأ في الاتصال بـ Paymob", details: paymobError.message });
         }
       }
 
@@ -2072,9 +2185,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      if (pg.provider === 'paymob') {
+        const apiKey = pg.paymob?.apiKey;
+        if (!apiKey) {
+          return res.json({ success: false, message: "API Key لـ Paymob غير مدخل" });
+        }
+        try {
+          const authRes = await fetch('https://accept.paymob.com/api/auth/tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: apiKey }),
+          });
+          const authData = await authRes.json() as any;
+          if (authRes.ok && authData.token) {
+            return res.json({ success: true, message: "اتصال Paymob ناجح — تم الحصول على Auth Token", provider: 'paymob' });
+          } else {
+            return res.json({ success: false, message: "فشل مصادقة Paymob — تحقق من API Key", details: authData.detail || authData.message });
+          }
+        } catch (err: any) {
+          return res.json({ success: false, message: `خطأ في الاتصال بـ Paymob: ${err.message}` });
+        }
+      }
+
       res.json({ success: false, message: "مزود غير مدعوم" });
     } catch (error) {
       res.status(500).json({ error: "فشل في اختبار الاتصال" });
+    }
+  });
+
+  // Paymob Transaction Processed Callback (GET redirect from iFrame after payment)
+  app.get("/api/payments/paymob/callback", async (req, res) => {
+    try {
+      const query = req.query as Record<string, string>;
+      const { success, order, id: transactionId, hmac } = query;
+
+      const tenantId = 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const hmacSecret = config?.paymentGateway?.paymob?.hmacSecret;
+
+      if (hmacSecret && hmac) {
+        const { createHmac } = await import('crypto');
+        const fields = [
+          'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
+          'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
+          'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending',
+          'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success',
+        ];
+        const concatenated = fields.map(f => query[f] || '').join('');
+        const expectedHmac = createHmac('sha512', hmacSecret).update(concatenated).digest('hex');
+        if (expectedHmac !== hmac) {
+          console.warn('[Paymob Callback] HMAC mismatch — possible tampering');
+          return res.redirect(`/checkout?payment=failed&reason=hmac`);
+        }
+      }
+
+      const isPaid = success === 'true';
+      console.log(`[Paymob Callback] Order: ${order}, TxID: ${transactionId}, Success: ${isPaid}`);
+
+      if (isPaid) {
+        return res.redirect(`/checkout?payment=success&provider=paymob&txId=${transactionId}`);
+      } else {
+        return res.redirect(`/checkout?payment=failed&provider=paymob`);
+      }
+    } catch (error) {
+      console.error('[Paymob Callback] Error:', error);
+      res.redirect('/checkout?payment=error');
+    }
+  });
+
+  // Paymob HMAC-SHA512 Webhook (Server-to-Server Transaction Notification)
+  app.post("/api/payments/paymob/webhook", async (req, res) => {
+    try {
+      const body = req.body;
+      const hmacHeader = req.query.hmac as string || req.headers['x-hmac'] as string;
+
+      const tenantId = 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const hmacSecret = config?.paymentGateway?.paymob?.hmacSecret;
+
+      if (hmacSecret) {
+        const { createHmac } = await import('crypto');
+        const txn = body?.obj || {};
+        const fields = [
+          'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
+          'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
+          'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending',
+          'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success',
+        ];
+        const getValue = (obj: any, path: string) => {
+          const parts = path.split('.');
+          let val = obj;
+          for (const p of parts) val = val?.[p];
+          return val !== undefined && val !== null ? String(val) : '';
+        };
+        const concatenated = fields.map(f => getValue(txn, f)).join('');
+        const expectedHmac = createHmac('sha512', hmacSecret).update(concatenated).digest('hex');
+        if (expectedHmac !== hmacHeader) {
+          console.warn('[Paymob Webhook] HMAC mismatch — rejecting');
+          return res.status(401).json({ error: 'Invalid HMAC signature' });
+        }
+      }
+
+      const txn = body?.obj || {};
+      const isPaid = txn?.success === true;
+      const orderId = txn?.order?.merchant_order_id || txn?.order?.id;
+      const transactionId = txn?.id;
+
+      console.log(`[Paymob Webhook] Order: ${orderId}, TxID: ${transactionId}, Success: ${isPaid}`);
+
+      if (isPaid && orderId) {
+        const order = await storage.getOrderByNumber(String(orderId));
+        if (order) {
+          await storage.updateOrderStatus(order.id || (order as any)._id, 'payment_confirmed');
+          console.log(`[Paymob Webhook] Order ${orderId} marked as payment_confirmed`);
+        }
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('[Paymob Webhook] Error:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
 
