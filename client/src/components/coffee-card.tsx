@@ -15,6 +15,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
 
 interface CoffeeCardProps {
   item: CoffeeItem;
@@ -27,8 +28,11 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<CoffeeItem>(item);
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
 
-  // Use variants passed from props
+  const getName = (v: CoffeeItem) => isAr ? v.nameAr : (v.nameEn || v.nameAr);
+
   const allVariants = useMemo(() => {
     return variants.length > 0 ? variants : [item];
   }, [variants, item]);
@@ -67,7 +71,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
       return (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-20">
           <Badge className="bg-red-600 text-white text-base py-2 px-6 rounded-full shadow-2xl border-2 border-white/20">
-            نفذت الكمية
+            {t('coffee.out_of_stock')}
           </Badge>
         </div>
       );
@@ -76,25 +80,40 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
       return (
         <div className="absolute inset-0 bg-primary/20 backdrop-blur-[1px] flex items-center justify-center z-20">
           <Badge className="bg-blue-600 text-white text-base py-2 px-6 rounded-full shadow-2xl border-2 border-white/20">
-            قريباً
+            {t('coffee.coming_soon')}
           </Badge>
         </div>
       );
     }
     if (selectedVariant.availabilityStatus === 'temporarily_unavailable' || selectedVariant.isAvailable === 0) {
       if (selectedVariant.availabilityStatus === 'available' || selectedVariant.availabilityStatus === 'new') {
-         // If isAvailable is 0 but status says available, it's effectively unavailable
       } else {
         return (
           <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-[1px] flex items-center justify-center z-20">
             <Badge className="bg-orange-600 text-white text-base py-2 px-6 rounded-full shadow-2xl border-2 border-white/20">
-              غير متوفر حالياً
+              {t('coffee.unavailable')}
             </Badge>
           </div>
         );
       }
     }
     return null;
+  };
+
+  const getButtonLabel = () => {
+    if (selectedVariant.availabilityStatus === 'out_of_stock') return t('coffee.out_of_stock');
+    if (selectedVariant.availabilityStatus === 'coming_soon') return t('coffee.coming_soon');
+    if (selectedVariant.availabilityStatus === 'temporarily_unavailable') return t('coffee.unavailable');
+    if (isAnimating) return ` ${t('coffee.added_btn')} `;
+    return t('coffee.customize_btn');
+  };
+
+  const getButtonLabelShort = () => {
+    if (selectedVariant.availabilityStatus === 'out_of_stock') return t('coffee.sold_out_btn');
+    if (selectedVariant.availabilityStatus === 'coming_soon') return t('coffee.coming_soon');
+    if (selectedVariant.availabilityStatus === 'temporarily_unavailable') return '⏸';
+    if (isAnimating) return '✓';
+    return t('coffee.customize_btn');
   };
 
   return (
@@ -109,7 +128,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
           <img 
             src={selectedVariant.imageUrl ? (selectedVariant.imageUrl.startsWith('/') ? selectedVariant.imageUrl : `/${selectedVariant.imageUrl}`) : getCoffeeImage(selectedVariant.id)}
-            alt={selectedVariant.nameAr}
+            alt={getName(selectedVariant)}
             className="w-full h-40 sm:h-48 md:h-52 object-cover transition-all duration-700 group-hover:scale-110 brightness-95 group-hover:brightness-105"
             loading="lazy"
             onError={(e) => {
@@ -122,12 +141,12 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
           <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex flex-col gap-1.5 sm:gap-2 z-30">
             {selectedVariant.availabilityStatus === 'new' && (
               <Badge className="bg-purple-600 text-white border-purple-400 animate-pulse shadow-lg">
-                جديد
+                {t('coffee.new_badge')}
               </Badge>
             )}
             {allVariants.length > 1 && (
               <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
-                {allVariants.length} خيارات
+                {t('coffee.options_count', { count: allVariants.length })}
               </Badge>
             )}
             {discount > 0 && (
@@ -136,7 +155,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
                 className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-xs sm:text-sm font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-lg glow-effect"
                 data-testid={`badge-discount-${selectedVariant.id}`}
               >
-                خصم {discount}%
+                {t('coffee.discount_pct', { percent: discount })}
               </Badge>
             )}
           </div>
@@ -162,7 +181,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                   <Button variant="ghost" className="h-auto p-0 hover:bg-transparent group/title">
                     <h4 className="font-amiri text-base sm:text-lg md:text-xl font-bold text-primary mb-1 golden-gradient flex items-center gap-1">
-                      {selectedVariant.nameAr}
+                      {getName(selectedVariant)}
                       <ChevronDown className="w-4 h-4 transition-transform group-hover/title:translate-y-0.5" />
                     </h4>
                   </Button>
@@ -177,7 +196,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
                       }}
                       className="flex justify-between items-center"
                     >
-                      <span>{v.nameAr}</span>
+                      <span>{getName(v)}</span>
                       {selectedVariant.id === v.id && <Check className="w-4 h-4 ml-2" />}
                     </DropdownMenuItem>
                   ))}
@@ -185,7 +204,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
               </DropdownMenu>
             ) : (
               <h4 className="font-amiri text-base sm:text-lg md:text-xl font-bold text-primary mb-1 golden-gradient">
-                {selectedVariant.nameAr}
+                {getName(selectedVariant)}
               </h4>
             )}
 
@@ -203,14 +222,14 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
           </div>
 
           <div className="flex justify-between items-center pt-2">
-            <div className="text-right">
+            <div className={isAr ? 'text-right' : 'text-left'}>
               {selectedVariant.oldPrice && (
                 <div className="price-old text-xs sm:text-sm text-muted-foreground">
-                  {selectedVariant.oldPrice} ريال
+                  {selectedVariant.oldPrice} {t('currency')}
                 </div>
               )}
               <div className="text-primary font-bold text-lg sm:text-xl md:text-2xl font-amiri">
-                {displayPrice} ريال
+                {displayPrice} {t('currency')}
               </div>
             </div>
 
@@ -224,18 +243,8 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
               data-testid={`button-add-${selectedVariant.id}`}
             >
               <Plus className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
-              <span className="hidden sm:inline">
-                {selectedVariant.availabilityStatus === 'out_of_stock' ? ' نفذت الكمية' :
-                selectedVariant.availabilityStatus === 'coming_soon' ? ' قريباً' :
-                selectedVariant.availabilityStatus === 'temporarily_unavailable' ? ' غير متوفر' :
-                isAnimating ? ' تم الإضافة ' : 'تخصيص'}
-              </span>
-              <span className="sm:hidden">
-                {selectedVariant.availabilityStatus === 'out_of_stock' ? 'نفذ' :
-                selectedVariant.availabilityStatus === 'coming_soon' ? 'قريباً' :
-                selectedVariant.availabilityStatus === 'temporarily_unavailable' ? '⏸' :
-                isAnimating ? '' : 'تخصيص'}
-              </span>
+              <span className="hidden sm:inline">{getButtonLabel()}</span>
+              <span className="sm:hidden">{getButtonLabelShort()}</span>
             </Button>
           </div>
         </div>

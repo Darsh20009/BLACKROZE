@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "react-i18next";
 
 type CheckoutStep = 'review' | 'delivery' | 'payment' | 'confirmation' | 'success';
 type DeliveryType = 'pickup' | 'delivery' | 'curbside' | 'car-pickup' | null;
@@ -31,28 +32,27 @@ const CheckoutModal = memo(() => {
  getTotalPrice
  } = useCartStore();
  const { customer } = useCustomer();
+ const { t, i18n } = useTranslation();
+ const isAr = i18n.language === 'ar';
+ const dir = isAr ? 'rtl' : 'ltr';
 
  const { toast } = useToast();
  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
  const [currentStep, setCurrentStep] = useState<CheckoutStep>('review');
  const [orderDetails, setOrderDetails] = useState<any>(null);
 
- // State for customer form fields
  const [customerName, setCustomerName] = useState(customer?.name || "");
  const [customerPhone, setCustomerPhone] = useState(customer?.phone || "");
 
- // Vehicle info state
  const [carType, setCarType] = useState(customer?.carType || "");
  const [carColor, setCarColor] = useState(customer?.carColor || "");
  const [carPlate, setCarPlate] = useState("");
 
- // Delivery/Pickup state
  const [deliveryType, setDeliveryType] = useState<DeliveryType>(null);
  const [selectedBranch, setSelectedBranch] = useState<string>("");
  const [deliveryAddress, setDeliveryAddress] = useState("");
  const [deliveryNotes, setDeliveryNotes] = useState("");
  
- // Receipt upload state
  const [receiptFile, setReceiptFile] = useState<File | null>(null);
  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
@@ -80,7 +80,7 @@ const CheckoutModal = memo(() => {
  onError: (error) => {
  toast({
  variant: "destructive",
- title: "خطأ في إنشاء الطلب",
+ title: t('checkout.order_error_create'),
  description: error.message,
  });
  },
@@ -90,7 +90,7 @@ const CheckoutModal = memo(() => {
  const file = e.target.files?.[0];
  if (file) {
  if (file.size > 5 * 1024 * 1024) {
- toast({ variant: "destructive", title: "الملف كبير جداً", description: "يرجى اختيار صورة أقل من 5 ميجابايت" });
+ toast({ variant: "destructive", title: t('checkout.file_too_large'), description: t('checkout.file_size_msg') });
  return;
  }
  setReceiptFile(file);
@@ -102,19 +102,19 @@ const CheckoutModal = memo(() => {
 
  const handleProceedDelivery = () => {
  if (!deliveryType) {
- toast({ variant: "destructive", title: "يرجى اختيار طريقة الاستلام" });
+ toast({ variant: "destructive", title: t('checkout.select_pickup') });
  return;
  }
  if (deliveryType === 'pickup' && !selectedBranch) {
- toast({ variant: "destructive", title: "يرجى اختيار الفرع" });
+ toast({ variant: "destructive", title: t('checkout.select_branch_req') });
  return;
  }
  if (deliveryType === 'delivery' && !deliveryAddress.trim()) {
- toast({ variant: "destructive", title: "يرجى إدخال عنوان التوصيل" });
+ toast({ variant: "destructive", title: t('checkout.enter_address_req') });
  return;
  }
  if (deliveryType === 'curbside' && (!carType.trim() || !carColor.trim() || !carPlate.trim())) {
-   toast({ variant: "destructive", title: "يرجى إدخال بيانات السيارة كاملة" });
+   toast({ variant: "destructive", title: t('checkout.enter_car_info') });
    return;
  }
  setCurrentStep('payment');
@@ -122,16 +122,16 @@ const CheckoutModal = memo(() => {
 
  const handleProceedPayment = () => {
  if (!selectedPaymentMethod) {
- toast({ variant: "destructive", title: "يرجى اختيار طريقة الدفع" });
+ toast({ variant: "destructive", title: t('checkout.select_payment') });
  return;
  }
  const selectedMethodInfo = paymentMethods.find(m => m.id === selectedPaymentMethod);
  if (selectedMethodInfo?.requiresReceipt && !receiptFile) {
- toast({ variant: "destructive", title: "يرجى رفع إيصال الدفع" });
+ toast({ variant: "destructive", title: t('checkout.receipt_required') });
  return;
  }
  if (!customerName || !customerPhone) {
- toast({ variant: "destructive", title: "يرجى إدخال الاسم ورقم الهاتف" });
+ toast({ variant: "destructive", title: t('checkout.name_phone_req') });
  return;
  }
 
@@ -169,7 +169,6 @@ const CheckoutModal = memo(() => {
 
   const handlePaymentConfirmed = async (order: any) => {
    try {
-     // Check for business config for employee invoice
      const configRes = await fetch("/api/business-config");
      const config = configRes.ok ? await configRes.json() : null;
      
@@ -187,14 +186,14 @@ const CheckoutModal = memo(() => {
      }
      
      setCurrentStep('success');
-     toast({ title: "تم إنشاء الطلب بنجاح!" });
+     toast({ title: t('checkout.order_created') });
      setTimeout(() => {
        clearCart();
        hideCheckout();
        navigate(customer ? "/my-orders" : `/tracking?order=${order.orderNumber}`);
      }, 2000);
    } catch (error) {
-     toast({ variant: "destructive", title: "خطأ في توليد الفاتورة" });
+     toast({ variant: "destructive", title: t('checkout.invoice_error') });
    }
   };
 
@@ -209,24 +208,27 @@ const CheckoutModal = memo(() => {
  };
 
  const steps = [
- { id: 'review', title: 'مراجعة الطلب', icon: ShoppingCart },
- { id: 'delivery', title: 'طريقة الاستلام', icon: Truck },
- { id: 'payment', title: 'طريقة الدفع', icon: Wallet },
- { id: 'confirmation', title: 'تأكيد الدفع', icon: Check },
- { id: 'success', title: 'تم بنجاح', icon: Star },
+ { id: 'review', title: t('checkout.step_review'), icon: ShoppingCart },
+ { id: 'delivery', title: t('checkout.step_delivery'), icon: Truck },
+ { id: 'payment', title: t('checkout.step_payment'), icon: Wallet },
+ { id: 'confirmation', title: t('checkout.step_confirmation'), icon: Check },
+ { id: 'success', title: t('checkout.step_success'), icon: Star },
  ];
 
  const getCurrentStepIndex = () => steps.findIndex(step => step.id === currentStep);
 
+ const getItemName = (item: any) =>
+   isAr ? (item.coffeeItem?.nameAr || item.name) : (item.coffeeItem?.nameEn || item.coffeeItem?.nameAr || item.name);
+
  return (
  <Dialog open={isCheckoutOpen} onOpenChange={handleClose} data-testid="modal-checkout">
- <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-card to-background border-primary/30" dir="rtl">
+ <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-card to-background border-primary/30" dir={dir}>
  <DialogHeader className="text-center pb-6">
  <DialogTitle className="flex items-center justify-center text-3xl font-bold text-primary font-amiri" data-testid="text-checkout-modal-title">
- <Coffee className="w-8 h-8 ml-3" />
- إتمام الطلب
+ <Coffee className={`w-8 h-8 ${isAr ? 'ml-3' : 'mr-3'}`} />
+ {t('checkout.title')}
  </DialogTitle>
- <p className="text-muted-foreground mt-2">"لكل لحظة قهوة ، لحظة نجاح"</p>
+ <p className="text-muted-foreground mt-2">"{t('checkout.tagline')}"</p>
  </DialogHeader>
 
  <div className="flex items-center justify-center mb-8">
@@ -252,26 +254,37 @@ const CheckoutModal = memo(() => {
  <div className="space-y-6 animate-in fade-in duration-500">
  {!customer && (
  <Card>
- <CardHeader><CardTitle className="text-right flex items-center gap-2"><User className="w-5 h-5" /> معلومات العميل</CardTitle></CardHeader>
+ <CardHeader>
+   <CardTitle className={`flex items-center gap-2 ${isAr ? 'text-right' : 'text-left'}`}>
+     <User className="w-5 h-5" /> {t('checkout.customer_info_title')}
+   </CardTitle>
+ </CardHeader>
  <CardContent className="space-y-4">
- <div><Label>الاسم</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} dir="rtl" /></div>
- <div><Label>رقم الهاتف</Label><Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} dir="ltr" /></div>
+ <div><Label>{t('checkout.name_label')}</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} dir={dir} /></div>
+ <div><Label>{t('checkout.phone_label')}</Label><Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} dir="ltr" /></div>
  </CardContent>
  </Card>
  )}
  <div className="bg-card/50 rounded-xl p-6 border border-primary/20">
- <h3 className="text-lg font-semibold mb-4 flex items-center"><ShoppingCart className="w-5 h-5 ml-2" /> ملخص الطلب</h3>
+ <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2`}>
+   <ShoppingCart className="w-5 h-5" /> {t('checkout.order_summary_label')}
+ </h3>
  <div className="space-y-3 mb-4">
  {cartItems.map((item) => (
  <div key={item.coffeeItemId} className="flex justify-between items-center p-3 bg-background/50 rounded-lg">
- <span>{item.coffeeItem?.nameAr} × {item.quantity}</span>
- <span className="font-semibold text-primary">{(Number(item.coffeeItem?.price || 0) * item.quantity).toFixed(2)} ريال</span>
+ <span>{getItemName(item)} × {item.quantity}</span>
+ <span className="font-semibold text-primary">{(Number(item.coffeeItem?.price || 0) * item.quantity).toFixed(2)} {t('currency')}</span>
  </div>
  ))}
  </div>
- <div className="border-t border-primary/30 pt-4"><div className="flex justify-between items-center bg-primary/10 p-4 rounded-lg"><span className="text-lg font-semibold">المجموع الكلي:</span><span className="text-2xl font-bold text-primary">{getTotalPrice().toFixed(2)} ريال</span></div></div>
+ <div className="border-t border-primary/30 pt-4">
+   <div className="flex justify-between items-center bg-primary/10 p-4 rounded-lg">
+     <span className="text-lg font-semibold">{t('checkout.total_grand')}</span>
+     <span className="text-2xl font-bold text-primary">{getTotalPrice().toFixed(2)} {t('currency')}</span>
+   </div>
  </div>
- <Button onClick={() => setCurrentStep('delivery')} size="lg" className="w-full">متابعة</Button>
+ </div>
+ <Button onClick={() => setCurrentStep('delivery')} size="lg" className="w-full">{t('checkout.continue_btn')}</Button>
  </div>
  )}
 
@@ -281,60 +294,60 @@ const CheckoutModal = memo(() => {
  <RadioGroup value={deliveryType || ""} onValueChange={(v) => setDeliveryType(v as DeliveryType)}>
  <div className="space-y-4">
  <div className={`p-4 rounded-lg border-2 ${deliveryType === 'pickup' ? 'border-primary bg-primary/10' : 'border-border'}`} onClick={() => setDeliveryType('pickup')}>
- <div className="flex items-center space-x-3 space-x-reverse"><RadioGroupItem value="pickup" id="pickup" /><Label htmlFor="pickup" className="font-semibold">استلام من الفرع</Label></div>
+ <div className="flex items-center gap-3"><RadioGroupItem value="pickup" id="pickup" /><Label htmlFor="pickup" className="font-semibold">{t('checkout.pickup_branch')}</Label></div>
  {deliveryType === 'pickup' && (
- <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full mt-2 p-2 rounded border bg-background">
- <option value="">-- اختر فرعاً --</option>
- {branches.map((b) => <option key={b.id} value={b.id}>{b.nameAr}</option>)}
+ <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} className="w-full mt-2 p-2 rounded border bg-background" dir={dir}>
+ <option value="">{t('checkout.branch_placeholder')}</option>
+ {(branches as Branch[]).map((b) => <option key={b.id} value={b.id}>{isAr ? b.nameAr : (b.nameEn || b.nameAr)}</option>)}
  </select>
  )}
  </div>
  <div className={`p-4 rounded-lg border-2 ${deliveryType === 'delivery' ? 'border-primary bg-primary/10' : 'border-border'}`} onClick={() => setDeliveryType('delivery')}>
- <div className="flex items-center space-x-3 space-x-reverse"><RadioGroupItem value="delivery" id="delivery" /><Label htmlFor="delivery" className="font-semibold">توصيل للمنزل (15 ريال)</Label></div>
+ <div className="flex items-center gap-3"><RadioGroupItem value="delivery" id="delivery" /><Label htmlFor="delivery" className="font-semibold">{t('checkout.home_delivery_opt')}</Label></div>
  {deliveryType === 'delivery' && (
  <div className="mt-2 space-y-2">
- <Textarea value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder="عنوان التوصيل" dir="rtl" />
- <Input value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} placeholder="ملاحظات" dir="rtl" />
+ <Textarea value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder={t('checkout.delivery_addr_placeholder')} dir={dir} />
+ <Input value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} placeholder={t('checkout.notes_placeholder')} dir={dir} />
  </div>
  )}
  </div>
                    <div className={`p-4 rounded-lg border-2 ${deliveryType === 'curbside' ? 'border-primary bg-primary/10' : 'border-border'}`} onClick={() => setDeliveryType('curbside')}>
-                    <div className="flex items-center space-x-3 space-x-reverse">
+                    <div className="flex items-center gap-3">
                       <RadioGroupItem value="curbside" id="curbside" />
                       <Label htmlFor="curbside" className="font-semibold flex items-center gap-2">
                         <ShoppingCart className="w-4 h-4" />
-                        استلام من السيارة
+                        {t('checkout.curbside_opt')}
                       </Label>
                     </div>
                     {deliveryType === 'curbside' && (
                       <div className="mt-4 space-y-4 border-t pt-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>نوع السيارة</Label>
+                            <Label>{t('checkout.car_type_label')}</Label>
                             <Input 
                               value={carType} 
                               onChange={(e) => setCarType(e.target.value)} 
-                              placeholder="مثال: تويوتا كامري" 
-                              dir="rtl" 
+                              placeholder={t('checkout.car_type_placeholder')} 
+                              dir={dir} 
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>لون السيارة</Label>
+                            <Label>{t('checkout.car_color_label')}</Label>
                             <Input 
                               value={carColor} 
                               onChange={(e) => setCarColor(e.target.value)} 
-                              placeholder="مثال: أبيض" 
-                              dir="rtl" 
+                              placeholder={t('checkout.car_color_placeholder')} 
+                              dir={dir} 
                             />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>رقم اللوحة</Label>
+                          <Label>{t('checkout.plate_label')}</Label>
                           <Input 
                             value={carPlate} 
                             onChange={(e) => setCarPlate(e.target.value)} 
-                            placeholder="مثال: أ ب ج 1234" 
-                            dir="rtl" 
+                            placeholder={t('checkout.plate_placeholder')} 
+                            dir={dir} 
                           />
                         </div>
                       </div>
@@ -343,7 +356,10 @@ const CheckoutModal = memo(() => {
                 </div>
               </RadioGroup>
  </div>
- <div className="flex gap-3"><Button variant="outline" onClick={() => setCurrentStep('review')} className="flex-1">رجوع</Button><Button onClick={handleProceedDelivery} className="flex-1">متابعة</Button></div>
+ <div className="flex gap-3">
+   <Button variant="outline" onClick={() => setCurrentStep('review')} className="flex-1">{t('checkout.back_btn')}</Button>
+   <Button onClick={handleProceedDelivery} className="flex-1">{t('checkout.continue_btn')}</Button>
+ </div>
  </div>
  )}
 
@@ -354,13 +370,16 @@ const CheckoutModal = memo(() => {
  {selectedPaymentMethod && paymentMethods.find(m => m.id === selectedPaymentMethod)?.requiresReceipt && (
  <div className="mt-4 p-4 border-2 border-dashed rounded-lg text-center">
  <Label htmlFor="receipt-upload" className="cursor-pointer">
- {receiptPreview ? <img src={receiptPreview} className="max-h-32 mx-auto" /> : <div><Upload className="mx-auto" /> اضغط لرفع الإيصال</div>}
+ {receiptPreview ? <img src={receiptPreview} className="max-h-32 mx-auto" alt="receipt" /> : <div><Upload className="mx-auto mb-2" /> {t('checkout.upload_receipt_btn')}</div>}
  </Label>
  <input id="receipt-upload" type="file" onChange={handleReceiptUpload} className="hidden" />
  </div>
  )}
  </div>
- <div className="flex gap-3"><Button variant="outline" onClick={() => setCurrentStep('delivery')} className="flex-1">رجوع</Button><Button onClick={handleProceedPayment} disabled={createOrderMutation.isPending} className="flex-1">تأكيد الطلب</Button></div>
+ <div className="flex gap-3">
+   <Button variant="outline" onClick={() => setCurrentStep('delivery')} className="flex-1">{t('checkout.back_btn')}</Button>
+   <Button onClick={handleProceedPayment} disabled={createOrderMutation.isPending} className="flex-1">{t('checkout.confirm_order')}</Button>
+ </div>
  </div>
  )}
  </div>

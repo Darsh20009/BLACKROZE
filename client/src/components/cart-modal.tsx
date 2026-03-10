@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/cart-store";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 
 const CartModal = memo(() => {
   const { 
@@ -14,6 +15,12 @@ const CartModal = memo(() => {
     removeFromCart, 
     getTotalPrice 
   } = useCartStore();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
+  const dir = isAr ? 'rtl' : 'ltr';
+
+  const getItemName = (item: any) =>
+    isAr ? item.coffeeItem?.nameAr : (item.coffeeItem?.nameEn || item.coffeeItem?.nameAr);
 
   const handleCheckout = () => {
     hideCart();
@@ -22,11 +29,11 @@ const CartModal = memo(() => {
 
   return (
     <Dialog open={isCartOpen} onOpenChange={hideCart} data-testid="modal-cart">
-      <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-md max-h-[90vh] overflow-y-auto backdrop-blur-md border-2 border-primary/30 bg-card text-card-foreground" dir="rtl">
+      <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-md max-h-[90vh] overflow-y-auto backdrop-blur-md border-2 border-primary/30 bg-card text-card-foreground" dir={dir}>
         <DialogHeader>
           <DialogTitle className="flex items-center text-2xl font-bold text-foreground" data-testid="text-cart-modal-title">
-            <ShoppingCart className="w-6 h-6 ml-2" />
-            سلة الطلبات
+            <ShoppingCart className={`w-6 h-6 ${isAr ? 'ml-2' : 'mr-2'}`} />
+            {t('cart.title')}
           </DialogTitle>
         </DialogHeader>
         
@@ -35,7 +42,7 @@ const CartModal = memo(() => {
             <div className="text-center py-8" data-testid="section-cart-empty">
               <ShoppingCart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground" data-testid="text-cart-empty">
-                السلة فارغة 
+                {t('cart.empty')}
               </p>
             </div>
           ) : (
@@ -50,37 +57,37 @@ const CartModal = memo(() => {
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground" data-testid={`text-cart-item-name-${item.id}`}>
-                          {item.coffeeItem?.nameAr}
+                          {getItemName(item)}
                         </h4>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {item.selectedSize && (
                             <Badge variant="outline" className="text-[10px] py-0 h-4">
-                              الحجم: {item.selectedSize}
+                              {t('cart.size_label')} {item.selectedSize}
                             </Badge>
                           )}
                           {item.selectedAddons && item.selectedAddons.length > 0 && (
                             <Badge variant="secondary" className="text-[10px] py-0 h-4">
-                              إضافات: {item.selectedAddons.length}
+                              {t('cart.addons_label')} {item.selectedAddons.length}
                             </Badge>
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className={isAr ? 'text-right' : 'text-left'}>
                         <p className="font-bold text-primary" data-testid={`text-cart-item-price-${item.id}`}>
                           {(() => {
                             let itemPrice = item.coffeeItem?.price || 0;
                             if (item.selectedSize && item.coffeeItem?.availableSizes) {
-                              const size = item.coffeeItem.availableSizes.find(s => s.nameAr === item.selectedSize);
+                              const size = item.coffeeItem.availableSizes.find((s: any) => s.nameAr === item.selectedSize);
                               if (size) itemPrice = size.price;
                             }
                             return (Number(itemPrice) * item.quantity).toFixed(2);
-                          })()} ريال
+                          })()} {t('currency')}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-primary/10">
-                      <div className="flex items-center space-x-2 space-x-reverse">
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="icon"
@@ -120,9 +127,9 @@ const CartModal = memo(() => {
               
               <div className="border-t border-border pt-4" data-testid="section-cart-total">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-xl font-semibold text-foreground">المجموع:</span>
+                  <span className="text-xl font-semibold text-foreground">{t('cart.total_label')}</span>
                   <span className="text-2xl font-bold text-primary" data-testid="text-cart-total">
-                    {getTotalPrice().toFixed(2)} ريال
+                    {getTotalPrice().toFixed(2)} {t('currency')}
                   </span>
                 </div>
                 <Button 
@@ -131,7 +138,7 @@ const CartModal = memo(() => {
                   className="w-full btn-primary text-accent-foreground py-3 text-lg font-semibold"
                   data-testid="button-cart-checkout"
                 >
-                  إتمام الطلب
+                  {t('cart.checkout_btn')}
                 </Button>
               </div>
             </>

@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
 import { customerStorage } from "@/lib/customer-storage";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface PersonalizedOffer {
   id: string;
@@ -27,6 +28,7 @@ export default function MyOffersPage() {
   const [, setLocation] = useLocation();
   const { card: loyaltyCard } = useLoyaltyCard();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleUseOffer = (offer: PersonalizedOffer) => {
     customerStorage.setActiveOffer({
@@ -40,8 +42,8 @@ export default function MyOffersPage() {
     });
     
     toast({
-      title: "تم تفعيل العرض!",
-      description: `${offer.title} - سيتم تطبيقه عند الدفع`,
+      title: t('offers.activated'),
+      description: t('offers.will_apply', { title: offer.title }),
     });
     
     setLocation("/menu");
@@ -318,7 +320,7 @@ export default function MyOffersPage() {
                     disabled={offer.discount === 0}
                     data-testid={`button-use-offer-${offer.id}`}
                   >
-                    {offer.discount > 0 ? 'استخدم العرض' : 'استمر في جمع النقاط'}
+                    {offer.discount > 0 ? t('offers.use_offer') : t('offers.keep_collecting')}
                   </Button>
                 </CardContent>
               </Card>
@@ -330,13 +332,13 @@ export default function MyOffersPage() {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <Gift className="w-4 h-4 text-primary" />
-              كيف تحصل على المزيد من العروض؟
+              {t('offers.how_to_get_more')}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>• اطلب بانتظام لفتح عروض العملاء المميزين</p>
-            <p>• اجمع النقاط واستبدلها بخصومات</p>
-            <p>• ادعُ أصدقاءك واحصل على 50 نقطة لكل صديق</p>
+            <p>• {t('offers.tip1')}</p>
+            <p>• {t('offers.tip2')}</p>
+            <p>• {t('offers.tip3')}</p>
           </CardContent>
         </Card>
       </div>
