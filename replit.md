@@ -60,6 +60,9 @@ The system also includes:
 - **Kitchen Display Scheduled Orders**: KDS tracks `scheduledPickupTime` and `preparationHoldUntil` fields on orders; a 30-second tick re-evaluates which scheduled orders are on hold vs. due for preparation. Sound/toast alerts fire when prep time arrives; a dedicated "مجدول" tab separates held orders from active queue.
 - **Image Library Modal**: Shared drink image library (`ImageLibraryModal.tsx`) with `/api/drink-images` GET endpoint; managers can upload or reuse existing images when adding/editing menu items. Integrates into both Add and Edit dialogs in employee-menu-management.tsx.
 - **PIN Field in Loyalty Transfer**: Transfer points dialog in my-card.tsx now includes an optional PIN security field, matching CLUNY parity.
+- **Favorites System Fix**: Fixed silent error swallowing in `toggleFavoriteMutation` (menu.tsx) — raw fetch now checks `r.ok` and throws on failure, with `onError` toast. Backend auto-creates a minimal `CustomerModel` entry when a customer (with localStorage data) toggles a favorite but doesn't yet exist in MongoDB. DELETE favorites returns success (not 404) for missing customers. Hardcoded Arabic toast replaced with `t('menu.login_to_favorite')` and `t('menu.favorite_failed')`.
+- **Reviews System Fix**: Removed `requireAuth` from `POST /api/reviews` so customers can submit product ratings. The endpoint now accepts `customerId`/`customerPhone`/`customerName` from request body and falls back to `'guest'` if no auth. `product-reviews.tsx` updated to pass customer context info in the mutation payload.
+- **my-orders.tsx i18n**: All hardcoded Arabic strings in the order review section (rate button, experience prompt, placeholder, submit, cancel, success/error toasts) replaced with `t()` calls using new `orders.review_*` i18n keys in both EN and AR.
 
 ### Technical Stack
 

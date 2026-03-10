@@ -5,10 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, MessageSquare } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useCustomer } from "@/contexts/CustomerContext";
 
 export default function ProductReviews({ productId }: { productId: string }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const { customer } = useCustomer();
 
   const { data: reviews } = useQuery({
     queryKey: ["/api/reviews", productId],
@@ -84,7 +86,14 @@ export default function ProductReviews({ productId }: { productId: string }) {
 
           <Button
             onClick={() =>
-              mutation.mutate({ productId, rating, comment })
+              mutation.mutate({
+                productId,
+                rating,
+                comment,
+                customerId: (customer as any)?.id,
+                customerPhone: (customer as any)?.phone,
+                customerName: (customer as any)?.name,
+              })
             }
             disabled={!rating || mutation.isPending}
             data-testid="button-submit-review"

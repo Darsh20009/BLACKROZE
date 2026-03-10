@@ -64,18 +64,25 @@ export default function MenuPage() {
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (itemId: string) => {
       const isFav = favoriteIds.has(itemId);
+      let res: Response;
       if (isFav) {
-        return fetch('/api/customers/favorites/' + itemId + '?phone=' + encodeURIComponent(customerPhone || ''), { method: 'DELETE' }).then(r => r.json());
+        res = await fetch('/api/customers/favorites/' + itemId + '?phone=' + encodeURIComponent(customerPhone || ''), { method: 'DELETE' });
       } else {
-        return fetch('/api/customers/favorites/' + itemId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: customerPhone }) }).then(r => r.json());
+        res = await fetch('/api/customers/favorites/' + itemId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: customerPhone }) });
       }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to update favorites');
+      }
+      return res.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/customers/favorites', customerPhone] }),
+    onError: () => toast({ title: t('menu.favorite_failed'), variant: 'destructive' }),
   });
 
   const handleToggleFavorite = (itemId: string) => {
     if (!isAuthenticated || !customerPhone) {
-      toast({ title: 'يجب تسجيل الدخول لإضافة المفضلة', variant: 'destructive' });
+      toast({ title: t('menu.login_to_favorite'), variant: 'destructive' });
       return;
     }
     toggleFavoriteMutation.mutate(itemId);

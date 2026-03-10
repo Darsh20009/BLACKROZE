@@ -58,14 +58,14 @@ export default function MyOrders() {
      setActiveReview(null);
      setReviewRating(5);
      setReviewComment('');
-     toast({ title: 'شكراً على تقييمك! 🌟' });
+     toast({ title: t('orders.review_thanks_toast') });
    },
    onError: (err: any) => {
-     if (String(err?.message || '').includes('مسبقاً')) {
-       toast({ title: 'لقد قيّمت هذا الطلب مسبقاً' });
+     if (String(err?.message || '').includes('مسبقاً') || String(err?.message || '').includes('already')) {
+       toast({ title: t('orders.review_already_done') });
        setActiveReview(null);
      } else {
-       toast({ title: 'فشل إرسال التقييم', variant: 'destructive' });
+       toast({ title: t('orders.review_failed'), variant: 'destructive' });
      }
    }
  });
@@ -273,7 +273,7 @@ export default function MyOrders() {
                           data-testid={'btn-rate-order-' + order.id}
                         >
                           <Star className="w-4 h-4 ml-2 text-amber-400" />
-                          قيّم طلبك
+                          {t('orders.review_rate_order')}
                         </Button>
                       </div>
                     )}
@@ -281,18 +281,18 @@ export default function MyOrders() {
                     {order.status === 'completed' && reviewedOrders.has(order.id) && (
                       <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 rounded-lg p-2">
                         <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm font-cairo">شكراً على تقييمك!</span>
+                        <span className="text-sm font-cairo">{t('orders.review_thanks_label')}</span>
                       </div>
                     )}
 
                     {activeReview === order.id && (
                       <Card className="p-4 bg-amber-50 border-amber-200">
-                        <p className="text-center text-accent font-cairo font-semibold mb-2">كيف كانت تجربتك؟</p>
+                        <p className="text-center text-accent font-cairo font-semibold mb-2">{t('orders.review_experience')}</p>
                         <StarRatingInput value={reviewRating} onChange={setReviewRating} />
                         <textarea
                           value={reviewComment}
                           onChange={e => setReviewComment(e.target.value)}
-                          placeholder="أضف تعليقك (اختياري)..."
+                          placeholder={t('orders.review_comment_placeholder')}
                           className="w-full mt-2 p-2 rounded-lg border border-amber-200 bg-white text-sm font-cairo resize-none focus:outline-none focus:border-amber-400"
                           rows={3}
                           data-testid={'textarea-review-' + order.id}
@@ -304,10 +304,10 @@ export default function MyOrders() {
                             className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-cairo"
                             data-testid={'btn-submit-review-' + order.id}
                           >
-                            {reviewMutation.isPending ? '...' : 'إرسال التقييم'}
+                            {reviewMutation.isPending ? t('orders.review_submitting') : t('orders.review_submit')}
                           </Button>
                           <Button variant="outline" onClick={() => setActiveReview(null)} className="border-amber-300 text-amber-700 font-cairo">
-                            إلغاء
+                            {t('orders.review_cancel')}
                           </Button>
                         </div>
                       </Card>

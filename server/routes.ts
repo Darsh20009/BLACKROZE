@@ -12743,17 +12743,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/reviews", requireAuth, async (req, res) => {
+  app.post("/api/reviews", async (req, res) => {
     try {
-      const { productId, rating, comment } = req.body;
-      const customerId = (req as any).user?.id;
+      const { productId, rating, comment, customerId: bodyCustomerId, customerPhone, customerName } = req.body;
+      const customerId = (req as any).user?.id || bodyCustomerId || customerPhone || 'guest';
       
+      if (!productId) return res.status(400).json({ error: "معرّف المنتج مطلوب" });
+      if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "التقييم بين 1 و 5" });
+
       const review = new ProductReviewModel({
         productId,
         customerId,
         rating,
-        comment,
-        isVerifiedPurchase: 1,
+        comment: comment || '',
+        isVerifiedPurchase: 0,
       });
       await review.save();
       res.json(serializeDoc(review));
@@ -14738,12 +14741,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customers/favorites/:itemId", async (req, res) => {
     try {
       const { CustomerModel } = await import("@shared/schema");
-      const { phone, customerId } = req.body;
+      const { phone, customerId, name } = req.body;
       const query: any = {};
-      if (phone) query.phone = String(phone).replace(/^0/, '');
+      const cleanPhone = phone ? String(phone).replace(/^0/, '') : null;
+      if (cleanPhone) query.phone = cleanPhone;
       else if (customerId) query._id = customerId;
       else return res.status(400).json({ error: "يجب تحديد العميل" });
-      const customer = await CustomerModel.findOne(query);
+      let customer = await CustomerModel.findOne(query);
+      if (!customer && cleanPhone) {
+        customer = new (CustomerModel as any)({
+          phone: cleanPhone,
+          name: name || 'عميل',
+          favorites: [],
+          createdAt: new Date(),
+        });
+        await (customer as any).save();
+      }
       if (!customer) return res.status(404).json({ error: "العميل غير موجود" });
       const favorites: string[] = (customer as any).favorites || [];
       if (!favorites.includes(req.params.itemId)) {
@@ -14765,7 +14778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       else if (customerId) query._id = customerId;
       else return res.status(400).json({ error: "يجب تحديد العميل" });
       const customer = await CustomerModel.findOne(query);
-      if (!customer) return res.status(404).json({ error: "العميل غير موجود" });
+      if (!customer) return res.json({ success: true, favorites: [] });
       const favorites: string[] = ((customer as any).favorites || []).filter((id: string) => id !== req.params.itemId);
       await CustomerModel.updateOne(query, { $set: { favorites } });
       res.json({ success: true, favorites });
