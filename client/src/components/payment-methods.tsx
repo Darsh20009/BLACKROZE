@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
+import { useTranslation } from "react-i18next";
 
 interface PaymentMethodsProps {
  paymentMethods: PaymentMethodInfo[];
@@ -23,6 +24,8 @@ export default function PaymentMethods({
  customerPhone: propCustomerPhone,
  loyaltyCard: initialLoyaltyCard,
 }: PaymentMethodsProps) {
+ const { t, i18n } = useTranslation();
+ const isAr = i18n.language === 'ar';
  const { toast } = useToast();
   const [cardMode, setCardMode] = useState<'use' | 'add' | null>(null);
   const [searchPhone, setSearchPhone] = useState("");
@@ -66,8 +69,8 @@ export default function PaymentMethods({
   if (!searchPhone && !searchCardNumber) {
    toast({
     variant: "destructive",
-    title: "خطأ",
-    description: "يرجى إدخال رقم الجوال أو رقم البطاقة",
+    title: t("payment.error_title"),
+    description: t("payment.enter_phone_or_card"),
    });
    return;
   }
@@ -82,20 +85,20 @@ export default function PaymentMethods({
    }
 
    const res = await fetch(url);
-   if (!res.ok) throw new Error("البطاقة غير موجودة");
+   if (!res.ok) throw new Error("not_found");
    const cardData = await res.json();
    updateCardInCache(cardData);
    setIsAddingCard(false);
    setCardMode('use');
    toast({
-    title: "تم العثور على البطاقة",
-    description: `أهلاً ${cardData.customerName || 'عميلنا العزيز'}`,
+    title: t("payment.card_found"),
+    description: t("payment.welcome_customer", { name: cardData.customerName || '—' }),
    });
   } catch (error) {
    toast({
     variant: "destructive",
-    title: "خطأ",
-    description: "لم يتم العثور على بطاقة مرتبطة بهذه البيانات",
+    title: t("payment.error_title"),
+    description: t("payment.card_not_found"),
    });
   } finally {
    setIsSearching(false);
@@ -104,7 +107,7 @@ export default function PaymentMethods({
 
  return (
    <div className="space-y-4" data-testid="section-payment-methods">
-     <h3 className="text-lg font-semibold text-foreground mb-4">اختر طريقة الدفع</h3>
+     <h3 className="text-lg font-semibold text-foreground mb-4">{t("payment.select_method")}</h3>
      <div className="space-y-4">
      {paymentMethods.map((method) => {
     const isQahwaCard = (method.id as string) === 'qahwa-card';
@@ -171,7 +174,7 @@ export default function PaymentMethods({
                    <div className="flex justify-between items-start flex-shrink-0">
                      <div className="space-y-1">
                        <p className="text-xs uppercase tracking-widest opacity-75">CLUNY CAFE</p>
-                       <h4 className="text-2xl font-black">{isNeoLeap ? (method.id === 'neoleap-apple-pay' ? 'Apple Pay' : 'بطاقة بنكية') : 'بطاقة الولاء'}</h4>
+                       <h4 className="text-2xl font-black">{isNeoLeap ? (method.id === 'neoleap-apple-pay' ? 'Apple Pay' : t("payment.bank_card")) : t("payment.loyalty_card")}</h4>
                      </div>
                      <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
                        {isNeoLeap ? <CreditCard className="w-6 h-6 text-white" /> : <Coffee className="w-6 h-6 text-white" />}
@@ -183,29 +186,28 @@ export default function PaymentMethods({
                         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur">
                           <Zap className="w-8 h-8 text-amber-400 animate-pulse" />
                         </div>
-                        <p className="text-lg font-bold">{method.id === 'neoleap-apple-pay' ? 'دفع سريع عبر Apple Pay' : 'دفع آمن عبر NeoLeap'}</p>
-                        <p className="text-sm opacity-80">مدى، فيزا، ماستر كارد</p>
+                        <p className="text-lg font-bold">{method.id === 'neoleap-apple-pay' ? t("payment.fast_apple_pay") : t("payment.safe_neoleap")}</p>
+                        <p className="text-sm opacity-80">{t("payment.card_networks")}</p>
                      </div>
                    ) : cardMode === null ? (
                      <div className="flex flex-col items-center justify-center my-auto">
                           <div className="bg-white/10 backdrop-blur rounded-lg p-4 space-y-3 text-center w-full">
-                            <p className="text-sm opacity-90">كيف تريد استخدام بطاقتك؟</p>
+                            <p className="text-sm opacity-90">{t("payment.how_use_card")}</p>
                             <div className="space-y-2">
                               <Button 
                                 size="sm"
                                 className="w-full bg-[#B58B5A] hover:bg-[#B58B5A]/90 text-white transition-all duration-300 shadow-lg border-0"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Logic for "Pay with Copy Card"
                                   onSelectMethod(method.id);
                                   toast({
-                                    title: "تم اختيار الدفع بالبطاقة",
-                                    description: "سيتم خصم قيمة الطلب من رصيد بطاقة كلوني كافيه الخاصة بك",
+                                    title: t("payment.selected_cluny_title"),
+                                    description: t("payment.selected_cluny_desc"),
                                   });
                                 }}
                               >
                                 <Zap className="w-4 h-4 ml-2" />
-                                ادفع ببطاقة كلوني كافيه (كوبي)
+                                {t("payment.pay_with_cluny")}
                               </Button>
                                {foundCard && (
                               <Button 
@@ -217,7 +219,7 @@ export default function PaymentMethods({
                                 }}
                               >
                                 <Check className="w-4 h-4 ml-2" />
-                                استخدام البطاقة المربوطة
+                                {t("payment.use_linked_card")}
                               </Button>
                             )}
                             <Button 
@@ -229,7 +231,7 @@ export default function PaymentMethods({
                               }}
                             >
                               <Plus className="w-4 h-4 ml-2" />
-                              إضافة بطاقة أخرى
+                              {t("payment.add_another_card")}
                             </Button>
                           </div>
                         </div>
@@ -237,28 +239,28 @@ export default function PaymentMethods({
                     ) : cardMode === 'use' && foundCard ? (
                       <div className="space-y-3 flex-1 flex flex-col justify-center">
                         <div className="space-y-1">
-                          <p className="text-xs opacity-75">رقم البطاقة</p>
+                          <p className="text-xs opacity-75">{t("payment.card_number_label")}</p>
                           <p className="text-lg font-mono tracking-widest font-bold">
                             {foundCard.cardNumber.replace(/(.{4})/g, '$1 ')}
                           </p>
                         </div>
                         <div className="grid grid-cols-3 gap-2 text-center text-sm">
                           <div className="bg-white/10 rounded-lg p-2 backdrop-blur">
-                            <p className="text-xs opacity-70">صاحب</p>
-                            <p className="font-bold">{foundCard.customerName?.split(' ')[0] || 'عضو'}</p>
+                            <p className="text-xs opacity-70">{t("payment.card_owner")}</p>
+                            <p className="font-bold">{foundCard.customerName?.split(' ')[0] || '—'}</p>
                           </div>
                           <div className="bg-white/10 rounded-lg p-2 backdrop-blur">
-                            <p className="text-xs opacity-70">مجاني</p>
+                            <p className="text-xs opacity-70">{t("payment.free_label")}</p>
                             <p className="font-bold text-base">{(foundCard.freeCupsEarned || 0) - (foundCard.freeCupsRedeemed || 0)}</p>
                           </div>
                           <div className="bg-white/10 rounded-lg p-2 backdrop-blur">
-                            <p className="text-xs opacity-70">خصم</p>
+                            <p className="text-xs opacity-70">{t("payment.discount_label")}</p>
                             <p className="font-bold text-base">{foundCard.discountPercentage || 0}%</p>
                           </div>
                         </div>
                         <div className="bg-white/10 rounded-lg p-2 backdrop-blur text-center mt-2">
-                          <p className="text-xs opacity-70">رصيد المشروبات</p>
-                          <p className="font-bold text-base">{(foundCard.freeCupsEarned || 0) - (foundCard.freeCupsRedeemed || 0)} مشروب مجاني</p>
+                          <p className="text-xs opacity-70">{t("payment.drink_balance")}</p>
+                          <p className="font-bold text-base">{t("payment.free_drinks_count", { count: (foundCard.freeCupsEarned || 0) - (foundCard.freeCupsRedeemed || 0) })}</p>
                         </div>
                         <Button 
                           size="sm"
@@ -269,7 +271,7 @@ export default function PaymentMethods({
                           }}
                         >
                           <Plus className="w-4 h-4 ml-2" />
-                          تغيير البطاقة
+                          {t("payment.change_card")}
                         </Button>
                       </div>
                     ) : null}
@@ -281,11 +283,11 @@ export default function PaymentMethods({
                     <div className="space-y-4">
                       <h4 className="font-bold text-amber-900 flex items-center gap-2">
                         <Search className="w-4 h-4" />
-                        البحث عن بطاقتك
+                        {t("payment.search_card")}
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-xs text-amber-800">رقم الجوال</Label>
+                          <Label className="text-xs text-amber-800">{t("payment.phone_number")}</Label>
                           <div className="relative">
                             <Phone className="absolute right-3 top-2.5 w-4 h-4 text-amber-400" />
                             <Input 
@@ -297,11 +299,11 @@ export default function PaymentMethods({
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs text-amber-800">رقم البطاقة</Label>
+                          <Label className="text-xs text-amber-800">{t("payment.card_number_label")}</Label>
                           <div className="relative">
                             <CreditCard className="absolute right-3 top-2.5 w-4 h-4 text-amber-400" />
                             <Input 
-                              placeholder="رقم البطاقة" 
+                              placeholder={t("payment.card_number_placeholder")}
                               className="pr-9 border-amber-100 focus:ring-amber-400"
                               value={searchCardNumber}
                               onChange={(e) => setSearchCardNumber(e.target.value)}
@@ -315,14 +317,14 @@ export default function PaymentMethods({
                           onClick={handleSearchCard}
                           disabled={isSearching}
                         >
-                          {isSearching ? "جاري البحث..." : "تأكيد الإضافة"}
+                          {isSearching ? t("payment.searching") : t("payment.confirm_add")}
                         </Button>
                         <Button 
                           variant="ghost" 
                           className="text-amber-700 hover:bg-amber-50"
                           onClick={() => setCardMode(null)}
                         >
-                          إلغاء
+                          {t("payment.cancel")}
                         </Button>
                       </div>
                     </div>
@@ -347,7 +349,7 @@ export default function PaymentMethods({
                           ? 'font-amiri text-xl text-amber-900' 
                           : 'text-foreground group-hover:text-primary'
                       }`}>
-                        {method.nameAr}
+                        {isAr ? method.nameAr : (method.nameEn || method.nameAr)}
                       </h4>
                       {isSelected && (
                         <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center animate-in zoom-in duration-300">

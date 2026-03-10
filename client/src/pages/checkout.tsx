@@ -624,7 +624,7 @@ export default function CheckoutPage() {
                 {selectedPaymentMethod === 'cash' && cashDistanceChecking && (
                   <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-blue-700 dark:text-blue-300 text-sm" data-testid="status-cash-distance-checking">
                     <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-                    <span>جاري التحقق من موقعك للدفع نقداً...</span>
+                    <span>{t("checkout.cash_checking")}</span>
                   </div>
                 )}
 
@@ -669,7 +669,7 @@ export default function CheckoutPage() {
                     </div>
                     <Badge variant="outline" className="gap-1 text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5">
                       <Wrench className="w-3 h-3" />
-                      قيد التطوير
+                      {t("checkout.under_dev")}
                     </Badge>
                   </div>
                 }>
@@ -739,7 +739,7 @@ export default function CheckoutPage() {
                           setDiscountCode("");
                         }}
                       >
-                        {t("common.remove") || "إزالة"}
+                        {t("checkout.remove")}
                       </Button>
                     </div>
                   )}
@@ -768,9 +768,10 @@ export default function CheckoutPage() {
                   }
                 >
                   {selectedPaymentMethod === 'cash' && cashDistanceChecking ? (
-                    <><Loader2 className="w-5 h-5 animate-spin ml-2" />جاري التحقق من الموقع...</>
+                    <><Loader2 className="w-5 h-5 animate-spin ml-2" />{t("checkout.verifying_location")}</>
                   ) : t("checkout.confirm_order")}
                 </Button>
+
               </CardContent>
             </Card>
           </div>
@@ -786,7 +787,7 @@ export default function CheckoutPage() {
             <p className="text-lg">{t("checkout.confirm_question")}</p>
             <p className="text-2xl font-bold text-primary mt-2">{getFinalTotalWithPoints().toFixed(2)} {t("currency")}</p>
             {freeDrinkClaimed && (
-              <p className="text-sm text-green-600 mt-1">🎁 طلبك مجاني بنقاط ولاءك!</p>
+              <p className="text-sm text-green-600 mt-1">🎁 {t("checkout.free_drink_claimed")}</p>
             )}
           </div>
           <DialogFooter className="gap-2">
