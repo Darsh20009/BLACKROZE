@@ -2088,6 +2088,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      if (provider === 'paymob') {
+        try {
+          const apiKey = pg?.paymob?.apiKey;
+          if (!apiKey) {
+            return res.json({ verified: false, error: "بيانات اعتماد Paymob غير مكتملة" });
+          }
+
+          // Fallback: if transactionId provided from HMAC-verified callback, trust it
+          if (transactionId) {
+            console.log(`[Payment Verify] Paymob: trusting HMAC-verified txId ${transactionId}`);
+            return res.json({ verified: true, transactionId, provider: 'paymob' });
+          }
+
+          // API fallback: get auth token then query transaction
+          const authRes = await fetch('https://accept.paymob.com/api/auth/tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: apiKey }),
+          });
+          const authData = await authRes.json() as any;
+          if (!authData.token) {
+            return res.json({ verified: false, error: "فشل مصادقة Paymob" });
+          }
+
+          // sessionId is the Paymob order ID in this context
+          const txRes = await fetch(`https://accept.paymob.com/api/acceptance/transactions?order=${sessionId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${authData.token}`,
+              'Accept': 'application/json',
+            },
+          });
+          const txData = await txRes.json() as any;
+          const results = txData?.results || txData || [];
+          const successTx = Array.isArray(results)
+            ? results.find((t: any) => t.success === true)
+            : null;
+          const isPaid = !!successTx;
+          console.log(`[Payment Verify] Paymob order ${sessionId}: ${isPaid ? 'PAID' : 'NOT PAID'}`);
+          return res.json({
+            verified: isPaid,
+            transactionId: successTx?.id ? String(successTx.id) : transactionId,
+            provider: 'paymob',
+          });
+        } catch (err: any) {
+          console.error('[Payment Verify] Paymob error:', err.message);
+          return res.json({ verified: false, error: "فشل التحقق من Paymob" });
+        }
+      }
+
       return res.json({ verified: false, error: "مزود غير مدعوم" });
     } catch (error) {
       console.error('[Payment Verify] Error:', error);
@@ -2306,6 +2356,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('[Paymob Webhook] Error:', error);
       res.status(500).json({ error: 'Webhook processing failed' });
     }
+  });
+
+  app.get("/api/pos/status", requireAuth, (req: AuthRequest, res) => {
+    res.json({
+      connected: posDeviceStatus.connected,
+      lastCheck: posDeviceStatus.lastCheck,
+    });
   });
 
   app.post("/api/pos/toggle", requireAuth, (req: AuthRequest, res) => {
@@ -11407,7 +11464,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Import ZATCA utilities
   const zatcaUtils = await import('./utils/zatca');
-  
+
+  // ZATCA settings - returns configuration and compliance status
+  app.get("/api/zatca/settings", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const zatca = config?.zatca || {};
+      res.json({
+        enabled: (zatca as any).enabled ?? false,
+        environment: (zatca as any).environment || 'sandbox',
+        vatRegistrationNumber: (zatca as any).vatRegistrationNumber || config?.taxNumber || '',
+        companyName: (zatca as any).companyName || config?.name || '',
+        companyAddress: (zatca as any).companyAddress || config?.address || '',
+        complianceStatus: (zatca as any).complianceStatus || 'not_configured',
+        csid: (zatca as any).csid ? '****' : '',
+        pih: (zatca as any).pih ? '****' : '',
+      });
+    } catch (error) {
+      console.error('[ZATCA] Settings fetch error:', error);
+      res.status(500).json({ error: "فشل جلب إعدادات ZATCA" });
+    }
+  });
+
   // Create ZATCA-compliant invoice for an order
   app.post("/api/zatca/invoices", requireAuth, async (req: AuthRequest, res) => {
     try {

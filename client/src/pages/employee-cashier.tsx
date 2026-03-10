@@ -337,8 +337,23 @@ export default function EmployeeCashier() {
   // Create order mutation
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
-      // Show customer details for confirmation
-      const confirmMessage = `تأكيد الدفع نقداً للعميل: ${orderData.customerInfo.customerName}\nرقم الجوال: ${orderData.customerInfo.phoneNumber}\nالإجمالي: ${orderData.totalAmount} ريال`;
+      const paymentMethodLabels: Record<string, string> = {
+        cash: "نقداً",
+        pos: "جهاز POS",
+        alinma: "Alinma Pay",
+        ur: "Ur Pay",
+        barq: "Barq",
+        rajhi: "بنك الراجحي",
+        bank_transfer: "تحويل بنكي",
+        neoleap: "NeoLeap",
+        geidea: "Geidea",
+        paymob: "Paymob",
+        "paymob-card": "Paymob (بطاقة)",
+        "paymob-wallet": "Paymob (محفظة)",
+        apple_pay: "Apple Pay",
+      };
+      const paymentLabel = paymentMethodLabels[paymentMethod] || paymentMethod;
+      const confirmMessage = `تأكيد الدفع (${paymentLabel}) للعميل: ${orderData.customerInfo.customerName}\nرقم الجوال: ${orderData.customerInfo.phoneNumber}\nالإجمالي: ${orderData.totalAmount} ريال`;
       if (!window.confirm(confirmMessage)) {
         throw new Error("تم إلغاء تأكيد الدفع");
       }

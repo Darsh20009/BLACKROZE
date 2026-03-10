@@ -73,6 +73,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const isPaymentCallback = urlParams.get('payment') === 'callback';
+    const isPaymentSuccess = urlParams.get('payment') === 'success';
+    const isPaymentFailed = urlParams.get('payment') === 'failed';
+    const urlProvider = urlParams.get('provider');
+    const urlTxId = urlParams.get('txId');
 
     const geideaResponseCode = urlParams.get('responseCode') || urlParams.get('Response') || urlParams.get('response_code');
     const geideaOrderId = urlParams.get('orderId') || urlParams.get('order_id');
@@ -82,6 +86,29 @@ export default function CheckoutPage() {
     const geideaCurrency = urlParams.get('currency') || urlParams.get('Currency');
     const geideaMerchantRefId = urlParams.get('merchantReferenceId') || urlParams.get('MerchantReferenceId');
     const hasGeideaParams = !!(geideaResponseCode || geideaOrderId || geideaStatus);
+
+    // Paymob: server already verified HMAC and redirected with ?payment=success&provider=paymob&txId=xxx
+    if ((isPaymentSuccess || isPaymentFailed) && urlProvider === 'paymob') {
+      const storedOrderData = sessionStorage.getItem('pendingOrderData');
+      window.history.replaceState({}, '', '/checkout');
+      if (isPaymentFailed) {
+        sessionStorage.removeItem('pendingOrderData');
+        sessionStorage.removeItem('paymentSessionId');
+        sessionStorage.removeItem('paymentProvider');
+        toast({ variant: "destructive", title: t("checkout.payment_failed"), description: t("checkout.payment_verification_failed") });
+        return;
+      }
+      if (storedOrderData) {
+        const orderData = JSON.parse(storedOrderData);
+        orderData.paymentStatus = 'paid';
+        orderData.transactionId = urlTxId || undefined;
+        sessionStorage.removeItem('pendingOrderData');
+        sessionStorage.removeItem('paymentSessionId');
+        sessionStorage.removeItem('paymentProvider');
+        createOrderMutation.mutate(orderData);
+      }
+      return;
+    }
 
     if (isPaymentCallback || hasGeideaParams) {
       const storedOrderData = sessionStorage.getItem('pendingOrderData');
@@ -276,7 +303,7 @@ export default function CheckoutPage() {
 
   const isOnlinePaymentMethod = (method: string | null) => {
     if (!method) return false;
-    const onlineMethods = ['neoleap', 'geidea', 'apple_pay', 'neoleap-apple-pay', 'bank_card'];
+    const onlineMethods = ['neoleap', 'geidea', 'apple_pay', 'neoleap-apple-pay', 'bank_card', 'paymob', 'paymob-card', 'paymob-wallet'];
     return onlineMethods.includes(method);
   };
 
