@@ -1,5 +1,6 @@
 import "@/lib/i18n";
 import { lazy, Suspense, useState, useEffect } from "react";
+import { unlockAudio } from "@/lib/notification-sounds";
 import { Router as WouterRouter, Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -366,6 +367,23 @@ function App() {
       window.location.href = '/employee';
     }
   }, [i18n.language]);
+
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      unlockAudio();
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    };
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('keydown', handleFirstInteraction);
+    document.addEventListener('touchstart', handleFirstInteraction);
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    };
+  }, []);
 
   return (
     <div className={`${isEmployee ? 'employee-portal' : 'customer-portal'} min-h-screen bg-background text-foreground font-ibm-arabic antialiased`} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'} key={i18n.language}>

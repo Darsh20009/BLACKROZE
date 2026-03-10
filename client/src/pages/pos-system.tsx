@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-notifications";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { unlockAudio } from "@/lib/notification-sounds";
 import type { CoffeeItem, Order, Table, Employee } from "@shared/schema";
 import { 
   printSimpleReceipt, 
@@ -116,7 +117,8 @@ export default function PosSystem() {
     queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
     setNewOrdersCount(prev => prev + 1);
     if (soundEnabledRef.current) {
-      import("@/lib/notification-sounds").then(({ playNotificationSound }) => {
+      import("@/lib/notification-sounds").then(({ playNotificationSound, unlockAudio }) => {
+        unlockAudio();
         const isOnline = order?.orderType === 'delivery' || order?.orderType === 'takeaway' || !order?.employeeId;
         if (isOnline) {
           playNotificationSound('onlineOrderVoice', 1.0);
@@ -580,7 +582,7 @@ export default function PosSystem() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
             className="hidden sm:flex"
             data-testid="button-sound-toggle"
           >

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { playNotificationSound } from "@/lib/notification-sounds";
+import { playNotificationSound, unlockAudio } from "@/lib/notification-sounds";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface Employee {
@@ -314,7 +314,7 @@ export default function CashierTableOrders() {
             <Button 
               variant="outline" 
               size="icon"
-              onClick={() => setSoundEnabled(!soundEnabled)}
+              onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
               className={soundEnabled ? "border-green-500 text-green-500" : "border-muted text-muted-foreground"}
               data-testid="button-toggle-sound"
               aria-label={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}

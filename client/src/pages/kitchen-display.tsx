@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
-import { playNotificationSound } from "@/lib/notification-sounds";
+import { playNotificationSound, unlockAudio } from "@/lib/notification-sounds";
 import { useOrderWebSocket } from "@/lib/websocket";
 import { OrderCard } from "@/components/ui/order-card";
 import { 
@@ -425,7 +425,7 @@ export default function KitchenDisplay() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSoundEnabled(!soundEnabled)}
+                onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
                 className={soundEnabled ? "border-primary text-primary" : "border-muted text-muted-foreground"}
                 data-testid="button-toggle-sound"
               >
