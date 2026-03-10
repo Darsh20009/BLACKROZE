@@ -340,7 +340,8 @@ export default function CheckoutPage() {
         coffeeItemId: i.coffeeItemId,
         quantity: i.quantity,
         price: i.coffeeItem?.price || 0,
-        nameAr: i.coffeeItem?.nameAr || ""
+        nameAr: i.coffeeItem?.nameAr || "",
+        nameEn: i.coffeeItem?.nameEn || ""
       })),
       totalAmount: finalTotal,
       paymentMethod: selectedPaymentMethod as PaymentMethod,

@@ -87,6 +87,7 @@ export default function ManagerDashboard() {
  const [branchSearchResults, setBranchSearchResults] = useState<Array<{ name: string; lat: string; lon: string }>>([]);
  const [showBranchResults, setShowBranchResults] = useState(false);
  const [isSearchingBranch, setIsSearchingBranch] = useState(false);
+ const [visibleOrdersCount, setVisibleOrdersCount] = useState(20);
  const [managerAssignmentType, setManagerAssignmentType] = useState<"existing" | "new">("existing");
  const [selectedManagerId, setSelectedManagerId] = useState<string>("");
  const [newManagerForm, setNewManagerForm] = useState({
@@ -749,7 +750,7 @@ export default function ManagerDashboard() {
  <Download className="w-6 h-6" />
  <span className="text-sm">تصدير Excel</span>
  </Button>
- <Select value={dateFilter} onValueChange={(value: any) => setDateFilter(value)}>
+ <Select value={dateFilter} onValueChange={(value: any) => { setDateFilter(value); setVisibleOrdersCount(20); }}>
  <SelectTrigger className="h-20 flex flex-col gap-2 bg-card border-border rounded-xl">
  <Calendar className="w-6 h-6" />
  <span className="text-sm">
@@ -885,7 +886,8 @@ export default function ManagerDashboard() {
  {filteredOrders.length === 0 ? (
  <EmptyState title="لا يوجد طلبات" description="لم يتم العثور على طلبات في هذه الفترة" />
  ) : (
- filteredOrders.slice(0, 10).map((order) => {
+ <>
+ {filteredOrders.slice(0, visibleOrdersCount).map((order) => {
  const employee = employees.find(e => e.id === order.employeeId);
  return (
  <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border rounded-xl bg-muted/30 gap-4">
@@ -915,7 +917,23 @@ export default function ManagerDashboard() {
  </div>
  </div>
  );
- })
+ })}
+ {filteredOrders.length > visibleOrdersCount && (
+ <div className="flex flex-col items-center gap-1 pt-2">
+ <p className="text-xs text-muted-foreground">
+ يتم عرض {visibleOrdersCount} من أصل {filteredOrders.length} طلب
+ </p>
+ <Button
+ variant="outline"
+ className="w-full"
+ onClick={() => setVisibleOrdersCount(prev => prev + 20)}
+ data-testid="button-load-more-orders"
+ >
+ عرض المزيد (20 طلب إضافي)
+ </Button>
+ </div>
+ )}
+ </>
  )}
  </div>
  </CardContent>

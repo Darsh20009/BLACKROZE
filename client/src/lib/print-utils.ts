@@ -434,8 +434,11 @@ export async function printUnifiedReceipt(data: TaxInvoiceData): Promise<void> {
     <div class="items">
       ${data.items.map(item => `
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
-          <div style="font-size: 16px; font-weight: bold;">${item.coffeeItem.nameAr}</div>
-          <div style="font-size: 24px; font-weight: bold; border: 2px solid #000; padding: 2px 10px; border-radius: 4px;">x${item.quantity}</div>
+          <div>
+            <div style="font-size: 16px; font-weight: bold;">${item.coffeeItem.nameAr}</div>
+            ${item.coffeeItem.nameEn ? `<div style="font-size: 11px; color: #666;">${item.coffeeItem.nameEn}</div>` : ''}
+          </div>
+          <div style="font-size: 24px; font-weight: bold; border: 2px solid #000; padding: 2px 10px; border-radius: 4px; align-self: flex-start;">x${item.quantity}</div>
         </div>
       `).join('')}
     </div>

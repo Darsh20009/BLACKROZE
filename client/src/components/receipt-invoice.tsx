@@ -124,8 +124,11 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
             <div style="padding-top: 10px;">
               ${items.map((item: any) => `
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 18px; font-weight: bold;">
-                  <span>${item.nameAr || item.name}</span>
-                  <span style="border: 2px solid #000; padding: 2px 8px; border-radius: 4px;">x${item.quantity}</span>
+                  <div>
+                    <div>${item.nameAr || item.name}</div>
+                    ${item.nameEn ? `<div style="font-size: 12px; font-weight: normal; color: #555;">${item.nameEn}</div>` : ''}
+                  </div>
+                  <span style="border: 2px solid #000; padding: 2px 8px; border-radius: 4px; align-self: flex-start;">x${item.quantity}</span>
                 </div>
               `).join('')}
             </div>
@@ -251,6 +254,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
                 <tr key={index}>
                   <td className="py-1 text-right">
                     <div className="font-medium">{item.nameAr || item.name}</div>
+                    {item.nameEn && <div className="text-[10px] text-gray-400">{item.nameEn}</div>}
                   </td>
                   <td className="py-1 text-center">{item.quantity}</td>
                   <td className="py-1 text-left font-medium">

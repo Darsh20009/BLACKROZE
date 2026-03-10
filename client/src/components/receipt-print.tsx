@@ -210,7 +210,10 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, ReceiptProps>(
                 <tbody>
                   {items.map((item, index) => (
                     <tr key={index} className="border-b border-gray-300">
-                      <td className="text-right py-2 font-bold">{item.coffeeItem.nameAr}</td>
+                      <td className="text-right py-2 font-bold">
+                        <div>{item.coffeeItem.nameAr}</div>
+                        {item.coffeeItem.nameEn && <div className="text-xs font-normal text-gray-500">{item.coffeeItem.nameEn}</div>}
+                      </td>
                       <td className="text-center py-2 text-2xl font-black">{item.quantity}</td>
                     </tr>
                   ))}
