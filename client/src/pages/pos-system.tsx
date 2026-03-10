@@ -1351,10 +1351,7 @@ export default function PosSystem() {
                   >
                     {/* Name */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm leading-snug">{item.coffeeItem.nameAr}</p>
-                      {item.coffeeItem.nameEn && (
-                        <p className="text-xs text-muted-foreground">{item.coffeeItem.nameEn}</p>
-                      )}
+                      <p className="font-bold text-sm leading-snug">{getItemDisplayName(item.coffeeItem)}</p>
                       {(item.selectedAddons || []).length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {(item.selectedAddons as any[]).map((a: any, i: number) => (
@@ -1508,7 +1505,7 @@ export default function PosSystem() {
                 {lastOrder.items.map((item: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center text-sm" data-testid={`receipt-item-${idx}`}>
                     <div className="flex-1">
-                      <span className="font-medium">{item.coffeeItem.nameAr}</span>
+                      <span className="font-medium">{i18n.language === 'en' ? (item.coffeeItem.nameEn || item.coffeeItem.nameAr) : item.coffeeItem.nameAr}</span>
                       <span className="text-muted-foreground mr-1">x{item.quantity}</span>
                     </div>
                     <span className="font-bold">{(Number(item.coffeeItem.price) * item.quantity).toFixed(2)} {t('pos.currency')}</span>

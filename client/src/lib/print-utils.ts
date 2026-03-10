@@ -208,7 +208,6 @@ export async function printKitchenOrder(data: KitchenOrderData): Promise<void> {
     <div style="padding: 8px 0; border-bottom: 1px dashed #ccc; display: flex; justify-content: space-between; align-items: center;">
       <div>
         <div style="font-size: 16px; font-weight: 700;">${item.coffeeItem.nameAr}</div>
-        ${item.coffeeItem.nameEn ? `<div style="font-size: 12px; color: #666;">${item.coffeeItem.nameEn}</div>` : ''}
       </div>
       <div style="font-size: 24px; font-weight: 700; background: #000; color: #fff; padding: 4px 12px; border-radius: 8px;">x${item.quantity}</div>
     </div>
@@ -343,7 +342,6 @@ export async function printUnifiedReceipt(data: TaxInvoiceData): Promise<void> {
     <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee;">
       <div style="flex: 1;">
         <div style="font-weight: bold;">${item.coffeeItem.nameAr}</div>
-        ${item.coffeeItem.nameEn ? `<div style="font-size: 10px; color: #666;">${item.coffeeItem.nameEn}</div>` : ''}
       </div>
       <div style="width: 40px; text-align: center;">x${item.quantity}</div>
       <div style="width: 70px; text-align: left;">${(parseNumber(item.coffeeItem.price) * item.quantity).toFixed(2)}</div>
@@ -436,7 +434,6 @@ export async function printUnifiedReceipt(data: TaxInvoiceData): Promise<void> {
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
           <div>
             <div style="font-size: 16px; font-weight: bold;">${item.coffeeItem.nameAr}</div>
-            ${item.coffeeItem.nameEn ? `<div style="font-size: 11px; color: #666;">${item.coffeeItem.nameEn}</div>` : ''}
           </div>
           <div style="font-size: 24px; font-weight: bold; border: 2px solid #000; padding: 2px 10px; border-radius: 4px; align-self: flex-start;">x${item.quantity}</div>
         </div>
