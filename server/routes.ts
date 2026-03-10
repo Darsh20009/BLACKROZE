@@ -10899,43 +10899,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes || 'دفعة جديدة'
       );
 
-      // Create Expense record for accounting
+      // Create proper journal entry for inventory purchase (Debit Inventory / Credit Accounts Payable)
       try {
         const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
-        const { ExpenseErpModel, AccountModel } = await import("@shared/schema");
-        const { nanoid } = await import("nanoid");
-        
         const totalAmount = (Number(unitCost) || 0) * numQuantity;
         if (totalAmount > 0) {
-          // Try inventory account first, then any available account
-          const inventoryAccount = await AccountModel.findOne({ tenantId, accountNumber: "1130" });
-          const fallbackAccount = inventoryAccount || await AccountModel.findOne({ tenantId });
-          
-          if (!fallbackAccount) {
-            console.warn(`[ACCOUNTING] No accounts found for tenant ${tenantId} - expense record skipped`);
-          } else {
-            await ExpenseErpModel.create({
-              id: nanoid(),
+          const inventoryAccount = await ensureAccountExists(tenantId, "1130", "المخزون", "Inventory", "asset", "debit");
+          const apAccount = await ensureAccountExists(tenantId, "2100", "الموردون والدائنون", "Accounts Payable", "liability", "credit");
+          if (inventoryAccount && apAccount) {
+            await ErpAccountingService.createJournalEntry({
               tenantId,
-              branchId,
-              expenseNumber: `EXP-INV-${nanoid(6).toUpperCase()}`,
-              expenseDate: new Date(),
-              category: 'inventory',
+              entryDate: new Date(),
               description: `شراء مخزون: ${notes || 'دفعة جديدة'}`,
-              amount: totalAmount,
-              taxAmount: totalAmount * 0.15,
-              totalAmount: totalAmount * 1.15,
-              paymentMethod: 'cash',
-              status: 'paid',
-              requestedBy: req.employee?.id || 'system',
-              accountId: fallbackAccount.id,
-              notes: `تلقائي من إضافة مخزون - مادة: ${rawItemId}`
+              lines: [
+                {
+                  accountId: inventoryAccount.id,
+                  accountNumber: inventoryAccount.accountNumber,
+                  accountName: inventoryAccount.nameAr,
+                  debit: totalAmount,
+                  credit: 0,
+                  description: `شراء مخزون - ${notes || 'دفعة جديدة'}`,
+                  branchId,
+                },
+                {
+                  accountId: apAccount.id,
+                  accountNumber: apAccount.accountNumber,
+                  accountName: apAccount.nameAr,
+                  debit: 0,
+                  credit: totalAmount,
+                  description: `ذمم دائنة - شراء مخزون`,
+                  branchId,
+                },
+              ],
+              referenceType: 'inventory_purchase',
+              referenceId: rawItemId,
+              createdBy: req.employee?.id || 'system',
+              autoPost: true,
             });
-            console.log(`[ACCOUNTING] Created expense for inventory batch: ${totalAmount} SAR`);
+            console.log(`[ACCOUNTING] Inventory purchase journal entry created: ${totalAmount} SAR`);
           }
         }
       } catch (expError) {
-        console.error("[ACCOUNTING] Failed to create expense record:", expError);
+        console.error("[ACCOUNTING] Failed to create inventory purchase journal entry:", expError);
       }
       
       res.json(stock);
@@ -12557,7 +12562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const branchId = req.query.branchId as string;
       
       const query: any = { 
-        isActive: 1,
+        isActive: { $in: [1, true, '1'] },
         tenantId 
       };
       

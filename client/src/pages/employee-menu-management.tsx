@@ -33,8 +33,16 @@ interface BranchAvailability {
   isAvailable: number;
 }
 
-const FOOD_CATEGORIES = ['food', 'bakery', 'desserts', 'cake', 'croissant', 'sandwiches'];
-const DRINK_CATEGORIES = ['hot', 'cold', 'specialty', 'drinks', 'basic', 'additional_drinks'];
+const DEFAULT_FOOD_CATEGORIES = ['food', 'bakery', 'desserts', 'cake', 'croissant', 'sandwiches'];
+const DEFAULT_DRINK_CATEGORIES = ['hot', 'cold', 'specialty', 'drinks', 'basic', 'additional_drinks'];
+
+interface DynamicCategory {
+  id: string;
+  nameAr: string;
+  nameEn?: string;
+  icon?: string;
+  department?: string;
+}
 
 export default function EmployeeMenuManagement() {
  const [, setLocation] = useLocation();
@@ -131,6 +139,10 @@ export default function EmployeeMenuManagement() {
  const { data: branches = [] } = useQuery<Branch[]>({
    queryKey: ["/api/branches"],
    enabled: employee?.role === "manager",
+ });
+
+ const { data: dynamicCategories = [] } = useQuery<DynamicCategory[]>({
+   queryKey: ["/api/menu-categories"],
  });
 
  const calculateRecipeCost = (items: RecipeIngredient[]) => {
@@ -854,7 +866,7 @@ setIsUploadingImage(false);
     e.target.value = '';
   };
 
- const categoryNames: Record<string, string> = {
+ const staticCategoryNames: Record<string, string> = {
  basic: "قهوة أساسية",
  hot: "قهوة ساخنة",
  cold: "قهوة باردة",
@@ -863,11 +875,33 @@ setIsUploadingImage(false);
  desserts: "الحلويات",
  food: "المأكولات",
  bakery: "المخبوزات",
+ cake: "الكيك",
+ croissant: "الكرواسون",
+ sandwiches: "السندوتشات",
+ additional_drinks: "مشروبات إضافية",
  };
 
- const allowedCategories = isFood ? FOOD_CATEGORIES : DRINK_CATEGORIES;
+ const dynamicCategoryNames: Record<string, string> = {};
+ dynamicCategories.forEach(cat => {
+   dynamicCategoryNames[cat.id] = cat.nameAr;
+   dynamicCategoryNames[cat.nameAr] = cat.nameAr;
+ });
 
- const filteredItems = coffeeItems.filter(item => allowedCategories.includes(item.category));
+ const categoryNames: Record<string, string> = { ...staticCategoryNames, ...dynamicCategoryNames };
+
+ const dynamicFoodCats = dynamicCategories.filter(c => c.department === 'food').map(c => c.id);
+ const dynamicDrinkCats = dynamicCategories.filter(c => c.department === 'drinks' || !c.department).map(c => c.id);
+ const dynamicFoodCatNames = dynamicCategories.filter(c => c.department === 'food').map(c => c.nameAr);
+ const dynamicDrinkCatNames = dynamicCategories.filter(c => c.department === 'drinks' || !c.department).map(c => c.nameAr);
+
+ const allowedCategories = isFood
+   ? [...DEFAULT_FOOD_CATEGORIES, ...dynamicFoodCats, ...dynamicFoodCatNames]
+   : [...DEFAULT_DRINK_CATEGORIES, ...dynamicDrinkCats, ...dynamicDrinkCatNames];
+
+ const filteredItems = coffeeItems.filter(item =>
+   allowedCategories.includes(item.category) ||
+   (isFood ? DEFAULT_FOOD_CATEGORIES.some(c => item.category?.startsWith(c)) : DEFAULT_DRINK_CATEGORIES.some(c => item.category?.startsWith(c)))
+ );
 
  const categorizedItems = filteredItems.reduce((acc, item) => {
  if (!acc[item.category]) {
@@ -1003,6 +1037,9 @@ setIsUploadingImage(false);
                                <SelectItem value="bakery">المخبوزات والكرواسون</SelectItem>
                                <SelectItem value="cake">الكيك</SelectItem>
                                <SelectItem value="desserts">الحلويات</SelectItem>
+                               {dynamicCategories.filter(c => c.department === 'food').map(cat => (
+                                 <SelectItem key={cat.id} value={cat.id}>{cat.nameAr}</SelectItem>
+                               ))}
                              </>
                            ) : (
                              <>
@@ -1012,6 +1049,9 @@ setIsUploadingImage(false);
                                <SelectItem value="drinks">المشروبات</SelectItem>
                                <SelectItem value="additional_drinks">مشروبات إضافية</SelectItem>
                                <SelectItem value="basic">قهوة كلاسيك</SelectItem>
+                               {dynamicCategories.filter(c => c.department === 'drinks' || !c.department).map(cat => (
+                                 <SelectItem key={cat.id} value={cat.id}>{cat.nameAr}</SelectItem>
+                               ))}
                              </>
                            )}
                          </SelectContent>
@@ -1670,6 +1710,12 @@ setIsUploadingImage(false);
      <SelectItem value="food">المأكولات</SelectItem>
      <SelectItem value="bakery">المخبوزات</SelectItem>
      <SelectItem value="desserts">الحلويات</SelectItem>
+     <SelectItem value="cake">الكيك</SelectItem>
+     <SelectItem value="croissant">الكرواسون</SelectItem>
+     <SelectItem value="sandwiches">السندوتشات</SelectItem>
+     {dynamicCategories.filter(c => c.department === 'food').map(cat => (
+       <SelectItem key={cat.id} value={cat.id}>{cat.nameAr}</SelectItem>
+     ))}
    </>
  ) : (
    <>
@@ -1678,6 +1724,10 @@ setIsUploadingImage(false);
      <SelectItem value="cold">قهوة باردة</SelectItem>
      <SelectItem value="specialty">مشروبات إضافية</SelectItem>
      <SelectItem value="drinks">المشروبات</SelectItem>
+     <SelectItem value="additional_drinks">مشروبات إضافية أخرى</SelectItem>
+     {dynamicCategories.filter(c => c.department === 'drinks' || !c.department).map(cat => (
+       <SelectItem key={cat.id} value={cat.id}>{cat.nameAr}</SelectItem>
+     ))}
    </>
  )}
  </SelectContent>
