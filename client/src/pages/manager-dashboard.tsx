@@ -19,7 +19,8 @@ import { DeliveryManagement } from "@/components/delivery-management";
 import { 
  Coffee, Users, ShoppingBag, TrendingUp, DollarSign, 
  Package, MapPin, Layers, ArrowLeft, Calendar, Warehouse,
- UserCheck, Receipt, BarChart3, Download, TrendingDown, Activity, Plus, Trash2, ExternalLink, Edit2, Search
+ UserCheck, Receipt, BarChart3, Download, TrendingDown, Activity, Plus, Trash2, ExternalLink, Edit2, Search,
+ Gift, Clock, Star, ShoppingCart
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { 
@@ -749,6 +750,42 @@ export default function ManagerDashboard() {
  >
  <Download className="w-6 h-6" />
  <span className="text-sm">تصدير Excel</span>
+ </Button>
+ <Button
+ onClick={() => setLocation("/manager/gift-cards")}
+ variant="outline"
+ className="h-20 flex flex-col gap-2 rounded-xl"
+ data-testid="button-gift-cards"
+ >
+ <Gift className="w-6 h-6" />
+ <span className="text-sm">بطاقات الهدايا</span>
+ </Button>
+ <Button
+ onClick={() => setLocation("/manager/scheduling")}
+ variant="outline"
+ className="h-20 flex flex-col gap-2 rounded-xl"
+ data-testid="button-scheduling"
+ >
+ <Clock className="w-6 h-6" />
+ <span className="text-sm">جدولة الموظفين</span>
+ </Button>
+ <Button
+ onClick={() => setLocation("/manager/purchase-orders")}
+ variant="outline"
+ className="h-20 flex flex-col gap-2 rounded-xl"
+ data-testid="button-purchase-orders"
+ >
+ <ShoppingCart className="w-6 h-6" />
+ <span className="text-sm">أوامر الشراء</span>
+ </Button>
+ <Button
+ onClick={() => setLocation("/manager/reviews")}
+ variant="outline"
+ className="h-20 flex flex-col gap-2 rounded-xl"
+ data-testid="button-reviews"
+ >
+ <Star className="w-6 h-6" />
+ <span className="text-sm">التقييمات</span>
  </Button>
  <Select value={dateFilter} onValueChange={(value: any) => { setDateFilter(value); setVisibleOrdersCount(20); }}>
  <SelectTrigger className="h-20 flex flex-col gap-2 bg-card border-border rounded-xl">

@@ -5142,3 +5142,122 @@ export type InsertDeliveryDriver = z.infer<typeof insertDeliveryDriverSchema>;
 export type DeliveryDriver = IDeliveryDriver;
 export type InsertDeliveryOrder = z.infer<typeof insertDeliveryOrderSchema>;
 export type DeliveryOrder = IDeliveryOrder;
+// ============ GIFT CARDS - بطاقات الهدايا ============
+export interface IGiftCard extends Document {
+  id: string;
+  tenantId: string;
+  branchId?: string;
+  code: string;
+  initialBalance: number;
+  currentBalance: number;
+  isActive: boolean;
+  purchasedByCustomerId?: string;
+  purchasedByName?: string;
+  assignedToPhone?: string;
+  note?: string;
+  expiryDate?: Date;
+  transactions: Array<{
+    amount: number;
+    orderId?: string;
+    description: string;
+    type: 'credit' | 'debit';
+    date: Date;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const GiftCardSchema = new Schema<IGiftCard>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String },
+  code: { type: String, required: true, unique: true },
+  initialBalance: { type: Number, required: true },
+  currentBalance: { type: Number, required: true },
+  isActive: { type: Boolean, default: true },
+  purchasedByCustomerId: { type: String },
+  purchasedByName: { type: String },
+  assignedToPhone: { type: String },
+  note: { type: String },
+  expiryDate: { type: Date },
+  transactions: [{
+    amount: { type: Number },
+    orderId: { type: String },
+    description: { type: String },
+    type: { type: String, enum: ['credit', 'debit'], default: 'credit' },
+    date: { type: Date, default: Date.now },
+  }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+GiftCardSchema.index({ tenantId: 1, code: 1 });
+GiftCardSchema.index({ tenantId: 1, isActive: 1 });
+
+export const GiftCardModel = mongoose.model<IGiftCard>("GiftCard", GiftCardSchema);
+
+// ============ PURCHASE ORDERS - أوامر الشراء ============
+export interface IPurchaseOrderItem {
+  rawItemId: string;
+  rawItemName: string;
+  quantity: number;
+  unit: string;
+  unitCost: number;
+  totalCost: number;
+  receivedQuantity?: number;
+}
+
+export interface IPurchaseOrder extends Document {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  orderNumber: string;
+  supplierId: string;
+  supplierName: string;
+  items: IPurchaseOrderItem[];
+  totalAmount: number;
+  status: 'draft' | 'pending' | 'approved' | 'ordered' | 'received' | 'cancelled';
+  orderedBy: string;
+  approvedBy?: string;
+  expectedDeliveryDate?: Date;
+  receivedDate?: Date;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const PurchaseOrderSchema = new Schema<IPurchaseOrder>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String, required: true },
+  orderNumber: { type: String, required: true },
+  supplierId: { type: String, required: true },
+  supplierName: { type: String, required: true },
+  items: [{
+    rawItemId: { type: String, required: true },
+    rawItemName: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    unit: { type: String, required: true },
+    unitCost: { type: Number, required: true },
+    totalCost: { type: Number, required: true },
+    receivedQuantity: { type: Number },
+  }],
+  totalAmount: { type: Number, required: true },
+  status: { type: String, enum: ['draft', 'pending', 'approved', 'ordered', 'received', 'cancelled'], default: 'draft' },
+  orderedBy: { type: String, required: true },
+  approvedBy: { type: String },
+  expectedDeliveryDate: { type: Date },
+  receivedDate: { type: Date },
+  notes: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+PurchaseOrderSchema.index({ tenantId: 1, status: 1 });
+PurchaseOrderSchema.index({ tenantId: 1, supplierId: 1 });
+PurchaseOrderSchema.index({ orderNumber: 1 });
+
+export const PurchaseOrderModel = mongoose.model<IPurchaseOrder>("PurchaseOrder", PurchaseOrderSchema);
+
+export type GiftCard = IGiftCard;
+export type PurchaseOrder = IPurchaseOrder;

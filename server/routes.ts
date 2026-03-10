@@ -14059,6 +14059,329 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================
+  // GIFT CARDS ROUTES - بطاقات الهدايا
+  // ============================================================
+  app.get("/api/gift-cards", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { GiftCardModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const cards = await GiftCardModel.find({ tenantId }).sort({ createdAt: -1 });
+      res.json(cards);
+    } catch (error) { res.status(500).json({ error: "فشل في جلب بطاقات الهدايا" }); }
+  });
+
+  app.get("/api/gift-cards/validate/:code", async (req, res) => {
+    try {
+      const { GiftCardModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const card = await GiftCardModel.findOne({ tenantId, code: req.params.code.toUpperCase(), isActive: true });
+      if (!card) return res.status(404).json({ error: "بطاقة الهدية غير صالحة أو منتهية الصلاحية" });
+      if (card.expiryDate && card.expiryDate < new Date()) return res.status(400).json({ error: "بطاقة الهدية منتهية الصلاحية" });
+      if (card.currentBalance <= 0) return res.status(400).json({ error: "رصيد بطاقة الهدية صفر" });
+      res.json({ id: card.id, code: card.code, currentBalance: card.currentBalance, initialBalance: card.initialBalance });
+    } catch (error) { res.status(500).json({ error: "فشل في التحقق من البطاقة" }); }
+  });
+
+  app.post("/api/gift-cards", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { GiftCardModel } = await import("@shared/schema");
+      const { nanoid } = await import("nanoid");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { initialBalance, note, assignedToPhone, expiryDate, purchasedByName, branchId } = req.body;
+      if (!initialBalance || Number(initialBalance) <= 0) return res.status(400).json({ error: "المبلغ مطلوب" });
+      const code = `GC-${nanoid(4).toUpperCase()}-${nanoid(4).toUpperCase()}`;
+      const card = await GiftCardModel.create({
+        id: nanoid(), tenantId, branchId: branchId || req.employee?.branchId,
+        code, initialBalance: Number(initialBalance), currentBalance: Number(initialBalance),
+        isActive: true, purchasedByName, assignedToPhone, note,
+        expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+        transactions: [{ amount: Number(initialBalance), description: 'إصدار بطاقة الهدية', type: 'credit', date: new Date() }],
+      });
+      res.status(201).json(card);
+    } catch (error) { res.status(500).json({ error: "فشل في إنشاء بطاقة الهدية" }); }
+  });
+
+  app.post("/api/gift-cards/:code/redeem", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { GiftCardModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { amount, orderId, description } = req.body;
+      const card = await GiftCardModel.findOne({ tenantId, code: req.params.code.toUpperCase(), isActive: true });
+      if (!card) return res.status(404).json({ error: "بطاقة الهدية غير موجودة" });
+      if (card.currentBalance < Number(amount)) return res.status(400).json({ error: "رصيد غير كافٍ" });
+      card.currentBalance -= Number(amount);
+      if (card.currentBalance === 0) card.isActive = false;
+      card.transactions.push({ amount: Number(amount), orderId, description: description || 'استخدام بطاقة الهدية', type: 'debit', date: new Date() });
+      card.updatedAt = new Date();
+      await card.save();
+      res.json({ success: true, remainingBalance: card.currentBalance });
+    } catch (error) { res.status(500).json({ error: "فشل في استخدام بطاقة الهدية" }); }
+  });
+
+  app.patch("/api/gift-cards/:id/toggle", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { GiftCardModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const card = await GiftCardModel.findOne({ tenantId, id: req.params.id });
+      if (!card) return res.status(404).json({ error: "بطاقة غير موجودة" });
+      card.isActive = !card.isActive;
+      card.updatedAt = new Date();
+      await card.save();
+      res.json(card);
+    } catch (error) { res.status(500).json({ error: "فشل في تحديث البطاقة" }); }
+  });
+
+  app.delete("/api/gift-cards/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { GiftCardModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      await GiftCardModel.deleteOne({ tenantId, id: req.params.id });
+      res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: "فشل في حذف البطاقة" }); }
+  });
+
+  // ============================================================
+  // EMPLOYEE SCHEDULING ROUTES - جدولة المناوبات
+  // ============================================================
+  app.get("/api/shifts", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ShiftModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const branchId = (req.query.branchId as string) || req.employee?.branchId;
+      const query: any = { tenantId, isActive: true };
+      if (branchId) query.branchId = branchId;
+      const shifts = await ShiftModel.find(query).sort({ startTime: 1 });
+      res.json(shifts);
+    } catch (error) { res.status(500).json({ error: "فشل في جلب الورديات" }); }
+  });
+
+  app.post("/api/shifts", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ShiftModel } = await import("@shared/schema");
+      const { nanoid } = await import("nanoid");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { name, nameAr, startTime, endTime, breakDurationMinutes, isOvernight, color, branchId } = req.body;
+      if (!name || !nameAr || !startTime || !endTime) return res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      const shift = await ShiftModel.create({
+        id: nanoid(), tenantId, branchId: branchId || req.employee?.branchId,
+        name, nameAr, startTime, endTime,
+        breakDurationMinutes: Number(breakDurationMinutes) || 60,
+        isOvernight: Boolean(isOvernight), color: color || '#9FB2B3', isActive: true,
+      });
+      res.status(201).json(shift);
+    } catch (error) { res.status(500).json({ error: "فشل في إنشاء الوردية" }); }
+  });
+
+  app.put("/api/shifts/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ShiftModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const shift = await ShiftModel.findOneAndUpdate(
+        { tenantId, id: req.params.id },
+        { ...req.body, updatedAt: new Date() },
+        { new: true }
+      );
+      if (!shift) return res.status(404).json({ error: "الوردية غير موجودة" });
+      res.json(shift);
+    } catch (error) { res.status(500).json({ error: "فشل في تحديث الوردية" }); }
+  });
+
+  app.delete("/api/shifts/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ShiftModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      await ShiftModel.findOneAndUpdate({ tenantId, id: req.params.id }, { isActive: false });
+      res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: "فشل في حذف الوردية" }); }
+  });
+
+  app.get("/api/shift-assignments", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { EmployeeShiftAssignmentModel, ShiftModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const branchId = (req.query.branchId as string) || req.employee?.branchId;
+      const query: any = { tenantId, isActive: true };
+      if (branchId) query.branchId = branchId;
+      const assignments = await EmployeeShiftAssignmentModel.find(query);
+      const shifts = await ShiftModel.find({ tenantId });
+      const result = assignments.map(a => ({
+        ...a.toObject(),
+        shift: shifts.find(s => s.id === a.shiftId),
+      }));
+      res.json(result);
+    } catch (error) { res.status(500).json({ error: "فشل في جلب جداول الموظفين" }); }
+  });
+
+  app.post("/api/shift-assignments", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { EmployeeShiftAssignmentModel } = await import("@shared/schema");
+      const { nanoid } = await import("nanoid");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { employeeId, shiftId, dayOfWeek, effectiveFrom, effectiveTo, branchId } = req.body;
+      if (!employeeId || !shiftId || dayOfWeek === undefined) return res.status(400).json({ error: "بيانات ناقصة" });
+      await EmployeeShiftAssignmentModel.updateMany({ tenantId, employeeId, shiftId, dayOfWeek }, { isActive: false });
+      const assignment = await EmployeeShiftAssignmentModel.create({
+        id: nanoid(), tenantId, branchId: branchId || req.employee?.branchId,
+        employeeId, shiftId, dayOfWeek: Number(dayOfWeek),
+        effectiveFrom: effectiveFrom ? new Date(effectiveFrom) : new Date(),
+        effectiveTo: effectiveTo ? new Date(effectiveTo) : undefined,
+        isActive: true,
+      });
+      res.status(201).json(assignment);
+    } catch (error) { res.status(500).json({ error: "فشل في تعيين الوردية" }); }
+  });
+
+  app.delete("/api/shift-assignments/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { EmployeeShiftAssignmentModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      await EmployeeShiftAssignmentModel.findOneAndUpdate({ tenantId, id: req.params.id }, { isActive: false });
+      res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: "فشل في حذف التعيين" }); }
+  });
+
+  // ============================================================
+  // PURCHASE ORDERS ROUTES - أوامر الشراء
+  // ============================================================
+  app.get("/api/purchase-orders", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { PurchaseOrderModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { status, supplierId } = req.query;
+      const query: any = { tenantId };
+      if (status && status !== 'all') query.status = status;
+      if (supplierId) query.supplierId = supplierId;
+      const orders = await PurchaseOrderModel.find(query).sort({ createdAt: -1 });
+      res.json(orders);
+    } catch (error) { res.status(500).json({ error: "فشل في جلب أوامر الشراء" }); }
+  });
+
+  app.post("/api/purchase-orders", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { PurchaseOrderModel } = await import("@shared/schema");
+      const { nanoid } = await import("nanoid");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { supplierId, supplierName, items, expectedDeliveryDate, notes, branchId } = req.body;
+      if (!supplierId || !items?.length) return res.status(400).json({ error: "المورد والمواد مطلوبة" });
+      const totalAmount = items.reduce((sum: number, i: any) => sum + (i.quantity * i.unitCost), 0);
+      const orderNumber = `PO-${new Date().getFullYear()}-${nanoid(6).toUpperCase()}`;
+      const order = await PurchaseOrderModel.create({
+        id: nanoid(), tenantId, branchId: branchId || req.employee?.branchId,
+        orderNumber, supplierId, supplierName,
+        items: items.map((i: any) => ({ ...i, totalCost: i.quantity * i.unitCost })),
+        totalAmount, status: 'draft',
+        orderedBy: req.employee?.id || 'system',
+        expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : undefined,
+        notes,
+      });
+      res.status(201).json(order);
+    } catch (error) { res.status(500).json({ error: "فشل في إنشاء أمر الشراء" }); }
+  });
+
+  app.patch("/api/purchase-orders/:id/status", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { PurchaseOrderModel, RawItemModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { status } = req.body;
+      const order = await PurchaseOrderModel.findOne({ tenantId, id: req.params.id });
+      if (!order) return res.status(404).json({ error: "أمر الشراء غير موجود" });
+      order.status = status;
+      if (status === 'approved') order.approvedBy = req.employee?.id;
+      if (status === 'received') {
+        order.receivedDate = new Date();
+        for (const item of order.items) {
+          if (item.rawItemId) {
+            await RawItemModel.findOneAndUpdate(
+              { id: item.rawItemId },
+              { $inc: { currentStock: item.receivedQuantity || item.quantity } }
+            );
+          }
+        }
+      }
+      order.updatedAt = new Date();
+      await order.save();
+      res.json(order);
+    } catch (error) { res.status(500).json({ error: "فشل في تحديث أمر الشراء" }); }
+  });
+
+  app.put("/api/purchase-orders/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { PurchaseOrderModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { items, notes, expectedDeliveryDate } = req.body;
+      const totalAmount = items?.reduce((sum: number, i: any) => sum + (i.quantity * i.unitCost), 0);
+      const order = await PurchaseOrderModel.findOneAndUpdate(
+        { tenantId, id: req.params.id, status: { $in: ['draft', 'pending'] } },
+        { items: items?.map((i: any) => ({ ...i, totalCost: i.quantity * i.unitCost })), totalAmount, notes, expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : undefined, updatedAt: new Date() },
+        { new: true }
+      );
+      if (!order) return res.status(404).json({ error: "الأمر غير موجود أو لا يمكن تعديله" });
+      res.json(order);
+    } catch (error) { res.status(500).json({ error: "فشل في تحديث أمر الشراء" }); }
+  });
+
+  // ============================================================
+  // MANAGER REVIEWS ROUTES - إدارة التقييمات
+  // ============================================================
+  app.get("/api/manager/reviews", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ProductReviewModel, CoffeeItemModel } = await import("@shared/schema");
+      const tenantId = getTenantIdFromRequest(req) || "demo-tenant";
+      const { rating, replied } = req.query;
+      const query: any = {};
+      if (rating) query.rating = Number(rating);
+      if (replied === 'yes') query.adminReply = { $exists: true, $ne: '' };
+      if (replied === 'no') query.$or = [{ adminReply: { $exists: false } }, { adminReply: '' }];
+      const reviews = await ProductReviewModel.find(query).sort({ createdAt: -1 }).limit(100);
+      const productIds = [...new Set(reviews.map(r => r.productId))];
+      const products = await CoffeeItemModel.find({ id: { $in: productIds } });
+      const result = reviews.map(r => ({
+        ...r.toObject(),
+        productName: products.find(p => p.id === r.productId)?.nameAr || r.productId,
+      }));
+      res.json(result);
+    } catch (error) { res.status(500).json({ error: "فشل في جلب التقييمات" }); }
+  });
+
+  app.patch("/api/manager/reviews/:id/reply", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ProductReviewModel } = await import("@shared/schema");
+      const { reply } = req.body;
+      if (!reply) return res.status(400).json({ error: "الرد مطلوب" });
+      const review = await ProductReviewModel.findByIdAndUpdate(
+        req.params.id,
+        { adminReply: reply, adminReplyDate: new Date() },
+        { new: true }
+      );
+      if (!review) return res.status(404).json({ error: "التقييم غير موجود" });
+      res.json(review);
+    } catch (error) { res.status(500).json({ error: "فشل في إضافة الرد" }); }
+  });
+
+  app.delete("/api/manager/reviews/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ProductReviewModel } = await import("@shared/schema");
+      await ProductReviewModel.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: "فشل في حذف التقييم" }); }
+  });
+
+  app.get("/api/manager/reviews/stats", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ProductReviewModel } = await import("@shared/schema");
+      const total = await ProductReviewModel.countDocuments();
+      const avgResult = await ProductReviewModel.aggregate([{ $group: { _id: null, avg: { $avg: "$rating" }, total: { $sum: 1 } } }]);
+      const byRating = await ProductReviewModel.aggregate([{ $group: { _id: "$rating", count: { $sum: 1 } } }]);
+      const unreplied = await ProductReviewModel.countDocuments({ $or: [{ adminReply: { $exists: false } }, { adminReply: '' }] });
+      res.json({
+        total, unreplied,
+        avgRating: avgResult[0]?.avg?.toFixed(1) || 0,
+        byRating: byRating.reduce((acc: any, r) => ({ ...acc, [r._id]: r.count }), {}),
+      });
+    } catch (error) { res.status(500).json({ error: "فشل في جلب إحصائيات التقييمات" }); }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time order updates
