@@ -321,18 +321,18 @@ export default function MenuPage() {
     { id: "hot", name: t("menu.categories.hot"), icon: Flame, isSystem: true },
     { id: "cold", name: t("menu.categories.cold"), icon: Snowflake, isSystem: true },
     { id: "specialty", name: t("menu.categories.specialty"), icon: Star, isSystem: true },
-    { id: "drinks", name: t("menu.categories.drinks") || "المشروبات", icon: Coffee, isSystem: true },
-    { id: "additional_drinks", name: "مشروبات إضافية", icon: Plus, isSystem: true },
+    { id: "drinks", name: t("menu.categories.drinks"), icon: Coffee, isSystem: true },
+    { id: "additional_drinks", name: t("menu.categories.additional_drinks"), icon: Plus, isSystem: true },
     { id: "desserts", name: t("menu.categories.desserts"), icon: Cake, isSystem: true },
   ];
 
   const foodSystemCategories = [
     { id: "all", name: t("menu.categories.all"), icon: Utensils, isSystem: true },
     { id: "food", name: t("menu.categories.food"), icon: Utensils, isSystem: true },
-    { id: "sandwiches", name: "السندوتشات", icon: Utensils, isSystem: true },
+    { id: "sandwiches", name: t("menu.categories.sandwiches"), icon: Utensils, isSystem: true },
     { id: "bakery", name: t("menu.categories.bakery"), icon: Cake, isSystem: true },
-    { id: "croissant", name: "الكرواسون", icon: Cake, isSystem: true },
-    { id: "cake", name: "الكيك", icon: Cake, isSystem: true },
+    { id: "croissant", name: t("menu.categories.croissant"), icon: Cake, isSystem: true },
+    { id: "cake", name: t("menu.categories.cake"), icon: Cake, isSystem: true },
     { id: "desserts", name: t("menu.categories.desserts"), icon: Star, isSystem: true },
   ];
 
