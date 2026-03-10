@@ -658,15 +658,15 @@ export default function DeliverySelectionPage() {
                                 </div>
                                 <div className="flex-1">
                                   <p className={`text-base font-bold ${carPickup ? 'text-purple-600 dark:text-purple-400' : ''}`}>
-                                    استلام من السيارة
+                                    {t("delivery.car_pickup")}
                                   </p>
                                   <p className="text-sm text-muted-foreground mt-0.5">
-                                    استلم طلبك وأنت في سيارتك دون الحاجة للنزول
+                                    {t("delivery.car_pickup_desc")}
                                   </p>
                                   {hasSavedCar && !carPickup && (
                                     <p className="text-xs text-purple-500 mt-1 flex items-center gap-1">
                                       <Bookmark className="w-3 h-3" />
-                                      لديك سيارة محفوظة
+                                      {t("delivery.car_saved")}
                                     </p>
                                   )}
                                 </div>
@@ -681,7 +681,7 @@ export default function DeliverySelectionPage() {
                                 <div className="space-y-2">
                                   <Label className="text-sm font-semibold flex items-center gap-1.5">
                                     <Car className="w-3.5 h-3.5 text-purple-500" />
-                                    نوع السيارة
+                                    {t("delivery.car_model")}
                                   </Label>
                                   <div className="grid grid-cols-4 gap-2">
                                     {['تويوتا', 'هيونداي', 'نيسان', 'كيا', 'شيفروليه', 'فورد', 'هوندا', 'مرسيدس'].map((brand) => (
@@ -703,7 +703,7 @@ export default function DeliverySelectionPage() {
                                   <Input
                                     value={carInfo.model}
                                     onChange={(e) => setCarInfo({ ...carInfo, model: e.target.value })}
-                                    placeholder="أو اكتب نوع السيارة..."
+                                    placeholder={t("delivery.car_model_input_placeholder")}
                                     data-testid="input-car-model"
                                     className="mt-1"
                                   />
@@ -712,42 +712,45 @@ export default function DeliverySelectionPage() {
                                 <div className="space-y-2">
                                   <Label className="text-sm font-semibold flex items-center gap-1.5">
                                     <Palette className="w-3.5 h-3.5 text-purple-500" />
-                                    لون السيارة
+                                    {t("delivery.car_color")}
                                   </Label>
                                   <div className="flex gap-2 flex-wrap">
                                     {[
-                                      { name: 'أبيض', hex: '#FFFFFF', border: true },
-                                      { name: 'أسود', hex: '#1a1a1a', border: false },
-                                      { name: 'فضي', hex: '#C0C0C0', border: true },
-                                      { name: 'رمادي', hex: '#808080', border: false },
-                                      { name: 'أحمر', hex: '#DC2626', border: false },
-                                      { name: 'أزرق', hex: '#2563EB', border: false },
-                                      { name: 'بني', hex: '#92400E', border: false },
-                                      { name: 'ذهبي', hex: '#D4A017', border: false },
-                                    ].map((color) => (
-                                      <button
-                                        key={color.name}
-                                        type="button"
-                                        onClick={() => setCarInfo({ ...carInfo, color: color.name })}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                                          carInfo.color === color.name 
-                                            ? 'border-purple-500 ring-1 ring-purple-500/30' 
-                                            : 'border-border hover-elevate'
-                                        }`}
-                                        data-testid={`btn-car-color-${color.name}`}
-                                      >
-                                        <span 
-                                          className={`w-3.5 h-3.5 rounded-full shrink-0 ${color.border ? 'border border-border' : ''}`}
-                                          style={{ backgroundColor: color.hex }}
-                                        />
-                                        {color.name}
-                                      </button>
-                                    ))}
+                                      { id: 'white', hex: '#FFFFFF', border: true },
+                                      { id: 'black', hex: '#1a1a1a', border: false },
+                                      { id: 'silver', hex: '#C0C0C0', border: true },
+                                      { id: 'gray', hex: '#808080', border: false },
+                                      { id: 'red', hex: '#DC2626', border: false },
+                                      { id: 'blue', hex: '#2563EB', border: false },
+                                      { id: 'brown', hex: '#92400E', border: false },
+                                      { id: 'gold', hex: '#D4A017', border: false },
+                                    ].map((color) => {
+                                      const colorLabel = t(`delivery.color_${color.id}`);
+                                      return (
+                                        <button
+                                          key={color.id}
+                                          type="button"
+                                          onClick={() => setCarInfo({ ...carInfo, color: colorLabel })}
+                                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                                            carInfo.color === colorLabel
+                                              ? 'border-purple-500 ring-1 ring-purple-500/30' 
+                                              : 'border-border hover-elevate'
+                                          }`}
+                                          data-testid={`btn-car-color-${color.id}`}
+                                        >
+                                          <span 
+                                            className={`w-3.5 h-3.5 rounded-full shrink-0 ${color.border ? 'border border-border' : ''}`}
+                                            style={{ backgroundColor: color.hex }}
+                                          />
+                                          {colorLabel}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                   <Input
                                     value={carInfo.color}
                                     onChange={(e) => setCarInfo({ ...carInfo, color: e.target.value })}
-                                    placeholder="أو اكتب اللون..."
+                                    placeholder={t("delivery.car_color_input_placeholder")}
                                     data-testid="input-car-color"
                                     className="mt-1"
                                   />
@@ -755,11 +758,11 @@ export default function DeliverySelectionPage() {
 
                                 <div className="space-y-2">
                                   <Label htmlFor="car-plate" className="text-sm font-semibold">
-                                    رقم اللوحة
+                                    {t("delivery.car_plate")}
                                   </Label>
                                   <Input
                                     id="car-plate"
-                                    placeholder="مثال: أ ب ج 1234"
+                                    placeholder={t("delivery.car_plate_placeholder")}
                                     value={carInfo.plateNumber}
                                     onChange={(e) => setCarInfo({ ...carInfo, plateNumber: e.target.value })}
                                     data-testid="input-car-plate"
@@ -771,7 +774,7 @@ export default function DeliverySelectionPage() {
                                 <div className="space-y-2">
                                   <Label htmlFor="arrival-time-car" className="text-sm font-semibold flex items-center gap-1.5">
                                     <Clock className="w-3.5 h-3.5 text-purple-500" />
-                                    وقت الوصول المتوقع
+                                    {t("delivery.arrival_time")}
                                   </Label>
                                   <Input
                                     id="arrival-time-car"
@@ -792,13 +795,13 @@ export default function DeliverySelectionPage() {
                                   />
                                   <Label htmlFor="save-car-info" className="text-sm cursor-pointer flex items-center gap-1.5 flex-1">
                                     <Bookmark className="w-3.5 h-3.5 text-purple-500" />
-                                    حفظ بيانات السيارة للطلبات القادمة
+                                    {t("delivery.save_car_info")}
                                   </Label>
                                 </div>
 
                                 {carInfo.model && carInfo.color && carInfo.plateNumber && (
                                   <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                                    <p className="text-xs text-muted-foreground mb-2">ملخص السيارة:</p>
+                                    <p className="text-xs text-muted-foreground mb-2">{t("delivery.car_summary")}</p>
                                     <div className="flex items-center gap-3">
                                       <div className="p-2 rounded-lg bg-purple-500/20">
                                         <Car className="w-5 h-5 text-purple-500" />
@@ -829,10 +832,10 @@ export default function DeliverySelectionPage() {
                                 </div>
                                 <div className="flex-1">
                                   <p className={`text-base font-bold ${scheduledPickup ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-                                    استلام من الفرع (مجدول)
+                                    {t("delivery.scheduled_pickup")}
                                   </p>
                                   <p className="text-sm text-muted-foreground mt-0.5">
-                                    حدد وقت وصولك وسيبدأ تحضير طلبك قبل وصولك بوقت كافٍ
+                                    {t("delivery.scheduled_pickup_desc")}
                                   </p>
                                 </div>
                               </div>
@@ -846,7 +849,7 @@ export default function DeliverySelectionPage() {
                                 <div className="space-y-2">
                                   <Label htmlFor="scheduled-pickup-time" className="text-sm font-semibold flex items-center gap-1.5">
                                     <Clock className="w-3.5 h-3.5 text-blue-500" />
-                                    وقت وصولك المتوقع
+                                    {t("delivery.scheduled_arrival_time")}
                                   </Label>
                                   <Input
                                     id="scheduled-pickup-time"
@@ -862,7 +865,7 @@ export default function DeliverySelectionPage() {
                                   return prepInfo ? (
                                     <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                                       <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold">
-                                        سيبدأ التحضير الساعة {prepInfo.prepStartTime} (قبل {prepInfo.holdMinutes} دقيقة من وصولك)
+                                        {t("delivery.prep_start_info", { prepTime: prepInfo.prepStartTime, minutes: prepInfo.holdMinutes })}
                                       </p>
                                     </div>
                                   ) : null;
