@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/cart-store";
 import { getCoffeeImage } from "@/lib/coffee-data-clean";
-import { Plus, Eye, ChevronDown, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Eye, ChevronDown, Check } from "lucide-react";
 import type { CoffeeItem } from "@shared/schema";
 import CoffeeStrengthBadge from "@/components/coffee-strength-badge";
 import DrinkCustomizationDialog, { type DrinkCustomization } from "./drink-customization-dialog";
@@ -27,22 +27,6 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<CoffeeItem>(item);
-  const [carouselIndex, setCarouselIndex] = useState(0);
-
-  // Reset carousel when variant changes - use useEffect  
-  // We handle this inline since useMemo recomputes when selectedVariant changes
-  const allItemImages = useMemo(() => {
-    const imgs: string[] = [];
-    const v = selectedVariant;
-    const main = v.imageUrl ? (v.imageUrl.startsWith('/') ? v.imageUrl : `/${v.imageUrl}`) : getCoffeeImage(v.id);
-    imgs.push(main);
-    const extras: string[] = (v as any).images || (v as any).imagesList || [];
-    for (const url of extras) {
-      const formatted = url.startsWith('/') ? url : `/${url}`;
-      if (formatted !== main) imgs.push(formatted);
-    }
-    return imgs;
-  }, [selectedVariant]);
 
   // Use variants passed from props
   const allVariants = useMemo(() => {
@@ -124,7 +108,7 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
           {getStatusOverlay()}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
           <img 
-            src={allItemImages[carouselIndex] || allItemImages[0]}
+            src={selectedVariant.imageUrl ? (selectedVariant.imageUrl.startsWith('/') ? selectedVariant.imageUrl : `/${selectedVariant.imageUrl}`) : getCoffeeImage(selectedVariant.id)}
             alt={selectedVariant.nameAr}
             className="w-full h-40 sm:h-48 md:h-52 object-cover transition-all duration-700 group-hover:scale-110 brightness-95 group-hover:brightness-105"
             loading="lazy"
@@ -134,29 +118,6 @@ function CoffeeCard({ item, variants = [] }: CoffeeCardProps) {
             }}
             data-testid={`img-coffee-${selectedVariant.id}`}
           />
-          {allItemImages.length > 1 && (
-            <>
-              <button
-                className="absolute left-1 top-1/2 -translate-y-1/2 z-30 bg-black/50 hover:bg-black/75 rounded-full p-1 transition-colors"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIndex(i => (i - 1 + allItemImages.length) % allItemImages.length); }}
-                data-testid={`button-prev-image-${selectedVariant.id}`}
-              >
-                <ChevronLeft className="w-3 h-3 text-white" />
-              </button>
-              <button
-                className="absolute right-1 top-1/2 -translate-y-1/2 z-30 bg-black/50 hover:bg-black/75 rounded-full p-1 transition-colors"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIndex(i => (i + 1) % allItemImages.length); }}
-                data-testid={`button-next-image-${selectedVariant.id}`}
-              >
-                <ChevronRight className="w-3 h-3 text-white" />
-              </button>
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-30 flex gap-1">
-                {allItemImages.map((_, i) => (
-                  <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === carouselIndex ? 'bg-white' : 'bg-white/40'}`} />
-                ))}
-              </div>
-            </>
-          )}
 
           <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex flex-col gap-1.5 sm:gap-2 z-30">
             {selectedVariant.availabilityStatus === 'new' && (

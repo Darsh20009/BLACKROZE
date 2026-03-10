@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Coffee } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowRight, Coffee, Star, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import OrderTracker from "@/components/order-tracker";
 import { ReceiptInvoice } from "@/components/receipt-invoice";
@@ -13,15 +14,61 @@ import type { Order as OrderType } from "@shared/schema";
 import { CustomerLayout } from "@/components/layouts/CustomerLayout";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { customerStorage } from "@/lib/customer-storage";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface OrderDisplay extends OrderType {
  items: any[];
+}
+
+function StarRatingInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="flex gap-1 justify-center my-2">
+      {[1,2,3,4,5].map(s => (
+        <button key={s} type="button" onMouseEnter={() => setHover(s)} onMouseLeave={() => setHover(0)} onClick={() => onChange(s)} className="transition-transform hover:scale-110" data-testid={`star-${s}`}>
+          <Star className={`w-7 h-7 ${s <= (hover || value) ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export default function MyOrders() {
  const [, setLocation] = useLocation();
  const { customer } = useCustomer();
  const { t } = useTranslation();
+ const { toast } = useToast();
+ const [reviewedOrders, setReviewedOrders] = useState<Set<string>>(new Set());
+ const [activeReview, setActiveReview] = useState<string | null>(null);
+ const [reviewRating, setReviewRating] = useState(5);
+ const [reviewComment, setReviewComment] = useState('');
+
+ const reviewMutation = useMutation({
+   mutationFn: ({ orderId, rating, comment }: { orderId: string; rating: number; comment: string }) =>
+     apiRequest('POST', '/api/reviews/order/' + orderId, {
+       rating,
+       comment,
+       customerName: (customer as any)?.name || 'عميل',
+       customerId: (customer as any)?.id,
+       customerPhone: (customer as any)?.phone,
+     }),
+   onSuccess: (_: any, vars: any) => {
+     setReviewedOrders(prev => new Set([...prev, vars.orderId]));
+     setActiveReview(null);
+     setReviewRating(5);
+     setReviewComment('');
+     toast({ title: 'شكراً على تقييمك! 🌟' });
+   },
+   onError: (err: any) => {
+     if (String(err?.message || '').includes('مسبقاً')) {
+       toast({ title: 'لقد قيّمت هذا الطلب مسبقاً' });
+       setActiveReview(null);
+     } else {
+       toast({ title: 'فشل إرسال التقييم', variant: 'destructive' });
+     }
+   }
+ });
 
  // Set SEO metadata
  useEffect(() => {
@@ -172,7 +219,7 @@ export default function MyOrders() {
                           <div className="flex items-center gap-2 mb-2">
                             <Coffee className="h-5 w-5 text-accent" />
                             <h3 className="text-lg font-cairo font-bold text-accent">
-                              {order.dailyNumber ? `ORD#${String(order.dailyNumber).padStart(4,'0')}` : `ORD#${order.orderNumber.includes('-') ? order.orderNumber.split('-').pop() : order.orderNumber.slice(-4)}`}
+                              {t("orders.order_number")} {order.orderNumber}
                             </h3>
                           </div>
                           <p className="text-sm text-accent font-cairo">
@@ -214,6 +261,56 @@ export default function MyOrders() {
 
                     {(order.status === 'ready' || order.status === 'completed') && (
                       <ReceiptInvoice order={order} />
+                    )}
+
+                    {order.status === 'completed' && !reviewedOrders.has(order.id) && activeReview !== order.id && (
+                      <div className="flex justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setActiveReview(order.id); setReviewRating(5); setReviewComment(''); }}
+                          className="border-amber-500/50 text-amber-600 hover:bg-amber-50 font-cairo"
+                          data-testid={'btn-rate-order-' + order.id}
+                        >
+                          <Star className="w-4 h-4 ml-2 text-amber-400" />
+                          قيّم طلبك
+                        </Button>
+                      </div>
+                    )}
+
+                    {order.status === 'completed' && reviewedOrders.has(order.id) && (
+                      <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 rounded-lg p-2">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-sm font-cairo">شكراً على تقييمك!</span>
+                      </div>
+                    )}
+
+                    {activeReview === order.id && (
+                      <Card className="p-4 bg-amber-50 border-amber-200">
+                        <p className="text-center text-accent font-cairo font-semibold mb-2">كيف كانت تجربتك؟</p>
+                        <StarRatingInput value={reviewRating} onChange={setReviewRating} />
+                        <textarea
+                          value={reviewComment}
+                          onChange={e => setReviewComment(e.target.value)}
+                          placeholder="أضف تعليقك (اختياري)..."
+                          className="w-full mt-2 p-2 rounded-lg border border-amber-200 bg-white text-sm font-cairo resize-none focus:outline-none focus:border-amber-400"
+                          rows={3}
+                          data-testid={'textarea-review-' + order.id}
+                        />
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            onClick={() => reviewMutation.mutate({ orderId: order.id, rating: reviewRating, comment: reviewComment })}
+                            disabled={reviewMutation.isPending}
+                            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-cairo"
+                            data-testid={'btn-submit-review-' + order.id}
+                          >
+                            {reviewMutation.isPending ? '...' : 'إرسال التقييم'}
+                          </Button>
+                          <Button variant="outline" onClick={() => setActiveReview(null)} className="border-amber-300 text-amber-700 font-cairo">
+                            إلغاء
+                          </Button>
+                        </div>
+                      </Card>
                     )}
 
                     {order.customerNotes && (

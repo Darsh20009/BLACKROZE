@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCartStore } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,15 +28,14 @@ import {
   Languages
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import banner1 from "@assets/Screenshot_2026-02-04_200214_1771877547580.png";
-import banner2 from "@assets/Screenshot_2026-02-04_200804_1771877547581.png";
+import banner1 from "@assets/banner-coffee-1.png";
+import banner2 from "@assets/banner-coffee-2.png";
 import blackroseLogo from "@assets/blackrose-logo.png";
 import type { CoffeeItem, IProductAddon, IPromoOffer } from "@shared/schema";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { MenuGridLayout } from "@/components/menu-layouts/MenuGridLayout";
-import { MenuMinimalLayout } from "@/components/menu-layouts/MenuMinimalLayout";
+import { ClassicMenuLayout, CardsMenuLayout, ListMenuLayout } from "@/components/menu-layouts";
 
 interface MenuCategory {
   id: string;
@@ -51,6 +50,36 @@ interface MenuCategory {
 export default function MenuPage() {
   const { cartItems, addToCart } = useCartStore();
   const { isAuthenticated, customer } = useCustomer();
+  const queryClient = useQueryClient();
+
+  const customerPhone = (customer as any)?.phone || (customer as any)?.phoneNumber;
+
+  const { data: favData } = useQuery<{ favorites: string[] }>({
+    queryKey: ['/api/customers/favorites', customerPhone],
+    enabled: !!(isAuthenticated && customerPhone),
+    queryFn: () => fetch('/api/customers/favorites?phone=' + encodeURIComponent(customerPhone || '')).then(r => r.json()),
+  });
+  const favoriteIds = new Set<string>(favData?.favorites || []);
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const isFav = favoriteIds.has(itemId);
+      if (isFav) {
+        return fetch('/api/customers/favorites/' + itemId + '?phone=' + encodeURIComponent(customerPhone || ''), { method: 'DELETE' }).then(r => r.json());
+      } else {
+        return fetch('/api/customers/favorites/' + itemId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: customerPhone }) }).then(r => r.json());
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/customers/favorites', customerPhone] }),
+  });
+
+  const handleToggleFavorite = (itemId: string) => {
+    if (!isAuthenticated || !customerPhone) {
+      toast({ title: 'يجب تسجيل الدخول لإضافة المفضلة', variant: 'destructive' });
+      return;
+    }
+    toggleFavoriteMutation.mutate(itemId);
+  };
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { t, i18n } = useTranslation();
@@ -391,8 +420,29 @@ export default function MenuPage() {
     const matchesMode = !isBothModes || (
       selectedCategory !== "all" 
         ? (activeMode === "drinks" ? drinkIds.includes(item.category) : foodIds.includes(item.category))
-        : true // Show all when "all" is selected
+        : true
     );
+
+    // Seasonal / time-based filtering
+    const anyItem = item as any;
+    if (anyItem.availableFrom || anyItem.availableTo || (anyItem.availableDays && anyItem.availableDays.length > 0)) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTimeNum = currentHour * 100 + currentMinute;
+      const currentDay = now.getDay();
+      if (anyItem.availableDays && anyItem.availableDays.length > 0 && !anyItem.availableDays.includes(currentDay)) {
+        return false;
+      }
+      if (anyItem.availableFrom) {
+        const [fh, fm] = (anyItem.availableFrom as string).split(':').map(Number);
+        if (currentTimeNum < fh * 100 + fm) return false;
+      }
+      if (anyItem.availableTo) {
+        const [th, tm] = (anyItem.availableTo as string).split(':').map(Number);
+        if (currentTimeNum > th * 100 + tm) return false;
+      }
+    }
     
     return matchesCategory && matchesSearch && matchesMode;
   });
@@ -475,89 +525,6 @@ export default function MenuPage() {
           <Coffee className="w-10 h-10 text-primary" />
         </motion.div>
       </div>
-    );
-  }
-
-  const menuLayout = businessConfig?.appearance?.menuLayout ?? 'classic';
-
-  const totalPrice = cartItems.reduce((sum, i) => {
-    let itemPrice = 0;
-    const basePrice = i.coffeeItem?.price || 0;
-    if (i.selectedSize && i.coffeeItem?.availableSizes) {
-      const size = i.coffeeItem.availableSizes.find((s: any) => s.nameAr === i.selectedSize);
-      itemPrice = size ? size.price : basePrice;
-    } else {
-      itemPrice = basePrice;
-    }
-    let price = 0;
-    if (typeof itemPrice === 'number') price = itemPrice;
-    else if (typeof itemPrice === 'string') price = parseFloat(itemPrice);
-    else if (itemPrice && typeof itemPrice === 'object' && '$numberDecimal' in (itemPrice as any)) price = parseFloat((itemPrice as any).$numberDecimal);
-    else price = parseFloat(String(itemPrice));
-    return sum + (isNaN(price) ? 0 : price * i.quantity);
-  }, 0).toFixed(2);
-
-  if (menuLayout === 'grid') {
-    return (
-      <>
-        <MenuGridLayout
-          sortedFilteredItems={sortedFilteredItems}
-          categories={categories}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          handleAddToCartDirect={handleAddToCartDirect}
-          totalItems={totalItems}
-          totalPrice={totalPrice}
-          onViewCart={() => setLocation("/cart")}
-          t={t}
-          i18n={i18n}
-        />
-        <AddToCartModal
-          item={selectedItem}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          variants={selectedItem ? (groupedItems[getGroupingKey(selectedItem)] || [selectedItem]) : []}
-          onAddToCart={(data) => {
-            addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons);
-            setIsModalOpen(false);
-            toast({ title: t("menu.added_to_cart"), description: t("menu.added_to_cart_desc", { name: i18n.language === 'ar' ? selectedItem?.nameAr : selectedItem?.nameEn || selectedItem?.nameAr }), className: "bg-card border-primary/20 text-foreground font-medium" });
-          }}
-        />
-      </>
-    );
-  }
-
-  if (menuLayout === 'minimal') {
-    return (
-      <>
-        <MenuMinimalLayout
-          sortedFilteredItems={sortedFilteredItems}
-          categories={categories}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          handleAddToCartDirect={handleAddToCartDirect}
-          totalItems={totalItems}
-          totalPrice={totalPrice}
-          onViewCart={() => setLocation("/cart")}
-          t={t}
-          i18n={i18n}
-        />
-        <AddToCartModal
-          item={selectedItem}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          variants={selectedItem ? (groupedItems[getGroupingKey(selectedItem)] || [selectedItem]) : []}
-          onAddToCart={(data) => {
-            addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons);
-            setIsModalOpen(false);
-            toast({ title: t("menu.added_to_cart"), description: t("menu.added_to_cart_desc", { name: i18n.language === 'ar' ? selectedItem?.nameAr : selectedItem?.nameEn || selectedItem?.nameAr }), className: "bg-card border-primary/20 text-foreground font-medium" });
-          }}
-        />
-      </>
     );
   }
 
@@ -910,54 +877,34 @@ export default function MenuPage() {
                 : t("menu.all_items")
               }
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <AnimatePresence mode="popLayout">
-                {sortedFilteredItems.map((item) => (
-                  <motion.div 
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    className="bg-card rounded-2xl border border-border p-3 flex gap-4 items-center shadow-sm cursor-pointer group"
-                    onClick={() => handleAddToCartDirect(item)}
-                    data-testid={`card-menu-${item.id}`}
-                  >
-                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-secondary flex-shrink-0">
-                      <img 
-                        src={item.imageUrl} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                        alt={i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr} 
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/placeholder-coffee.png";
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 py-1">
-                      <h3 className="text-base font-semibold truncate text-foreground mb-1">{i18n.language === 'ar' ? item.nameAr : item.nameEn || item.nameAr}</h3>
-                      <p className="text-xs text-muted-foreground truncate mb-2">{item.description || t("menu.default_desc")}</p>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-primary font-bold text-lg">{item.price} <small className="text-xs font-normal text-muted-foreground">{t("currency")}</small></span>
-                        <Button 
-                          size="sm" 
-                          className="h-8 w-8 p-0 rounded-lg bg-primary hover:bg-primary/90"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToCartDirect(item);
-                          }}
-                          data-testid={`button-add-${item.id}`}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+            {businessConfig?.menuLayout === 'cards' ? (
+              <CardsMenuLayout
+                items={sortedFilteredItems as any}
+                onAddItem={handleAddToCartDirect as any}
+                lang={i18n.language}
+                currency={t("currency")}
+                favoriteIds={favoriteIds}
+                onToggleFavorite={isAuthenticated ? handleToggleFavorite : undefined}
+              />
+            ) : businessConfig?.menuLayout === 'list' ? (
+              <ListMenuLayout
+                items={sortedFilteredItems as any}
+                onAddItem={handleAddToCartDirect as any}
+                lang={i18n.language}
+                currency={t("currency")}
+                favoriteIds={favoriteIds}
+                onToggleFavorite={isAuthenticated ? handleToggleFavorite : undefined}
+              />
+            ) : (
+              <ClassicMenuLayout
+                items={sortedFilteredItems as any}
+                onAddItem={handleAddToCartDirect as any}
+                lang={i18n.language}
+                currency={t("currency")}
+                favoriteIds={favoriteIds}
+                onToggleFavorite={isAuthenticated ? handleToggleFavorite : undefined}
+              />
+            )}
           </section>
         </div>
       </main>
@@ -968,7 +915,7 @@ export default function MenuPage() {
         onClose={() => setIsModalOpen(false)}
         variants={selectedItem ? (groupedItems[getGroupingKey(selectedItem)] || [selectedItem]) : []}
         onAddToCart={(data) => {
-          addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons);
+          addToCart(data.coffeeItemId, data.quantity, data.selectedSize, data.selectedAddons, data.selectedItemAddons);
           setIsModalOpen(false);
           toast({ 
             title: t("menu.added_to_cart"), 
@@ -1031,6 +978,20 @@ export default function MenuPage() {
           </Button>
         </motion.div>
       )}
+
+      <footer className="text-center py-5 text-xs text-muted-foreground/50">
+        made by{" "}
+        <a
+          href="https://qiroxstudio.online"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-muted-foreground/70 hover:text-primary transition-colors underline underline-offset-2"
+          data-testid="link-qirox-studio"
+        >
+          Qirox Studio
+        </a>{" "}
+        group
+      </footer>
 
     </div>
   );

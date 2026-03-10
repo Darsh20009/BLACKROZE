@@ -209,6 +209,7 @@ export interface IStorage {
   updateOrderStatus(id: string, status: string, cancellationReason?: string): Promise<Order | undefined>;
   updateOrderCarPickup(id: string, carPickup: { carType?: string; carColor?: string; plateNumber?: string }): Promise<Order | undefined>;
   getOrders(limit?: number, offset?: number): Promise<Order[]>;
+  bulkDeleteOrders(ids: string[]): Promise<number>;
 
   createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem>;
   getOrderItems(orderId: string): Promise<OrderItem[]>;
@@ -1134,6 +1135,17 @@ export class DBStorage implements IStorage {
   async getOrders(limit: number = 50, offset: number = 0): Promise<Order[]> {
     const orders = await OrderModel.find({}).sort({ createdAt: -1 }).skip(offset).limit(limit).lean();
     return (orders as any[]).map(serializeDoc);
+  }
+
+  async bulkDeleteOrders(ids: string[]): Promise<number> {
+    try {
+      if (!ids || ids.length === 0) return 0;
+      const result = await OrderModel.deleteMany({ id: { $in: ids } });
+      return result.deletedCount || 0;
+    } catch (error) {
+      console.error('[STORAGE] Error bulk deleting orders:', error);
+      return 0;
+    }
   }
 
   async createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem> {

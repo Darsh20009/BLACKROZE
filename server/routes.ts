@@ -14382,6 +14382,570 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) { res.status(500).json({ error: "فشل في جلب إحصائيات التقييمات" }); }
   });
 
+
+  // === MISSING ROUTES FROM REFERENCE ===
+
+  app.delete("/api/orders/bulk", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: "IDs array is required" });
+      }
+      const deleted = await storage.bulkDeleteOrders(ids);
+      const branchId = req.employee?.branchId;
+      wsManager.broadcastToBranch(branchId || 'all', { type: 'orders_updated' });
+      res.json({ success: true, deleted });
+    } catch (error) {
+      console.error("Error bulk deleting orders:", error);
+      res.status(500).json({ error: "Failed to delete orders" });
+    }
+  });
+
+  app.get("/api/public/loyalty-settings", async (req, res) => {
+    try {
+      const config = await storage.getBusinessConfig('demo-tenant');
+      const loyaltyConfig = (config as any)?.loyaltyConfig || {};
+      res.json({
+        enabled: loyaltyConfig.enabled ?? true,
+        pointsPerDrink: loyaltyConfig.pointsPerDrink ?? 10,
+        pointsPerSar: loyaltyConfig.pointsPerSar ?? 20,
+        pointsEarnedPerSar: loyaltyConfig.pointsEarnedPerSar ?? 1,
+        minPointsForRedemption: loyaltyConfig.minPointsForRedemption ?? 100,
+        pointsValueInSar: loyaltyConfig.pointsValueInSar ?? 0.05,
+        redemptionRate: loyaltyConfig.redemptionRate ?? 100,
+        pointsForFreeDrink: loyaltyConfig.pointsForFreeDrink ?? 500,
+      });
+    } catch (error) {
+      res.json({
+        enabled: true,
+        pointsPerDrink: 10,
+        pointsPerSar: 20,
+        pointsEarnedPerSar: 1,
+        minPointsForRedemption: 100,
+        pointsValueInSar: 0.05,
+        redemptionRate: 100,
+        pointsForFreeDrink: 500,
+      });
+    }
+  });
+
+  app.post("/api/loyalty/claim-free-drink", async (req, res) => {
+    try {
+      const { phone } = req.body;
+      if (!phone) return res.status(400).json({ error: "رقم الهاتف مطلوب" });
+
+      const cleanPhone = phone.replace(/\D/g, '').slice(-9);
+      const card = await storage.getLoyaltyCardByPhone(cleanPhone);
+      if (!card) return res.status(404).json({ error: "بطاقة الولاء غير موجودة" });
+
+      const config = await storage.getBusinessConfig('demo-tenant');
+      const loyaltyConfig = (config as any)?.loyaltyConfig || {};
+      const pointsForFreeDrink = loyaltyConfig.pointsForFreeDrink ?? 500;
+
+      if ((card.points || 0) < pointsForFreeDrink) {
+        return res.status(400).json({ error: "النقاط غير كافية للحصول على مشروب مجاني" });
+      }
+
+      const cardId = (card as any)._id?.toString() || (card as any).id;
+      await storage.updateLoyaltyCard(cardId, { points: 0 });
+      res.json({ success: true, message: "تم استرداد المشروب المجاني وتصفير النقاط" });
+    } catch (error) {
+      res.status(500).json({ error: "فشل في استرداد المشروب المجاني" });
+    }
+  });
+
+  app.get("/api/inventory/stock-movements", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || getTenantIdFromRequest(req) || "demo-tenant";
+      const { branchId, period } = req.query;
+      const query: any = { tenantId };
+      if (branchId && branchId !== "all") query.branchId = branchId as string;
+      if (period) {
+        const days = period === "week" ? 7 : period === "month" ? 30 : period === "year" ? 365 : 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        query.createdAt = { $gte: startDate };
+      }
+      const movements = await StockMovementModel.find(query).sort({ createdAt: -1 }).limit(200).lean();
+      res.json({ movements: movements.map(serializeDoc) });
+    } catch (error) {
+      res.status(500).json({ error: "فشل في جلب حركات المخزون" });
+    }
+  });
+
+  app.post("/api/payments/geidea/webhook", async (req, res) => {
+    try {
+      const body = req.body;
+      console.log('[Geidea Webhook] Received:', JSON.stringify(body));
+
+      const tenantId = 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId });
+      const pg = config?.paymentGateway;
+
+      // Verify webhook signature if credentials are available
+      if (pg?.geidea?.publicKey && pg?.geidea?.apiPassword && body.signature) {
+        const crypto = await import('crypto');
+        const signData = `${pg.geidea.publicKey}.${body.orderAmount || body.amount}.${body.currency || 'SAR'}`;
+        const expectedSig = crypto.createHmac('sha256', pg.geidea.apiPassword).update(signData).digest('base64');
+        if (body.signature !== expectedSig) {
+          console.warn('[Geidea Webhook] Invalid signature — rejected');
+          return res.status(401).json({ error: 'Invalid signature' });
+        }
+      }
+
+      const isPaid = body.responseCode === '000' || body.status === 'Success' || body.status === 'succeeded';
+      const merchantRefId = body.merchantReferenceId;
+      const geideaOrderId = body.orderId;
+
+      console.log(`[Geidea Webhook] MerchantRef: ${merchantRefId}, GeideaOrder: ${geideaOrderId}, Paid: ${isPaid}`);
+
+      if (isPaid && merchantRefId) {
+        // Find and update the order by merchant reference ID
+        try {
+          const order = await storage.getOrderByNumber(merchantRefId);
+          if (order) {
+            await storage.updateOrderStatus(order.id || order._id, 'payment_confirmed');
+            console.log(`[Geidea Webhook] Order ${merchantRefId} confirmed as paid`);
+          } else {
+            console.warn(`[Geidea Webhook] Order not found for merchantReferenceId: ${merchantRefId}`);
+          }
+        } catch (findErr: any) {
+          console.warn('[Geidea Webhook] Could not update order:', findErr.message);
+        }
+      }
+
+      // Always respond 200 so Geidea doesn't retry
+      res.json({ received: true, orderId: geideaOrderId, status: isPaid ? 'processed' : 'noted' });
+    } catch (error) {
+      console.error('[Geidea Webhook] Error:', error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  app.get("/api/payments/geidea/callback", async (req, res) => {
+    const params = req.query;
+    console.log('[Geidea GET Callback]', params);
+    // Redirect to checkout with all params so the frontend can handle verification
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    res.redirect(`/checkout?payment=callback&${qs}`);
+  });
+
+  app.get("/api/branch-stock", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { branchId } = req.query;
+      const tenantId = req.employee?.tenantId || getTenantIdFromRequest(req) || "demo-tenant";
+      const query: any = { tenantId };
+      if (branchId && branchId !== "all") query.branchId = branchId as string;
+      const stocks = await BranchStockModel.find(query).populate('rawItemId').sort({ updatedAt: -1 }).lean();
+      res.json(stocks.map(serializeDoc));
+    } catch (error) {
+      res.status(500).json({ error: "فشل في جلب مخزون الفروع" });
+    }
+  });
+
+  app.get("/api/analytics/advanced", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { period = 'today', branchId: qBranch } = req.query;
+      const finalBranchId = qBranch || req.employee?.branchId;
+      const { OrderModel, CoffeeItemModel, EmployeeModel } = await import("@shared/schema");
+
+      const now = new Date();
+      let startDate: Date;
+      let prevStartDate: Date;
+      let prevEndDate: Date;
+
+      switch (period) {
+        case 'week':
+          startDate = new Date(now); startDate.setDate(now.getDate() - 7); startDate.setHours(0,0,0,0);
+          prevStartDate = new Date(startDate); prevStartDate.setDate(startDate.getDate() - 7);
+          prevEndDate = new Date(startDate);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          prevEndDate = new Date(startDate);
+          break;
+        case 'year':
+          startDate = new Date(now.getFullYear(), 0, 1);
+          prevStartDate = new Date(now.getFullYear() - 1, 0, 1);
+          prevEndDate = new Date(startDate);
+          break;
+        default: // today
+          startDate = new Date(now); startDate.setHours(0,0,0,0);
+          prevStartDate = new Date(startDate); prevStartDate.setDate(startDate.getDate() - 1);
+          prevEndDate = new Date(startDate);
+      }
+
+      const baseMatch: any = {
+        createdAt: { $gte: startDate },
+        status: { $ne: 'cancelled' }
+      };
+      if (finalBranchId) baseMatch.branchId = finalBranchId;
+
+      const prevMatch: any = {
+        createdAt: { $gte: prevStartDate, $lt: prevEndDate },
+        status: { $ne: 'cancelled' }
+      };
+      if (finalBranchId) prevMatch.branchId = finalBranchId;
+
+      const [orders, prevOrders] = await Promise.all([
+        OrderModel.find(baseMatch).lean(),
+        OrderModel.find(prevMatch).lean()
+      ]);
+
+      // ---- Summary KPIs ----
+      const totalRevenue = orders.reduce((s, o) => s + (Number(o.totalAmount) || 0), 0);
+      const prevRevenue = prevOrders.reduce((s, o) => s + (Number(o.totalAmount) || 0), 0);
+      const totalOrders = orders.length;
+      const prevOrders2 = prevOrders.length;
+      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+      const prevAvg = prevOrders2 > 0 ? prevRevenue / prevOrders2 : 0;
+      const uniqueCustomers = new Set(orders.map(o => o.customerId || (o.customerInfo as any)?.phone).filter(Boolean)).size;
+      const prevCustomers = new Set(prevOrders.map(o => o.customerId || (o.customerInfo as any)?.phone).filter(Boolean)).size;
+
+      const pct = (curr: number, prev: number) => prev > 0 ? Math.round(((curr - prev) / prev) * 100) : (curr > 0 ? 100 : 0);
+
+      // ---- Hourly distribution ----
+      const hourlyMap: Record<number, { orders: number; revenue: number }> = {};
+      for (let h = 0; h < 24; h++) hourlyMap[h] = { orders: 0, revenue: 0 };
+      for (const o of orders) {
+        const h = new Date(o.createdAt).getHours();
+        hourlyMap[h].orders++;
+        hourlyMap[h].revenue += Number(o.totalAmount) || 0;
+      }
+      const hourlyData = Object.entries(hourlyMap).map(([hour, d]) => ({
+        hour: parseInt(hour),
+        orders: d.orders,
+        revenue: Math.round(d.revenue * 100) / 100
+      }));
+
+      // ---- Best selling products ----
+      const itemCountMap: Record<string, { nameAr: string; nameEn: string; qty: number; revenue: number; imageUrl?: string }> = {};
+      for (const o of orders) {
+        const items = Array.isArray(o.items) ? o.items : [];
+        for (const item of items) {
+          const id = item.coffeeItemId || item.id || 'unknown';
+          const name = item.nameAr || item.name || 'منتج';
+          const nameEn = item.nameEn || '';
+          if (!itemCountMap[id]) itemCountMap[id] = { nameAr: name, nameEn, qty: 0, revenue: 0 };
+          itemCountMap[id].qty += Number(item.quantity) || 1;
+          itemCountMap[id].revenue += (Number(item.price) || 0) * (Number(item.quantity) || 1);
+        }
+      }
+      // Attach images
+      const allItemIds = Object.keys(itemCountMap);
+      if (allItemIds.length > 0) {
+        const coffeeItems = await CoffeeItemModel.find({ id: { $in: allItemIds } }, { id: 1, imageUrl: 1 }).lean();
+        for (const ci of coffeeItems) {
+          if (itemCountMap[ci.id]) itemCountMap[ci.id].imageUrl = ci.imageUrl;
+        }
+      }
+      const topProducts = Object.entries(itemCountMap)
+        .map(([id, d]) => ({ id, ...d, revenue: Math.round(d.revenue * 100) / 100 }))
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 10);
+
+      // ---- Employee performance ----
+      const empMap: Record<string, { name: string; orders: number; revenue: number }> = {};
+      for (const o of orders) {
+        const empId = (o as any).employeeId || (o as any).cashierId || 'unknown';
+        const empName = (o as any).employeeName || (o as any).cashierName || 'غير محدد';
+        if (!empMap[empId]) empMap[empId] = { name: empName, orders: 0, revenue: 0 };
+        empMap[empId].orders++;
+        empMap[empId].revenue += Number(o.totalAmount) || 0;
+      }
+      const employeePerformance = Object.entries(empMap)
+        .map(([id, d]) => ({
+          id,
+          name: d.name,
+          orders: d.orders,
+          revenue: Math.round(d.revenue * 100) / 100,
+          avgOrderValue: d.orders > 0 ? Math.round((d.revenue / d.orders) * 100) / 100 : 0
+        }))
+        .sort((a, b) => b.orders - a.orders)
+        .slice(0, 10);
+
+      // ---- Revenue comparison (daily trend last 7 days) ----
+      const revenueTrend: Array<{ date: string; current: number; orders: number }> = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        const nextD = new Date(d); nextD.setDate(nextD.getDate() + 1);
+        const dayOrders = orders.filter(o => {
+          const t = new Date(o.createdAt);
+          return t >= d && t < nextD;
+        });
+        revenueTrend.push({
+          date: d.toLocaleDateString('ar-SA', { weekday: 'short', month: 'short', day: 'numeric' }),
+          current: Math.round(dayOrders.reduce((s, o) => s + (Number(o.totalAmount) || 0), 0) * 100) / 100,
+          orders: dayOrders.length
+        });
+      }
+
+      // ---- Payment method breakdown ----
+      const paymentBreakdown: Record<string, number> = {};
+      for (const o of orders) {
+        const m = (o.paymentMethod as string) || 'other';
+        paymentBreakdown[m] = (paymentBreakdown[m] || 0) + (Number(o.totalAmount) || 0);
+      }
+
+      res.json({
+        period,
+        summary: {
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
+          totalOrders,
+          avgOrderValue: Math.round(avgOrderValue * 100) / 100,
+          uniqueCustomers,
+          revenueChange: pct(totalRevenue, prevRevenue),
+          ordersChange: pct(totalOrders, prevOrders2),
+          avgOrderChange: pct(avgOrderValue, prevAvg),
+          customersChange: pct(uniqueCustomers, prevCustomers),
+          changeLabel: period === 'today' ? 'مقارنة بالأمس' : period === 'week' ? 'مقارنة بالأسبوع السابق' : 'مقارنة بالشهر السابق'
+        },
+        hourlyData,
+        topProducts,
+        employeePerformance,
+        revenueTrend,
+        paymentBreakdown: Object.entries(paymentBreakdown).map(([method, amount]) => ({
+          method,
+          amount: Math.round(amount * 100) / 100,
+          percentage: totalRevenue > 0 ? Math.round((amount / totalRevenue) * 100) : 0
+        }))
+      });
+    } catch (error) {
+      console.error("[ANALYTICS] Error:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get("/api/customers/favorites", async (req, res) => {
+    try {
+      const { CustomerModel } = await import("@shared/schema");
+      const { phone, customerId } = req.query;
+      const query: any = {};
+      if (phone) query.phone = String(phone).replace(/^0/, '');
+      else if (customerId) query._id = customerId;
+      else return res.status(400).json({ error: "يجب تحديد العميل" });
+      const customer = await CustomerModel.findOne(query);
+      if (!customer) return res.status(404).json({ error: "العميل غير موجود" });
+      res.json({ favorites: (customer as any).favorites || [] });
+    } catch (error) {
+      res.status(500).json({ error: "فشل جلب المفضلة" });
+    }
+  });
+
+  app.post("/api/customers/favorites/:itemId", async (req, res) => {
+    try {
+      const { CustomerModel } = await import("@shared/schema");
+      const { phone, customerId } = req.body;
+      const query: any = {};
+      if (phone) query.phone = String(phone).replace(/^0/, '');
+      else if (customerId) query._id = customerId;
+      else return res.status(400).json({ error: "يجب تحديد العميل" });
+      const customer = await CustomerModel.findOne(query);
+      if (!customer) return res.status(404).json({ error: "العميل غير موجود" });
+      const favorites: string[] = (customer as any).favorites || [];
+      if (!favorites.includes(req.params.itemId)) {
+        favorites.push(req.params.itemId);
+        await CustomerModel.updateOne(query, { $set: { favorites } });
+      }
+      res.json({ success: true, favorites });
+    } catch (error) {
+      res.status(500).json({ error: "فشل إضافة للمفضلة" });
+    }
+  });
+
+  app.delete("/api/customers/favorites/:itemId", async (req, res) => {
+    try {
+      const { CustomerModel } = await import("@shared/schema");
+      const { phone, customerId } = req.query;
+      const query: any = {};
+      if (phone) query.phone = String(phone).replace(/^0/, '');
+      else if (customerId) query._id = customerId;
+      else return res.status(400).json({ error: "يجب تحديد العميل" });
+      const customer = await CustomerModel.findOne(query);
+      if (!customer) return res.status(404).json({ error: "العميل غير موجود" });
+      const favorites: string[] = ((customer as any).favorites || []).filter((id: string) => id !== req.params.itemId);
+      await CustomerModel.updateOne(query, { $set: { favorites } });
+      res.json({ success: true, favorites });
+    } catch (error) {
+      res.status(500).json({ error: "فشل حذف من المفضلة" });
+    }
+  });
+
+  app.get("/api/reviews/all", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { ProductReviewModel, CoffeeItemModel } = await import("@shared/schema");
+      const { rating, page = 1, limit = 20 } = req.query;
+      const query: any = {};
+      if (req.employee?.branchId) query.branchId = req.employee.branchId;
+      if (rating) query.rating = Number(rating);
+      const skip = (Number(page) - 1) * Number(limit);
+      const [reviews, total] = await Promise.all([
+        ProductReviewModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).lean(),
+        ProductReviewModel.countDocuments(query)
+      ]);
+      // Attach product names
+      const productIds = [...new Set(reviews.map(r => r.productId).filter(Boolean))];
+      const products = productIds.length > 0 ? await CoffeeItemModel.find({ id: { $in: productIds } }, { id: 1, nameAr: 1, nameEn: 1, imageUrl: 1 }).lean() : [];
+      const productMap: Record<string, any> = {};
+      for (const p of products) productMap[p.id] = p;
+      const enriched = reviews.map(r => ({ ...serializeDoc(r), product: productMap[r.productId] || null }));
+      const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length : 0;
+      res.json({ reviews: enriched, total, page: Number(page), avgRating: Math.round(avgRating * 10) / 10 });
+    } catch (error) {
+      res.status(500).json({ error: "فشل جلب التقييمات" });
+    }
+  });
+
+  app.post("/api/reviews/order/:orderId", async (req, res) => {
+    try {
+      const { ProductReviewModel, OrderModel } = await import("@shared/schema");
+      const { rating, comment, customerName, customerId, customerPhone } = req.body;
+      if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "التقييم بين 1 و 5" });
+      const order = await OrderModel.findOne({ id: req.params.orderId }) || await OrderModel.findById(req.params.orderId).catch(() => null);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      // Check if already reviewed
+      const existing = await ProductReviewModel.findOne({ orderId: req.params.orderId });
+      if (existing) return res.status(400).json({ error: "تم تقييم هذا الطلب مسبقاً" });
+      const review = new ProductReviewModel({
+        orderId: req.params.orderId,
+        orderNumber: order.orderNumber,
+        rating: Number(rating),
+        comment: comment || '',
+        customerName: customerName || (order.customerInfo as any)?.name || 'عميل',
+        customerId: customerId || order.customerId || '',
+        customerPhone: customerPhone || (order.customerInfo as any)?.phone || '',
+        branchId: order.branchId,
+        status: 'published',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      await review.save();
+      res.json(serializeDoc(review));
+    } catch (error) {
+      res.status(500).json({ error: "فشل إرسال التقييم" });
+    }
+  });
+
+  app.patch("/api/coffee-items/:id/schedule", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { CoffeeItemModel } = await import("@shared/schema");
+      const { availableFrom, availableTo, availableDays } = req.body;
+      const item = await CoffeeItemModel.findOneAndUpdate(
+        { id: req.params.id },
+        { $set: { availableFrom: availableFrom || null, availableTo: availableTo || null, availableDays: availableDays || null, updatedAt: new Date() } },
+        { new: true }
+      );
+      if (!item) return res.status(404).json({ error: "المنتج غير موجود" });
+      res.json(serializeDoc(item));
+    } catch (error) {
+      res.status(500).json({ error: "فشل تحديث جدول المنتج" });
+    }
+  });
+
+  app.get("/api/payroll/report", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { EmployeeModel, AttendanceModel } = await import("@shared/schema");
+      const { month, year } = req.query;
+      const targetMonth = month ? parseInt(String(month)) - 1 : new Date().getMonth();
+      const targetYear = year ? parseInt(String(year)) : new Date().getFullYear();
+      const startDate = new Date(targetYear, targetMonth, 1);
+      const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+      const finalBranchId = req.employee?.branchId;
+      const empQuery: any = { isActive: { $ne: false } };
+      if (finalBranchId) empQuery.branchId = finalBranchId;
+      const employees = await EmployeeModel.find(empQuery).lean();
+      const attQuery: any = { date: { $gte: startDate.toISOString().split('T')[0], $lte: endDate.toISOString().split('T')[0] } };
+      if (finalBranchId) attQuery.branchId = finalBranchId;
+      const attendances = await AttendanceModel.find(attQuery).lean();
+      const payrollData = employees.map(emp => {
+        const empAtt = attendances.filter(a => a.employeeId === emp.id || String(a.employeeId) === String((emp as any)._id));
+        const presentDays = empAtt.filter(a => a.status === 'present' || a.checkInTime).length;
+        const absentDays = empAtt.filter(a => a.status === 'absent').length;
+        const lateDays = empAtt.filter(a => a.isLate || a.lateMinutes > 0).length;
+        const totalWorkingDays = new Date(targetYear, targetMonth + 1, 0).getDate();
+        const baseSalary = Number((emp as any).salary || (emp as any).baseSalary || 0);
+        const dailyRate = baseSalary / (totalWorkingDays || 26);
+        const deductions = absentDays * dailyRate;
+        const lateDeductions = lateDays * (dailyRate * 0.25);
+        const netSalary = Math.max(0, baseSalary - deductions - lateDeductions);
+        return {
+          employeeId: emp.id || String((emp as any)._id),
+          name: emp.name,
+          role: emp.role,
+          baseSalary,
+          presentDays,
+          absentDays,
+          lateDays,
+          totalWorkingDays,
+          deductions: Math.round(deductions * 100) / 100,
+          lateDeductions: Math.round(lateDeductions * 100) / 100,
+          netSalary: Math.round(netSalary * 100) / 100,
+          attendanceRate: totalWorkingDays > 0 ? Math.round((presentDays / totalWorkingDays) * 100) : 0
+        };
+      });
+      res.json({
+        month: targetMonth + 1,
+        year: targetYear,
+        employees: payrollData,
+        totals: {
+          totalBaseSalary: payrollData.reduce((s, e) => s + e.baseSalary, 0),
+          totalDeductions: payrollData.reduce((s, e) => s + e.deductions + e.lateDeductions, 0),
+          totalNetSalary: payrollData.reduce((s, e) => s + e.netSalary, 0),
+          employeeCount: payrollData.length
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: "فشل إنشاء تقرير الرواتب" });
+    }
+  });
+
+  app.get("/api/analytics/cogs", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { CoffeeItemModel, CoffeeItemIngredientModel } = await import("@shared/schema");
+      const branchId = req.employee?.branchId;
+      const itemQuery: any = {};
+      if (branchId) itemQuery.publishedBranches = branchId;
+      const items = await CoffeeItemModel.find(itemQuery, { id: 1, nameAr: 1, nameEn: 1, price: 1, costOfGoods: 1, category: 1 }).lean();
+      const allIngredients = await CoffeeItemIngredientModel.find({}).lean();
+      const cogsData = items.map(item => {
+        const itemIngredients = allIngredients.filter(ing => ing.coffeeItemId === item.id || ing.itemId === item.id);
+        const calculatedCOGS = Number(item.costOfGoods) || 0;
+        const price = Number(item.price) || 0;
+        const profit = price - calculatedCOGS;
+        const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
+        return {
+          id: item.id,
+          nameAr: item.nameAr,
+          nameEn: item.nameEn || '',
+          price,
+          cogs: Math.round(calculatedCOGS * 100) / 100,
+          profit: Math.round(profit * 100) / 100,
+          margin,
+          category: item.category,
+          ingredientCount: itemIngredients.length
+        };
+      });
+      cogsData.sort((a, b) => b.margin - a.margin);
+      const avgMargin = cogsData.length > 0 ? Math.round(cogsData.reduce((s, i) => s + i.margin, 0) / cogsData.length) : 0;
+      res.json({
+        items: cogsData,
+        summary: {
+          totalItems: cogsData.length,
+          avgMargin,
+          highMargin: cogsData.filter(i => i.margin >= 60).length,
+          lowMargin: cogsData.filter(i => i.margin < 30).length,
+          itemsWithCOGS: cogsData.filter(i => i.cogs > 0).length
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: "فشل إنشاء تقرير التكاليف" });
+    }
+  });
+
+
   const httpServer = createServer(app);
   
   // Setup WebSocket for real-time order updates

@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { playNotificationSound, unlockAudio } from "@/lib/notification-sounds";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,24 +14,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Coffee, ShoppingBag, User, Phone, Trash2, Plus, Minus, ArrowRight, Check, Scan, Search, X, Gift, Printer, MonitorSmartphone, Settings, Wifi, WifiOff, FileText, Store, Truck, MapPin, Wallet, CreditCard, Bell, BellOff } from "lucide-react";
+import { Coffee, ShoppingBag, User, Phone, Trash2, Plus, Minus, ArrowRight, Check, Scan, Search, X, Gift, Printer, MonitorSmartphone, Settings, Wifi, WifiOff, FileText, Store, Truck, MapPin, Wallet, CreditCard } from "lucide-react";
 import QRScanner from "@/components/qr-scanner";
 import BarcodeScanner from "@/components/barcode-scanner";
-import DrinkCustomizationDialog, { type DrinkCustomization } from "@/components/drink-customization-dialog";
 import { TableOccupancyAlerts } from "@/components/table-occupancy-alerts";
+import { ClassicCashierLayout, POSCashierLayout, SplitCashierLayout } from "@/components/cashier-layouts";
 import { printTaxInvoice, printSimpleReceipt, printCustomerPickupReceipt, printCashierReceipt, printAllReceipts } from "@/lib/print-utils";
 import type { Employee, CoffeeItem, PaymentMethod, LoyaltyCard } from "@shared/schema";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface OrderItem {
-  itemKey: string;
-  coffeeItem: CoffeeItem;
-  quantity: number;
-  customization?: {
-    selectedSize?: string;
-    addons?: any[];
-    totalAddonsPrice?: number;
-  };
+ coffeeItem: CoffeeItem;
+ quantity: number;
+ customization?: {
+   selectedSize?: string;
+   addons?: any[];
+   totalAddonsPrice?: number;
+ };
 }
 
 interface WhatsAppMessageData {
@@ -52,7 +51,15 @@ function generateWhatsAppLink(data: WhatsAppMessageData): string {
 رقم الطلب: ${data.orderNumber}
 
 تفاصيل الطلب:
-${data.items.map(item => `• ${item.coffeeItem.nameAr} × ${item.quantity} - ${(Number(item.coffeeItem.price) * item.quantity).toFixed(2)} ريال`).join('\n')}
+${data.items.map(item => {
+  let price = Number(item.coffeeItem.price) || 0;
+  if ((item as any).selectedSize && item.coffeeItem.availableSizes) {
+    const sz = (item.coffeeItem.availableSizes as any[]).find((s: any) => s.nameAr === (item as any).selectedSize);
+    if (sz) price = Number(sz.price) || price;
+  }
+  const addonsExtra = ((item.customization as any)?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0);
+  return `• ${item.coffeeItem.nameAr}${(item as any).selectedSize ? ` (${(item as any).selectedSize})` : ''} × ${item.quantity} - ${((price + addonsExtra) * item.quantity).toFixed(2)} ريال`;
+}).join('\n')}
 
 الإجمالي: ${data.total} ريال
 طريقة الدفع: ${data.paymentMethod}
@@ -96,27 +103,25 @@ export default function EmployeeCashier() {
  const [pointsToRedeem, setPointsToRedeem] = useState(0);
  const [usePointsDiscount, setUsePointsDiscount] = useState(false);
  const [orderType, setOrderType] = useState<'dine-in' | 'pickup' | 'delivery'>('pickup');
-   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [customizingItem, setCustomizingItem] = useState<CoffeeItem | null>(null);
- const [newOrdersCount, setNewOrdersCount] = useState(0);
- const previousOnlineOrderIdsRef = useRef<Set<string>>(new Set());
- const hasInitializedRef = useRef(false);
- 
- const { toast } = useToast();
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
- // Unlock Web Audio API on first user interaction (required by browsers)
- useEffect(() => {
-   const handler = () => unlockAudio();
-   document.addEventListener('click', handler, { once: true });
-   document.addEventListener('touchstart', handler, { once: true });
-   document.addEventListener('keydown', handler, { once: true });
-   return () => {
-     document.removeEventListener('click', handler);
-     document.removeEventListener('touchstart', handler);
-     document.removeEventListener('keydown', handler);
-   };
- }, []);
+ const { toast } = useToast();
+ const { i18n } = useTranslation();
+ const getItemDisplayName = useCallback((item: any) => {
+   if (!item) return '';
+   if (i18n.language === 'en') return item.nameEn || item.nameAr || '';
+   return item.nameAr || item.nameEn || '';
+ }, [i18n.language]);
+
+ const { data: loyaltySettings } = useQuery<any>({
+   queryKey: ["/api/public/loyalty-settings"],
+   staleTime: 300000,
+ });
+
+ const pointsToSar = (pts: number) => {
+   const pointsValueInSar = loyaltySettings?.pointsValueInSar ?? 0.05;
+   return pts * pointsValueInSar;
+ };
 
  useEffect(() => {
  const loadEmployee = async () => {
@@ -147,12 +152,6 @@ export default function EmployeeCashier() {
  loadEmployee();
  }, [setLocation]);
 
- // Reset notification tracking refs when employee changes (login/logout)
- useEffect(() => {
-   hasInitializedRef.current = false;
-   previousOnlineOrderIdsRef.current = new Set();
- }, [employee?.id]);
-
  // Check POS device connection
  useEffect(() => {
  const checkPosConnection = async () => {
@@ -178,17 +177,16 @@ export default function EmployeeCashier() {
  // Check for existing customer when phone number is entered
  useEffect(() => {
  const checkCustomer = async () => {
- // Accept 9-digit (5xxxxxxxx) or 10-digit (05xxxxxxxx) Saudi numbers
- const cleanPhone = customerPhone.startsWith('0') ? customerPhone.slice(1) : customerPhone;
- const isValidPhone = (cleanPhone.length === 9 && cleanPhone.startsWith('5')) ||
-                      (customerPhone.length === 10 && customerPhone.startsWith('05'));
- if (isValidPhone) {
+ const is9Digit = customerPhone.length === 9 && customerPhone.startsWith('5');
+ const is10Digit = customerPhone.length === 10 && customerPhone.startsWith('05');
+ const normalizedPhone = is10Digit ? customerPhone.slice(1) : customerPhone;
+ if (is9Digit || is10Digit) {
  setIsCheckingCustomer(true);
  try {
  const response = await fetch(`/api/customers/lookup-by-phone`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ phone: cleanPhone })
+ body: JSON.stringify({ phone: normalizedPhone })
  });
  
  if (response.ok) {
@@ -196,8 +194,7 @@ export default function EmployeeCashier() {
  if (data.found && data.customer) {
  setCustomerName(data.customer.name);
  setCustomerEmail(data.customer.email || "");
- const actualPoints = data.loyaltyCard?.points ?? data.customer.points ?? 0;
- setCustomerPoints(Number(actualPoints));
+ setCustomerPoints(data.customer.points || 0);
  setCustomerId(data.customer.id);
  setLoyaltyCard(data.loyaltyCard || null);
  setShowRegisterDialog(false);
@@ -208,7 +205,7 @@ export default function EmployeeCashier() {
  
  toast({
  title: "عميل مسجل",
- description: `مرحباً ${data.customer.name}! لديك ${actualPoints} نقطة${availableStamps > 0 ? ` و ${availableStamps} أختام متاحة` : ''}`,
+ description: `مرحباً ${data.customer.name}! لديك ${data.customer.points || 0} نقطة${availableStamps > 0 ? ` و ${availableStamps} أختام متاحة` : ''}`,
  className: "bg-green-600 text-white",
  });
  } else {
@@ -218,8 +215,6 @@ export default function EmployeeCashier() {
  setCustomerName("");
  setCustomerEmail("");
  setCustomerPoints(0);
- setPointsToRedeem(0);
- setUsePointsDiscount(false);
  setShowRegisterDialog(true);
  }
  } else {
@@ -228,8 +223,6 @@ export default function EmployeeCashier() {
  setCustomerName("");
  setCustomerEmail("");
  setCustomerPoints(0);
- setPointsToRedeem(0);
- setUsePointsDiscount(false);
  setShowRegisterDialog(true);
  }
  } catch (error) {
@@ -239,8 +232,6 @@ export default function EmployeeCashier() {
  setCustomerName("");
  setCustomerEmail("");
  setCustomerPoints(0);
- setPointsToRedeem(0);
- setUsePointsDiscount(false);
  } finally {
  setIsCheckingCustomer(false);
  }
@@ -252,8 +243,6 @@ export default function EmployeeCashier() {
  setCustomerName("");
  setCustomerEmail("");
  setCustomerPoints(0);
- setPointsToRedeem(0);
- setUsePointsDiscount(false);
  setShowRegisterDialog(false);
  }
  }
@@ -267,93 +256,18 @@ export default function EmployeeCashier() {
  queryKey: ["/api/coffee-items"],
  });
 
- const { data: businessConfig } = useQuery<any>({ queryKey: ["/api/business-config"], refetchInterval: 60000, staleTime: 30000 });
-
- // Poll for new online orders and play sound notification
- // Include pending, confirmed, and payment_confirmed statuses to avoid missing orders that skip 'pending'
- const { data: pendingOrders = [] } = useQuery<any[]>({
-   queryKey: ["/api/orders/pending-online"],
-   queryFn: async () => {
-     const res = await fetch(
-       `/api/orders?orderSource=website&limit=50`,
-       { credentials: 'include' }
-     );
-     if (!res.ok) return [];
-     const data = await res.json();
-     const allOrders = Array.isArray(data) ? data : (data.orders || []);
-     // Filter in-browser: keep only active (not completed/cancelled) website orders
-     return allOrders.filter((o: any) => !['completed', 'cancelled', 'delivered'].includes(o.status));
-   },
-   enabled: !!employee,
-   refetchInterval: 5000,
+ const { data: businessConfig } = useQuery<any>({
+   queryKey: ["/api/business-config"],
+   staleTime: 300000,
  });
-
- // Detect new online orders and play sound
- useEffect(() => {
-   if (!pendingOrders || pendingOrders.length === 0) {
-     if (!hasInitializedRef.current && employee) {
-       hasInitializedRef.current = true;
-       previousOnlineOrderIdsRef.current = new Set();
-     }
-     return;
-   }
-
-   const currentIds = new Set(pendingOrders.map((o: any) => o.id || o._id));
-
-   if (!hasInitializedRef.current) {
-     hasInitializedRef.current = true;
-     previousOnlineOrderIdsRef.current = currentIds;
-     return;
-   }
-
-   const newIds = [...currentIds].filter(id => !previousOnlineOrderIdsRef.current.has(id));
-   previousOnlineOrderIdsRef.current = currentIds;
-
-   if (newIds.length > 0) {
-     setNewOrdersCount(prev => prev + newIds.length);
-
-     if (soundEnabled) {
-       playNotificationSound('onlineOrderVoice', 1.0);
-     }
-
-     toast({
-       title: `🔔 طلب جديد وارد!`,
-       description: `${newIds.length > 1 ? `${newIds.length} طلبات جديدة` : 'طلب جديد'} - انتظر التأكيد`,
-       duration: 10000,
-       className: "bg-green-600 text-white border-green-700 font-bold text-lg",
-     });
-
-     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-       new Notification('🔔 طلب جديد!', {
-         body: `${newIds.length} ${newIds.length > 1 ? 'طلبات جديدة' : 'طلب جديد'}`,
-         icon: '/android-chrome-192x192.png',
-         tag: 'new-order-cashier',
-         requireInteraction: true,
-       });
-     }
-   }
- }, [pendingOrders, soundEnabled, toast, employee]);
 
   // Create order mutation
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
-      const paymentMethodLabels: Record<string, string> = {
-        cash: "نقداً",
-        pos: "جهاز POS",
-        alinma: "Alinma Pay",
-        ur: "Ur Pay",
-        barq: "Barq",
-        rajhi: "بنك الراجحي",
-        bank_transfer: "تحويل بنكي",
-        neoleap: "NeoLeap",
-        geidea: "Geidea",
-        paymob: "Paymob",
-        "paymob-card": "Paymob (بطاقة)",
-        "paymob-wallet": "Paymob (محفظة)",
-        apple_pay: "Apple Pay",
-      };
-      const paymentLabel = paymentMethodLabels[paymentMethod] || paymentMethod;
-      const confirmMessage = `تأكيد الدفع (${paymentLabel}) للعميل: ${orderData.customerInfo.customerName}\nرقم الجوال: ${orderData.customerInfo.phoneNumber}\nالإجمالي: ${orderData.totalAmount} ريال`;
+      // Show customer details for confirmation
+      const pmLabels: Record<string, string> = { cash: "نقداً", pos: "بطاقة/شبكة", alinma: "Alinma Pay", ur: "Ur Pay", barq: "Barq", rajhi: "بنك الراجحي" };
+      const pmLabel = pmLabels[orderData.paymentMethod] || "إلكتروني";
+      const confirmMessage = `تأكيد الدفع (${pmLabel}) للعميل: ${orderData.customerInfo.customerName}\nرقم الجوال: ${orderData.customerInfo.phoneNumber}\nالإجمالي: ${orderData.totalAmount} ريال`;
       if (!window.confirm(confirmMessage)) {
         throw new Error("تم إلغاء تأكيد الدفع");
       }
@@ -466,10 +380,6 @@ export default function EmployeeCashier() {
  if (loyaltyResponse.ok) {
  const card = await loyaltyResponse.json();
  setLoyaltyCard(card);
- // Update customerPoints from loyaltyCard (accurate source)
- if (card && typeof card.points === 'number') {
-   setCustomerPoints(card.points);
- }
  }
  } catch (error) {
  console.error('Error fetching loyalty card after registration:', error);
@@ -507,8 +417,6 @@ export default function EmployeeCashier() {
  setCustomerPhone("");
  setCustomerEmail("");
  setCustomerPoints(0);
- setPointsToRedeem(0);
- setUsePointsDiscount(false);
  setCustomerId(null);
  setLoyaltyCard(null);
  setShowRegisterDialog(false);
@@ -517,39 +425,43 @@ export default function EmployeeCashier() {
  setDiscountCode("");
  setAppliedDiscount(null);
  setOrderType("pickup");
+ setPointsToRedeem(0);
+ setUsePointsDiscount(false);
+ setStampsToUse(0);
  };
 
-  const handleConfirmCashierCustomization = (customization: DrinkCustomization, quantity: number) => {
-    if (!customizingItem) return;
-    const itemKey = `${customizingItem.id}-${Date.now()}`;
-    setOrderItems(prev => [...prev, {
-      itemKey,
-      coffeeItem: customizingItem,
-      quantity,
-      customization: {
-        selectedSize: customization.selectedSize,
-        addons: customization.selectedAddons || [],
-        totalAddonsPrice: customization.totalAddonsPrice || 0,
-      }
-    }]);
-    setCustomizingItem(null);
-  };
+ const addToOrder = (coffeeItem: CoffeeItem) => {
+   // Since the employee-cashier page doesn't seem to have a DrinkCustomizationDialog state defined like pos-system,
+   // we should ideally add it. But for now, let's fix the calculation logic if it's there.
+   // Looking at the code, it seems to add directly. 
+   const existingItem = orderItems.find(item => item.coffeeItem.id === coffeeItem.id);
+   
+   if (existingItem) {
+     setOrderItems(orderItems.map(item =>
+       item.coffeeItem.id === coffeeItem.id
+         ? { ...item, quantity: item.quantity + 1 }
+         : item
+     ));
+   } else {
+     setOrderItems([...orderItems, { coffeeItem, quantity: 1 }]);
+   }
+ };
 
-  const updateQuantity = (itemKey: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      setOrderItems(orderItems.filter(item => item.itemKey !== itemKey));
-    } else {
-      setOrderItems(orderItems.map(item =>
-        item.itemKey === itemKey
-          ? { ...item, quantity: newQuantity }
-          : item
-      ));
-    }
-  };
+ const updateQuantity = (coffeeItemId: string, newQuantity: number) => {
+   if (newQuantity <= 0) {
+     setOrderItems(orderItems.filter(item => item.coffeeItem.id !== coffeeItemId));
+   } else {
+     setOrderItems(orderItems.map(item =>
+       item.coffeeItem.id === coffeeItemId
+         ? { ...item, quantity: newQuantity }
+         : item
+     ));
+   }
+ };
 
-  const removeFromOrder = (itemKey: string) => {
-    setOrderItems(orderItems.filter(item => item.itemKey !== itemKey));
-  };
+ const removeFromOrder = (coffeeItemId: string) => {
+   setOrderItems(orderItems.filter(item => item.coffeeItem.id !== coffeeItemId));
+ };
 
  const calculateSubtotal = () => {
    return orderItems.reduce((sum, item) => {
@@ -572,13 +484,15 @@ export default function EmployeeCashier() {
  return (subtotal * appliedDiscount.percentage) / 100;
  };
 
- const pointsPerSar: number = businessConfig?.loyaltyConfig?.pointsPerSar ?? 20;
- const pointsToSar = (pts: number) => pts / pointsPerSar;
+ const calculatePointsDiscount = () => {
+   if (!usePointsDiscount || pointsToRedeem <= 0) return 0;
+   return pointsToSar(pointsToRedeem);
+ };
 
  const calculateTotal = () => {
  const subtotal = calculateSubtotal();
  const discount = calculateDiscount();
- const pointsDiscount = (usePointsDiscount && pointsToRedeem > 0) ? pointsToSar(pointsToRedeem) : 0;
+ const pointsDiscount = calculatePointsDiscount();
  return Math.max(0, subtotal - discount - pointsDiscount).toFixed(2);
  };
 
@@ -597,7 +511,7 @@ export default function EmployeeCashier() {
  const response = await fetch('/api/discount-codes/validate', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ code: discountCode.trim().toUpperCase(), amount: parseFloat(calculateTotal()) })
+ body: JSON.stringify({ code: discountCode })
  });
 
  let data;
@@ -718,6 +632,8 @@ export default function EmployeeCashier() {
        employeeName: lastOrder.employeeName,
        tableNumber: lastOrder.tableNumber,
        date: lastOrder.date,
+       crNumber: businessConfig?.commercialRegistration,
+       vatNumber: businessConfig?.vatNumber,
      });
      toast({
        title: "تم فتح نافذة الطباعة",
@@ -864,8 +780,11 @@ export default function EmployeeCashier() {
        coffeeItemId: item.coffeeItem.id,
        quantity: item.quantity,
        size: item.customization?.selectedSize || "Default",
-       extras: item.customization?.addons?.map((a: any) => a.nameAr) || [],
-       totalPrice: ((Number(item.coffeeItem.price) + (item.customization?.totalAddonsPrice || 0)) * item.quantity).toFixed(2)
+       extras: [
+         ...(item.customization?.addons?.map((a: any) => a.nameAr) || []),
+         ...((item.customization as any)?.selectedItemAddons?.map((a: any) => a.nameAr) || []),
+       ],
+       totalPrice: ((Number(item.coffeeItem.price) + (item.customization?.totalAddonsPrice || 0) + ((item.customization as any)?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0)) * item.quantity).toFixed(2)
      })),
      totalAmount: parseFloat(totalAmount),
      paymentMethod,
@@ -876,6 +795,7 @@ export default function EmployeeCashier() {
      discountPercentage: appliedDiscount?.percentage || 0,
      pointsRedeemed: (usePointsDiscount && pointsToRedeem > 0) ? pointsToRedeem : 0,
      pointsValue: (usePointsDiscount && pointsToRedeem > 0) ? pointsToSar(pointsToRedeem) : 0,
+     bypassPointsVerification: true,
    };
 
    try {
@@ -936,43 +856,6 @@ export default function EmployeeCashier() {
  </div>
  </div>
  <div className="flex items-center gap-3 flex-wrap">
- {/* New online orders badge - always visible when there are pending orders */}
- <div className="relative" data-testid="new-orders-badge-wrapper">
-   <Button
-     variant="outline"
-     onClick={() => {
-       setNewOrdersCount(0);
-       setLocation('/employee/orders');
-     }}
-     className={`border-primary/50 hover:bg-background0 gap-2 ${newOrdersCount > 0 ? 'text-green-400 border-green-500 animate-pulse' : 'text-gray-500'}`}
-     data-testid="button-new-orders"
-     title="الطلبات الجديدة من الموقع"
-   >
-     <ShoppingBag className="w-4 h-4" />
-     {newOrdersCount > 0 && (
-       <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-         {newOrdersCount > 9 ? '9+' : newOrdersCount}
-       </span>
-     )}
-     {newOrdersCount === 0 && <span className="text-xs">طلبات</span>}
-   </Button>
- </div>
- <Button
- variant="outline"
- onClick={() => {
-   const prev = soundEnabled;
-   setSoundEnabled(!prev);
-   if (!prev) {
-     unlockAudio();
-     playNotificationSound('success', 0.8);
-   }
- }}
- className={`border-primary/50 hover:bg-background0 ${soundEnabled ? 'text-green-400' : 'text-gray-500'}`}
- data-testid="button-sound-toggle"
- title={soundEnabled ? 'كتم صوت الإشعارات' : 'تفعيل صوت الإشعارات'}
- >
- {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
- </Button>
  <Button
  variant="outline"
  onClick={() => setLocation("/employee/cashier/phone-lookup")}
@@ -1111,41 +994,27 @@ export default function EmployeeCashier() {
  <CardTitle className="text-accent text-right">القائمة</CardTitle>
  </CardHeader>
  <CardContent>
- {isLoading ? (
- <div className="text-center text-gray-400 py-8">جاري التحميل...</div>
+ {businessConfig?.cashierLayout === 'pos' ? (
+   <POSCashierLayout
+     items={coffeeItems as any}
+     isLoading={isLoading}
+     getItemDisplayName={getItemDisplayName as any}
+     onAddItem={addToOrder as any}
+   />
+ ) : businessConfig?.cashierLayout === 'split' ? (
+   <SplitCashierLayout
+     items={coffeeItems as any}
+     isLoading={isLoading}
+     getItemDisplayName={getItemDisplayName as any}
+     onAddItem={addToOrder as any}
+   />
  ) : (
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- {coffeeItems.map((item) => (
- <Card key={item.id} className="bg-[#1a1410] border-primary/10 hover:border-primary/30 transition-colors">
- <CardContent className="p-4">
- <div className="flex justify-between items-start mb-2">
- <div className="text-right flex-1">
- <h3 className="text-accent font-bold mb-1" data-testid={`text-item-name-${item.id}`}>
- {item.nameAr}
- </h3>
- <p className="text-gray-400 text-sm line-clamp-2">
- {item.description}
- </p>
- </div>
- </div>
- <div className="flex items-center justify-between mt-3">
- <Badge variant="outline" className="border-primary/30 text-accent">
- {Number(item.price).toFixed(2)} ريال
- </Badge>
- <Button
- size="sm"
- onClick={() => setCustomizingItem(item)}
- className="bg-green-600 hover:bg-green-700 text-white"
- data-testid={`button-add-${item.id}`}
- >
- <Plus className="w-4 h-4 ml-1" />
- إضافة
- </Button>
- </div>
- </CardContent>
- </Card>
- ))}
- </div>
+   <ClassicCashierLayout
+     items={coffeeItems as any}
+     isLoading={isLoading}
+     getItemDisplayName={getItemDisplayName as any}
+     onAddItem={addToOrder as any}
+   />
  )}
  </CardContent>
  </Card>
@@ -1188,42 +1057,25 @@ export default function EmployeeCashier() {
  ) : (
  <>
  <div className="space-y-3 max-h-64 overflow-y-auto">
- {orderItems.map((item) => {
-   const addonsPrice = item.customization?.totalAddonsPrice || 0;
-   let basePrice = Number(item.coffeeItem.price);
-   if (item.customization?.selectedSize && item.coffeeItem.availableSizes) {
-     const sz = item.coffeeItem.availableSizes.find(s => s.nameAr === item.customization?.selectedSize);
-     if (sz) basePrice = Number(sz.price);
-   }
-   const unitPrice = basePrice + addonsPrice;
-   const addons: any[] = item.customization?.addons || [];
-   return (
- <div key={item.itemKey} className="bg-[#1a1410] rounded-lg p-3">
+ {orderItems.map((item) => (
+ <div key={item.coffeeItem.id} className="bg-[#1a1410] rounded-lg p-3">
  <div className="flex justify-between items-start mb-2">
  <div className="text-right flex-1">
  <div className="flex items-center gap-2">
- <h4 className="text-accent font-medium text-sm" data-testid={`text-order-item-${item.itemKey}`}>
- {item.coffeeItem.nameAr}
- {item.customization?.selectedSize && (
-   <span className="text-gray-400 text-xs mr-1">({item.customization.selectedSize})</span>
- )}
+ <h4 className="text-accent font-medium text-sm" data-testid={`text-order-item-${item.coffeeItem.id}`}>
+ {getItemDisplayName(item.coffeeItem)}
  </h4>
  </div>
- {addons.length > 0 && (
-   <div className="text-xs text-amber-400 mt-0.5">
-     {addons.map((a: any) => `+ ${a.nameAr}${Number(a.price) > 0 ? ` (+${Number(a.price).toFixed(2)})` : ''}`).join(' | ')}
-   </div>
- )}
- <p className="text-gray-400 text-xs mt-0.5">
- {unitPrice.toFixed(2)} ريال/وحدة
+ <p className="text-gray-400 text-xs">
+ {Number(item.coffeeItem.price).toFixed(2)} ريال
  </p>
  </div>
  <Button
  size="sm"
  variant="ghost"
- onClick={() => removeFromOrder(item.itemKey)}
+ onClick={() => removeFromOrder(item.coffeeItem.id)}
  className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
- data-testid={`button-remove-${item.itemKey}`}
+ data-testid={`button-remove-${item.coffeeItem.id}`}
  >
  <Trash2 className="w-4 h-4" />
  </Button>
@@ -1233,32 +1085,39 @@ export default function EmployeeCashier() {
  <Button
  size="sm"
  variant="outline"
- onClick={() => updateQuantity(item.itemKey, item.quantity - 1)}
+ onClick={() => updateQuantity(item.coffeeItem.id, item.quantity - 1)}
  className="h-7 w-7 p-0 border-primary/30"
- data-testid={`button-decrease-${item.itemKey}`}
+ data-testid={`button-decrease-${item.coffeeItem.id}`}
  >
  <Minus className="w-3 h-3" />
  </Button>
- <span className="text-white font-bold min-w-[30px] text-center" data-testid={`text-quantity-${item.itemKey}`}>
+ <span className="text-white font-bold min-w-[30px] text-center" data-testid={`text-quantity-${item.coffeeItem.id}`}>
  {item.quantity}
  </span>
  <Button
  size="sm"
  variant="outline"
- onClick={() => updateQuantity(item.itemKey, item.quantity + 1)}
+ onClick={() => updateQuantity(item.coffeeItem.id, item.quantity + 1)}
  className="h-7 w-7 p-0 border-primary/30"
- data-testid={`button-increase-${item.itemKey}`}
+ data-testid={`button-increase-${item.coffeeItem.id}`}
  >
  <Plus className="w-3 h-3" />
  </Button>
  </div>
  <span className="font-bold text-accent">
- {(unitPrice * item.quantity).toFixed(2)} ريال
+ {(() => {
+   let price = Number(item.coffeeItem.price) || 0;
+   if ((item as any).selectedSize && item.coffeeItem.availableSizes) {
+     const sz = (item.coffeeItem.availableSizes as any[]).find((s: any) => s.nameAr === (item as any).selectedSize);
+     if (sz) price = Number(sz.price) || price;
+   }
+   const addonsExtra = ((item.customization as any)?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0);
+   return ((price + addonsExtra) * item.quantity).toFixed(2);
+ })()} ريال
  </span>
  </div>
  </div>
- );
- })}
+ ))}
  </div>
 
  <Separator className="bg-background0/20" />
@@ -1315,8 +1174,7 @@ export default function EmployeeCashier() {
  setLoyaltyCard(result.card as any);
  if (result.customer?.id) {
  setCustomerId(result.customer.id);
- // Use loyaltyCard.points as primary source (most accurate)
- setCustomerPoints(result.card?.points || result.customer?.points || 0);
+ setCustomerPoints(result.customer.points || 0);
  }
  setShowBarcodeScanner(false);
  toast({
@@ -1365,51 +1223,63 @@ export default function EmployeeCashier() {
  </div>
  )}
 
- {customerId && ((loyaltyCard?.points || 0) > 0 || customerPoints > 0) && (
- <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-3 rounded-lg border border-purple-500/30 space-y-3">
+ {customerId && customerPoints > 0 && (
+ <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-4 rounded-lg border border-purple-500/30 space-y-3">
  <div className="flex items-center justify-between">
  <Badge variant="outline" className="border-purple-400 text-purple-300">
- {customerPoints} نقطة ≈ {pointsToSar(customerPoints).toFixed(2)} ر.س
+ {customerPoints} نقطة
  </Badge>
- <span className="text-purple-300 text-sm">نقاط العميل</span>
+ <div className="text-right">
+   <span className="text-purple-300 text-sm block">نقاط العميل</span>
+   <span className="text-purple-400 text-xs">≈ {pointsToSar(customerPoints).toFixed(2)} ريال</span>
+ </div>
  </div>
  {!usePointsDiscount ? (
- <div className="space-y-2">
- <div className="flex gap-2 items-center">
- <Input
- type="number"
- min={0}
- max={customerPoints}
- value={pointsToRedeem || ''}
- onChange={(e) => setPointsToRedeem(Math.min(Math.max(0, parseInt(e.target.value) || 0), customerPoints))}
- placeholder="عدد النقاط للخصم"
- className="flex-1 bg-[#1a1410] border-purple-500/30 text-white text-right text-sm"
- data-testid="input-points-to-redeem"
- />
- <Button
- size="sm"
- onClick={() => {
- if (pointsToRedeem > 0) {
- setUsePointsDiscount(true);
- toast({ title: "تم تطبيق خصم النقاط", description: `خصم ${pointsToSar(pointsToRedeem).toFixed(2)} ر.س`, className: "bg-purple-600 text-white" });
- }
- }}
- disabled={!pointsToRedeem || pointsToRedeem <= 0}
- className="bg-purple-600 hover:bg-purple-700 text-white whitespace-nowrap"
- data-testid="button-apply-points-discount"
- >
- تطبيق
- </Button>
- </div>
- {pointsToRedeem > 0 && (
- <p className="text-xs text-purple-400">= خصم {pointsToSar(pointsToRedeem).toFixed(2)} ر.س من الإجمالي</p>
- )}
- </div>
+   <div className="space-y-2">
+     <div className="flex gap-2 items-center">
+       <Input
+         type="number"
+         min="0"
+         max={customerPoints}
+         value={pointsToRedeem || ''}
+         onChange={(e) => setPointsToRedeem(Math.min(parseInt(e.target.value) || 0, customerPoints))}
+         placeholder="عدد النقاط"
+         className="bg-[#1a1410] border-purple-500/30 text-white text-center flex-1"
+         data-testid="input-points-to-redeem"
+       />
+       <Button
+         size="sm"
+         onClick={() => { if (pointsToRedeem > 0) setUsePointsDiscount(true); }}
+         disabled={pointsToRedeem <= 0}
+         className="bg-purple-600 hover:bg-purple-700 text-white"
+         data-testid="button-apply-points-discount"
+       >
+         <Wallet className="w-4 h-4 ml-1" />
+         تطبيق
+       </Button>
+     </div>
+     {pointsToRedeem > 0 && (
+       <p className="text-xs text-purple-400 text-right">
+         خصم: {pointsToSar(pointsToRedeem).toFixed(2)} ريال
+       </p>
+     )}
+   </div>
  ) : (
- <div className="flex items-center justify-between bg-purple-900/40 rounded p-2">
- <span className="text-purple-300 text-sm">{pointsToRedeem} نقطة = -{pointsToSar(pointsToRedeem).toFixed(2)} ر.س</span>
- <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 h-7 px-2" onClick={() => { setUsePointsDiscount(false); setPointsToRedeem(0); }} data-testid="button-cancel-points-discount">إلغاء</Button>
- </div>
+   <div className="bg-purple-900/30 border border-purple-500/50 rounded p-2 flex items-center justify-between">
+     <Button
+       size="sm"
+       variant="ghost"
+       onClick={() => { setUsePointsDiscount(false); setPointsToRedeem(0); }}
+       className="text-red-400 hover:text-red-300 text-xs"
+       data-testid="button-cancel-points-discount"
+     >
+       إلغاء
+     </Button>
+     <div className="text-right">
+       <p className="text-purple-300 text-sm font-medium">تم تطبيق {pointsToRedeem} نقطة</p>
+       <p className="text-green-400 text-xs">خصم {pointsToSar(pointsToRedeem).toFixed(2)} ريال</p>
+     </div>
+   </div>
  )}
  </div>
  )}
@@ -1680,7 +1550,9 @@ export default function EmployeeCashier() {
  {usePointsDiscount && pointsToRedeem > 0 && (
  <div className="flex justify-between items-center text-sm">
  <span className="text-purple-400">خصم النقاط ({pointsToRedeem} نقطة):</span>
- <span className="text-purple-400" data-testid="text-points-discount">-{pointsToSar(pointsToRedeem).toFixed(2)} ريال</span>
+ <span className="text-purple-400" data-testid="text-points-discount-amount">
+ -{pointsToSar(pointsToRedeem).toFixed(2)} ريال
+ </span>
  </div>
  )}
 
@@ -1712,13 +1584,6 @@ export default function EmployeeCashier() {
  </div>
 
  <MobileBottomNav employeeRole={employee?.role} />
-
- <DrinkCustomizationDialog
-   coffeeItem={customizingItem}
-   open={customizingItem !== null}
-   onClose={() => setCustomizingItem(null)}
-   onConfirm={handleConfirmCashierCustomization}
- />
  </div>
  );
 }

@@ -787,6 +787,15 @@ export default function ManagerDashboard() {
  <Star className="w-6 h-6" />
  <span className="text-sm">التقييمات</span>
  </Button>
+ <Button
+ onClick={() => setLocation("/manager/payroll")}
+ variant="outline"
+ className="h-20 flex flex-col gap-2 rounded-xl"
+ data-testid="button-payroll"
+ >
+ <DollarSign className="w-6 h-6" />
+ <span className="text-sm">كشوف الرواتب</span>
+ </Button>
  <Select value={dateFilter} onValueChange={(value: any) => { setDateFilter(value); setVisibleOrdersCount(20); }}>
  <SelectTrigger className="h-20 flex flex-col gap-2 bg-card border-border rounded-xl">
  <Calendar className="w-6 h-6" />

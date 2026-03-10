@@ -28,6 +28,19 @@ The system also includes:
 - **Rich Push Notification System**: Professional lock-screen notifications for Android/iOS with real-time updates for orders, customer details, and status. Supports contextual actions and RTL.
 - **PWA Background Push Notifications**: Service Worker handles push events, background sync for offline orders, and notifications even when the app is closed.
 - **Auto Push Subscription**: `useNotifications` hook manages VAPID key exchange and server registration for employees and customers.
+- **Gift Cards System**: Full CRUD for gift cards including issuance, validation, redemption, transaction history.
+- **Employee Scheduling**: Shift management and assignment system for weekly scheduling.
+- **Purchase Orders**: PO workflow from draft → pending → approved → ordered → received with auto-inventory update.
+- **Manager Reviews Dashboard**: View, reply, filter customer reviews with statistics.
+- **Payroll Management**: Employee payroll report generation at `/manager/payroll`.
+- **Geidea Payment Gateway**: Callback and webhook handlers for Geidea card payments.
+- **Customer Favorites**: Customers can favorite menu items (POST/DELETE `/api/customers/favorites`).
+- **Loyalty Free Drink Claim**: `/api/loyalty/claim-free-drink` endpoint.
+- **Bulk Order Delete**: Manager can bulk delete orders via `/api/orders/bulk`.
+- **Advanced Analytics**: `/api/analytics/advanced` and `/api/analytics/cogs` endpoints.
+- **Cashier Layouts**: Three layout options (Classic, POS, Split) for employee cashier page via `cashier-layouts.tsx`.
+- **Menu Layouts**: Three layout options (Classic, Cards, List) for customer menu via `menu-layouts.tsx`.
+- **Public Loyalty Settings**: `/api/public/loyalty-settings` for frontend loyalty config display.
 - **Employee-Specific PWA**: Dedicated `employee-manifest.json` for tailored staff portal experience.
 - **Payment Gateway Management System**: Admin can select NeoLeap or Geidea, enter encrypted credentials, and toggle payment methods.
 - **Secure Online Payment Flow**: PCI compliant checkout using hosted redirects and server-side verification.

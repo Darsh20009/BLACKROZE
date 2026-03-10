@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import type { Order } from "@shared/schema";
-import logoImage from "@assets/blackrose-logo.png";
+import logoImage from "../assets/cluny-logo.png";
 import { useRef, useState, useEffect } from "react";
 import QRCode from "qrcode";
 
@@ -46,7 +46,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
     const generateTrackingQR = async () => {
       if (!order || !order.orderNumber) return;
       try {
-        const trackingUrl = `https://www.blackrose.com.sa/tracking?order=${order.orderNumber}`;
+        const trackingUrl = `https://www.cluny.cafe/tracking?order=${order.orderNumber}`;
         const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
           width: 150,
           margin: 1,
@@ -118,19 +118,26 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
             <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px;">
               <h2 style="margin: 5px 0;">طلب تحضير</h2>
               <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">
-                ${order.orderNumber.includes('-') ? `ORD#${order.orderNumber.split('-').pop()}` : `ORD#${order.orderNumber.slice(-4)}`}
+                ${order.orderNumber}
               </div>
             </div>
             <div style="padding-top: 10px;">
-              ${items.map((item: any) => `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 18px; font-weight: bold;">
-                  <div>
-                    <div>${item.nameAr || item.name}</div>
-                    ${item.nameEn ? `<div style="font-size: 12px; font-weight: normal; color: #555;">${item.nameEn}</div>` : ''}
+              ${items.map((item: any) => {
+                const inlineAddons = item.customization?.selectedItemAddons || [];
+                const addonsText = inlineAddons.length > 0 ? `<div style="font-size:13px;color:#555;margin-top:2px;">+ ${inlineAddons.map((a: any) => a.nameAr).join('، ')}</div>` : '';
+                const nameEn = item.nameEn || item.coffeeItem?.nameEn || '';
+                const nameAr = item.nameAr || item.coffeeItem?.nameAr || item.name || '';
+                return `<div style="margin-bottom: 8px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+                    <div>
+                      <div>${nameAr}</div>
+                      ${nameEn && nameEn !== nameAr ? `<div style="font-size:13px;font-weight:normal;color:#555;direction:ltr;text-align:right;">${nameEn}</div>` : ''}
+                    </div>
+                    <span style="border: 2px solid #000; padding: 2px 8px; border-radius: 4px; white-space:nowrap; align-self:flex-start;">x${item.quantity}</span>
                   </div>
-                  <span style="border: 2px solid #000; padding: 2px 8px; border-radius: 4px; align-self: flex-start;">x${item.quantity}</span>
-                </div>
-              `).join('')}
+                  ${addonsText}
+                </div>`;
+              }).join('')}
             </div>
             ${order.customerNotes ? `
               <div style="margin-top: 10px; border: 1px solid #000; padding: 5px; font-size: 14px;">
@@ -209,7 +216,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
       >
         {/* Header */}
         <div className="text-center mb-4 pb-2 border-b border-black">
-          <p className="text-[12px] font-black uppercase tracking-wider">BLACK ROSE CAFE</p>
+          <p className="text-[12px] font-black uppercase tracking-wider">CLUNY CAFE</p>
           <p className="text-[9px] font-bold uppercase tracking-tight opacity-70">Tax Invoice - فاتورة ضريبية</p>
         </div>
 
@@ -250,18 +257,30 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {items.map((item: any, index: number) => (
-                <tr key={index}>
-                  <td className="py-1 text-right">
-                    <div className="font-medium">{item.nameAr || item.name}</div>
-                    {item.nameEn && <div className="text-[10px] text-gray-400">{item.nameEn}</div>}
-                  </td>
-                  <td className="py-1 text-center">{item.quantity}</td>
-                  <td className="py-1 text-left font-medium">
-                    {(parseFloat(item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
+              {items.map((item: any, index: number) => {
+                const inlineAddons = item.customization?.selectedItemAddons || [];
+                const itemNameAr = item.nameAr || item.coffeeItem?.nameAr || item.name || '';
+                const itemNameEn = item.nameEn || item.coffeeItem?.nameEn || '';
+                return (
+                  <tr key={index}>
+                    <td className="py-1 text-right">
+                      <div className="font-medium">{itemNameAr}</div>
+                      {itemNameEn && itemNameEn !== itemNameAr && (
+                        <div className="text-[9px] text-gray-400 mt-0.5 ltr text-right">{itemNameEn}</div>
+                      )}
+                      {inlineAddons.length > 0 && (
+                        <div className="text-[9px] text-gray-500 mt-0.5">
+                          + {inlineAddons.map((a: any) => a.nameAr).join('، ')}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-1 text-center">{item.quantity}</td>
+                    <td className="py-1 text-left font-medium">
+                      {(parseFloat(item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -286,7 +305,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
         <div className="text-center mt-4 pt-2 border-t border-black text-[9px]">
           <p className="font-bold">شكراً لزيارتكم</p>
           <p>الرقم الضريبي: 311234567890003</p>
-          <p className="font-bold mt-1 tracking-tight">www.blackrose.com.sa</p>
+          <p className="font-bold mt-1 tracking-tight">www.cluny.cafe</p>
         </div>
       </div>
 

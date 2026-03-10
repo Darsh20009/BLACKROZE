@@ -33,6 +33,7 @@ export function AddToCartModal({
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
+  const [selectedItemAddonIndices, setSelectedItemAddonIndices] = useState<number[]>([]);
   const { toast } = useToast();
   const { i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
@@ -41,6 +42,7 @@ export function AddToCartModal({
     setQuantity(1);
     setSelectedSize(null);
     setSelectedAddons([]);
+    setSelectedItemAddonIndices([]);
     setSelectedVariant(null);
     onClose();
   }, [onClose]);
@@ -51,6 +53,7 @@ export function AddToCartModal({
       setQuantity(1);
       setSelectedSize(null);
       setSelectedAddons([]);
+      setSelectedItemAddonIndices([]);
     }
   }, [isOpen, item]);
 
@@ -92,6 +95,10 @@ export function AddToCartModal({
     return [...specificAddons, ...uniqueGeneralAddons].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
   }, [specificAddons, generalAddons]);
 
+  const inlineAddons: Array<{nameAr: string; nameEn?: string; price: number}> = useMemo(() => {
+    return (activeItem as any)?.addons || [];
+  }, [activeItem]);
+
   const handleAddToCart = () => {
     if (!activeItem) return;
 
@@ -104,13 +111,6 @@ export function AddToCartModal({
       return;
     }
 
-    const cartItem = {
-      coffeeItemId: activeItem.id,
-      quantity,
-      selectedSize: selectedSize || "default",
-      selectedAddons: selectedAddons,
-    };
-
     if (activeItem.isAvailable === 0 || (activeItem.availabilityStatus !== 'available' && activeItem.availabilityStatus !== 'new' && !!activeItem.availabilityStatus)) {
       toast({
         title: isAr ? "غير متوفر" : "Unavailable",
@@ -120,21 +120,37 @@ export function AddToCartModal({
       return;
     }
 
+    const selectedItemAddons = selectedItemAddonIndices.map(idx => inlineAddons[idx]).filter(Boolean);
+
+    const cartItem = {
+      coffeeItemId: activeItem.id,
+      quantity,
+      selectedSize: selectedSize || "default",
+      selectedAddons: selectedAddons,
+      selectedItemAddons,
+    };
+
     onAddToCart(cartItem);
     resetModal();
   };
 
   if (!activeItem) return null;
 
+  const inlineAddonsPrice = selectedItemAddonIndices.reduce((sum, idx) => {
+    return sum + (inlineAddons[idx]?.price ?? 0);
+  }, 0);
+
+  const productAddonPrice = selectedAddons.reduce((sum, addonId) => {
+    const addon = allAddons.find((a) => a.id === addonId);
+    return sum + (addon?.price ?? 0);
+  }, 0);
+
   const totalPrice =
     (selectedSize
       ? activeItem.availableSizes?.find((s) => s.nameAr === selectedSize)?.price ??
         activeItem.price
       : activeItem.price) * quantity +
-    selectedAddons.reduce((sum, addonId) => {
-      const addon = allAddons.find((a) => a.id === addonId);
-      return sum + (addon?.price ?? 0);
-    }, 0) * quantity;
+    (productAddonPrice + inlineAddonsPrice) * quantity;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && resetModal()}>
@@ -215,6 +231,49 @@ export function AddToCartModal({
             </div>
           )}
 
+          {inlineAddons.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">{isAr ? "الإضافات" : "Extras"}</Label>
+              <div className="flex flex-wrap gap-2">
+                {inlineAddons.map((addon, idx) => {
+                  const selected = selectedItemAddonIndices.includes(idx);
+                  const imgSrc = (addon as any).imageUrl;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSelectedItemAddonIndices((prev) =>
+                          prev.includes(idx)
+                            ? prev.filter((i) => i !== idx)
+                            : [...prev, idx]
+                        );
+                      }}
+                      className={`rounded-xl text-xs font-medium transition-all flex items-center gap-2 px-3 py-2 ${
+                        selected
+                          ? "bg-primary text-white shadow-md ring-2 ring-primary/30"
+                          : "bg-secondary text-foreground border border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {imgSrc && (
+                        <img
+                          src={imgSrc.startsWith('/') ? imgSrc : '/' + imgSrc}
+                          alt={addon.nameAr}
+                          className="w-6 h-6 rounded object-cover"
+                        />
+                      )}
+                      <span>{isAr ? addon.nameAr : ((addon as any).nameEn || addon.nameAr)}</span>
+                      {addon.price > 0 && (
+                        <span className={selected ? "text-white/80" : "text-primary font-bold"}>
+                          +{addon.price}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {specificAddons.length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">{isAr ? "إضافات خاصة" : "Special Addons"}</Label>
@@ -247,7 +306,7 @@ export function AddToCartModal({
 
           {generalAddons.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">{specificAddons.length > 0 ? (isAr ? "إضافات عامة" : "General Addons") : (isAr ? "إضافات" : "Addons")}</Label>
+              <Label className="text-sm font-semibold text-foreground">{specificAddons.length > 0 ? (isAr ? "إضافات عامة" : "General Addons") : (isAr ? "إضافات عامة" : "General Addons")}</Label>
               <div className="flex flex-wrap gap-2">
                 {generalAddons.slice(0, 6).map((addon) => (
                   <button

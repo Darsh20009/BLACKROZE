@@ -61,7 +61,10 @@ import {
   TrendingUp,
   BarChart3,
   Receipt,
-  Loader2
+  Loader2,
+  Percent,
+  TrendingDown,
+  AlertCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -157,6 +160,150 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   inactive: { label: "غير نشط", color: "bg-gray-500" },
   blocked: { label: "محظور", color: "bg-red-500" },
 };
+
+interface COGSItem {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  price: number;
+  cogs: number;
+  profit: number;
+  margin: number;
+  category: string;
+  ingredientCount: number;
+}
+
+interface COGSSummary {
+  totalItems: number;
+  avgMargin: number;
+  highMargin: number;
+  lowMargin: number;
+  itemsWithCOGS: number;
+}
+
+function COGSReport() {
+  const { data, isLoading } = useQuery<{ items: COGSItem[]; summary: COGSSummary }>({
+    queryKey: ["/api/analytics/cogs"],
+  });
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (!data) return null;
+
+  const { items = [], summary } = data;
+
+  const getMarginColor = (margin: number) => {
+    if (margin >= 60) return "text-green-600";
+    if (margin >= 40) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getMarginBg = (margin: number) => {
+    if (margin >= 60) return "bg-green-50 text-green-700 border-green-200";
+    if (margin >= 40) return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    return "bg-red-50 text-red-700 border-red-200";
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-sm text-muted-foreground">متوسط هامش الربح</p>
+            <p className={`text-3xl font-bold ${getMarginColor(summary?.avgMargin || 0)}`}>{summary?.avgMargin || 0}%</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-sm text-muted-foreground">منتجات هامش مرتفع (≥60%)</p>
+            <p className="text-3xl font-bold text-green-600">{summary?.highMargin || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-sm text-muted-foreground">منتجات هامش منخفض (&lt;30%)</p>
+            <p className="text-3xl font-bold text-red-600">{summary?.lowMargin || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-sm text-muted-foreground">منتجات محددة التكلفة</p>
+            <p className="text-3xl font-bold text-blue-600">{summary?.itemsWithCOGS || 0} / {summary?.totalItems || 0}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {summary && summary.itemsWithCOGS < summary.totalItems && (
+        <div className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm">
+            <strong>{summary.totalItems - summary.itemsWithCOGS}</strong> منتج لم يتم تحديد تكلفة التصنيع لها بعد. يمكنك تحديث التكلفة من صفحة إدارة القائمة.
+          </p>
+        </div>
+      )}
+
+      {/* Items Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Percent className="w-5 h-5 text-primary" />
+            هوامش الربح لجميع المنتجات
+          </CardTitle>
+          <CardDescription>مرتبة من الأعلى هامشاً إلى الأقل</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">المنتج</TableHead>
+                <TableHead className="text-center">سعر البيع</TableHead>
+                <TableHead className="text-center">تكلفة التصنيع (COGS)</TableHead>
+                <TableHead className="text-center">صافي الربح</TableHead>
+                <TableHead className="text-center">هامش الربح</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <p className="font-medium">{item.nameAr}</p>
+                    {item.nameEn && <p className="text-xs text-muted-foreground">{item.nameEn}</p>}
+                  </TableCell>
+                  <TableCell className="text-center font-mono">{item.price.toFixed(2)} ر.س</TableCell>
+                  <TableCell className="text-center font-mono">
+                    {item.cogs > 0 ? (
+                      <span>{item.cogs.toFixed(2)} ر.س</span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">غير محدد</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center font-mono">
+                    {item.cogs > 0 ? (
+                      <span className={item.profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {item.profit.toFixed(2)} ر.س
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {item.cogs > 0 ? (
+                      <Badge variant="outline" className={`${getMarginBg(item.margin)} font-bold`}>
+                        {item.margin}%
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground">—</Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function SupplierManagementPage() {
   const [, setLocation] = useLocation();
@@ -261,7 +408,7 @@ export default function SupplierManagementPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-primary dark:bg-primary/30">
+          <TabsList className="grid w-full grid-cols-5 bg-primary dark:bg-primary/30">
             <TabsTrigger value="suppliers" className="flex items-center gap-1">
               <Building2 className="w-4 h-4" />
               الموردين
@@ -277,6 +424,10 @@ export default function SupplierManagementPage() {
             <TabsTrigger value="analytics" className="flex items-center gap-1">
               <BarChart3 className="w-4 h-4" />
               التحليلات
+            </TabsTrigger>
+            <TabsTrigger value="cogs" className="flex items-center gap-1">
+              <Percent className="w-4 h-4" />
+              تقرير التكاليف
             </TabsTrigger>
           </TabsList>
 
@@ -580,6 +731,10 @@ export default function SupplierManagementPage() {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="cogs" className="space-y-6">
+            <COGSReport />
           </TabsContent>
         </Tabs>
 

@@ -111,9 +111,11 @@ const UserGuide = lazy(() => import("@/pages/user-guide"));
 const AdvancedAnalytics = lazy(() => import("@/pages/advanced-analytics"));
 const SupplierManagement = lazy(() => import("@/pages/supplier-management"));
 const GiftCardManagement = lazy(() => import("@/pages/gift-card-management"));
+const GiftCardsManagement = lazy(() => import("@/pages/gift-cards-management"));
 const EmployeeScheduling = lazy(() => import("@/pages/employee-scheduling"));
 const PurchaseOrdersPage = lazy(() => import("@/pages/purchase-orders"));
 const ManagerReviews = lazy(() => import("@/pages/manager-reviews"));
+const PayrollManagement = lazy(() => import("@/pages/payroll-management"));
 const LoyaltyProgram = lazy(() => import("@/pages/loyalty-program"));
 const ExternalIntegrations = lazy(() => import("@/pages/external-integrations"));
 const WarehouseManagement = lazy(() => import("@/pages/warehouse-management"));
@@ -283,10 +285,11 @@ function AppRouter() {
       <Route path="/guide"><UserGuide /></Route>
       <Route path="/manager/analytics"><AuthGuard userType="manager"><AdvancedAnalytics /></AuthGuard></Route>
       <Route path="/manager/suppliers"><AuthGuard userType="manager"><SupplierManagement /></AuthGuard></Route>
-      <Route path="/manager/gift-cards"><AuthGuard userType="manager"><GiftCardManagement /></AuthGuard></Route>
+      <Route path="/manager/gift-cards"><AuthGuard userType="manager"><GiftCardsManagement /></AuthGuard></Route>
       <Route path="/manager/scheduling"><AuthGuard userType="manager"><EmployeeScheduling /></AuthGuard></Route>
       <Route path="/manager/purchase-orders"><AuthGuard userType="manager"><PurchaseOrdersPage /></AuthGuard></Route>
       <Route path="/manager/reviews"><AuthGuard userType="manager"><ManagerReviews /></AuthGuard></Route>
+      <Route path="/manager/payroll"><AuthGuard userType="manager"><PayrollManagement /></AuthGuard></Route>
       <Route path="/manager/loyalty"><AuthGuard userType="manager"><LoyaltyProgram /></AuthGuard></Route>
       <Route path="/manager/integrations"><AuthGuard userType="manager"><ExternalIntegrations /></AuthGuard></Route>
       <Route path="/manager/warehouse"><AuthGuard userType="manager"><WarehouseManagement /></AuthGuard></Route>

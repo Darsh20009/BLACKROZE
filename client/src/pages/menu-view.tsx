@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCoffeeImage } from "@/lib/coffee-data-clean";
 import QRCodeComponent from "@/components/qr-code";
-import { ArrowLeft, Coffee, Star, Sparkles, Grid3X3, Layers, Tv, QrCode, Zap, Palette, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Coffee, Star, Sparkles, Grid3X3, Layers, Tv, QrCode, Zap, Palette, ShoppingCart, Film, BookOpen, Flame } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AddToCartModal } from "@/components/add-to-cart-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,7 @@ interface CoffeeItem {
 export default function MenuView() {
  const [, setLocation] = useLocation();
  const { toast } = useToast();
- const [viewMode, setViewMode] = useState<'elegant' | 'showcase' | 'grid' | 'mosaic' | 'waterfall' | 'tv-display' | 'window-display'>('elegant');
+ const [viewMode, setViewMode] = useState<'elegant' | 'showcase' | 'grid' | 'mosaic' | 'waterfall' | 'tv-display' | 'window-display' | 'cinema' | 'magazine' | 'neon'>('elegant');
  const [currentIndex, setCurrentIndex] = useState(0);
  const [isAutoPlay, setIsAutoPlay] = useState(true);
  const [selectedItemForCart, setSelectedItemForCart] = useState<any>(null);
@@ -118,7 +118,7 @@ export default function MenuView() {
 
  {/* View Mode Selector - Mobile Responsive */}
  <div className="bg-card/90 backdrop-blur-xl rounded-2xl p-2 border border-primary/20 shadow-xl">
- <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 sm:gap-2">
+ <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1 sm:gap-2">
  <Button
  variant={viewMode === 'elegant' ? 'default' : 'ghost'}
  size="sm"
@@ -188,6 +188,36 @@ export default function MenuView() {
  >
  <QrCode className="w-3 h-3 sm:w-4 sm:h-4" />
  <span className="hidden sm:inline">النافذة</span>
+ </Button>
+ <Button
+ variant={viewMode === 'cinema' ? 'default' : 'ghost'}
+ size="sm"
+ onClick={() => setViewMode('cinema')}
+ className="flex items-center justify-center space-x-1 space-x-reverse text-xs sm:text-sm"
+ data-testid="button-cinema"
+ >
+ <Film className="w-3 h-3 sm:w-4 sm:h-4" />
+ <span className="hidden sm:inline">سينما</span>
+ </Button>
+ <Button
+ variant={viewMode === 'magazine' ? 'default' : 'ghost'}
+ size="sm"
+ onClick={() => setViewMode('magazine')}
+ className="flex items-center justify-center space-x-1 space-x-reverse text-xs sm:text-sm"
+ data-testid="button-magazine"
+ >
+ <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+ <span className="hidden sm:inline">مجلة</span>
+ </Button>
+ <Button
+ variant={viewMode === 'neon' ? 'default' : 'ghost'}
+ size="sm"
+ onClick={() => setViewMode('neon')}
+ className="flex items-center justify-center space-x-1 space-x-reverse text-xs sm:text-sm"
+ data-testid="button-neon"
+ >
+ <Flame className="w-3 h-3 sm:w-4 sm:h-4" />
+ <span className="hidden sm:inline">نيون</span>
  </Button>
  </div>
  </div>
@@ -374,7 +404,7 @@ export default function MenuView() {
  {/* QR Code Section */}
  <div className="flex flex-col justify-center space-y-6">
  <QRCodeComponent 
- url="https://www.blackrose.com.sa"
+ url="https://www.cluny.cafe"
  size="lg"
  title="امسح للطلب"
  className="w-full"
@@ -433,7 +463,7 @@ export default function MenuView() {
  <div className="flex flex-col justify-center space-y-8">
  <div className="text-center space-y-4">
  <h1 className="font-amiri text-5xl font-bold text-primary">
- BLACK ROSE CAFE
+ CLUNY CAFE
  </h1>
  <p className="text-xl text-muted-foreground">
  أجود أنواع القهوة العربية الأصيلة
@@ -441,7 +471,7 @@ export default function MenuView() {
  </div>
  
  <QRCodeComponent 
- url="https://www.blackrose.com.sa"
+ url="https://www.cluny.cafe"
  size="lg"
  title="امسح للطلب"
  className="w-full"
@@ -515,7 +545,7 @@ export default function MenuView() {
  {/* Sidebar with QR Code */}
  <div className="lg:col-span-1 flex flex-col justify-center space-y-8">
  <QRCodeComponent 
- url="https://www.blackrose.com.sa"
+ url="https://www.cluny.cafe"
  size="lg"
  title="امسح للطلب الآن"
  className="w-full"
@@ -559,7 +589,7 @@ export default function MenuView() {
  <span className="text-sm font-medium">وجّه الكاميرا نحو الرمز للطلب</span>
  <span className="text-lg"></span>
  </div>
- <div className="text-primary text-sm font-bold">BLACK ROSE CAFE</div>
+ <div className="text-primary text-sm font-bold">CLUNY CAFE</div>
  </div>
 
  {/* Main Camera View - Always Side by Side */}
@@ -569,7 +599,7 @@ export default function MenuView() {
  <div className="text-center space-y-3 md:space-y-6 p-2 md:p-4">
  <div className="bg-white rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-xl">
  <QRCodeComponent 
- url="https://www.blackrose.com.sa"
+ url="https://www.cluny.cafe"
  size="lg"
  title="امسح للطلب"
  showURL={false}
@@ -579,7 +609,7 @@ export default function MenuView() {
  
  <div className="space-y-2 md:space-y-4">
  <h1 className="font-amiri text-lg md:text-4xl font-bold text-white">
- BLACK ROSE CAFE
+ CLUNY CAFE
  </h1>
  <p className="text-xs md:text-xl text-gray-300">
  أجود أنواع القهوة العربية الأصيلة
@@ -641,7 +671,175 @@ export default function MenuView() {
  </div>
  </div>
  )}
- </div>
+
+        {/* Cinema View */}
+        {viewMode === 'cinema' && currentItem && (
+          <div className="min-h-[85vh] flex flex-col mx-4 md:mx-6 rounded-3xl overflow-hidden border border-primary/20 shadow-2xl">
+            {/* Spotlight Hero */}
+            <div className="relative flex-1 flex items-center justify-center overflow-hidden bg-black/80">
+              <div className="absolute inset-0 overflow-hidden">
+                <img src={currentItem.imageUrl || getCoffeeImage(currentItem.id)} alt="" className="w-full h-full object-cover blur-xl scale-110 opacity-25" onError={(e) => { e.currentTarget.src = "/images/default-coffee.png"; }} />
+              </div>
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_50%_40%,_transparent_30%,_black_100%)]" />
+              <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12 px-6 py-14 max-w-5xl w-full">
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-primary/40 blur-3xl scale-110 animate-pulse" />
+                  <div className="relative w-60 h-60 rounded-full overflow-hidden border-4 border-primary/70 shadow-2xl shadow-primary/40 ring-8 ring-white/5">
+                    <img src={currentItem.imageUrl || getCoffeeImage(currentItem.id)} alt={currentItem.nameAr} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = "/images/default-coffee.png"; }} />
+                  </div>
+                  <div className="absolute -top-3 -left-3 w-12 h-12 bg-primary rotate-45 shadow-lg shadow-primary/50 flex items-center justify-center">
+                    <Star className="w-5 h-5 text-white -rotate-45 fill-white" />
+                  </div>
+                </div>
+                <div className="text-white text-center lg:text-right space-y-5">
+                  <div className="inline-block px-4 py-1 border border-primary/50 rounded-full text-primary text-sm tracking-widest uppercase">
+                    {categoryTitles[currentItem.category] || currentItem.category}
+                  </div>
+                  <h2 className="font-amiri text-5xl lg:text-7xl font-bold leading-tight drop-shadow-lg">{currentItem.nameAr}</h2>
+                  <p className="text-xl text-white/60 max-w-lg leading-relaxed">{currentItem.description}</p>
+                  <div className="flex items-center gap-4 justify-center lg:justify-start">
+                    <span className="text-5xl font-bold text-primary">{currentItem.price}</span>
+                    <span className="text-2xl text-white/50">ريال</span>
+                  </div>
+                  <button onClick={() => { setSelectedItemForCart(currentItem); setIsModalOpen(true); }} className="px-8 py-3 bg-primary text-white font-bold rounded-full shadow-lg shadow-primary/40 hover:bg-primary/90 transition-all flex items-center gap-2 mx-auto lg:mx-0">
+                    <ShoppingCart className="w-5 h-5" /> إضافة للسلة
+                  </button>
+                </div>
+              </div>
+            </div>
+            {/* Film strip */}
+            <div className="bg-black border-t-2 border-primary/30 py-4 px-4 overflow-x-auto">
+              <div className="flex gap-3 w-max items-center">
+                <div className="flex flex-col gap-1.5">
+                  {Array.from({length: 4}).map((_, i) => (<div key={i} className="w-3 h-3 rounded-sm bg-white/20" />))}
+                </div>
+                {coffeeItems.map((item, idx) => (
+                  <div key={item.id} onClick={() => setCurrentIndex(idx)} className={`relative shrink-0 w-24 h-24 rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-300 ${idx === currentIndex ? 'border-primary scale-110 shadow-lg shadow-primary/40' : 'border-white/10 opacity-50 hover:opacity-90'}`}>
+                    <img src={item.imageUrl || getCoffeeImage(item.id)} alt={item.nameAr} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = "/images/default-coffee.png"; }} />
+                    <div className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-center text-[9px] py-1 truncate px-1">{item.nameAr}</div>
+                  </div>
+                ))}
+                <div className="flex flex-col gap-1.5">
+                  {Array.from({length: 4}).map((_, i) => (<div key={i} className="w-3 h-3 rounded-sm bg-white/20" />))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Magazine View */}
+        {viewMode === 'magazine' && currentItem && (
+          <div className="min-h-[85vh] px-4 md:px-6 flex flex-col gap-8">
+            <div className="relative overflow-hidden rounded-3xl shadow-2xl border border-primary/20 min-h-[480px] flex flex-col lg:flex-row">
+              <div className="relative lg:w-[55%] min-h-[280px] overflow-hidden">
+                <img src={currentItem.imageUrl || getCoffeeImage(currentItem.id)} alt={currentItem.nameAr} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.src = "/images/default-coffee.png"; }} />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background lg:hidden" />
+              </div>
+              <div className="relative lg:w-[45%] flex flex-col justify-center p-8 bg-background/95 backdrop-blur-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-px flex-1 bg-primary/40" />
+                  <span className="text-primary text-xs tracking-[0.3em] uppercase font-bold">{categoryTitles[currentItem.category] || currentItem.category}</span>
+                  <div className="h-px flex-1 bg-primary/40" />
+                </div>
+                <h2 className="font-amiri text-4xl lg:text-6xl font-black text-foreground leading-tight mb-4">{currentItem.nameAr}</h2>
+                <p className="text-muted-foreground text-lg leading-relaxed mb-8 border-r-4 border-primary pr-4">{currentItem.description}</p>
+                <div className="flex items-end gap-4 mb-8">
+                  <div className="bg-primary text-white px-6 py-3 rounded-2xl">
+                    <span className="text-3xl font-black">{currentItem.price}</span>
+                    <span className="text-lg mr-1">ريال</span>
+                  </div>
+                  <div className="flex gap-1">{Array.from({length: 5}).map((_, i) => (<Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />))}</div>
+                </div>
+                <button onClick={() => { setSelectedItemForCart(currentItem); setIsModalOpen(true); }} className="flex items-center gap-2 bg-foreground text-background font-bold px-8 py-3 rounded-full w-fit hover:bg-primary hover:text-white transition-all duration-300 shadow-lg">
+                  <ShoppingCart className="w-5 h-5" /> أطلب الآن
+                </button>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-4 mb-5">
+                <div className="w-8 h-1 bg-primary rounded-full" />
+                <h3 className="font-amiri text-2xl font-bold text-foreground">المزيد من القائمة</h3>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {coffeeItems.filter((_, i) => i !== currentIndex).slice(0, 8).map((item, idx) => (
+                  <div key={item.id} onClick={() => setCurrentIndex(coffeeItems.indexOf(item))} className="group cursor-pointer">
+                    <div className={`relative overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-xl ${idx % 3 === 0 ? 'rounded-3xl' : idx % 3 === 1 ? 'rounded-tr-3xl rounded-bl-3xl' : 'rounded-tl-3xl rounded-br-3xl'}`}>
+                      <img src={item.imageUrl || getCoffeeImage(item.id)} alt={item.nameAr} className="w-full h-36 object-cover group-hover:scale-105 transition-all duration-500" onError={(e) => { e.currentTarget.src = "/images/default-coffee.png"; }} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                      <div className="absolute bottom-0 inset-x-0 p-3">
+                        <p className="text-white font-bold text-sm">{item.nameAr}</p>
+                        <p className="text-primary text-xs font-bold">{item.price} ريال</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-primary via-primary/80 to-amber-600 rounded-3xl p-6 flex items-center justify-between gap-6 flex-wrap">
+              <div className="text-white">
+                <h4 className="font-amiri text-3xl font-black mb-1">CLUNY CAFE</h4>
+                <p className="text-white/80 text-lg">لكل لحظة قهوة ، لحظة نجاح</p>
+              </div>
+              <div className="bg-white rounded-2xl p-3">
+                <QRCodeComponent url="https://www.cluny.cafe" size="sm" title="اطلب الآن" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Neon View */}
+        {viewMode === 'neon' && currentItem && (
+          <div className="min-h-[85vh] bg-[#080c10] rounded-3xl mx-4 md:mx-6 overflow-hidden relative border border-primary/20 shadow-2xl shadow-primary/10">
+            <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'linear-gradient(#2D9B6E22 1px, transparent 1px), linear-gradient(90deg, #2D9B6E22 1px, transparent 1px)', backgroundSize: '40px 40px'}} />
+            <div className="absolute top-0 left-1/4 w-64 h-64 bg-primary/20 rounded-full blur-[80px]" />
+            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-cyan-500/15 rounded-full blur-[80px]" />
+            <div className="absolute top-1/2 left-0 w-48 h-48 bg-amber-500/10 rounded-full blur-[60px]" />
+            <div className="relative z-10 p-6 md:p-10 flex flex-col lg:flex-row gap-10 min-h-[85vh]">
+              <div className="lg:w-1/2 flex flex-col items-center justify-center gap-6">
+                <div className="relative">
+                  <div className="absolute inset-0 blur-2xl bg-primary/30 scale-105" style={{clipPath: 'polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%)'}} />
+                  <div className="relative w-64 h-72 overflow-hidden" style={{clipPath: 'polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%)'}}>
+                    <img src={currentItem.imageUrl || getCoffeeImage(currentItem.id)} alt={currentItem.nameAr} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = "/images/default-coffee.png"; }} />
+                  </div>
+                </div>
+                <div className="flex gap-3 flex-wrap justify-center max-w-xs">
+                  {coffeeItems.slice(0, 6).map((item, idx) => (
+                    <div key={item.id} onClick={() => setCurrentIndex(idx)} className={`w-12 h-12 rounded-lg overflow-hidden cursor-pointer border transition-all duration-300 ${idx === currentIndex ? 'border-primary shadow-md shadow-primary/60 scale-110' : 'border-white/10 opacity-40 hover:opacity-80'}`}>
+                      <img src={item.imageUrl || getCoffeeImage(item.id)} alt={item.nameAr} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = "/images/default-coffee.png"; }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="lg:w-1/2 flex flex-col justify-center gap-6 text-right">
+                <div className="inline-flex self-end items-center gap-2 px-4 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary text-sm">
+                  <Coffee className="w-4 h-4" />
+                  {categoryTitles[currentItem.category] || currentItem.category}
+                </div>
+                <h2 className="font-amiri text-5xl lg:text-7xl font-black text-white leading-tight" style={{textShadow: '0 0 20px #2D9B6E, 0 0 40px #2D9B6E66'}}>
+                  {currentItem.nameAr}
+                </h2>
+                <div className="h-px w-full bg-gradient-to-l from-primary via-cyan-400 to-transparent" />
+                <p className="text-white/50 text-lg leading-relaxed">{currentItem.description}</p>
+                <div className="self-end border border-primary/50 rounded-2xl px-6 py-4 bg-primary/10">
+                  <span className="text-4xl font-black text-primary" style={{textShadow: '0 0 15px #2D9B6E'}}>{currentItem.price}</span>
+                  <span className="text-white/40 text-xl mr-2">ريال</span>
+                </div>
+                <div className="flex gap-2 self-end">
+                  {Array.from({length: 5}).map((_, i) => (<Star key={i} className="w-6 h-6 fill-amber-400 text-amber-400 drop-shadow-[0_0_6px_#f59e0b]" />))}
+                </div>
+                <button onClick={() => { setSelectedItemForCart(currentItem); setIsModalOpen(true); }} className="self-end flex items-center gap-2 px-8 py-3 rounded-full font-bold text-white border border-primary/60 bg-primary/20 hover:bg-primary/40 transition-all duration-300" style={{boxShadow: '0 0 15px #2D9B6E55'}}>
+                  <ShoppingCart className="w-5 h-5" /> أضف للسلة
+                </button>
+                <div className="self-end bg-white/5 border border-primary/20 rounded-2xl p-3">
+                  <QRCodeComponent url="https://www.cluny.cafe" size="sm" title="امسح للطلب" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
 
       <AddToCartModal
         item={selectedItemForCart as any}
