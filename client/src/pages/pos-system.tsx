@@ -645,31 +645,34 @@ export default function PosSystem() {
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden">
-        <aside className={`${splitViewMode ? 'hidden lg:flex' : 'flex'} w-16 sm:w-24 border-l bg-muted/30 flex-col py-4 gap-4 overflow-y-auto shrink-0`}>
-          <Button
-            variant={selectedCategory === "all" ? "default" : "ghost"}
-            className="flex-col gap-1 h-16 sm:h-20 w-full rounded-none"
-            onClick={() => setSelectedCategory("all")}
-            data-testid="button-category-all"
-          >
-            <Grid3X3 className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span className="text-[10px] sm:text-xs font-bold">الكل</span>
-          </Button>
-          {visibleCategories.map((cat: any) => (
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <div className={`${splitViewMode ? 'hidden lg:flex' : 'flex'} border-b bg-muted/30 overflow-x-auto shrink-0 no-scrollbar`}>
+          <div className="flex gap-1 p-2 min-w-max">
             <Button
-              key={cat.id}
-              variant={selectedCategory === cat.id ? "default" : "ghost"}
-              className="flex-col gap-1 h-16 sm:h-20 w-full rounded-none"
-              onClick={() => setSelectedCategory(cat.id)}
-              data-testid={`button-category-${cat.id}`}
+              variant={selectedCategory === "all" ? "default" : "ghost"}
+              className="flex-col gap-1 h-14 px-3 min-w-[64px] rounded-xl shrink-0"
+              onClick={() => setSelectedCategory("all")}
+              data-testid="button-category-all"
             >
-              <cat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-              <span className="text-[10px] sm:text-xs font-bold truncate max-w-full px-1">{cat.name}</span>
+              <Grid3X3 className="w-4 h-4" />
+              <span className="text-[10px] font-bold whitespace-nowrap">الكل</span>
             </Button>
-          ))}
-        </aside>
+            {visibleCategories.map((cat: any) => (
+              <Button
+                key={cat.id}
+                variant={selectedCategory === cat.id ? "default" : "ghost"}
+                className="flex-col gap-1 h-14 px-3 min-w-[64px] rounded-xl shrink-0"
+                onClick={() => setSelectedCategory(cat.id)}
+                data-testid={`button-category-${cat.id}`}
+              >
+                <cat.icon className="w-4 h-4" />
+                <span className="text-[10px] font-bold whitespace-nowrap max-w-[80px] overflow-hidden text-ellipsis">{cat.name}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
 
+        <div className="flex-1 flex overflow-hidden">
         <section className={`${splitViewMode ? 'hidden md:flex' : 'flex'} flex-1 flex-col overflow-hidden`}>
           <div className="p-2 sm:p-4 border-b bg-card/50 flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div className="relative flex-1">
@@ -931,6 +934,7 @@ export default function PosSystem() {
             </Button>
           </div>
         </aside>
+        </div>
       </main>
 
       {!splitViewMode && orderItems.length > 0 && (

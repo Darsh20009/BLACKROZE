@@ -982,6 +982,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Deduct totalSpent from loyalty card when order is cancelled
+      if (status === 'cancelled' && oldStatus !== 'cancelled' && order.totalAmount) {
+        try {
+          const custInfo = typeof order.customerInfo === 'string' ? JSON.parse(order.customerInfo) : order.customerInfo;
+          const phone = custInfo?.customerPhone || custInfo?.phoneNumber || custInfo?.phone;
+          if (phone) {
+            const loyaltyCard = await storage.getLoyaltyCardByPhone(phone.replace(/\D/g, '').replace(/^966/, '0'));
+            if (loyaltyCard) {
+              const currentSpent = parseFloat(loyaltyCard.totalSpent?.toString() || '0');
+              const orderAmount = parseFloat(order.totalAmount.toString());
+              await storage.updateLoyaltyCard(loyaltyCard.id, {
+                totalSpent: Math.max(0, currentSpent - orderAmount)
+              });
+              console.log(`[LOYALTY] Deducted ${orderAmount} from totalSpent for order ${order.orderNumber}`);
+            }
+          }
+        } catch (loyaltyErr) {
+          console.error('[LOYALTY] Failed to deduct totalSpent on cancellation:', loyaltyErr);
+        }
+      }
+
       // Notify via WebSocket
       wsManager.broadcastOrderUpdate(serializedOrder);
       
@@ -6376,6 +6397,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Deduct totalSpent from loyalty card when order is cancelled (employee PUT)
+      if (status === 'cancelled' && order.status !== 'cancelled' && updatedOrder.totalAmount) {
+        try {
+          const custInfo = typeof updatedOrder.customerInfo === 'string' ? JSON.parse(updatedOrder.customerInfo) : updatedOrder.customerInfo;
+          const phone = custInfo?.customerPhone || custInfo?.phoneNumber || custInfo?.phone;
+          if (phone) {
+            const loyaltyCard = await storage.getLoyaltyCardByPhone(phone.replace(/\D/g, '').replace(/^966/, '0'));
+            if (loyaltyCard) {
+              const currentSpent = parseFloat(loyaltyCard.totalSpent?.toString() || '0');
+              const orderAmount = parseFloat(updatedOrder.totalAmount.toString());
+              await storage.updateLoyaltyCard(loyaltyCard.id, {
+                totalSpent: Math.max(0, currentSpent - orderAmount)
+              });
+              console.log(`[LOYALTY] Deducted ${orderAmount} from totalSpent for cancelled order ${updatedOrder.orderNumber}`);
+            }
+          }
+        } catch (loyaltyErr) {
+          console.error('[LOYALTY] Failed to deduct totalSpent on cancellation:', loyaltyErr);
+        }
+      }
 
       // Serialize the order properly
       const serializedOrder = serializeDoc(updatedOrder);
@@ -8704,9 +8745,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Free drinks refund - Note: usedFreeDrinks field not yet implemented in Order model
               // This section can be enabled once the field is added to the Order schema
 
+              // Deduct totalSpent on cancellation
+              if (order.totalAmount) {
+                const currentTotalSpent = parseFloat(loyaltyCard.totalSpent?.toString() || '0');
+                const orderAmount = parseFloat(order.totalAmount.toString());
+                updateData.totalSpent = Math.max(0, currentTotalSpent - orderAmount);
+              }
+
               // Update card if there are changes
               if (Object.keys(updateData).length > 0) {
                 await storage.updateLoyaltyCard(loyaltyCard.id, updateData);
+                console.log(`[LOYALTY] totalSpent deducted for customer cancel on order ${order.orderNumber}`);
               }
             }
           }
@@ -10035,7 +10084,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         CategoryModel.countDocuments(),
         DeliveryZoneModel.countDocuments(),
         OrderModel.countDocuments({
-          createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+          createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+          status: { $ne: 'cancelled' }
         }),
         OrderModel.aggregate([
           { $match: { status: { $ne: 'cancelled' } } },
