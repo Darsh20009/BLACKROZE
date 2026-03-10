@@ -120,22 +120,6 @@ function openPrintWindow(html: string, title: string, config: PrintConfig = {}):
         }, 300);
       };
     }
-  } else {
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position: absolute; left: -9999px; top: -9999px; width: 0; height: 0;';
-    document.body.appendChild(iframe);
-    
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (iframeDoc) {
-      iframeDoc.open();
-      iframeDoc.write(modifiedHtml);
-      iframeDoc.close();
-      
-      setTimeout(() => {
-        iframe.contentWindow?.print();
-        setTimeout(() => document.body.removeChild(iframe), 1000);
-      }, 500);
-    }
   }
   return printWindow;
 }

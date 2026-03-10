@@ -277,21 +277,23 @@ export default function PosSystem() {
           quantity: item.quantity || 1,
         }));
         const total = Number(order.totalAmount || 0);
-        printTaxInvoice({
-          orderNumber: order.dailyNumber || order.orderNumber || '',
-          customerName: order.customerName || order.customerInfo?.customerName || t('pos.customer_cash'),
-          customerPhone: order.customerPhone || order.customerInfo?.customerPhone || '',
-          items,
-          subtotal: (total / 1.15).toFixed(2),
-          total: total.toFixed(2),
-          paymentMethod: PAYMENT_METHOD_LABELS[variables.payMethod] || variables.payMethod,
-          employeeName: employee?.fullName || t('pos.employee_fallback'),
-          tableNumber: order.tableNumber,
-          orderType: order.orderType,
-          date: order.createdAt || new Date().toISOString(),
-          crNumber: businessConfig?.commercialRegistration,
-          vatNumber: businessConfig?.vatNumber,
-        });
+        try {
+          printTaxInvoice({
+            orderNumber: order.dailyNumber || order.orderNumber || '',
+            customerName: order.customerName || order.customerInfo?.customerName || t('pos.customer_cash'),
+            customerPhone: order.customerPhone || order.customerInfo?.customerPhone || '',
+            items,
+            subtotal: (total / 1.15).toFixed(2),
+            total: total.toFixed(2),
+            paymentMethod: PAYMENT_METHOD_LABELS[variables.payMethod] || variables.payMethod,
+            employeeName: employee?.fullName || t('pos.employee_fallback'),
+            tableNumber: order.tableNumber,
+            orderType: order.orderType,
+            date: order.createdAt || new Date().toISOString(),
+            crNumber: businessConfig?.commercialRegistration,
+            vatNumber: businessConfig?.vatNumber,
+          }).catch(() => {});
+        } catch {}
       }
       setSelectedTableForBill(null);
       toast({ title: t('pos.bill_closed'), description: t('pos.bill_closed_desc') });
@@ -494,33 +496,35 @@ export default function PosSystem() {
         orderType,
       });
       if (autoPrint) {
-        printTaxInvoice({
-          orderNumber: result.orderNumber || result.dailyNumber || '',
-          customerName: customerName || t('pos.customer_cash'),
-          customerPhone: customerPhone || '',
-          items: orderItems.map(item => {
-            const addonsPrice = (item.customization?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0);
-            const inlineNames = (item.customization?.selectedItemAddons || []).map((a: any) => a.nameAr).join('، ');
-            return {
-              coffeeItem: {
-                nameAr: item.coffeeItem.nameAr + (inlineNames ? ` (${inlineNames})` : ''),
-                nameEn: item.coffeeItem.nameEn,
-                price: String(Number(item.coffeeItem.price) + addonsPrice),
-              },
-              quantity: item.quantity,
-              customization: item.customization,
-            };
-          }),
-          subtotal: subtotal.toFixed(2),
-          total: total.toFixed(2),
-          paymentMethod: PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod,
-          employeeName: employee?.fullName || t('pos.employee_fallback'),
-          tableNumber: orderType === "dine_in" ? tableNumber : undefined,
-          orderType: orderType as any,
-          date: new Date().toISOString(),
-          crNumber: businessConfig?.commercialRegistration,
-          vatNumber: businessConfig?.vatNumber,
-        });
+        try {
+          printTaxInvoice({
+            orderNumber: result.orderNumber || result.dailyNumber || '',
+            customerName: customerName || t('pos.customer_cash'),
+            customerPhone: customerPhone || '',
+            items: orderItems.map(item => {
+              const addonsPrice = (item.customization?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0);
+              const inlineNames = (item.customization?.selectedItemAddons || []).map((a: any) => a.nameAr).join('، ');
+              return {
+                coffeeItem: {
+                  nameAr: item.coffeeItem.nameAr + (inlineNames ? ` (${inlineNames})` : ''),
+                  nameEn: item.coffeeItem.nameEn,
+                  price: String(Number(item.coffeeItem.price) + addonsPrice),
+                },
+                quantity: item.quantity,
+                customization: item.customization,
+              };
+            }),
+            subtotal: subtotal.toFixed(2),
+            total: total.toFixed(2),
+            paymentMethod: PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod,
+            employeeName: employee?.fullName || t('pos.employee_fallback'),
+            tableNumber: orderType === "dine_in" ? tableNumber : undefined,
+            orderType: orderType as any,
+            date: new Date().toISOString(),
+            crNumber: businessConfig?.commercialRegistration,
+            vatNumber: businessConfig?.vatNumber,
+          }).catch(() => {});
+        } catch {}
         toast({ title: t('pos.bill_closed'), description: t('pos.order_done_desc') });
       }
       broadcastToDisplay("payment_success", {
@@ -565,7 +569,7 @@ export default function PosSystem() {
       date: lastOrder.date,
       crNumber: businessConfig?.commercialRegistration,
       vatNumber: businessConfig?.vatNumber,
-    });
+    }).catch(() => {});
   };
 
   const handlePrintLiveOrder = (order: any) => {
