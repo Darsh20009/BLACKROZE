@@ -47,6 +47,11 @@ The system also includes:
 - **Config-Driven Payment Methods**: `/api/payment-methods` endpoint returns enabled methods dynamically based on admin configuration.
 - **Loyalty Points Redemption Security**: Email verification codes required for points redemption.
 - **Complete i18n Translation System**: All customer menu text uses i18n keys for Arabic and English, with dynamic switching for categories, banners, and UI labels.
+- **Automated Email Notifications**: Daily end-of-day report email at 23:59 Riyadh time (cron in server/index.ts); Inventory low-stock alert email every 2 hours when items hit minStock. Both configurable via Admin Settings email cards.
+- **Email Configuration UI**: Admin Settings has a new "إعدادات الإشعارات البريدية" card with separate fields for daily-report emails and inventory-alert emails, persisted in BusinessConfig as `dailyReportEmails` and `inventoryAlertEmails` arrays.
+- **Tax Invoice Order Number Badge**: Prominent black-background badge at the top of printed tax invoices shows the order number at 28px; invoice number and table number shown with larger bold fonts.
+- **POS Product Images**: Removed heavy hover scale animation from product card images for better performance.
+- **Mobile "More" Menu**: Fixed SheetContent to use flex column layout with overflow-y-auto so all menu items scroll correctly.
 - **Independent Food/Drinks Management**: Employee menu management filters items by type (drinks/food) with separate sidebar links and category selectors.
 - **Menu Categories Employee-Managed**: Category add/delete moved to admin settings; categories have a `department` field for drinks/food management.
 - **Account Creation Enhancement**: Parent account selector for nested account hierarchy.

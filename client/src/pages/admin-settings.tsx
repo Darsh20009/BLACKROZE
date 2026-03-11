@@ -84,6 +84,8 @@ export default function AdminSettings() {
   const [showAppGuide, setShowAppGuide] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [dailyReportEmails, setDailyReportEmails] = useState('');
+  const [inventoryAlertEmails, setInventoryAlertEmails] = useState('');
 
   useEffect(() => {
     if (pgConfig) {
@@ -260,10 +262,23 @@ export default function AdminSettings() {
       setMenuLayout(config.appearance.menuLayout ?? 'classic');
       setDashboardLayout(config.appearance.dashboardLayout ?? 'classic');
     }
+    if (config) {
+      setDailyReportEmails((config.dailyReportEmails || []).join(', '));
+      setInventoryAlertEmails((config.inventoryAlertEmails || []).join(', '));
+    }
   }, [config]);
 
   const handleSaveAppearance = () => {
     mutation.mutate({ appearance: { menuLayout, dashboardLayout } });
+  };
+
+  const handleSaveEmailConfig = () => {
+    const parseEmails = (raw: string) =>
+      raw.split(/[,\s]+/).map(e => e.trim()).filter(e => e.includes('@'));
+    mutation.mutate({
+      dailyReportEmails: parseEmails(dailyReportEmails),
+      inventoryAlertEmails: parseEmails(inventoryAlertEmails),
+    });
   };
 
   useEffect(() => {
@@ -2111,6 +2126,84 @@ export default function AdminSettings() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Email Configuration Section */}
+      <div className="mt-8">
+        <Card className="hover-elevate border-sky-100 dark:border-sky-900/30 shadow-lg">
+          <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-sky-100 dark:bg-sky-900/40">
+                <Bell className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold">إعدادات الإشعارات البريدية</CardTitle>
+                <CardDescription>تحديد البريد الإلكتروني لاستقبال التقارير اليومية وتنبيهات المخزون</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-bold flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-xs text-emerald-700 font-bold">📊</span>
+                بريد تقرير نهاية اليوم
+              </label>
+              <p className="text-xs text-muted-foreground">سيتم إرسال تقرير يومي شامل في الساعة 11:59 مساءً (بتوقيت الرياض). أدخل عناوين بريد مفصولة بفواصل أو مسافات.</p>
+              <input
+                data-testid="input-daily-report-emails"
+                type="text"
+                value={dailyReportEmails}
+                onChange={e => setDailyReportEmails(e.target.value)}
+                placeholder="manager@cafe.com, owner@cafe.com"
+                className="w-full border rounded-lg px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-sky-400"
+                dir="ltr"
+              />
+              {dailyReportEmails && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {dailyReportEmails.split(/[,\s]+/).filter(e => e.includes('@')).map((e, i) => (
+                    <span key={i} className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">{e.trim()}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-xs text-red-700 font-bold">⚠️</span>
+                بريد تنبيهات المخزون
+              </label>
+              <p className="text-xs text-muted-foreground">سيتم إرسال تنبيه تلقائي عند وصول أي صنف في المخزون إلى الحد الأدنى أو نفاده. يتم الفحص كل ساعتين.</p>
+              <input
+                data-testid="input-inventory-alert-emails"
+                type="text"
+                value={inventoryAlertEmails}
+                onChange={e => setInventoryAlertEmails(e.target.value)}
+                placeholder="stock@cafe.com, manager@cafe.com"
+                className="w-full border rounded-lg px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-red-400"
+                dir="ltr"
+              />
+              {inventoryAlertEmails && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {inventoryAlertEmails.split(/[,\s]+/).filter(e => e.includes('@')).map((e, i) => (
+                    <span key={i} className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">{e.trim()}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={handleSaveEmailConfig}
+                disabled={mutation.isPending}
+                data-testid="button-save-email-config"
+                className="gap-2"
+              >
+                <Save className="w-4 h-4" />
+                حفظ إعدادات البريد
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

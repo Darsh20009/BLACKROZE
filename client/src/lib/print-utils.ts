@@ -666,11 +666,19 @@ export async function printTaxInvoice(data: TaxInvoiceData): Promise<void> {
       <div class="vat-num">VAT: ${VAT_NUMBER}</div>
     </div>
 
+    <!-- Prominent Order Number Badge -->
+    <div style="text-align:center; margin: 8px 0;">
+      <div style="display:inline-block; background:#000; color:#fff; padding:8px 20px; border-radius:8px;">
+        <div style="font-size:10px; color:#aaa; letter-spacing:1px;">رقم الطلب</div>
+        <div style="font-size:28px; font-weight:700; letter-spacing:2px;">#${data.orderNumber}</div>
+      </div>
+    </div>
+
     <div class="info">
-      <div class="info-row"><span class="info-label">رقم الفاتورة:</span><span class="info-val">${displayInvoiceNumber}</span></div>
+      <div class="info-row"><span class="info-label">رقم الفاتورة:</span><span class="info-val" style="font-size:12px;font-weight:700;">${displayInvoiceNumber}</span></div>
       <div class="info-row"><span class="info-label">التاريخ:</span><span class="info-val">${formattedDate} ${formattedTime}</span></div>
       ${data.customerName && data.customerName !== 'عميل نقدي' ? `<div class="info-row"><span class="info-label">العميل:</span><span class="info-val">${data.customerName}</span></div>` : ''}
-      ${data.tableNumber ? `<div class="info-row"><span class="info-label">طاولة:</span><span class="info-val">${data.tableNumber}</span></div>` : ''}
+      ${data.tableNumber ? `<div class="info-row"><span class="info-label">طاولة:</span><span class="info-val" style="font-size:14px;font-weight:700;">${data.tableNumber}</span></div>` : ''}
       ${orderTypeLabel ? `<div class="info-row"><span class="info-label">نوع الطلب:</span><span class="info-val">${orderTypeLabel}</span></div>` : ''}
     </div>
 

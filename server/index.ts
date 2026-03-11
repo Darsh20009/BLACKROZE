@@ -181,6 +181,105 @@ setInterval(async () => {
   }
 }, 60000); // Run every 60 seconds (1 minute)
 
+// Scheduled task: Daily end-of-day report at 23:59 Riyadh time
+let dailyReportSentDate = '';
+setInterval(async () => {
+  if (!isDbConnected) return;
+  try {
+    const now = new Date();
+    const riyadhTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
+    const h = riyadhTime.getHours();
+    const m = riyadhTime.getMinutes();
+    const todayKey = riyadhTime.toISOString().slice(0, 10);
+    if (h !== 23 || m !== 59 || dailyReportSentDate === todayKey) return;
+    dailyReportSentDate = todayKey;
+
+    const { BusinessConfigModel, OrderModel } = await import("@shared/schema");
+    const { sendDailyReportEmail } = await import("./mail-service");
+
+    const config = await BusinessConfigModel.findOne({});
+    const recipients: string[] = (config as any)?.dailyReportEmails || [];
+    if (recipients.length === 0) return;
+
+    const dayStart = new Date(riyadhTime);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(riyadhTime);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const orders = await OrderModel.find({
+      createdAt: { $gte: dayStart, $lte: dayEnd },
+      status: { $in: ['completed', 'ready', 'delivering'] }
+    });
+
+    const totalRevenue = orders.reduce((s: number, o: any) => s + (parseFloat(o.totalAmount) || 0), 0);
+    const totalVat = totalRevenue - (totalRevenue / 1.15);
+    const cashOrders = orders.filter((o: any) => o.paymentMethod === 'cash');
+    const cardOrders = orders.filter((o: any) => o.paymentMethod !== 'cash');
+    const cashRevenue = cashOrders.reduce((s: number, o: any) => s + (parseFloat(o.totalAmount) || 0), 0);
+    const cardRevenue = cardOrders.reduce((s: number, o: any) => s + (parseFloat(o.totalAmount) || 0), 0);
+
+    const productMap: Record<string, { name: string; quantity: number; revenue: number }> = {};
+    for (const order of orders) {
+      for (const item of (order as any).items || []) {
+        const name = item.coffeeItem?.nameAr || item.name || 'صنف غير معروف';
+        if (!productMap[name]) productMap[name] = { name, quantity: 0, revenue: 0 };
+        productMap[name].quantity += item.quantity || 1;
+        productMap[name].revenue += (parseFloat(item.coffeeItem?.price || '0') + (item.addonsPrice || 0)) * (item.quantity || 1);
+      }
+    }
+    const topProducts = Object.values(productMap).sort((a, b) => b.quantity - a.quantity).slice(0, 8);
+
+    const dateDisplay = dayStart.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+    await sendDailyReportEmail(recipients, {
+      date: dateDisplay,
+      totalOrders: orders.length,
+      totalRevenue,
+      totalVat,
+      cashRevenue,
+      cardRevenue,
+      cashPercentage: totalRevenue > 0 ? (cashRevenue / totalRevenue) * 100 : 0,
+      cardPercentage: totalRevenue > 0 ? (cardRevenue / totalRevenue) * 100 : 0,
+      topProducts,
+    });
+    console.log(`📊 Daily report sent for ${todayKey}`);
+  } catch (err) {
+    console.error("Daily report cron error:", err);
+  }
+}, 60000); // Check every minute
+
+// Scheduled task: Inventory low-stock alerts (every 2 hours)
+let lastInventoryAlertTime = 0;
+setInterval(async () => {
+  if (!isDbConnected) return;
+  const now = Date.now();
+  if (now - lastInventoryAlertTime < 2 * 60 * 60 * 1000) return;
+  lastInventoryAlertTime = now;
+  try {
+    const { BusinessConfigModel, InventoryItemModel } = await import("@shared/schema");
+    const { sendInventoryAlertEmail } = await import("./mail-service");
+
+    const config = await BusinessConfigModel.findOne({});
+    const recipients: string[] = (config as any)?.inventoryAlertEmails || [];
+    if (recipients.length === 0) return;
+
+    const lowItems = await InventoryItemModel.find({
+      $expr: { $lte: ['$currentStock', '$minStock'] }
+    });
+    if (lowItems.length === 0) return;
+
+    const alerts = lowItems.map((item: any) => ({
+      itemName: item.nameAr || item.name,
+      currentStock: item.currentStock,
+      minStock: item.minStock,
+      unit: item.unit || 'وحدة',
+      branchName: item.branchName,
+    }));
+    await sendInventoryAlertEmail(recipients, alerts);
+  } catch (err) {
+    console.error("Inventory alert cron error:", err);
+  }
+}, 5 * 60 * 1000); // Check every 5 minutes (throttled internally to 2 hours)
+
 const app = express();
 
 // Enable gzip compression for all responses

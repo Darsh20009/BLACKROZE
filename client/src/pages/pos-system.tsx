@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -33,6 +33,7 @@ import {
 } from "@/lib/print-utils";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -109,6 +110,7 @@ export default function PosSystem() {
   const [posVariantDialog, setPosVariantDialog] = useState<{ group: CoffeeItem[]; selectedVariant: CoffeeItem | null } | null>(null);
   const [variantPendingAddons, setVariantPendingAddons] = useState<number[]>([]);
   const [showOrderReview, setShowOrderReview] = useState(false);
+  const [orderNotes, setOrderNotes] = useState("");
   const [posZoom, setPosZoom] = useState<number>(() => {
     const saved = localStorage.getItem("pos-zoom");
     return saved ? Number(saved) : 100;
@@ -218,7 +220,7 @@ export default function PosSystem() {
 
   const { data: liveOrders } = useQuery<Order[]>({
     queryKey: ["/api/orders/live"],
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 
   const { data: businessConfig } = useQuery<any>({ queryKey: ['/api/business-config'] });
@@ -362,16 +364,14 @@ export default function PosSystem() {
     return cats.map(c => ({ id: c, name: c, icon: Tag, color: "text-primary" }));
   }, [productsData]);
 
-  const calculateTotal = () => {
+  const calculateTotal = useMemo(() => {
     return orderItems.reduce((sum, item) => {
       const addonsPrice = (item.customization?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0);
       return sum + ((Number(item.coffeeItem.price) + addonsPrice) * item.quantity);
     }, 0);
-  };
+  }, [orderItems]);
 
-  const calculateSubtotal = () => {
-    return calculateTotal() / 1.15;
-  };
+  const calculateSubtotal = useMemo(() => calculateTotal / 1.15, [calculateTotal]);
 
   const buildDisplayPayload = (items: any[], event: string, extra?: any) => {
     const total = items.reduce((s, i) => s + Number(i.coffeeItem.price) * i.quantity, 0);
@@ -431,8 +431,8 @@ export default function PosSystem() {
     
     try {
       setSyncing(true);
-      const total = calculateTotal();
-      const subtotal = calculateSubtotal();
+      const total = calculateTotal;
+      const subtotal = calculateSubtotal;
       const tax = total - subtotal;
 
       broadcastToDisplay("payment_processing", {
@@ -464,7 +464,8 @@ export default function PosSystem() {
         branchId: employee?.branchId || "main",
         tenantId: employee?.tenantId || "demo-tenant",
         employeeId: employee?.id,
-        channel: "pos"
+        channel: "pos",
+        customerNotes: orderNotes || undefined,
       };
 
       const res = await apiRequest("POST", "/api/orders", orderData);
@@ -539,6 +540,7 @@ export default function PosSystem() {
       setTableNumber("");
       setCustomerName("");
       setCustomerPhone("");
+      setOrderNotes("");
       
       queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
     } catch (error) {
@@ -608,7 +610,7 @@ export default function PosSystem() {
         width: `${inverseScale * 100}vw`,
         height: `${inverseScale * 100}vh`,
         transform: `scale(${scale})`,
-        transformOrigin: "top left",
+        transformOrigin: dir === 'rtl' ? 'top right' : 'top left',
       }}
     >
       <header className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-6 sm:py-3 border-b bg-card gap-2 sm:gap-0">
@@ -842,8 +844,8 @@ export default function PosSystem() {
                 {filteredItemsList.map((item: any) => (
                   <Card 
                     key={item.id}
-                    className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 ${
-                      !item.isAvailable ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:border-primary/50'
+                    className={`group relative overflow-hidden cursor-pointer border-2 ${
+                      !item.isAvailable ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:border-primary/50 hover:shadow-md'
                     }`}
                     onClick={() => {
                       if (!item.isAvailable) return;
@@ -865,7 +867,7 @@ export default function PosSystem() {
                         <img 
                           src={item.imageUrl} 
                           alt={item.nameAr}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -1100,16 +1102,16 @@ export default function PosSystem() {
             <div className="space-y-1.5 sm:space-y-2">
               <div className="flex justify-between text-[10px] sm:text-sm">
                 <span className="text-muted-foreground">{t('pos.subtotal')}</span>
-                <span className="font-bold">{calculateSubtotal().toFixed(2)} {t('pos.currency')}</span>
+                <span className="font-bold">{calculateSubtotal.toFixed(2)} {t('pos.currency')}</span>
               </div>
               <div className="flex justify-between text-[10px] sm:text-sm">
                 <span className="text-muted-foreground">{t('pos.tax')}</span>
-                <span className="font-bold">{(calculateTotal() - calculateSubtotal()).toFixed(2)} {t('pos.currency')}</span>
+                <span className="font-bold">{(calculateTotal - calculateSubtotal).toFixed(2)} {t('pos.currency')}</span>
               </div>
               <Separator />
               <div className="flex justify-between items-center pt-1">
                 <span className="font-black text-sm sm:text-base">{t('pos.total')}</span>
-                <span className="font-black text-base sm:text-xl text-primary">{calculateTotal().toFixed(2)} {t('pos.currency')}</span>
+                <span className="font-black text-base sm:text-xl text-primary">{calculateTotal.toFixed(2)} {t('pos.currency')}</span>
               </div>
             </div>
 
@@ -1168,7 +1170,7 @@ export default function PosSystem() {
           </div>
           <span className="text-[10px] font-bold">
             {orderItems.length > 0
-              ? `${calculateTotal().toFixed(0)} ${t('pos.currency')}`
+              ? `${calculateTotal.toFixed(0)} ${t('pos.currency')}`
               : i18n.language === 'ar' ? 'الطلب' : 'Cart'}
           </span>
         </button>
@@ -1345,7 +1347,8 @@ export default function PosSystem() {
             <div className="space-y-2">
               {orderItems.map((item) => {
                 const unitPrice = parseFloat(String(item.coffeeItem.price)) || 0;
-                const addonsTotal = (item.selectedAddons || []).reduce((s: number, a: any) => s + (parseFloat(String(a.price)) || 0), 0);
+                const itemAddons = item.customization?.selectedItemAddons || [];
+                const addonsTotal = itemAddons.reduce((s: number, a: any) => s + (parseFloat(String(a.price)) || 0), 0);
                 const lineTotal = (unitPrice + addonsTotal) * item.quantity;
                 return (
                   <div
@@ -1356,9 +1359,9 @@ export default function PosSystem() {
                     {/* Name */}
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm leading-snug">{getItemDisplayName(item.coffeeItem)}</p>
-                      {(item.selectedAddons || []).length > 0 && (
+                      {itemAddons.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {(item.selectedAddons as any[]).map((a: any, i: number) => (
+                          {(itemAddons as any[]).map((a: any, i: number) => (
                             <span key={i} className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
                               +{a.nameAr || a.name}
                             </span>
@@ -1405,22 +1408,33 @@ export default function PosSystem() {
             </div>
           </ScrollArea>
 
+          {/* Order Notes */}
+          <div className="px-5 pb-3 shrink-0">
+            <Textarea
+              placeholder={i18n.language === 'ar' ? 'ملاحظات الطلب (اختياري)...' : 'Order notes (optional)...'}
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+              className="resize-none h-16 text-sm"
+              data-testid="textarea-order-notes"
+            />
+          </div>
+
           {/* Summary + payment method + action buttons */}
           <div className="px-5 pt-3 pb-5 border-t bg-muted/20 shrink-0 space-y-3">
             {/* Totals */}
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <span>{t('pos.subtotal')}</span>
-                <span className="font-bold">{calculateSubtotal().toFixed(2)} {t('pos.currency')}</span>
+                <span className="font-bold">{calculateSubtotal.toFixed(2)} {t('pos.currency')}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>{t('pos.tax')}</span>
-                <span className="font-bold">{(calculateTotal() - calculateSubtotal()).toFixed(2)} {t('pos.currency')}</span>
+                <span className="font-bold">{(calculateTotal - calculateSubtotal).toFixed(2)} {t('pos.currency')}</span>
               </div>
               <Separator />
               <div className="flex justify-between items-center pt-1">
                 <span className="font-black text-base">{t('pos.total')}</span>
-                <span className="font-black text-xl text-primary">{calculateTotal().toFixed(2)} {t('pos.currency')}</span>
+                <span className="font-black text-xl text-primary">{calculateTotal.toFixed(2)} {t('pos.currency')}</span>
               </div>
             </div>
 

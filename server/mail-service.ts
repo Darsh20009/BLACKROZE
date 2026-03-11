@@ -661,3 +661,168 @@ export async function testEmailConnection() {
     return false;
   }
 }
+
+export async function sendDailyReportEmail(
+  recipients: string[],
+  reportData: {
+    date: string;
+    totalOrders: number;
+    totalRevenue: number;
+    totalVat: number;
+    cashRevenue: number;
+    cardRevenue: number;
+    cashPercentage: number;
+    cardPercentage: number;
+    topProducts: Array<{ name: string; quantity: number; revenue: number }>;
+  }
+): Promise<boolean> {
+  if (!recipients || recipients.length === 0) return false;
+  const transporter = await getTransporter();
+  if (!transporter) {
+    console.warn("⚠️ Email service not configured for daily report");
+    return false;
+  }
+
+  const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.com.sa";
+  const topProductsHtml = reportData.topProducts.slice(0, 8).map((p, i) => `
+    <tr style="background:${i % 2 === 0 ? '#f9fafb' : '#fff'};">
+      <td style="padding:6px 10px;font-weight:600;">${i + 1}. ${p.name}</td>
+      <td style="padding:6px 10px;text-align:center;font-weight:700;">${p.quantity}</td>
+      <td style="padding:6px 10px;text-align:left;color:#2D9B6E;font-weight:700;">${p.revenue.toFixed(2)} ر.س</td>
+    </tr>
+  `).join('');
+
+  const html = `
+<html dir="rtl" lang="ar">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px;direction:rtl;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background:#1a1a1a;padding:24px;text-align:center;">
+      <h1 style="color:#2D9B6E;margin:0;font-size:24px;">BLACK ROSE CAFE</h1>
+      <p style="color:#aaa;margin:4px 0 0;font-size:14px;">تقرير نهاية اليوم</p>
+    </div>
+    <div style="padding:24px;">
+      <h2 style="color:#333;margin-top:0;font-size:18px;">📊 ملخص يوم ${reportData.date}</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-size:28px;font-weight:700;color:#16a34a;">${reportData.totalOrders}</div>
+          <div style="font-size:12px;color:#555;">إجمالي الطلبات</div>
+        </div>
+        <div style="background:#f0f9ff;border:1px solid #7dd3fc;border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-size:28px;font-weight:700;color:#0369a1;">${reportData.totalRevenue.toFixed(2)}</div>
+          <div style="font-size:12px;color:#555;">الإيراد الكلي (ر.س)</div>
+        </div>
+        <div style="background:#fefce8;border:1px solid #fde047;border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-size:22px;font-weight:700;color:#a16207;">${reportData.totalVat.toFixed(2)}</div>
+          <div style="font-size:12px;color:#555;">ضريبة القيمة المضافة (ر.س)</div>
+        </div>
+        <div style="background:#fdf4ff;border:1px solid #d8b4fe;border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-size:22px;font-weight:700;color:#7c3aed;">${(reportData.totalRevenue - reportData.totalVat).toFixed(2)}</div>
+          <div style="font-size:12px;color:#555;">الإيراد بدون ضريبة (ر.س)</div>
+        </div>
+      </div>
+      <h3 style="color:#333;font-size:15px;margin-bottom:10px;">💳 تفاصيل طرق الدفع</h3>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">
+        <thead><tr style="background:#f3f4f6;"><th style="padding:8px 10px;text-align:right;">طريقة الدفع</th><th style="padding:8px 10px;text-align:center;">المبلغ (ر.س)</th><th style="padding:8px 10px;text-align:center;">النسبة</th></tr></thead>
+        <tbody>
+          <tr><td style="padding:8px 10px;">💵 كاش</td><td style="padding:8px 10px;text-align:center;font-weight:700;">${reportData.cashRevenue.toFixed(2)}</td><td style="padding:8px 10px;text-align:center;">${reportData.cashPercentage.toFixed(1)}%</td></tr>
+          <tr style="background:#f9fafb;"><td style="padding:8px 10px;">💳 شبكة / بطاقة</td><td style="padding:8px 10px;text-align:center;font-weight:700;">${reportData.cardRevenue.toFixed(2)}</td><td style="padding:8px 10px;text-align:center;">${reportData.cardPercentage.toFixed(1)}%</td></tr>
+        </tbody>
+      </table>
+      ${reportData.topProducts.length > 0 ? `
+      <h3 style="color:#333;font-size:15px;margin-bottom:10px;">🏆 أكثر 8 منتجات مبيعاً</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+        <thead><tr style="background:#f3f4f6;"><th style="padding:8px 10px;text-align:right;">المنتج</th><th style="padding:8px 10px;text-align:center;">الكمية</th><th style="padding:8px 10px;text-align:left;">الإيراد</th></tr></thead>
+        <tbody>${topProductsHtml}</tbody>
+      </table>
+      ` : ''}
+    </div>
+    <div style="background:#f9fafb;padding:16px;text-align:center;font-size:12px;color:#888;border-top:1px solid #e5e7eb;">
+      <p>تم إنشاء هذا التقرير تلقائياً في نهاية يوم ${reportData.date}</p>
+      <p style="color:#2D9B6E;font-weight:600;">BLACK ROSE CAFE — CLUNY SYSTEMS</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"BLACK ROSE CAFE" <${senderEmail}>`,
+      to: recipients.join(', '),
+      subject: `📊 تقرير نهاية اليوم - ${reportData.date}`,
+      html,
+    });
+    console.log(`📧 Daily report sent to ${recipients.join(', ')}`);
+    return true;
+  } catch (error: any) {
+    console.error("❌ Daily report email failed:", error.message);
+    return false;
+  }
+}
+
+export async function sendInventoryAlertEmail(
+  recipients: string[],
+  alerts: Array<{ itemName: string; currentStock: number; minStock: number; unit: string; branchName?: string }>
+): Promise<boolean> {
+  if (!recipients || recipients.length === 0 || alerts.length === 0) return false;
+  const transporter = await getTransporter();
+  if (!transporter) {
+    console.warn("⚠️ Email service not configured for inventory alerts");
+    return false;
+  }
+
+  const senderEmail = process.env.SMTP_FROM || "noreply@blackrose.com.sa";
+  const alertsHtml = alerts.map((a, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff5f5' : '#fff'};">
+      <td style="padding:8px 12px;font-weight:600;">${a.itemName}</td>
+      <td style="padding:8px 12px;text-align:center;color:${a.currentStock <= 0 ? '#dc2626' : '#ea580c'};font-weight:700;">${a.currentStock <= 0 ? 'نفد' : a.currentStock + ' ' + a.unit}</td>
+      <td style="padding:8px 12px;text-align:center;color:#6b7280;">${a.minStock} ${a.unit}</td>
+      <td style="padding:8px 12px;text-align:center;font-size:11px;color:#6b7280;">${a.branchName || 'الفرع الرئيسي'}</td>
+    </tr>
+  `).join('');
+
+  const html = `
+<html dir="rtl" lang="ar">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px;direction:rtl;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background:#dc2626;padding:20px;text-align:center;">
+      <h1 style="color:#fff;margin:0;font-size:20px;">⚠️ تنبيه: نقص في المخزون</h1>
+      <p style="color:#fca5a5;margin:4px 0 0;font-size:13px;">BLACK ROSE CAFE — CLUNY SYSTEMS</p>
+    </div>
+    <div style="padding:24px;">
+      <p style="color:#374151;margin-top:0;">تنبيه: المواد التالية وصلت إلى الحد الأدنى أو نفدت من المخزون:</p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:#fee2e2;">
+            <th style="padding:10px 12px;text-align:right;">المادة</th>
+            <th style="padding:10px 12px;text-align:center;">الكمية الحالية</th>
+            <th style="padding:10px 12px;text-align:center;">الحد الأدنى</th>
+            <th style="padding:10px 12px;text-align:center;">الفرع</th>
+          </tr>
+        </thead>
+        <tbody>${alertsHtml}</tbody>
+      </table>
+      <p style="margin-top:16px;color:#6b7280;font-size:12px;">يرجى اتخاذ الإجراءات اللازمة لتوفير هذه المواد في أقرب وقت ممكن.</p>
+    </div>
+    <div style="background:#f9fafb;padding:12px;text-align:center;font-size:12px;color:#888;border-top:1px solid #e5e7eb;">
+      <p>BLACK ROSE CAFE — نظام إدارة المخزون التلقائي</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"BLACK ROSE CAFE" <${senderEmail}>`,
+      to: recipients.join(', '),
+      subject: `⚠️ تنبيه مخزون: ${alerts.length} صنف يحتاج تجديد`,
+      html,
+    });
+    console.log(`📧 Inventory alert sent to ${recipients.join(', ')} for ${alerts.length} items`);
+    return true;
+  } catch (error: any) {
+    console.error("❌ Inventory alert email failed:", error.message);
+    return false;
+  }
+}

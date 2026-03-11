@@ -93,11 +93,12 @@ export function MobileBottomNav({ employeeRole, onLogout }: MobileBottomNavProps
               <span>{t('mobile_nav.more')}</span>
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl">
-            <SheetHeader>
+          <SheetContent side="bottom" className="h-[75vh] rounded-t-2xl flex flex-col">
+            <SheetHeader className="shrink-0">
               <SheetTitle>{t('mobile_nav.menu_title')}</SheetTitle>
             </SheetHeader>
-            <div className="grid grid-cols-3 gap-3 py-4 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0 pb-2">
+            <div className="grid grid-cols-3 gap-3 py-4">
               {allPages.map((item) => {
                 const Icon = item.icon;
                 const fullPath = location + window.location.search;
@@ -118,7 +119,8 @@ export function MobileBottomNav({ employeeRole, onLogout }: MobileBottomNavProps
                 );
               })}
             </div>
-            <div className="border-t pt-4 mt-2 space-y-2">
+            </div>
+            <div className="border-t pt-4 mt-2 space-y-2 shrink-0">
               <Button
                 variant="outline"
                 className="w-full"
