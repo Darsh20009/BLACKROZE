@@ -47,13 +47,7 @@ interface TaxInvoiceData {
   branchAddress?: string;
   crNumber?: string;
   vatNumber?: string;
-}
-
-interface PrintConfig {
-  paperWidth?: '58mm' | '80mm';
-  autoClose?: boolean;
-  autoPrint?: boolean;
-  showPrintButton?: boolean;
+  silentPrint?: boolean;
 }
 
 interface EmployeePrintData {
@@ -75,20 +69,17 @@ interface KitchenOrderData {
   timestamp: string;
 }
 
+interface PrintConfig {
+  paperWidth?: string;
+  autoClose?: boolean;
+  autoPrint?: boolean;
+  showPrintButton?: boolean;
+  silentPrint?: boolean;
+}
+
 function openPrintWindow(html: string, title: string, config: PrintConfig = {}): Window | null {
-  const { paperWidth = '80mm', autoClose = false, autoPrint = true, showPrintButton = true } = config;
-  
-  const printButtonHtml = showPrintButton ? `
-    <div class="no-print" style="text-align: center; margin-top: 20px; padding: 20px;">
-      <button onclick="window.print()" style="padding: 12px 32px; font-size: 16px; background: #b45309; color: white; border: none; border-radius: 8px; cursor: pointer; margin-left: 10px;">
-        طباعة
-      </button>
-      <button onclick="window.close()" style="padding: 12px 32px; font-size: 16px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer;">
-        إغلاق
-      </button>
-    </div>
-  ` : '';
-  
+  const { paperWidth = '80mm', autoClose = false, autoPrint = true, showPrintButton = true, silentPrint = false } = config;
+
   const dynamicStyles = `
     <style>
       @media print {
@@ -99,19 +90,54 @@ function openPrintWindow(html: string, title: string, config: PrintConfig = {}):
       }
     </style>
   `;
-  
+
+  if (silentPrint) {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;visibility:hidden;';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (iframeDoc) {
+      const modifiedHtml = html.replace('</head>', `${dynamicStyles}</head>`);
+      iframeDoc.open();
+      iframeDoc.write(modifiedHtml);
+      iframeDoc.close();
+
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.print();
+        } catch (e) {}
+        setTimeout(() => {
+          try { document.body.removeChild(iframe); } catch (e) {}
+        }, 2000);
+      }, 500);
+    }
+    return null;
+  }
+
+  const printButtonHtml = showPrintButton ? `
+    <div class="no-print" style="text-align: center; margin-top: 20px; padding: 20px;">
+      <button onclick="window.print()" style="padding: 12px 32px; font-size: 16px; background: #b45309; color: white; border: none; border-radius: 8px; cursor: pointer; margin-left: 10px;">
+        طباعة
+      </button>
+      <button onclick="window.close()" style="padding: 12px 32px; font-size: 16px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer;">
+        إغلاق
+      </button>
+    </div>
+  ` : '';
+
   let modifiedHtml = html;
   if (showPrintButton && !modifiedHtml.includes('<div class="no-print"')) {
     modifiedHtml = modifiedHtml.replace('</body>', `${printButtonHtml}</body>`);
   }
   modifiedHtml = modifiedHtml.replace('</head>', `${dynamicStyles}</head>`);
-  
+
   const printWindow = window.open('', '_blank', 'width=450,height=700,scrollbars=yes,resizable=yes');
   if (printWindow) {
     printWindow.document.write(modifiedHtml);
     printWindow.document.close();
     printWindow.document.title = title;
-    
+
     if (autoPrint) {
       printWindow.onload = function() {
         setTimeout(() => {
@@ -762,7 +788,8 @@ export async function printTaxInvoice(data: TaxInvoiceData): Promise<void> {
   openPrintWindow(invoiceHtml, `فاتورة ضريبية - ${displayInvoiceNumber}`, { 
     paperWidth: '80mm', 
     autoPrint: true, 
-    showPrintButton: true 
+    showPrintButton: !data.silentPrint,
+    silentPrint: data.silentPrint,
   });
 }
 

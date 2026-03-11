@@ -376,6 +376,7 @@ export default function PosSystem() {
             date: order.createdAt || new Date().toISOString(),
             crNumber: businessConfig?.commercialRegistration,
             vatNumber: businessConfig?.vatNumber,
+            silentPrint: true,
           }).catch(() => {});
         } catch {}
       }
@@ -703,8 +704,9 @@ export default function PosSystem() {
           date: new Date().toISOString(),
           crNumber: businessConfig?.commercialRegistration,
           vatNumber: businessConfig?.vatNumber,
+          silentPrint: true,
         };
-        setTimeout(() => { printTaxInvoice(printArgs).catch(() => {}); }, 400);
+        setTimeout(() => { printTaxInvoice(printArgs).catch(() => {}); }, 800);
         toast({ title: t('pos.bill_closed'), description: t('pos.order_done_desc') });
       }
 

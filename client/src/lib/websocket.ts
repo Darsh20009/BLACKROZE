@@ -46,6 +46,31 @@ export function useOrderWebSocket({
   const [lastMessage, setLastMessage] = useState<WSMessage | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const callbacksRef = useRef({
+    onNewOrder,
+    onOrderUpdated,
+    onOrderReady,
+    onPointsVerificationCode,
+    onCustomerDisplayState,
+    onPosCartUpdate,
+  });
+
+  useEffect(() => {
+    callbacksRef.current = {
+      onNewOrder,
+      onOrderUpdated,
+      onOrderReady,
+      onPointsVerificationCode,
+      onCustomerDisplayState,
+      onPosCartUpdate,
+    };
+  });
+
+  const configRef = useRef({ clientType, orderId, branchId, customerId });
+  useEffect(() => {
+    configRef.current = { clientType, orderId, branchId, customerId };
+  });
+
   const clearTimers = useCallback(() => {
     if (pingIntervalRef.current) {
       clearInterval(pingIntervalRef.current);
@@ -57,22 +82,23 @@ export function useOrderWebSocket({
     }
   }, []);
 
-  const sendSubscribe = useCallback((ws: WebSocket) => {
+  const sendSubscribeRef = useRef<(ws: WebSocket) => void>(() => {});
+  sendSubscribeRef.current = (ws: WebSocket) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(
         JSON.stringify({
           type: "subscribe",
-          clientType,
-          orderId,
-          branchId,
-          customerId,
+          clientType: configRef.current.clientType,
+          orderId: configRef.current.orderId,
+          branchId: configRef.current.branchId,
+          customerId: configRef.current.customerId,
         })
       );
     }
-  }, [clientType, orderId, branchId]);
+  };
 
   const connect = useCallback(() => {
-    if (!enabled || !isMountedRef.current) return;
+    if (!isMountedRef.current) return;
     if (isConnectingRef.current) return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
 
@@ -81,7 +107,7 @@ export function useOrderWebSocket({
 
     if (wsRef.current) {
       try {
-        if (wsRef.current.readyState !== WebSocket.CLOSED && 
+        if (wsRef.current.readyState !== WebSocket.CLOSED &&
             wsRef.current.readyState !== WebSocket.CLOSING) {
           wsRef.current.close(1000, "Reconnecting");
         }
@@ -103,11 +129,10 @@ export function useOrderWebSocket({
           ws.close();
           return;
         }
-        console.log("[WS] Connected to orders WebSocket");
         isConnectingRef.current = false;
         setIsConnected(true);
 
-        sendSubscribe(ws);
+        sendSubscribeRef.current(ws);
 
         pingIntervalRef.current = setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
@@ -124,10 +149,10 @@ export function useOrderWebSocket({
           const message: WSMessage = JSON.parse(event.data);
           setLastMessage(message);
 
+          const cb = callbacksRef.current;
           switch (message.type) {
             case "new_order":
-              onNewOrder?.(message.order);
-              // Trigger local notification if in foreground but not looking at orders
+              cb.onNewOrder?.(message.order);
               if (Notification.permission === 'granted' && window.location.pathname !== '/employee/orders') {
                 const n = new Notification(message.title || 'طلب جديد', {
                   body: message.body || `طلب جديد بقيمة ${message.order?.totalAmount} ر.س`,
@@ -159,22 +184,22 @@ export function useOrderWebSocket({
               }
               break;
             case "order_updated":
-              onOrderUpdated?.(message.order);
+              cb.onOrderUpdated?.(message.order);
               break;
             case "order_ready":
-              onOrderReady?.(message.order);
+              cb.onOrderReady?.(message.order);
               break;
             case "points_verification_code":
-              onPointsVerificationCode?.(message);
+              cb.onPointsVerificationCode?.(message);
               break;
             case "customer_display_state":
-              onCustomerDisplayState?.(message.payload);
+              cb.onCustomerDisplayState?.(message.payload);
               break;
             case "pos_cart_update":
-              onPosCartUpdate?.(message.payload);
+              cb.onPosCartUpdate?.(message.payload);
               break;
             case "welcome":
-              sendSubscribe(ws);
+              sendSubscribeRef.current(ws);
               break;
           }
         } catch (error) {
@@ -183,35 +208,32 @@ export function useOrderWebSocket({
       };
 
       ws.onclose = (event) => {
-        console.log("[WS] Connection closed:", event.code, event.reason);
         isConnectingRef.current = false;
         setIsConnected(false);
         clearTimers();
 
-        if (isMountedRef.current && enabled) {
+        if (isMountedRef.current) {
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, 3000);
         }
       };
 
-      ws.onerror = (error) => {
-        console.error("[WS] WebSocket error:", error);
+      ws.onerror = () => {
         setError("خطأ في الاتصال - جاري إعادة المحاولة");
         setIsConnected(false);
         isConnectingRef.current = false;
       };
     } catch (error) {
-      console.error("[WS] Failed to create WebSocket:", error);
       isConnectingRef.current = false;
 
-      if (isMountedRef.current && enabled) {
+      if (isMountedRef.current) {
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
         }, 5000);
       }
     }
-  }, [enabled, clearTimers, sendSubscribe, onNewOrder, onOrderUpdated, onOrderReady, onCustomerDisplayState]);
+  }, [clearTimers]);
 
   const sendMessage = useCallback((data: object) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -224,7 +246,7 @@ export function useOrderWebSocket({
     isConnectingRef.current = false;
     if (wsRef.current) {
       try {
-        if (wsRef.current.readyState !== WebSocket.CLOSED && 
+        if (wsRef.current.readyState !== WebSocket.CLOSED &&
             wsRef.current.readyState !== WebSocket.CLOSING) {
           wsRef.current.close(1000, "Disconnecting");
         }
@@ -237,13 +259,15 @@ export function useOrderWebSocket({
 
   useEffect(() => {
     isMountedRef.current = true;
-    connect();
-    
+    if (enabled) {
+      connect();
+    }
+
     return () => {
       isMountedRef.current = false;
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [enabled, connect, disconnect]);
 
   return {
     isConnected,

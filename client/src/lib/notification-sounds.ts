@@ -120,26 +120,27 @@ function playFromBuffer(ctx: AudioContext, volume: number): void {
 }
 
 function speakNewOrder(isOnline = false): void {
-  try {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const text = isOnline ? 'طلب جديد أونلاين' : 'طلب جديد';
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1.1;
-    utterance.volume = 1.0;
-    const voices = window.speechSynthesis.getVoices();
-    const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
-    if (arabicVoice) {
-      utterance.voice = arabicVoice;
-      utterance.lang = arabicVoice.lang;
-    } else {
-      utterance.lang = 'ar-SA';
+  setTimeout(() => {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const text = isOnline ? 'طلب جديد أونلاين' : 'طلب جديد';
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      utterance.pitch = 1.1;
+      utterance.volume = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
+      if (arabicVoice) {
+        utterance.voice = arabicVoice;
+        utterance.lang = arabicVoice.lang;
+      } else {
+        utterance.lang = 'ar-SA';
+      }
+      window.speechSynthesis.speak(utterance);
+    } catch {
     }
-    window.speechSynthesis.speak(utterance);
-  } catch {
-    // silently fail
-  }
+  }, 50);
 }
 
 const ALLOWED_PATHS = [
