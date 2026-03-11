@@ -544,6 +544,7 @@ export default function ManagerDashboard() {
  const getFilteredOrders = () => {
  const now = new Date();
  return orders.filter(order => {
+ if (order.status === 'cancelled') return false;
  if (!order.createdAt) return dateFilter === "all";
  
  const orderDate = new Date(order.createdAt);
@@ -570,6 +571,7 @@ export default function ManagerDashboard() {
  const completedRevenue = completedOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0);
  
  const todayOrders = orders.filter(o => {
+ if (o.status === 'cancelled') return false;
  if (!o.createdAt) return false;
  const orderDate = new Date(o.createdAt);
  if (isNaN(orderDate.getTime())) return false;

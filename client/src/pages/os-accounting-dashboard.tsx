@@ -23,7 +23,8 @@ export default function OSAccountingDashboard() {
   });
 
   const calculateMetrics = () => {
-    if (!orders || orders.length === 0) {
+    const activeOrders = (orders || []).filter((o: any) => o.status !== 'cancelled');
+    if (!activeOrders || activeOrders.length === 0) {
       return {
         totalRevenue: 0,
         totalCOGS: 0,
@@ -34,8 +35,8 @@ export default function OSAccountingDashboard() {
       };
     }
 
-    const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
-    const totalCOGS = orders.reduce((sum: number, o: any) => sum + (o.costOfGoods || 0), 0);
+    const totalRevenue = activeOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+    const totalCOGS = activeOrders.reduce((sum: number, o: any) => sum + (o.costOfGoods || 0), 0);
     const totalProfit = totalRevenue - totalCOGS;
     const profitMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100) : 0;
 
@@ -44,8 +45,8 @@ export default function OSAccountingDashboard() {
       totalCOGS: parseFloat(totalCOGS.toFixed(2)),
       totalProfit: parseFloat(totalProfit.toFixed(2)),
       profitMargin: parseFloat(profitMargin.toFixed(2)),
-      orderCount: orders.length,
-      avgOrderValue: parseFloat((totalRevenue / orders.length).toFixed(2)),
+      orderCount: activeOrders.length,
+      avgOrderValue: parseFloat((totalRevenue / activeOrders.length).toFixed(2)),
     };
   };
 

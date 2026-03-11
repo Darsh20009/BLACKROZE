@@ -98,7 +98,7 @@ export default function AdminReports() {
 
   const revenueData = useMemo(() => {
     const dateData = getDateRange(timePeriod);
-    orders.forEach((order: any) => {
+    orders.filter((o: any) => o.status !== 'cancelled').forEach((order: any) => {
       const orderDate = new Date(order.createdAt).toISOString().split('T')[0];
       const entry = dateData.find((d: any) => d.fullDate === orderDate || d.fullDate.startsWith(orderDate.substring(0, 7)));
       if (entry) {
@@ -111,7 +111,7 @@ export default function AdminReports() {
 
   const topProducts = useMemo(() => {
     const productMap: any = {};
-    orders.forEach((order: any) => {
+    orders.filter((o: any) => o.status !== 'cancelled').forEach((order: any) => {
       const items = Array.isArray(order.items) ? order.items : [];
       items.forEach((item: any) => {
         const itemId = item.coffeeItemId || item.id;
@@ -130,7 +130,7 @@ export default function AdminReports() {
 
   const employeePerformance = useMemo(() => {
     const empMap: any = {};
-    orders.forEach((order: any) => {
+    orders.filter((o: any) => o.status !== 'cancelled').forEach((order: any) => {
       const empId = order.employeeId || 'unknown';
       const employee = employees.find((e: any) => e.id === empId);
       if (empId !== 'unknown' && employee) {
@@ -144,8 +144,9 @@ export default function AdminReports() {
     return Object.values(empMap).sort((a: any, b: any) => b.revenue - a.revenue).slice(0, 8);
   }, [orders, employees]);
 
-  const totalRevenue = orders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
-  const totalOrders = orders.length;
+  const activeOrders = orders.filter((o: any) => o.status !== 'cancelled');
+  const totalRevenue = activeOrders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
+  const totalOrders = activeOrders.length;
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
   const StatBox = ({ label, value, trend, icon: Icon }: any) => (

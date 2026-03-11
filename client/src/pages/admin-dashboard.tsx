@@ -55,15 +55,16 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (employees) {
       const active = employees.filter((e: any) => e.isActivated === 1).length;
-      const revenue = orders?.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0) || 0;
-      const avgOrder = orders?.length > 0 ? revenue / orders.length : 0;
+      const nonCancelledOrders = (orders || []).filter((o: any) => o.status !== 'cancelled');
+      const revenue = nonCancelledOrders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
+      const avgOrder = nonCancelledOrders.length > 0 ? revenue / nonCancelledOrders.length : 0;
 
       setMetrics({
         totalEmployees: employees.length,
         activeEmployees: active,
         presentToday: Math.floor(active * 0.8),
         onLeave: Math.floor(active * 0.1),
-        totalOrders: orders?.length || 0,
+        totalOrders: nonCancelledOrders.length,
         revenue,
         avgOrderValue: avgOrder,
       });

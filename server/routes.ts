@@ -1533,7 +1533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const channels = ['hungerstation', 'jahez', 'mrsool', 'noon_food', 'keeta', 'careem', 'toyou'];
       const stats: Record<string, any> = {};
       for (const ch of channels) {
-        const orders = await OrderModel.find({ tenantId, channel: ch, createdAt: { $gte: today, $lt: tomorrow } }).lean();
+        const orders = await OrderModel.find({ tenantId, channel: ch, createdAt: { $gte: today, $lt: tomorrow }, status: { $ne: 'cancelled' } }).lean();
         stats[ch] = {
           ordersToday: orders.length,
           revenueToday: orders.reduce((s: number, o: any) => s + (Number(o.totalAmount) || 0), 0),

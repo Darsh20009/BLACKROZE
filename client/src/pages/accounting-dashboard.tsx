@@ -1619,7 +1619,7 @@ export default function AccountingDashboardPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {ordersData?.orders?.filter(o => o.costOfGoods && o.costOfGoods > 0).map((order) => {
+                          {ordersData?.orders?.filter(o => o.status !== 'cancelled' && o.costOfGoods && o.costOfGoods > 0).map((order) => {
                             const margin = order.totalAmount > 0 ? ((order.totalAmount - (order.costOfGoods || 0)) / order.totalAmount * 100) : 0;
                             return (
                               <TableRow key={order.id}>

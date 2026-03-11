@@ -63,6 +63,7 @@ export default function ExecutiveDashboard() {
   const getFilteredOrders = () => {
     const now = new Date();
     return orders.filter(order => {
+      if (order.status === 'cancelled') return false;
       if (!order.createdAt) return dateFilter === "year";
       const orderDate = new Date(order.createdAt);
       if (isNaN(orderDate.getTime())) return false;
@@ -92,6 +93,7 @@ export default function ExecutiveDashboard() {
   const avgOrderValue = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
 
   const todayOrders = orders.filter(o => {
+    if (o.status === 'cancelled') return false;
     if (!o.createdAt) return false;
     const d = new Date(o.createdAt);
     return d.toDateString() === new Date().toDateString();
@@ -157,6 +159,7 @@ export default function ExecutiveDashboard() {
     const getPreviousPeriodOrders = () => {
       const now = new Date();
       return orders.filter(order => {
+        if (order.status === 'cancelled') return false;
         if (!order.createdAt) return false;
         const orderDate = new Date(order.createdAt);
         if (isNaN(orderDate.getTime())) return false;
