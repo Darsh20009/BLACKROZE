@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useNotifications } from "@/hooks/use-notifications";
 import {
   Sidebar,
   SidebarContent,
@@ -55,6 +56,22 @@ export function KitchenLayout({
       setEmployee(JSON.parse(storedEmployee));
     }
   }, []);
+
+  const { requestPermission, isSubscribed } = useNotifications({
+    userType: 'employee',
+    userId: employee?.id,
+    branchId: employee?.branchId,
+    autoSubscribe: true,
+  });
+
+  useEffect(() => {
+    if (employee && !isSubscribed && Notification.permission === 'default') {
+      const timer = setTimeout(() => {
+        requestPermission();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [employee, isSubscribed, requestPermission]);
 
   const handleLogout = () => {
     localStorage.removeItem("currentEmployee");

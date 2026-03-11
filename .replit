@@ -48,3 +48,6 @@ build = ["npm", "run", "build"]
 
 [userenv.shared]
 MONGODB_URI = "mongodb+srv://Vercel-Admin-blackrose:ASDqwe123@blackrose.xkn1stn.mongodb.net/?appName=blackrose"
+VAPID_PUBLIC_KEY = "BB3hpjwmKuelUXUuGJTkfixtuM47fh7DrV9hfZ7FqlJgqwHFExFpJlDzBxQQ8lwAbUUAH9H9cTM13kpRF3LFib4"
+VAPID_PRIVATE_KEY = "bntQkKtjZgXDqguVO1fVnzPTU456pfFeavOBW6VMwqM"
+VAPID_SUBJECT = "mailto:admin@blackrosecafe.com"
