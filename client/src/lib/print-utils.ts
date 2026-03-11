@@ -242,8 +242,8 @@ const VAT_NUMBER = "311234567890003";
 const COMPANY_NAME = "BLACK ROSE CAFE";
 const COMPANY_NAME_EN = "BLACK ROSE CAFE";
 const COMPANY_CR = "1010XXXXXX";
-const DEFAULT_BRANCH = "الفرع الرئيسي";
-const DEFAULT_ADDRESS = "الرياض، المملكة العربية السعودية";
+const DEFAULT_BRANCH = "فرع ينبع";
+const DEFAULT_ADDRESS = "ينبع، حي البندر، الملك خالد ابن عبدالعزيز سعود 4139، المملكة العربية السعودية";
 
 function generateZATCAQRCode(data: {
   sellerName: string;

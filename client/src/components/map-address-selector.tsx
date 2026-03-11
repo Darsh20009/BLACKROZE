@@ -241,7 +241,7 @@ export default function MapAddressSelector({
     if (!position) return;
 
     if (selectedOrderType === "delivery" && selectedZone) {
-      const fullAddress = address || `${selectedZone.nameAr}، الرياض`;
+      const fullAddress = address || `${selectedZone.nameAr}، ينبع`;
       onAddressSelected({
         fullAddress,
         lat: position.lat,

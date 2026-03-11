@@ -81,8 +81,8 @@ export default function ManagerDashboard() {
  city: "",
  managerName: "",
  mapsUrl: "",
- latitude: 24.7136,
- longitude: 46.6753,
+ latitude: 24.0887,
+ longitude: 38.0697,
  });
  const [branchSearchQuery, setBranchSearchQuery] = useState<string>("");
  const [branchSearchResults, setBranchSearchResults] = useState<Array<{ name: string; lat: string; lon: string }>>([]);
@@ -275,8 +275,8 @@ export default function ManagerDashboard() {
  city: "",
  managerName: "",
  mapsUrl: "",
- latitude: 24.7136,
- longitude: 46.6753,
+ latitude: 24.0887,
+ longitude: 38.0697,
  });
  setManagerAssignmentType("existing");
  setSelectedManagerId("");
@@ -363,8 +363,8 @@ export default function ManagerDashboard() {
  city: "",
  managerName: "",
  mapsUrl: "",
- latitude: 24.7136,
- longitude: 46.6753,
+ latitude: 24.0887,
+ longitude: 38.0697,
  });
  toast({
  title: "تم تحديث الفرع بنجاح",
@@ -1133,7 +1133,7 @@ export default function ManagerDashboard() {
  id="nameAr"
  value={branchForm.nameAr}
  onChange={(e) => setBranchForm({ ...branchForm, nameAr: e.target.value })}
- placeholder="مثال: فرع الرياض"
+ placeholder="مثال: فرع ينبع"
  data-testid="input-branch-name-ar"
  />
  </div>
@@ -1143,7 +1143,7 @@ export default function ManagerDashboard() {
  id="nameEn"
  value={branchForm.nameEn}
  onChange={(e) => setBranchForm({ ...branchForm, nameEn: e.target.value })}
- placeholder="Example: Riyadh Branch"
+ placeholder="Example: Yanbu Branch"
  />
  </div>
  <div className="grid gap-2">
@@ -1162,7 +1162,7 @@ export default function ManagerDashboard() {
  id="city"
  value={branchForm.city}
  onChange={(e) => setBranchForm({ ...branchForm, city: e.target.value })}
- placeholder="مثال: الرياض"
+ placeholder="مثال: ينبع"
  data-testid="input-branch-city"
  />
  </div>
@@ -1272,7 +1272,7 @@ export default function ManagerDashboard() {
  <div className="relative">
  <Input
  type="text"
- placeholder="ابحث عن الفرع... (مثال: الرياض، الدمام)"
+ placeholder="ابحث عن الفرع..."
  value={branchSearchQuery}
  onChange={(e) => handleBranchSearchChange(e.target.value)}
  onFocus={() => branchSearchQuery && setShowBranchResults(true)}
@@ -1321,8 +1321,8 @@ export default function ManagerDashboard() {
  />
  </div>
  <div className="flex gap-4 text-xs text-muted-foreground">
- <span>خط العرض: 24.713600</span>
- <span>خط الطول: 46.675300</span>
+ <span>خط العرض: {branchForm.latitude.toFixed(6)}</span>
+ <span>خط الطول: {branchForm.longitude.toFixed(6)}</span>
  </div>
  </div>
  </div>
@@ -1353,7 +1353,7 @@ export default function ManagerDashboard() {
  id="edit-name-ar"
  value={branchForm.nameAr}
  onChange={(e) => setBranchForm({ ...branchForm, nameAr: e.target.value })}
- placeholder="مثال: فرع الرياض"
+ placeholder="مثال: فرع ينبع"
  data-testid="input-edit-name-ar"
  />
  </div>
@@ -1420,7 +1420,7 @@ export default function ManagerDashboard() {
  <div className="relative">
  <Input
  type="text"
- placeholder="ابحث عن الفرع... (مثال: الرياض، الدمام)"
+ placeholder="ابحث عن الفرع..."
  value={branchSearchQuery}
  onChange={(e) => handleBranchSearchChange(e.target.value)}
  onFocus={() => branchSearchQuery && setShowBranchResults(true)}
