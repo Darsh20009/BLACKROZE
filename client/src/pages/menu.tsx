@@ -722,7 +722,7 @@ export default function MenuPage() {
           <div className="flex items-center gap-4 bg-secondary/50 rounded-xl p-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <MapPin className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">{t("location.riyadh")}</span>
+              <span className="text-sm font-medium">ينبع</span>
             </div>
             <div className="h-4 w-px bg-border" />
             {!isStoreOpen() ? (
