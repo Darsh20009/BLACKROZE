@@ -36,6 +36,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  cacheProducts,
+  saveOfflineOrder,
+  getPendingOrdersCount,
+  syncOfflineOrders,
+  retryFailedOrders,
+} from "@/lib/offline-pos";
 
 type OrderType = "dine_in" | "takeaway" | "delivery" | "car_pickup";
 type PaymentMethod = "cash" | "card";
@@ -91,6 +98,10 @@ export default function PosSystem() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncing, setSyncing] = useState(false);
+  const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
+  const [isSyncingOffline, setIsSyncingOffline] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
+  const [showOfflineSyncDialog, setShowOfflineSyncDialog] = useState(false);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [showOrdersPanel, setShowOrdersPanel] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
@@ -152,6 +163,59 @@ export default function PosSystem() {
       wsSend({ type: "pos_cart_update", payload: { event, ...data } });
     }
   }, [wsSend]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const refreshPendingCount = useCallback(async () => {
+    const count = await getPendingOrdersCount();
+    setPendingOfflineCount(count);
+  }, []);
+
+  useEffect(() => { refreshPendingCount(); }, []);
+
+  const runAutoSync = useCallback(async () => {
+    if (isSyncingOffline) return;
+    const count = await getPendingOrdersCount();
+    if (count === 0) return;
+    setIsSyncingOffline(true);
+    setSyncProgress({ current: 0, total: count });
+    try {
+      const { synced, failed } = await syncOfflineOrders((done, total) => {
+        setSyncProgress({ current: done, total });
+      });
+      await refreshPendingCount();
+      if (synced > 0) {
+        toast({
+          title: `تمت مزامنة ${synced} طلب${synced > 1 ? 'ات' : ''}`,
+          description: failed > 0 ? `فشل ${failed} طلب — سيتم إعادة المحاولة` : 'جميع الطلبات أُرسلت للسيرفر',
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/orders/live"] });
+      }
+    } finally {
+      setIsSyncingOffline(false);
+      setSyncProgress({ current: 0, total: 0 });
+    }
+  }, [isSyncingOffline, refreshPendingCount]);
+
+  useEffect(() => {
+    if (isOnline && pendingOfflineCount > 0) {
+      const timer = setTimeout(runAutoSync, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOnline, pendingOfflineCount]);
 
   useEffect(() => {
     localStorage.setItem("pos-terminal-connected", String(posTerminalConnected));
@@ -221,6 +285,12 @@ export default function PosSystem() {
   const { data: productsData, isLoading: isLoadingProducts } = useQuery<CoffeeItem[]>({
     queryKey: ["/api/coffee-items"],
   });
+
+  useEffect(() => {
+    if (productsData && productsData.length > 0 && isOnline) {
+      cacheProducts(productsData).catch(() => {});
+    }
+  }, [productsData, isOnline]);
 
   const { data: liveOrders } = useQuery<Order[]>({
     queryKey: ["/api/orders/live"],
@@ -550,16 +620,28 @@ export default function PosSystem() {
         customerNotes: orderNotes || undefined,
       };
 
-      const res = await apiRequest("POST", "/api/orders", orderData);
-      const result = await res.json();
+      let displayOrderNumber: string;
 
-      if (!result || result.error) {
-        throw new Error(result?.error || 'Order creation failed');
+      if (!isOnline) {
+        const tempId = await saveOfflineOrder(orderData);
+        displayOrderNumber = `OFF-${tempId.slice(-4)}`;
+        await refreshPendingCount();
+        toast({
+          title: 'تم حفظ الطلب أوفلاين',
+          description: `رقم مؤقت: ${displayOrderNumber} — سيُرسل تلقائياً عند عودة الإنترنت`,
+        });
+      } else {
+        const res = await apiRequest("POST", "/api/orders", orderData);
+        const result = await res.json();
+
+        if (!result || result.error) {
+          throw new Error(result?.error || 'Order creation failed');
+        }
+
+        displayOrderNumber = result.dailyNumber
+          ? String(result.dailyNumber).padStart(4, '0')
+          : (result.orderNumber || '');
       }
-
-      const displayOrderNumber = result.dailyNumber
-        ? String(result.dailyNumber).padStart(4, '0')
-        : (result.orderNumber || '');
 
       setLastOrder({
         orderNumber: displayOrderNumber,
@@ -870,6 +952,48 @@ export default function PosSystem() {
           </Button>
         </div>
       </header>
+
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="bg-amber-500 text-white px-4 py-2 flex items-center justify-between gap-3 shrink-0 z-50" data-testid="banner-offline">
+          <div className="flex items-center gap-2">
+            <WifiOff className="w-4 h-4 shrink-0" />
+            <span className="font-bold text-sm">وضع أوفلاين — الطلبات تُحفظ محلياً وتُرسل عند عودة الإنترنت</span>
+          </div>
+          {pendingOfflineCount > 0 && (
+            <Badge className="bg-white text-amber-700 font-bold shrink-0">{pendingOfflineCount} طلب في الانتظار</Badge>
+          )}
+        </div>
+      )}
+
+      {/* Online — Pending Sync Banner */}
+      {isOnline && pendingOfflineCount > 0 && (
+        <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between gap-3 shrink-0" data-testid="banner-sync-pending">
+          <div className="flex items-center gap-2">
+            {isSyncingOffline ? (
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            ) : (
+              <RefreshCw className="w-4 h-4 shrink-0" />
+            )}
+            <span className="text-sm font-medium">
+              {isSyncingOffline
+                ? `جارٍ مزامنة ${syncProgress.current}/${syncProgress.total}...`
+                : `${pendingOfflineCount} طلب أوفلاين بانتظار المزامنة`}
+            </span>
+          </div>
+          {!isSyncingOffline && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-7 text-xs px-3 shrink-0 bg-white text-blue-700 hover:bg-blue-50"
+              onClick={runAutoSync}
+              data-testid="button-sync-now"
+            >
+              مزامنة الآن
+            </Button>
+          )}
+        </div>
+      )}
 
       <main className="flex-1 flex overflow-hidden">
 
@@ -1226,13 +1350,15 @@ export default function PosSystem() {
             </div>
 
             <Button 
-              className="w-full h-11 sm:h-13 text-sm sm:text-base font-black rounded-xl shadow-lg shadow-primary/20 gap-2"
+              className={`w-full h-11 sm:h-13 text-sm sm:text-base font-black rounded-xl shadow-lg gap-2 ${!isOnline ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-200' : 'shadow-primary/20'}`}
               disabled={orderItems.length === 0 || syncing}
               onClick={() => setShowOrderReview(true)}
               data-testid="button-checkout"
             >
               {syncing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : !isOnline ? (
+                <WifiOff className="w-4 h-4" />
               ) : (
                 <>
                   {PAYMENT_METHODS.find(m => m.id === paymentMethod)?.icon && (() => {
@@ -1241,7 +1367,9 @@ export default function PosSystem() {
                   })()}
                 </>
               )}
-              {i18n.language === 'ar' ? 'مراجعة الطلب والدفع' : 'Review & Pay'}
+              {!isOnline
+                ? (i18n.language === 'ar' ? 'حفظ أوفلاين' : 'Save Offline')
+                : (i18n.language === 'ar' ? 'مراجعة الطلب والدفع' : 'Review & Pay')}
             </Button>
           </div>
         </aside>
@@ -1582,7 +1710,7 @@ export default function PosSystem() {
                 {i18n.language === 'ar' ? 'رجوع' : 'Back'}
               </Button>
               <Button
-                className="h-11 font-black gap-2 shadow-lg shadow-primary/20"
+                className={`h-11 font-black gap-2 shadow-lg ${!isOnline ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-200' : 'shadow-primary/20'}`}
                 disabled={orderItems.length === 0 || syncing}
                 onClick={async () => {
                   setShowOrderReview(false);
@@ -1592,10 +1720,14 @@ export default function PosSystem() {
               >
                 {syncing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
+                ) : !isOnline ? (
+                  <WifiOff className="w-4 h-4" />
                 ) : (
                   <CheckCircle2 className="w-4 h-4" />
                 )}
-                {i18n.language === 'ar' ? 'إتمام الدفع' : 'Confirm Payment'}
+                {!isOnline
+                  ? (i18n.language === 'ar' ? 'حفظ أوفلاين' : 'Save Offline')
+                  : (i18n.language === 'ar' ? 'إتمام الدفع' : 'Confirm Payment')}
               </Button>
             </div>
           </div>
