@@ -1,143 +1,73 @@
 /**
  * Notification Sound System
- * Uses Web Speech API for voice announcements + Web Audio API as fallback
- * Requires user interaction before first sound plays
+ * Primary: HTML5 Audio element (mp3) — simple and reliable
+ * Secondary: Web Speech API for voice announcements
  */
 
 export type NotificationSoundType = 'newOrder' | 'onlineOrderVoice' | 'statusChange' | 'success' | 'alert' | 'cashierOrder';
 
-// Shared AudioContext singleton - browsers block new contexts until user interaction
-let sharedAudioCtx: AudioContext | null = null;
 let audioUnlocked = false;
+let audioPool: HTMLAudioElement[] = [];
+const POOL_SIZE = 3;
 
-function getAudioContext(): AudioContext | null {
-  try {
-    if (!sharedAudioCtx) {
-      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtxClass) return null;
-      sharedAudioCtx = new AudioCtxClass();
-    }
-    return sharedAudioCtx;
-  } catch {
-    return null;
+function buildAudioPool(): void {
+  if (audioPool.length > 0) return;
+  for (let i = 0; i < POOL_SIZE; i++) {
+    const el = new Audio('/notification-sound.mp3');
+    el.preload = 'auto';
+    el.volume = 0.8;
+    audioPool.push(el);
   }
+}
+
+function getPoolAudio(): HTMLAudioElement | null {
+  for (const el of audioPool) {
+    if (el.paused || el.ended || el.currentTime === 0) {
+      return el;
+    }
+  }
+  return audioPool[0] || null;
 }
 
 /**
  * Must be called on a user interaction event (click/touch/keydown)
- * Unlocks audio playback in the browser
+ * Warms up the audio pipeline so future plays work without gesture
  */
 export function unlockAudio(): void {
   if (audioUnlocked) return;
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  if (ctx.state === 'suspended') {
-    ctx.resume().then(() => {
-      audioUnlocked = true;
-      console.debug('[SOUND] Audio context unlocked');
-    }).catch(() => {});
-  } else {
+  try {
+    buildAudioPool();
+    const el = audioPool[0];
+    if (!el) return;
+    el.volume = 0;
+    const p = el.play();
+    if (p) {
+      p.then(() => {
+        el.pause();
+        el.currentTime = 0;
+        el.volume = 0.8;
+        audioUnlocked = true;
+        console.debug('[SOUND] Audio unlocked');
+      }).catch(() => {
+        audioUnlocked = true;
+      });
+    }
+  } catch {
     audioUnlocked = true;
   }
 }
 
-async function ensureAudioReady(): Promise<AudioContext | null> {
-  const ctx = getAudioContext();
-  if (!ctx) return null;
-
-  if (ctx.state === 'suspended') {
-    try {
-      await ctx.resume();
-      audioUnlocked = true;
-    } catch {
-      return null;
-    }
-  }
-
-  if (ctx.state !== 'running') return null;
-  return ctx;
-}
-
-function playTone(
-  ctx: AudioContext,
-  frequency: number,
-  startTime: number,
-  duration: number,
-  volume: number,
-  type: OscillatorType = 'sine'
-): void {
-  const oscillator = ctx.createOscillator();
-  const gainNode = ctx.createGain();
-
-  oscillator.connect(gainNode);
-  gainNode.connect(ctx.destination);
-
-  oscillator.type = type;
-  oscillator.frequency.value = frequency;
-  gainNode.gain.setValueAtTime(volume, startTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-
-  oscillator.start(startTime);
-  oscillator.stop(startTime + duration);
-}
-
-const SEQUENCES: Record<NotificationSoundType, Array<{ freq: number; dur: number; gap?: number; type?: OscillatorType }>> = {
-  onlineOrderVoice: [
-    { freq: 523, dur: 0.18 },
-    { freq: 659, dur: 0.18, gap: 0.05 },
-    { freq: 784, dur: 0.30, gap: 0.05 },
-  ],
-  newOrder: [
-    { freq: 523, dur: 0.20 },
-    { freq: 659, dur: 0.20, gap: 0.05 },
-  ],
-  success: [
-    { freq: 523, dur: 0.12 },
-    { freq: 659, dur: 0.18, gap: 0.04 },
-  ],
-  statusChange: [
-    { freq: 440, dur: 0.30 },
-  ],
-  alert: [
-    { freq: 880, dur: 0.12 },
-    { freq: 659, dur: 0.12, gap: 0.03 },
-    { freq: 880, dur: 0.20, gap: 0.03 },
-  ],
-  cashierOrder: [
-    { freq: 659, dur: 0.15 },
-    { freq: 784, dur: 0.15, gap: 0.04 },
-    { freq: 523, dur: 0.25, gap: 0.04 },
-  ],
-};
-
-function scheduleSequence(ctx: AudioContext, tones: typeof SEQUENCES[NotificationSoundType], volume: number, startAt: number): number {
-  let t = startAt;
-  for (const tone of tones) {
-    playTone(ctx, tone.freq, t, tone.dur, volume, tone.type || 'sine');
-    t += tone.dur + (tone.gap ?? 0.04);
-  }
-  return t;
-}
-
-/**
- * Speak "طلب جديد - new order" using Web Speech API
- */
 function speakNewOrder(isOnline = false): void {
   try {
     if (!('speechSynthesis' in window)) return;
-
     window.speechSynthesis.cancel();
-
     const text = isOnline
-      ? 'طلب جديد أونلاين - new online order'
-      : 'طلب جديد - new order';
-
+      ? 'طلب جديد أونلاين'
+      : 'طلب جديد';
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.95;
     utterance.pitch = 1.1;
     utterance.volume = 1.0;
-
     const voices = window.speechSynthesis.getVoices();
     const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
     if (arabicVoice) {
@@ -146,18 +76,31 @@ function speakNewOrder(isOnline = false): void {
     } else {
       utterance.lang = 'ar-SA';
     }
-
     window.speechSynthesis.speak(utterance);
   } catch {
-    // Silently fail if speech synthesis not available
+    // silently fail
   }
 }
 
-/**
- * Play a notification sound
- */
-export async function playNotificationSound(type: NotificationSoundType = 'newOrder', volume: number = 0.8): Promise<void> {
-  // Sound only plays on operational employee screens — NOT on admin/dashboard/config pages
+const SOUND_VOLUMES: Record<NotificationSoundType, number> = {
+  newOrder: 0.9,
+  onlineOrderVoice: 1.0,
+  cashierOrder: 0.9,
+  success: 0.6,
+  statusChange: 0.5,
+  alert: 0.8,
+};
+
+const SOUND_REPEAT: Record<NotificationSoundType, number> = {
+  newOrder: 2,
+  onlineOrderVoice: 2,
+  cashierOrder: 2,
+  success: 1,
+  statusChange: 1,
+  alert: 1,
+};
+
+export async function playNotificationSound(type: NotificationSoundType = 'newOrder', volume?: number): Promise<void> {
   const soundAllowedPaths = [
     '/employee/orders',
     '/employee/orders-display',
@@ -170,27 +113,31 @@ export async function playNotificationSound(type: NotificationSoundType = 'newOr
   const isAllowedPath = soundAllowedPaths.some(p => currentPath === p || currentPath.startsWith(p + '/'));
   if (!isAllowedPath) return;
 
-  // Use speech synthesis for new order notifications
   if (type === 'newOrder' || type === 'onlineOrderVoice') {
     speakNewOrder(type === 'onlineOrderVoice');
   }
 
-  // Also play the beep chime as audio cue
-  const ctx = await ensureAudioReady();
-  if (!ctx) {
-    console.debug('[SOUND] Audio context not ready - user must interact with page first');
-    return;
-  }
+  buildAudioPool();
 
-  const sequence = SEQUENCES[type];
-  const vol = Math.max(0.01, Math.min(1, volume));
-  const now = ctx.currentTime + 0.05;
+  const vol = volume ?? SOUND_VOLUMES[type];
+  const repeats = SOUND_REPEAT[type];
 
-  if (type === 'onlineOrderVoice' || type === 'newOrder') {
-    const end1 = scheduleSequence(ctx, sequence, vol, now);
-    scheduleSequence(ctx, sequence, vol, end1 + 0.3);
-  } else {
-    scheduleSequence(ctx, sequence, vol, now);
+  const playOnce = async () => {
+    const el = getPoolAudio();
+    if (!el) return;
+    try {
+      el.currentTime = 0;
+      el.volume = Math.max(0.01, Math.min(1, vol));
+      await el.play();
+    } catch (err) {
+      console.warn('[SOUND] Play failed:', err);
+    }
+  };
+
+  await playOnce();
+  if (repeats > 1) {
+    await new Promise<void>(resolve => setTimeout(resolve, 600));
+    await playOnce();
   }
 }
 

@@ -193,7 +193,7 @@ export async function printKitchenOrder(data: KitchenOrderData): Promise<void> {
   const itemsHtml = data.items.map(item => `
     <div style="padding: 8px 0; border-bottom: 1px dashed #ccc; display: flex; justify-content: space-between; align-items: center;">
       <div>
-        <div style="font-size: 16px; font-weight: 700;">${item.coffeeItem.nameAr}</div>
+        <div style="font-size: 16px; font-weight: 700;">${bilingualName(item.coffeeItem)}</div>
       </div>
       <div style="font-size: 24px; font-weight: 700; background: #000; color: #fff; padding: 4px 12px; border-radius: 8px;">x${item.quantity}</div>
     </div>
@@ -296,6 +296,13 @@ function parseNumber(val: any): number {
   return isNaN(parsed) ? 0 : parsed;
 }
 
+function bilingualName(coffeeItem: { nameAr: string; nameEn?: string }): string {
+  if (coffeeItem.nameEn && coffeeItem.nameEn.trim() && coffeeItem.nameEn !== coffeeItem.nameAr) {
+    return `${coffeeItem.nameAr} / ${coffeeItem.nameEn}`;
+  }
+  return coffeeItem.nameAr;
+}
+
 export async function printUnifiedReceipt(data: TaxInvoiceData): Promise<void> {
   const totalAmount = parseNumber(data.total);
   const { date: formattedDate, time: formattedTime } = formatDate(data.date);
@@ -327,7 +334,7 @@ export async function printUnifiedReceipt(data: TaxInvoiceData): Promise<void> {
   const itemsHtml = data.items.map(item => `
     <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee;">
       <div style="flex: 1;">
-        <div style="font-weight: bold;">${item.coffeeItem.nameAr}</div>
+        <div style="font-weight: bold;">${bilingualName(item.coffeeItem)}</div>
       </div>
       <div style="width: 40px; text-align: center;">x${item.quantity}</div>
       <div style="width: 70px; text-align: left;">${(parseNumber(item.coffeeItem.price) * item.quantity).toFixed(2)}</div>
@@ -419,7 +426,7 @@ export async function printUnifiedReceipt(data: TaxInvoiceData): Promise<void> {
       ${data.items.map(item => `
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
           <div>
-            <div style="font-size: 16px; font-weight: bold;">${item.coffeeItem.nameAr}</div>
+            <div style="font-size: 16px; font-weight: bold;">${bilingualName(item.coffeeItem)}</div>
           </div>
           <div style="font-size: 24px; font-weight: bold; border: 2px solid #000; padding: 2px 10px; border-radius: 4px; align-self: flex-start;">x${item.quantity}</div>
         </div>
@@ -464,7 +471,7 @@ export async function printBulkEmployeeInvoices(orders: any[]): Promise<void> {
       <div class="content">
         ${(order.items || []).map((item: any) => `
           <div class="row">
-            <span>${item.name || item.coffeeItem?.nameAr}</span>
+            <span>${item.name || (item.coffeeItem ? bilingualName(item.coffeeItem) : '')}</span>
             <span>${item.quantity}</span>
           </div>
         `).join('')}
@@ -589,7 +596,7 @@ export async function printTaxInvoice(data: TaxInvoiceData): Promise<void> {
     return `
       <tr>
         <td>
-          ${item.coffeeItem.nameAr}${itemDiscount > 0 ? ` <span style="color:#16a34a;font-size:9px;">(-${itemDiscount.toFixed(2)})</span>` : ''}
+          ${bilingualName(item.coffeeItem)}${itemDiscount > 0 ? ` <span style="color:#16a34a;font-size:9px;">(-${itemDiscount.toFixed(2)})</span>` : ''}
           ${addonsHtml}
         </td>
         <td>${item.quantity}</td>
@@ -729,7 +736,7 @@ export async function printTaxInvoice(data: TaxInvoiceData): Promise<void> {
           return `
           <div class="emp-item">
             <div class="emp-item-name">
-              ${item.coffeeItem.nameAr}
+              ${bilingualName(item.coffeeItem)}
               ${item.customization?.selectedSize ? `<div style="font-size:9px;color:#888;">${item.customization.selectedSize}</div>` : ''}
               ${addonsText ? `<div style="font-size:9px;color:#666;">${addonsText}</div>` : ''}
             </div>
@@ -846,7 +853,7 @@ export async function printCustomerPickupReceipt(data: TaxInvoiceData & { delive
         return `
         <div class="item-row" style="flex-direction:column;align-items:flex-start;">
           <div style="display:flex;justify-content:space-between;width:100%;">
-            <span class="item-name">${item.coffeeItem.nameAr}${item.customization?.selectedSize ? ` <span style="font-size:11px;color:#888;">(${item.customization.selectedSize})</span>` : ''}</span>
+            <span class="item-name">${bilingualName(item.coffeeItem)}${item.customization?.selectedSize ? ` <span style="font-size:11px;color:#888;">(${item.customization.selectedSize})</span>` : ''}</span>
             <span class="item-qty">x${item.quantity}</span>
           </div>
           ${addonsHtml}
@@ -944,7 +951,7 @@ export async function printCashierReceipt(data: TaxInvoiceData & { deliveryType?
         return `
         <div class="item-row" style="flex-direction:column;">
           <div style="display:flex;justify-content:space-between;width:100%;">
-            <span>${item.coffeeItem.nameAr}${item.customization?.selectedSize ? ` (${item.customization.selectedSize})` : ''} x${item.quantity}</span>
+            <span>${bilingualName(item.coffeeItem)}${item.customization?.selectedSize ? ` (${item.customization.selectedSize})` : ''} x${item.quantity}</span>
             <span>${(unitPrice * item.quantity).toFixed(2)}</span>
           </div>
           ${addonsHtml}
@@ -996,7 +1003,7 @@ export async function printSimpleReceipt(data: TaxInvoiceData): Promise<void> {
     return `
       <tr style="border-bottom: 1px solid #e5e5e5;">
         <td style="padding: 8px 4px; text-align: right;">
-          ${item.coffeeItem.nameAr}${item.customization?.selectedSize ? ` <span style="font-size:10px;color:#888;">(${item.customization.selectedSize})</span>` : ''}
+          ${bilingualName(item.coffeeItem)}${item.customization?.selectedSize ? ` <span style="font-size:10px;color:#888;">(${item.customization.selectedSize})</span>` : ''}
           ${addonsHtml}
         </td>
         <td style="padding: 8px 4px; text-align: center;">${item.quantity}</td>
