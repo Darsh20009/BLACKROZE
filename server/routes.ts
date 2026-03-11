@@ -1336,11 +1336,248 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(serializeDoc(integration));
   });
 
-  // Webhook Placeholder for Delivery Apps
+  // =====================================================
+  // DELIVERY PLATFORM INTEGRATIONS - Full Implementation
+  // =====================================================
+
+  function normalizeDeliveryOrder(provider: string, payload: any, integration: any, tenantId: string): any {
+    const branchId = integration.branchId || 'main';
+    const autoAccept = integration.autoAcceptOrders == 1;
+    const status = autoAccept ? 'in_progress' : 'pending';
+
+    const base = {
+      tenantId,
+      branchId,
+      orderType: 'delivery',
+      channel: provider,
+      status,
+      paymentMethod: 'card',
+    };
+
+    if (provider === 'hungerstation' || provider === 'hunger_station') {
+      const items = (payload.items || []).map((i: any) => ({
+        coffeeItemId: i.id || `hs-${i.name}`,
+        name: i.name, nameAr: i.nameAr || i.name,
+        quantity: i.quantity || 1, price: i.unitPrice || i.price || 0,
+      }));
+      return { ...base, channel: 'hungerstation',
+        customerName: payload.customer?.name || 'HungerStation Customer',
+        customerPhone: payload.customer?.phone || '',
+        deliveryAddress: payload.customer?.address || '',
+        items, totalAmount: payload.total || 0,
+        subtotal: payload.subtotal || 0, taxAmount: payload.vat || 0,
+        deliveryFee: payload.deliveryFee || 0,
+        platformOrderId: payload.id || payload.order_id,
+        customerNotes: payload.notes || '',
+      };
+    }
+
+    if (provider === 'jahez') {
+      const items = (payload.order_items || payload.items || []).map((i: any) => ({
+        coffeeItemId: i.item_id || i.id || `jz-${i.item_name || i.name}`,
+        name: i.item_name || i.name, nameAr: i.item_name || i.name,
+        quantity: i.quantity || 1, price: i.price || 0,
+      }));
+      return { ...base, channel: 'jahez',
+        customerName: payload.customer?.name || 'Jahez Customer',
+        customerPhone: payload.customer?.mobile || payload.customer?.phone || '',
+        deliveryAddress: payload.customer?.address || '',
+        items, totalAmount: payload.total || 0,
+        subtotal: payload.sub_total || payload.subtotal || 0,
+        taxAmount: payload.vat || 0, deliveryFee: payload.delivery_charges || 0,
+        platformOrderId: payload.order_id || payload.id,
+        customerNotes: payload.notes || '',
+      };
+    }
+
+    if (provider === 'mrsool') {
+      const items = (payload.products || payload.items || []).map((i: any) => ({
+        coffeeItemId: i.product_id || i.id || `ms-${i.name}`,
+        name: i.name, nameAr: i.name_ar || i.name,
+        quantity: i.quantity || 1, price: i.price || 0,
+      }));
+      return { ...base, channel: 'mrsool',
+        customerName: payload.buyer?.name || payload.customer?.name || 'Mrsool Customer',
+        customerPhone: payload.buyer?.phone || payload.customer?.phone || '',
+        deliveryAddress: payload.delivery_address || '',
+        items, totalAmount: payload.total_amount || payload.total || 0,
+        subtotal: payload.subtotal || 0, taxAmount: payload.tax || 0,
+        deliveryFee: payload.delivery_fee || 0,
+        platformOrderId: payload.id,
+        customerNotes: payload.note || '',
+      };
+    }
+
+    if (provider === 'noon_food') {
+      const items = (payload.items || []).map((i: any) => ({
+        coffeeItemId: i.id || `nf-${i.name}`,
+        name: i.name, nameAr: i.nameAr || i.name,
+        quantity: i.quantity || 1, price: i.price || 0,
+      }));
+      return { ...base, channel: 'noon_food',
+        customerName: payload.customer?.name || 'Noon Food Customer',
+        customerPhone: payload.customer?.phone || '',
+        items, totalAmount: payload.amount?.total || 0,
+        subtotal: payload.amount?.subtotal || 0,
+        platformOrderId: payload.orderId || payload.id,
+        customerNotes: payload.specialInstructions || '',
+      };
+    }
+
+    // Generic fallback for careem, keeta, toyou, custom
+    const items = (payload.items || payload.order_items || payload.products || []).map((i: any) => ({
+      coffeeItemId: i.id || i.item_id || `${provider}-item`,
+      name: i.name || i.item_name, nameAr: i.nameAr || i.name || i.item_name,
+      quantity: i.quantity || 1, price: i.price || i.unitPrice || 0,
+    }));
+    return { ...base,
+      customerName: payload.customer?.name || `${provider} Customer`,
+      customerPhone: payload.customer?.phone || payload.customer?.mobile || '',
+      items, totalAmount: payload.total || payload.total_amount || 0,
+      subtotal: payload.subtotal || payload.sub_total || 0,
+      platformOrderId: payload.id || payload.order_id,
+      customerNotes: payload.notes || payload.note || '',
+    };
+  }
+
+  // Receive real webhook from delivery platforms
   app.post("/api/webhooks/delivery/:provider", async (req, res) => {
     const { provider } = req.params;
-    // Log incoming delivery order (Placeholder logic)
-    res.status(200).json({ received: true, provider });
+    try {
+      const tenantId = (req.query.tenantId as string) || 'demo-tenant';
+      const integration = await DeliveryIntegrationModel.findOne({
+        providerName: { $in: [provider, provider.replace('-', '_'), provider.replace('_', '-')] },
+        tenantId,
+        isActive: 1,
+      }).lean();
+
+      if (!integration) {
+        return res.status(200).json({ received: true, provider, note: 'Integration not active' });
+      }
+
+      const orderData = normalizeDeliveryOrder(provider, req.body, integration, tenantId);
+      if (!orderData.items || orderData.items.length === 0) {
+        return res.status(200).json({ received: true, provider, note: 'No items in order' });
+      }
+      orderData.totalAmount = orderData.totalAmount || orderData.items.reduce((s: number, i: any) => s + (i.price * i.quantity), 0);
+
+      const order = await storage.createOrder(orderData);
+      wsManager.broadcastToBranch(order.branchId || '', { type: 'NEW_ORDER', order: serializeDoc(order) });
+
+      await DeliveryIntegrationModel.findByIdAndUpdate((integration as any)._id, { lastSyncAt: new Date() });
+      console.log(`[DELIVERY-WEBHOOK] ${provider} order received: ${order.id}`);
+      res.status(200).json({ received: true, provider, orderId: order.id });
+    } catch (err) {
+      console.error(`[DELIVERY-WEBHOOK] Error processing ${provider} order:`, err);
+      res.status(200).json({ received: true, provider, note: 'Processing error - logged' });
+    }
+  });
+
+  // Simulate incoming order from a delivery platform (for testing)
+  app.post("/api/integrations/delivery/simulate", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const { provider = 'hungerstation' } = req.body;
+
+      const integration = await DeliveryIntegrationModel.findOne({ tenantId }).lean();
+
+      const mockOrders: Record<string, any> = {
+        hungerstation: {
+          id: `HS-${Date.now()}`, customer: { name: 'أحمد محمد', phone: '0501234567', address: 'شارع الملك فهد، ينبع' },
+          items: [{ id: 'c1', name: 'لاتيه', nameAr: 'لاتيه', quantity: 2, unitPrice: 18 }, { id: 'c2', name: 'كابتشينو', nameAr: 'كابتشينو', quantity: 1, unitPrice: 20 }],
+          subtotal: 56, deliveryFee: 10, vat: 8.4, total: 74.4, paymentMethod: 'online', notes: 'بدون سكر',
+        },
+        jahez: {
+          order_id: `JZ-${Date.now()}`, customer: { name: 'سارة علي', mobile: '0559876543', address: 'حي النزهة، ينبع' },
+          order_items: [{ item_id: 'c3', item_name: 'قهوة عربية', quantity: 3, price: 15 }],
+          sub_total: 45, delivery_charges: 8, vat: 7.95, total: 60.95,
+        },
+        mrsool: {
+          id: `MS-${Date.now()}`, buyer: { name: 'خالد عبدالله', phone: '0541122334' },
+          delivery_address: 'شارع البحر، ينبع',
+          products: [{ product_id: 'c4', name: 'Espresso', name_ar: 'إسبريسو', quantity: 2, price: 14 }],
+          subtotal: 28, delivery_fee: 12, tax: 6, total_amount: 46,
+        },
+        noon_food: {
+          orderId: `NF-${Date.now()}`, customer: { name: 'ريم ناصر', phone: '0521234567' },
+          items: [{ id: 'c5', name: 'موكا', nameAr: 'موكا', quantity: 1, price: 22 }],
+          amount: { subtotal: 22, total: 22 }, specialInstructions: 'إضافة كريمة',
+        },
+      };
+
+      const payload = mockOrders[provider] || mockOrders.hungerstation;
+      const fakeIntegration = integration || { branchId: 'main', autoAcceptOrders: 0, tenantId };
+      const orderData = normalizeDeliveryOrder(provider, payload, fakeIntegration, tenantId);
+      orderData.totalAmount = orderData.totalAmount || 50;
+      if (!orderData.items || orderData.items.length === 0) {
+        orderData.items = [{ coffeeItemId: 'sim-1', name: 'منتج تجريبي', nameAr: 'منتج تجريبي', quantity: 1, price: orderData.totalAmount }];
+      }
+
+      const order = await storage.createOrder(orderData);
+      wsManager.broadcastToBranch(order.branchId || '', { type: 'NEW_ORDER', order: serializeDoc(order) });
+
+      res.json({ success: true, order: serializeDoc(order), message: `تم إنشاء طلب تجريبي من ${provider}` });
+    } catch (err: any) {
+      console.error('[DELIVERY-SIMULATE] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get today's stats per platform
+  app.get("/api/integrations/delivery/stats", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+
+      const channels = ['hungerstation', 'jahez', 'mrsool', 'noon_food', 'keeta', 'careem', 'toyou'];
+      const stats: Record<string, any> = {};
+      for (const ch of channels) {
+        const orders = await OrderModel.find({ tenantId, channel: ch, createdAt: { $gte: today, $lt: tomorrow } }).lean();
+        stats[ch] = {
+          ordersToday: orders.length,
+          revenueToday: orders.reduce((s: number, o: any) => s + (Number(o.totalAmount) || 0), 0),
+          lastOrder: orders.length ? orders[orders.length - 1] : null,
+        };
+      }
+      res.json(stats);
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to get stats' });
+    }
+  });
+
+  // Update integration settings
+  app.put("/api/integrations/delivery/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const updated = await DeliveryIntegrationModel.findByIdAndUpdate(req.params.id, { ...req.body, updatedAt: new Date() }, { new: true });
+      res.json(updated ? serializeDoc(updated) : { error: 'Not found' });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to update' });
+    }
+  });
+
+  // Toggle integration active state
+  app.patch("/api/integrations/delivery/:id/toggle", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const integration = await DeliveryIntegrationModel.findById(req.params.id);
+      if (!integration) return res.status(404).json({ error: 'Not found' });
+      integration.isActive = integration.isActive ? 0 : 1;
+      integration.updatedAt = new Date();
+      await integration.save();
+      res.json(serializeDoc(integration));
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to toggle' });
+    }
+  });
+
+  // Delete integration
+  app.delete("/api/integrations/delivery/:id", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      await DeliveryIntegrationModel.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete' });
+    }
   });
 
   // Helper to ensure single branch operation for managers
