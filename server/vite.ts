@@ -26,11 +26,9 @@ export function log(message: string, source = "express") {
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
-    hmr: {
-      protocol: "ws",
-      host: undefined,
-      port: undefined,
-    },
+    hmr: process.env.REPL_ID
+      ? { server }
+      : true,
     allowedHosts: true as const,
   };
 
