@@ -2561,6 +2561,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================================================
+  // PAYMENT TERMINAL INTEGRATION (POS Card Machine)
+  // =====================================================
+  const terminalCharges = new Map<string, {
+    id: string; tenantId: string; amount: number; currency: string;
+    status: 'pending' | 'paid' | 'failed' | 'cancelled';
+    provider: string; createdAt: Date; expiresAt: Date; simulateDelay?: number;
+  }>();
+
+  // Get terminal config
+  app.get("/api/payment-terminal/config", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const config = await BusinessConfigModel.findOne({ tenantId }).lean();
+      const tc = (config as any)?.terminalConfig || {};
+      res.json({
+        provider: tc.provider || 'simulation',
+        terminalIp: tc.terminalIp || '',
+        terminalPort: tc.terminalPort || '8080',
+        moyasarSecretKey: tc.moyasarSecretKey ? `****${tc.moyasarSecretKey.slice(-4)}` : '',
+        terminalId: tc.terminalId || '',
+        simulateDelay: tc.simulateDelay ?? 4,
+        enabled: tc.enabled ?? true,
+      });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to load terminal config' });
+    }
+  });
+
+  // Save terminal config
+  app.patch("/api/payment-terminal/config", requireAuth, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const body = req.body;
+      const updates: Record<string, any> = {};
+      if (body.provider !== undefined) updates['terminalConfig.provider'] = body.provider;
+      if (body.terminalIp !== undefined) updates['terminalConfig.terminalIp'] = body.terminalIp;
+      if (body.terminalPort !== undefined) updates['terminalConfig.terminalPort'] = body.terminalPort;
+      if (body.moyasarSecretKey && !body.moyasarSecretKey.startsWith('****')) updates['terminalConfig.moyasarSecretKey'] = body.moyasarSecretKey;
+      if (body.terminalId !== undefined) updates['terminalConfig.terminalId'] = body.terminalId;
+      if (body.simulateDelay !== undefined) updates['terminalConfig.simulateDelay'] = body.simulateDelay;
+      if (body.enabled !== undefined) updates['terminalConfig.enabled'] = body.enabled;
+      await BusinessConfigModel.findOneAndUpdate({ tenantId }, { $set: updates }, { upsert: true });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to save terminal config' });
+    }
+  });
+
+  // Initiate charge on terminal
+  app.post("/api/payment-terminal/charge", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+      const { amount, currency = 'SAR', orderId } = req.body;
+      if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+
+      const config = await BusinessConfigModel.findOne({ tenantId }).lean();
+      const tc = (config as any)?.terminalConfig || {};
+      const provider = tc.provider || 'simulation';
+      const chargeId = `TC-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      const now = new Date();
+
+      if (provider === 'simulation') {
+        const delay = (tc.simulateDelay ?? 4) * 1000;
+        terminalCharges.set(chargeId, {
+          id: chargeId, tenantId, amount, currency, provider, createdAt: now,
+          status: 'pending', expiresAt: new Date(now.getTime() + 120000), simulateDelay: delay,
+        });
+        // Auto-resolve after delay
+        setTimeout(() => {
+          const charge = terminalCharges.get(chargeId);
+          if (charge && charge.status === 'pending') {
+            charge.status = 'paid';
+            terminalCharges.set(chargeId, charge);
+          }
+        }, delay);
+        return res.json({ chargeId, status: 'pending', provider: 'simulation', amount, currency });
+      }
+
+      if (provider === 'moyasar') {
+        const secretKey = tc.moyasarSecretKey;
+        if (!secretKey) return res.status(400).json({ error: 'Moyasar secret key not configured' });
+        try {
+          const moyasarRes = await fetch('https://api.moyasar.com/v1/payments', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${Buffer.from(secretKey + ':').toString('base64')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              amount: Math.round(amount * 100),
+              currency, source: { type: 'terminal', terminal_id: tc.terminalId },
+              description: `Order ${orderId || chargeId}`,
+              callback_url: `${req.protocol}://${req.get('host')}/api/payment-terminal/moyasar-callback`,
+            }),
+          });
+          const moyasarData = await moyasarRes.json() as any;
+          if (!moyasarRes.ok) return res.status(400).json({ error: moyasarData?.message || 'Moyasar error' });
+          terminalCharges.set(chargeId, {
+            id: chargeId, tenantId, amount, currency, provider: 'moyasar',
+            status: 'pending', createdAt: now, expiresAt: new Date(now.getTime() + 120000),
+          });
+          return res.json({ chargeId, externalId: moyasarData.id, status: 'pending', provider: 'moyasar' });
+        } catch (err: any) {
+          return res.status(500).json({ error: `Moyasar connection failed: ${err.message}` });
+        }
+      }
+
+      if (provider === 'network_ip') {
+        const terminalIp = tc.terminalIp;
+        const terminalPort = tc.terminalPort || '8080';
+        if (!terminalIp) return res.status(400).json({ error: 'Terminal IP not configured' });
+        try {
+          const ipRes = await fetch(`http://${terminalIp}:${terminalPort}/api/sale`, {
+            method: 'POST', signal: AbortSignal.timeout(8000),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: Math.round(amount * 100), currency, transactionId: chargeId }),
+          });
+          const ipData = await ipRes.json() as any;
+          const paid = ipData?.status === 'approved' || ipData?.responseCode === '00';
+          terminalCharges.set(chargeId, {
+            id: chargeId, tenantId, amount, currency, provider: 'network_ip',
+            status: paid ? 'paid' : 'pending', createdAt: now, expiresAt: new Date(now.getTime() + 120000),
+          });
+          return res.json({ chargeId, status: paid ? 'paid' : 'pending', provider: 'network_ip' });
+        } catch (err: any) {
+          return res.status(500).json({ error: `Terminal connection failed: ${err.message}. Check terminal IP.` });
+        }
+      }
+
+      res.status(400).json({ error: `Unknown provider: ${provider}` });
+    } catch (err: any) {
+      console.error('[TERMINAL] Charge error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Poll charge status
+  app.get("/api/payment-terminal/status/:chargeId", requireAuth, async (req: AuthRequest, res) => {
+    const { chargeId } = req.params;
+    const charge = terminalCharges.get(chargeId);
+    if (!charge) return res.status(404).json({ error: 'Charge not found' });
+    if (charge.expiresAt < new Date() && charge.status === 'pending') {
+      charge.status = 'failed';
+      terminalCharges.set(chargeId, charge);
+    }
+    res.json({ chargeId, status: charge.status, amount: charge.amount, currency: charge.currency, provider: charge.provider });
+  });
+
+  // Cancel pending charge
+  app.post("/api/payment-terminal/cancel/:chargeId", requireAuth, async (req: AuthRequest, res) => {
+    const { chargeId } = req.params;
+    const charge = terminalCharges.get(chargeId);
+    if (!charge) return res.status(404).json({ error: 'Charge not found' });
+    charge.status = 'cancelled';
+    terminalCharges.set(chargeId, charge);
+    res.json({ chargeId, status: 'cancelled' });
+  });
+
   // Paymob HMAC-SHA512 Webhook (Server-to-Server Transaction Notification)
   app.post("/api/payments/paymob/webhook", async (req, res) => {
     try {

@@ -98,6 +98,10 @@ export default function PosSystem() {
   const [posTerminalConnected, setPosTerminalConnected] = useState(() => {
     return localStorage.getItem("pos-terminal-connected") === "true";
   });
+  const [terminalChargeId, setTerminalChargeId] = useState<string | null>(null);
+  const [terminalChargeStatus, setTerminalChargeStatus] = useState<'idle' | 'pending' | 'paid' | 'failed' | 'cancelled'>('idle');
+  const [terminalPollingActive, setTerminalPollingActive] = useState(false);
+  const [terminalCountdown, setTerminalCountdown] = useState(0);
   const [showTablesDialog, setShowTablesDialog] = useState(false);
   const [showOpenBillsDialog, setShowOpenBillsDialog] = useState(false);
   const [selectedTableForBill, setSelectedTableForBill] = useState<any>(null);
@@ -224,6 +228,13 @@ export default function PosSystem() {
   });
 
   const { data: businessConfig } = useQuery<any>({ queryKey: ['/api/business-config'] });
+
+  const { data: terminalConfig } = useQuery<any>({
+    queryKey: ['/api/payment-terminal/config'],
+    staleTime: 60000,
+  });
+
+  const terminalEnabled = terminalConfig?.enabled !== false && terminalConfig?.provider;
 
   const { data: tables = [], refetch: refetchTables } = useQuery<any[]>({
     queryKey: ["/api/tables/status", employee?.branchId],
@@ -425,6 +436,77 @@ export default function PosSystem() {
       broadcastToDisplay("item_updated", buildDisplayPayload(next, "item_updated"));
     }
   };
+
+  const sendToTerminal = async () => {
+    if (orderItems.length === 0) return;
+    try {
+      const res = await apiRequest("POST", "/api/payment-terminal/charge", {
+        amount: calculateTotal,
+        currency: "SAR",
+        orderId: `POS-${Date.now()}`,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "خطأ في الجهاز", description: data.error || "تعذر الاتصال بجهاز الدفع" });
+        return;
+      }
+      setTerminalChargeId(data.chargeId);
+      setTerminalChargeStatus('pending');
+      setTerminalPollingActive(true);
+      const delay = terminalConfig?.simulateDelay ?? 4;
+      setTerminalCountdown(delay);
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "خطأ في الجهاز", description: err.message });
+    }
+  };
+
+  const cancelTerminalCharge = async () => {
+    if (!terminalChargeId) return;
+    try {
+      await apiRequest("POST", `/api/payment-terminal/cancel/${terminalChargeId}`, {});
+    } catch {}
+    setTerminalChargeId(null);
+    setTerminalChargeStatus('idle');
+    setTerminalPollingActive(false);
+    setTerminalCountdown(0);
+  };
+
+  useEffect(() => {
+    if (!terminalPollingActive || !terminalChargeId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/payment-terminal/status/${terminalChargeId}`, {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (data.status === 'paid') {
+          setTerminalChargeStatus('paid');
+          setTerminalPollingActive(false);
+          setTerminalCountdown(0);
+          clearInterval(interval);
+          toast({ title: "تم الدفع", description: `دُفع ${data.amount?.toFixed(2)} ر.س بنجاح عبر الجهاز` });
+          setTimeout(() => {
+            setTerminalChargeId(null);
+            setTerminalChargeStatus('idle');
+            handleCheckout();
+          }, 800);
+        } else if (data.status === 'failed' || data.status === 'cancelled') {
+          setTerminalChargeStatus(data.status);
+          setTerminalPollingActive(false);
+          setTerminalCountdown(0);
+          clearInterval(interval);
+        }
+      } catch {}
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [terminalPollingActive, terminalChargeId]);
+
+  useEffect(() => {
+    if (!terminalPollingActive || terminalCountdown <= 0) return;
+    const timer = setTimeout(() => setTerminalCountdown(c => Math.max(0, c - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [terminalPollingActive, terminalCountdown]);
 
   const handleCheckout = async () => {
     if (orderItems.length === 0) return;
@@ -1088,11 +1170,30 @@ export default function PosSystem() {
               ))}
             </div>
             {paymentMethod === "card" && (
-              <div className="mt-2 space-y-1">
+              <div className="mt-2 space-y-2">
                 <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
                   {t('pos.card_amount_note')}
                 </p>
-                {posTerminalConnected ? (
+                {terminalEnabled ? (
+                  <div className="space-y-1.5">
+                    <Button
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2 h-9 text-sm font-bold"
+                      onClick={sendToTerminal}
+                      disabled={orderItems.length === 0 || terminalPollingActive}
+                      data-testid="button-send-to-terminal"
+                    >
+                      <MonitorSmartphone className="w-4 h-4" />
+                      إرسال للجهاز ({calculateTotal.toFixed(2)} ر.س)
+                    </Button>
+                    <div className="flex items-center justify-center gap-1.5 text-emerald-600 text-[10px]" data-testid="status-terminal-connected">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>
+                        {terminalConfig?.provider === 'simulation' ? 'وضع المحاكاة' :
+                         terminalConfig?.provider === 'moyasar' ? 'Moyasar Terminal' : 'جهاز شبكة محلي'}
+                      </span>
+                    </div>
+                  </div>
+                ) : posTerminalConnected ? (
                   <div className="flex items-center justify-center gap-1.5 text-green-600 text-[10px] sm:text-xs" data-testid="status-terminal-connected">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
                     <span className="font-medium">{t('pos.terminal_connected_status')}</span>
@@ -1497,6 +1598,58 @@ export default function PosSystem() {
                 {i18n.language === 'ar' ? 'إتمام الدفع' : 'Confirm Payment'}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Terminal Payment Waiting Dialog */}
+      <Dialog open={terminalChargeStatus === 'pending' || terminalChargeStatus === 'paid' || terminalChargeStatus === 'failed'} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm text-center" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 justify-center text-lg">
+              <MonitorSmartphone className="w-6 h-6 text-emerald-600" />
+              جهاز الدفع
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-6 space-y-5">
+            {terminalChargeStatus === 'pending' && (
+              <>
+                <div className="flex items-center justify-center">
+                  <div className="relative w-24 h-24 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full border-4 border-emerald-100 dark:border-emerald-900" />
+                    <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+                    <span className="text-3xl font-black text-emerald-600">{terminalCountdown > 0 ? terminalCountdown : '...'}</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-lg">يرجى الدفع على الجهاز</p>
+                  <p className="text-muted-foreground text-sm">المبلغ: <span className="font-bold text-primary">{calculateTotal.toFixed(2)} ر.س</span></p>
+                  <p className="text-xs text-muted-foreground">
+                    {terminalConfig?.provider === 'simulation' ? 'وضع المحاكاة — سيتم الدفع تلقائياً' : 'انتظر موافقة العميل على الجهاز...'}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={cancelTerminalCharge} data-testid="button-cancel-terminal">
+                  إلغاء
+                </Button>
+              </>
+            )}
+            {terminalChargeStatus === 'paid' && (
+              <div className="space-y-3">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+                <p className="font-bold text-xl text-green-600">تم الدفع بنجاح</p>
+                <p className="text-muted-foreground text-sm">جارٍ إتمام الطلب...</p>
+              </div>
+            )}
+            {terminalChargeStatus === 'failed' && (
+              <div className="space-y-3">
+                <XCircle className="w-16 h-16 text-destructive mx-auto" />
+                <p className="font-bold text-xl text-destructive">فشل الدفع</p>
+                <p className="text-muted-foreground text-sm">يرجى المحاولة مرة أخرى أو اختيار طريقة دفع مختلفة</p>
+                <Button onClick={() => { setTerminalChargeStatus('idle'); setTerminalChargeId(null); }} data-testid="button-terminal-retry">
+                  حسناً
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

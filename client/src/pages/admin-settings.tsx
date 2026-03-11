@@ -84,6 +84,14 @@ export default function AdminSettings() {
   const [showAppGuide, setShowAppGuide] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const [tcProvider, setTcProvider] = useState<string>('simulation');
+  const [tcTerminalIp, setTcTerminalIp] = useState('');
+  const [tcTerminalPort, setTcTerminalPort] = useState('8080');
+  const [tcMoyasarKey, setTcMoyasarKey] = useState('');
+  const [tcTerminalId, setTcTerminalId] = useState('');
+  const [tcSimulateDelay, setTcSimulateDelay] = useState(4);
+  const [tcEnabled, setTcEnabled] = useState(true);
   const [dailyReportEmails, setDailyReportEmails] = useState('');
   const [inventoryAlertEmails, setInventoryAlertEmails] = useState('');
 
@@ -109,6 +117,35 @@ export default function AdminSettings() {
       }
     }
   }, [pgConfig]);
+
+  const { data: tcConfig } = useQuery<any>({
+    queryKey: ["/api/payment-terminal/config"],
+  });
+
+  useEffect(() => {
+    if (tcConfig) {
+      setTcProvider(tcConfig.provider || 'simulation');
+      setTcTerminalIp(tcConfig.terminalIp || '');
+      setTcTerminalPort(tcConfig.terminalPort || '8080');
+      setTcTerminalId(tcConfig.terminalId || '');
+      setTcSimulateDelay(tcConfig.simulateDelay ?? 4);
+      setTcEnabled(tcConfig.enabled ?? true);
+    }
+  }, [tcConfig]);
+
+  const tcMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      const res = await apiRequest("PATCH", "/api/payment-terminal/config", updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-terminal/config"] });
+      toast({ title: "تم الحفظ", description: "تم حفظ إعدادات الجهاز بنجاح" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
 
   const pgMutation = useMutation({
     mutationFn: async (updates: any) => {
@@ -1540,6 +1577,130 @@ export default function AdminSettings() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Payment Terminal Configuration */}
+        <Card className="hover-elevate border-emerald-100 dark:border-emerald-900/30">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg">
+                <Smartphone className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold">جهاز الدفع (POS Terminal)</CardTitle>
+                <CardDescription>إعداد جهاز الكارت لإرسال طلبات الدفع مباشرة من الكاشير</CardDescription>
+              </div>
+              <div className="mr-auto">
+                <Switch checked={tcEnabled} onCheckedChange={setTcEnabled} data-testid="switch-terminal-enabled" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">نوع الاتصال بالجهاز</Label>
+              <Select value={tcProvider} onValueChange={setTcProvider}>
+                <SelectTrigger data-testid="select-terminal-provider">
+                  <SelectValue placeholder="اختر نوع الاتصال" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simulation">محاكاة (للاختبار بدون جهاز)</SelectItem>
+                  <SelectItem value="moyasar">Moyasar Terminal API</SelectItem>
+                  <SelectItem value="network_ip">جهاز IP مباشر (PAX / Verifone شبكة محلية)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {tcProvider === 'simulation' && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  وضع المحاكاة: سيتم إظهار عداد تنازلي في الكاشير بعدها تنجح عملية الدفع تلقائياً — مناسب للتدريب والاختبار
+                </p>
+                <div className="space-y-1">
+                  <Label className="text-xs">مدة الانتظار (ثوانٍ)</Label>
+                  <Input
+                    type="number" min={1} max={30}
+                    value={tcSimulateDelay}
+                    onChange={(e) => setTcSimulateDelay(Number(e.target.value))}
+                    className="text-sm h-8 w-32"
+                    data-testid="input-terminal-simulate-delay"
+                  />
+                </div>
+              </div>
+            )}
+
+            {tcProvider === 'moyasar' && (
+              <div className="space-y-3 p-3 bg-muted/30 rounded-lg border">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Moyasar Secret Key</Label>
+                  <Input
+                    type="password"
+                    placeholder={tcConfig?.moyasarSecretKey || 'sk_live_...'}
+                    value={tcMoyasarKey}
+                    onChange={(e) => setTcMoyasarKey(e.target.value)}
+                    className="text-sm h-8 font-mono"
+                    data-testid="input-moyasar-secret-key"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Terminal ID (رقم الجهاز في Moyasar)</Label>
+                  <Input
+                    placeholder="TRM-..."
+                    value={tcTerminalId}
+                    onChange={(e) => setTcTerminalId(e.target.value)}
+                    className="text-sm h-8"
+                    data-testid="input-moyasar-terminal-id"
+                  />
+                </div>
+              </div>
+            )}
+
+            {tcProvider === 'network_ip' && (
+              <div className="space-y-3 p-3 bg-muted/30 rounded-lg border">
+                <p className="text-xs text-muted-foreground">
+                  يجب أن يكون الجهاز متصلاً بنفس الشبكة المحلية (Wi-Fi/LAN) ومفعّل عليه إعداد HTTP API
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">IP Address الجهاز</Label>
+                    <Input
+                      placeholder="192.168.1.100"
+                      value={tcTerminalIp}
+                      onChange={(e) => setTcTerminalIp(e.target.value)}
+                      className="text-sm h-8 font-mono"
+                      data-testid="input-terminal-ip"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">Port</Label>
+                    <Input
+                      placeholder="8080"
+                      value={tcTerminalPort}
+                      onChange={(e) => setTcTerminalPort(e.target.value)}
+                      className="text-sm h-8 font-mono"
+                      data-testid="input-terminal-port"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={() => tcMutation.mutate({
+                provider: tcProvider,
+                terminalIp: tcTerminalIp,
+                terminalPort: tcTerminalPort,
+                moyasarSecretKey: tcMoyasarKey,
+                terminalId: tcTerminalId,
+                simulateDelay: tcSimulateDelay,
+                enabled: tcEnabled,
+              })}
+              disabled={tcMutation.isPending}
+              data-testid="button-save-terminal-config"
+            >
+              {tcMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Save className="w-4 h-4 ml-1" />}
+              حفظ إعدادات الجهاز
+            </Button>
           </CardContent>
         </Card>
 
