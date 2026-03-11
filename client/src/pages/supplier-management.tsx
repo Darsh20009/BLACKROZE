@@ -130,7 +130,7 @@ interface SupplierInvoice {
 }
 
 const mockSuppliers: Supplier[] = [
-  { id: "1", name: "شركة البن العربي", contactPerson: "أحمد محمد", phone: "0501234567", email: "info@arabiccoffee.sa", address: "حي الملز", city: "الرياض", category: "قهوة", rating: 4.8, totalOrders: 45, totalSpent: 125000, paymentTerms: "30 يوم", status: "active", createdAt: "2024-01-15" },
+  { id: "1", name: "شركة البن العربي", contactPerson: "أحمد محمد", phone: "0501234567", email: "info@arabiccoffee.sa", address: "حي الملز", city: "ينبع", category: "قهوة", rating: 4.8, totalOrders: 45, totalSpent: 125000, paymentTerms: "30 يوم", status: "active", createdAt: "2024-01-15" },
   { id: "2", name: "مصنع الحليب الطازج", contactPerson: "خالد علي", phone: "0559876543", email: "sales@freshmilk.sa", address: "المنطقة الصناعية", city: "جدة", category: "ألبان", rating: 4.5, totalOrders: 78, totalSpent: 89000, paymentTerms: "15 يوم", status: "active", createdAt: "2024-02-20" },
   { id: "3", name: "موردين السكر والحلويات", contactPerson: "سعيد أحمد", phone: "0541112233", address: "حي الصفا", city: "الدمام", category: "مواد غذائية", rating: 4.2, totalOrders: 32, totalSpent: 45000, paymentTerms: "نقدي", status: "active", createdAt: "2024-03-10" },
 ];
@@ -784,7 +784,7 @@ export default function SupplierManagementPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>المدينة</Label>
-                  <Input placeholder="الرياض" />
+                  <Input placeholder="ينبع" />
                 </div>
                 <div>
                   <Label>شروط الدفع</Label>

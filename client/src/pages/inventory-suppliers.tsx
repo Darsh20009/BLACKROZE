@@ -349,7 +349,7 @@ export default function InventorySuppliersPage() {
                   id="city"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  placeholder="الرياض"
+                  placeholder="ينبع"
                   data-testid="input-city"
                 />
               </div>

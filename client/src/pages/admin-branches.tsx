@@ -278,7 +278,7 @@ export default function AdminBranches() {
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  placeholder="الرياض، طريق الملك فهد"
+                  placeholder="ينبع، حي البندر"
                 />
               </div>
               <div className="space-y-2">
@@ -524,7 +524,7 @@ export default function AdminBranches() {
                   id="edit-address"
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  placeholder="الرياض، طريق الملك فهد"
+                  placeholder="ينبع، حي البندر"
                 />
               </div>
               <div className="space-y-2">

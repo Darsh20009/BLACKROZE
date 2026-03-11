@@ -158,7 +158,7 @@ export default function DeliveryMapPage() {
         fullAddress,
         lat: position.lat,
         lng: position.lng,
-        zone: zoneName || 'الرياض',
+        zone: zoneName || 'ينبع',
       },
       deliveryFee,
     });

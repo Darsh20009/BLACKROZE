@@ -629,7 +629,7 @@ export function DeliveryManagement() {
                       <Input 
                         value={newZone.nameAr}
                         onChange={(e) => setNewZone(prev => ({ ...prev, nameAr: e.target.value }))}
-                        placeholder="مثال: شمال الرياض"
+                        placeholder="مثال: شمال ينبع"
                         data-testid="input-zone-name-ar"
                       />
                     </div>
