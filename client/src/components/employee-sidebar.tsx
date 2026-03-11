@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, ShoppingCart, ClipboardList, Settings, LogOut, User, BarChart3, Warehouse, Wallet, ChefHat, Table, Eye, Coffee, Utensils, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Employee } from '@shared/schema';
-import clunyLogoStaff from "@assets/cluny-logo-staff.png";
+import blackroseLogo from "@assets/blackrose-logo.png";
 
 interface EmployeeSidebarProps {
   employee: Employee | null;
@@ -54,12 +54,12 @@ export function EmployeeSidebar({ employee, onLogout }: EmployeeSidebarProps) {
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3 mb-2">
           <img 
-            src={clunyLogoStaff} 
-            alt="CLUNY SYSTEMS" 
+            src={blackroseLogo} 
+            alt="BLACK ROSE CAFE" 
             className="w-10 h-10 object-contain rounded-lg"
           />
           <div>
-            <h2 className="text-lg font-bold text-foreground">CLUNY SYSTEMS</h2>
+            <h2 className="text-lg font-bold text-foreground">BLACK ROSE CAFE</h2>
             <p className="text-xs text-muted-foreground">{t('sidebar.employee_system')}</p>
           </div>
         </div>

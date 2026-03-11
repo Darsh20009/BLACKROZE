@@ -739,7 +739,7 @@ export async function sendDailyReportEmail(
     </div>
     <div style="background:#f9fafb;padding:16px;text-align:center;font-size:12px;color:#888;border-top:1px solid #e5e7eb;">
       <p>تم إنشاء هذا التقرير تلقائياً في نهاية يوم ${reportData.date}</p>
-      <p style="color:#2D9B6E;font-weight:600;">BLACK ROSE CAFE — CLUNY SYSTEMS</p>
+      <p style="color:#2D9B6E;font-weight:600;">BLACK ROSE CAFE</p>
     </div>
   </div>
 </body>
@@ -788,7 +788,7 @@ export async function sendInventoryAlertEmail(
   <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
     <div style="background:#dc2626;padding:20px;text-align:center;">
       <h1 style="color:#fff;margin:0;font-size:20px;">⚠️ تنبيه: نقص في المخزون</h1>
-      <p style="color:#fca5a5;margin:4px 0 0;font-size:13px;">BLACK ROSE CAFE — CLUNY SYSTEMS</p>
+      <p style="color:#fca5a5;margin:4px 0 0;font-size:13px;">BLACK ROSE CAFE</p>
     </div>
     <div style="padding:24px;">
       <p style="color:#374151;margin-top:0;">تنبيه: المواد التالية وصلت إلى الحد الأدنى أو نفدت من المخزون:</p>

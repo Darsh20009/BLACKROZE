@@ -154,7 +154,7 @@ export default function CustomerDisplay() {
     };
   }, []);
 
-  const branchName = businessConfig?.tradeNameAr || businessConfig?.tradeNameEn || "CLUNY CAFE";
+  const branchName = businessConfig?.tradeNameAr || businessConfig?.tradeNameEn || "BLACK ROSE CAFE";
   const formatPrice = (n: number) => `${n.toFixed(2)} ر.س`;
 
   return (

@@ -116,7 +116,7 @@ export default function PaymentMethods({
     const isLoyaltyCard = (method.id as string) === 'loyalty-card';
     const isSelected = selectedMethod === method.id;
 
-    // Filter for POS: Only Cash, Network (pos), and Cluny Card (qahwa-card)
+    // Filter for POS: Only Cash, Network (pos), and بطاقة بلاك روز (qahwa-card)
     const allowedPosMethods = ['cash', 'pos', 'qahwa-card'];
     const isPosRoute = window.location.pathname.includes('/employee/pos');
     if (isPosRoute && !allowedPosMethods.includes(method.id as string)) {
@@ -173,7 +173,7 @@ export default function PaymentMethods({
                  <div className="relative flex flex-col justify-between text-white h-full py-8 px-8">
                    <div className="flex justify-between items-start flex-shrink-0">
                      <div className="space-y-1">
-                       <p className="text-xs uppercase tracking-widest opacity-75">CLUNY CAFE</p>
+                       <p className="text-xs uppercase tracking-widest opacity-75">BLACK ROSE CAFE</p>
                        <h4 className="text-2xl font-black">{isNeoLeap ? (method.id === 'neoleap-apple-pay' ? 'Apple Pay' : t("payment.bank_card")) : t("payment.loyalty_card")}</h4>
                      </div>
                      <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">

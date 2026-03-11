@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import type { Order } from "@shared/schema";
-import logoImage from "../assets/cluny-logo.png";
+import logoImage from "@assets/blackrose-logo.png";
 import { useRef, useState, useEffect } from "react";
 import QRCode from "qrcode";
 
@@ -46,7 +46,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
     const generateTrackingQR = async () => {
       if (!order || !order.orderNumber) return;
       try {
-        const trackingUrl = `https://www.cluny.cafe/tracking?order=${order.orderNumber}`;
+        const trackingUrl = `https://www.blackrose.com.sa/tracking?order=${order.orderNumber}`;
         const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
           width: 150,
           margin: 1,
@@ -216,7 +216,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
       >
         {/* Header */}
         <div className="text-center mb-4 pb-2 border-b border-black">
-          <p className="text-[12px] font-black uppercase tracking-wider">CLUNY CAFE</p>
+          <p className="text-[12px] font-black uppercase tracking-wider">BLACK ROSE CAFE</p>
           <p className="text-[9px] font-bold uppercase tracking-tight opacity-70">Tax Invoice - فاتورة ضريبية</p>
         </div>
 
@@ -305,7 +305,7 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
         <div className="text-center mt-4 pt-2 border-t border-black text-[9px]">
           <p className="font-bold">شكراً لزيارتكم</p>
           <p>الرقم الضريبي: 311234567890003</p>
-          <p className="font-bold mt-1 tracking-tight">www.cluny.cafe</p>
+          <p className="font-bold mt-1 tracking-tight">www.blackrose.com.sa</p>
         </div>
       </div>
 
