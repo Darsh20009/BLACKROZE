@@ -670,6 +670,7 @@ export interface IBusinessConfig extends Document {
   paymentGateway?: IPaymentGatewayConfig;
   loyaltyConfig?: ILoyaltyConfig;
   offersConfig?: Record<string, any>;
+  zatca?: Record<string, any>;
   appearance?: {
     menuLayout?: 'classic' | 'grid' | 'minimal';
     dashboardLayout?: 'classic' | 'command' | 'simple';
@@ -829,6 +830,7 @@ const IngredientItemSchema = new Schema<IIngredientItem>({
 
 IngredientItemSchema.index({ tenantId: 1, sku: 1 });
 export const IngredientItemModel = mongoose.model<IIngredientItem>("IngredientItem", IngredientItemSchema);
+export const InventoryItemModel = IngredientItemModel;
 
 // 3. Recipe Engine
 export interface IRecipeDefinition extends Document {
@@ -2801,6 +2803,8 @@ export interface PaymentMethodInfo {
   cardNumber?: string;
   discount?: number;
   discountPercentage?: number;
+  cashMaxDistance?: number;
+  storeLocation?: { lat: number; lng: number };
 }
 export type JobTitle = 'كاشير' | 'محاسب' | 'بائع' | 'عارض' | 'سائق' | 'مدير' | 'مالك';
 

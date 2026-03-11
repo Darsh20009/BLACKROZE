@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-type WSClientType = "kitchen" | "display" | "order-tracking" | "pos" | "customer-display";
+type WSClientType = "kitchen" | "display" | "order-tracking" | "pos" | "customer-display" | "pos-display";
 
 interface WSMessage {
   type: string;
@@ -20,6 +20,7 @@ interface UseOrderWebSocketOptions {
   onOrderReady?: (order: any) => void;
   onPointsVerificationCode?: (data: any) => void;
   onCustomerDisplayState?: (payload: any) => void;
+  onPosCartUpdate?: (data: any) => void;
   enabled?: boolean;
 }
 
@@ -33,6 +34,7 @@ export function useOrderWebSocket({
   onOrderReady,
   onPointsVerificationCode,
   onCustomerDisplayState,
+  onPosCartUpdate,
   enabled = true,
 }: UseOrderWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -167,6 +169,9 @@ export function useOrderWebSocket({
               break;
             case "customer_display_state":
               onCustomerDisplayState?.(message.payload);
+              break;
+            case "pos_cart_update":
+              onPosCartUpdate?.(message.payload);
               break;
             case "welcome":
               sendSubscribe(ws);

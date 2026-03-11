@@ -45,6 +45,8 @@ interface TaxInvoiceData {
   date: string;
   branchName?: string;
   branchAddress?: string;
+  crNumber?: string;
+  vatNumber?: string;
 }
 
 interface PrintConfig {

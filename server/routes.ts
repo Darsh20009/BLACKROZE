@@ -2888,7 +2888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const uploadResponse = await fetch(uploadURL, {
           method: 'PUT',
-          body: fileBuffer,
+          body: new Uint8Array(fileBuffer),
           headers: {
             'Content-Type': req.file.mimetype || 'application/octet-stream',
           },
@@ -9682,7 +9682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const uploadResponse = await fetch(uploadURL, {
           method: 'PUT',
-          body: fileBuffer,
+          body: new Uint8Array(fileBuffer),
           headers: {
             'Content-Type': req.file.mimetype || 'image/png',
           },
@@ -9757,7 +9757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const uploadResponse = await fetch(uploadURL, {
           method: 'PUT',
-          body: fileBuffer,
+          body: new Uint8Array(fileBuffer),
           headers: {
             'Content-Type': req.file.mimetype || 'image/png',
           },
@@ -11925,9 +11925,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         enabled: (zatca as any).enabled ?? false,
         environment: (zatca as any).environment || 'sandbox',
-        vatRegistrationNumber: (zatca as any).vatRegistrationNumber || config?.taxNumber || '',
-        companyName: (zatca as any).companyName || config?.name || '',
-        companyAddress: (zatca as any).companyAddress || config?.address || '',
+        vatRegistrationNumber: (zatca as any).vatRegistrationNumber || (config as any)?.taxNumber || config?.vatNumber || '',
+        companyName: (zatca as any).companyName || (config as any)?.name || config?.tradeNameAr || '',
+        companyAddress: (zatca as any).companyAddress || (config as any)?.address || '',
         complianceStatus: (zatca as any).complianceStatus || 'not_configured',
         csid: (zatca as any).csid ? '****' : '',
         pih: (zatca as any).pih ? '****' : '',
@@ -15271,9 +15271,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const attendances = await AttendanceModel.find(attQuery).lean();
       const payrollData = employees.map(emp => {
         const empAtt = attendances.filter(a => a.employeeId === emp.id || String(a.employeeId) === String((emp as any)._id));
-        const presentDays = empAtt.filter(a => a.status === 'present' || a.checkInTime).length;
+        const presentDays = empAtt.filter(a => a.checkInTime || a.status === 'checked_in').length;
         const absentDays = empAtt.filter(a => a.status === 'absent').length;
-        const lateDays = empAtt.filter(a => a.isLate || a.lateMinutes > 0).length;
+        const lateDays = empAtt.filter(a => a.isLate || (a.lateMinutes || 0) > 0).length;
         const totalWorkingDays = new Date(targetYear, targetMonth + 1, 0).getDate();
         const baseSalary = Number((emp as any).salary || (emp as any).baseSalary || 0);
         const dailyRate = baseSalary / (totalWorkingDays || 26);
@@ -15282,7 +15282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const netSalary = Math.max(0, baseSalary - deductions - lateDeductions);
         return {
           employeeId: emp.id || String((emp as any)._id),
-          name: emp.name,
+          name: emp.fullName || (emp as any).name,
           role: emp.role,
           baseSalary,
           presentDays,
@@ -15320,7 +15320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const items = await CoffeeItemModel.find(itemQuery, { id: 1, nameAr: 1, nameEn: 1, price: 1, costOfGoods: 1, category: 1 }).lean();
       const allIngredients = await CoffeeItemIngredientModel.find({}).lean();
       const cogsData = items.map(item => {
-        const itemIngredients = allIngredients.filter(ing => ing.coffeeItemId === item.id || ing.itemId === item.id);
+        const itemIngredients = allIngredients.filter(ing => ing.coffeeItemId === item.id || (ing as any).itemId === item.id);
         const calculatedCOGS = Number(item.costOfGoods) || 0;
         const price = Number(item.price) || 0;
         const profit = price - calculatedCOGS;

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Star, ArrowRight, MessageSquare, Trash2, Reply, TrendingUp, ThumbsUp } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface Review {
   _id: string;
