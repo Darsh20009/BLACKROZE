@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useOrderWebSocket } from "@/lib/websocket";
+import { unlockAudio } from "@/lib/notification-sounds";
 import { 
   Coffee, ShoppingBag, Trash2, Plus, Minus, Search, 
   CreditCard, ChevronLeft, ChevronRight, ChevronDown, XCircle, 
@@ -881,7 +882,7 @@ export default function PosSystem() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
             className="hidden sm:flex"
             data-testid="button-sound-toggle"
           >

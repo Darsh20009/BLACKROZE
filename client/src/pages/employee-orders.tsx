@@ -1,14 +1,15 @@
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Coffee, BellRing, RefreshCw, ArrowRight, Search, DollarSign, XCircle, Undo2, Clock, User, Phone, CreditCard, Banknote, CheckCircle, PlayCircle, Loader2, MapPin, Printer } from "lucide-react";
+import { Coffee, BellRing, RefreshCw, ArrowRight, Search, DollarSign, XCircle, Undo2, Clock, User, Phone, CreditCard, Banknote, CheckCircle, PlayCircle, Loader2, MapPin, Printer, Volume2, VolumeX } from "lucide-react";
+import { playNotificationSound, unlockAudio } from "@/lib/notification-sounds";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -22,6 +23,8 @@ export default function EmployeeOrders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const seenOrderIdsRef = useRef<Set<string>>(new Set());
 
   const [showCashDialog, setShowCashDialog] = useState(false);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
@@ -49,20 +52,20 @@ export default function EmployeeOrders() {
   });
 
   useEffect(() => {
-    const pendingOrders = orders.filter((o: any) => o.status === 'pending');
-    if (pendingOrders.length > 0) {
-      const audio = new Audio('/notification-sound.mp3');
-      audio.play().catch(() => {});
-      
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        new Notification('طلب جديد', {
-          body: `لديك ${pendingOrders.length} طلب جديد بانتظار التحضير`,
-          icon: '/logo.png',
-          tag: 'new-order'
-        });
+    if (!Array.isArray(orders) || orders.length === 0) return;
+    const seen = seenOrderIdsRef.current;
+    const isFirstLoad = seen.size === 0;
+    let newCount = 0;
+    for (const o of orders) {
+      if (!seen.has(o._id)) {
+        seen.add(o._id);
+        if (!isFirstLoad && o.status === 'pending') newCount++;
       }
     }
-  }, [orders.length]);
+    if (newCount > 0 && soundEnabled) {
+      playNotificationSound('newOrder', 0.7);
+    }
+  }, [orders, soundEnabled]);
 
   const handlePrint = (order: any) => {
     setCurrentOrder(order);
@@ -237,6 +240,16 @@ export default function EmployeeOrders() {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
+                title={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
+                data-testid="button-sound-toggle"
+                className={soundEnabled ? "border-green-500 text-green-600" : "text-muted-foreground"}
+              >
+                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </Button>
               <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh">
                 <RefreshCw className={`w-4 h-4 ml-2 ${isLoading ? 'animate-spin' : ''}`} />
                 تحديث
