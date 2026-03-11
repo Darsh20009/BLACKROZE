@@ -266,10 +266,10 @@ export async function printKitchenOrder(data: KitchenOrderData): Promise<void> {
 }
 
 const TAX_RATE = 0.15;
-const VAT_NUMBER = "311234567890003";
+const VAT_NUMBER = "312718675800003";
 const COMPANY_NAME = "BLACK ROSE CAFE";
 const COMPANY_NAME_EN = "BLACK ROSE CAFE";
-const COMPANY_CR = "1010XXXXXX";
+const COMPANY_CR = "4700114396";
 const DEFAULT_BRANCH = "فرع ينبع";
 const DEFAULT_ADDRESS = "ينبع، حي البندر، الملك خالد ابن عبدالعزيز سعود 4139، المملكة العربية السعودية";
 
