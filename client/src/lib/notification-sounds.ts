@@ -1,59 +1,121 @@
 /**
  * Notification Sound System
- * Primary: HTML5 Audio element (mp3) — simple and reliable
- * Secondary: Web Speech API for voice announcements
+ * Primary: Web Audio API (AudioContext) — unlocked once, plays anytime after
+ * Fallback: Oscillator beep if mp3 fails to load
+ * Secondary: Web Speech API for Arabic voice announcements
  */
 
 export type NotificationSoundType = 'newOrder' | 'onlineOrderVoice' | 'statusChange' | 'success' | 'alert' | 'cashierOrder';
 
-let audioUnlocked = false;
-let audioPool: HTMLAudioElement[] = [];
-const POOL_SIZE = 3;
+let audioCtx: AudioContext | null = null;
+let audioBuffer: AudioBuffer | null = null;
+let bufferLoadAttempted = false;
 
-function buildAudioPool(): void {
-  if (audioPool.length > 0) return;
-  for (let i = 0; i < POOL_SIZE; i++) {
-    const el = new Audio('/notification-sound.mp3');
-    el.preload = 'auto';
-    el.volume = 0.8;
-    audioPool.push(el);
-  }
-}
-
-function getPoolAudio(): HTMLAudioElement | null {
-  for (const el of audioPool) {
-    if (el.paused || el.ended || el.currentTime === 0) {
-      return el;
+function getAudioContext(): AudioContext | null {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    } catch {
+      return null;
     }
   }
-  return audioPool[0] || null;
+  return audioCtx;
+}
+
+async function ensureAudioBuffer(): Promise<void> {
+  if (bufferLoadAttempted) return;
+  bufferLoadAttempted = true;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    const response = await fetch('/notification-sound.mp3');
+    const arrayBuffer = await response.arrayBuffer();
+    audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+    console.debug('[SOUND] Audio buffer loaded from mp3');
+  } catch (e) {
+    console.debug('[SOUND] mp3 load failed, will use beep fallback:', e);
+  }
 }
 
 /**
- * Must be called on a user interaction event (click/touch/keydown)
- * Warms up the audio pipeline so future plays work without gesture
+ * Must be called on a user interaction event (click/touch/keydown).
+ * Unlocks the AudioContext so future plays work without gesture.
  */
 export function unlockAudio(): void {
-  if (audioUnlocked) return;
-  try {
-    buildAudioPool();
-    const el = audioPool[0];
-    if (!el) return;
-    el.volume = 0;
-    const p = el.play();
-    if (p) {
-      p.then(() => {
-        el.pause();
-        el.currentTime = 0;
-        el.volume = 0.8;
-        audioUnlocked = true;
-        console.debug('[SOUND] Audio unlocked');
-      }).catch(() => {
-        audioUnlocked = true;
-      });
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const resume = () => {
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
     }
-  } catch {
-    audioUnlocked = true;
+    ensureAudioBuffer();
+  };
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      ensureAudioBuffer();
+      console.debug('[SOUND] AudioContext unlocked');
+    }).catch(resume);
+  } else {
+    ensureAudioBuffer();
+    console.debug('[SOUND] AudioContext already running');
+  }
+}
+
+function playBeepPattern(ctx: AudioContext, type: NotificationSoundType): void {
+  const now = ctx.currentTime;
+
+  const beep = (startTime: number, freq: number, duration: number, vol: number) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(vol, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  };
+
+  switch (type) {
+    case 'newOrder':
+    case 'cashierOrder':
+      beep(now,       880, 0.18, 0.35);
+      beep(now + 0.22, 660, 0.18, 0.35);
+      beep(now + 0.44, 880, 0.18, 0.35);
+      break;
+    case 'onlineOrderVoice':
+      beep(now,       1000, 0.15, 0.40);
+      beep(now + 0.20, 800,  0.15, 0.40);
+      beep(now + 0.40, 1000, 0.15, 0.40);
+      beep(now + 0.60, 800,  0.15, 0.40);
+      break;
+    case 'success':
+      beep(now,       600, 0.15, 0.25);
+      beep(now + 0.18, 900, 0.20, 0.25);
+      break;
+    case 'alert':
+      beep(now,       400, 0.25, 0.35);
+      beep(now + 0.30, 400, 0.25, 0.35);
+      break;
+    case 'statusChange':
+      beep(now, 700, 0.15, 0.25);
+      break;
+  }
+}
+
+function playFromBuffer(ctx: AudioContext, volume: number): void {
+  if (!audioBuffer) return;
+  try {
+    const source = ctx.createBufferSource();
+    const gainNode = ctx.createGain();
+    source.buffer = audioBuffer;
+    gainNode.gain.value = Math.max(0.01, Math.min(1, volume));
+    source.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    source.start();
+  } catch (e) {
+    console.warn('[SOUND] Buffer play failed:', e);
   }
 }
 
@@ -61,9 +123,7 @@ function speakNewOrder(isOnline = false): void {
   try {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    const text = isOnline
-      ? 'طلب جديد أونلاين'
-      : 'طلب جديد';
+    const text = isOnline ? 'طلب جديد أونلاين' : 'طلب جديد';
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.95;
     utterance.pitch = 1.1;
@@ -82,6 +142,15 @@ function speakNewOrder(isOnline = false): void {
   }
 }
 
+const ALLOWED_PATHS = [
+  '/employee/orders',
+  '/employee/orders-display',
+  '/employee/cashier',
+  '/employee/pos',
+  '/employee/kitchen',
+  '/employee/table-orders',
+];
+
 const SOUND_VOLUMES: Record<NotificationSoundType, number> = {
   newOrder: 0.9,
   onlineOrderVoice: 1.0,
@@ -91,57 +160,45 @@ const SOUND_VOLUMES: Record<NotificationSoundType, number> = {
   alert: 0.8,
 };
 
-const SOUND_REPEAT: Record<NotificationSoundType, number> = {
-  newOrder: 2,
-  onlineOrderVoice: 2,
-  cashierOrder: 2,
-  success: 1,
-  statusChange: 1,
-  alert: 1,
-};
-
-export async function playNotificationSound(type: NotificationSoundType = 'newOrder', volume?: number): Promise<void> {
-  const soundAllowedPaths = [
-    '/employee/orders',
-    '/employee/orders-display',
-    '/employee/cashier',
-    '/employee/pos',
-    '/employee/kitchen',
-    '/employee/table-orders',
-  ];
+export async function playNotificationSound(
+  type: NotificationSoundType = 'newOrder',
+  volume?: number
+): Promise<void> {
   const currentPath = window.location.pathname;
-  const isAllowedPath = soundAllowedPaths.some(p => currentPath === p || currentPath.startsWith(p + '/'));
-  if (!isAllowedPath) return;
+  const allowed = ALLOWED_PATHS.some(p => currentPath === p || currentPath.startsWith(p + '/'));
+  if (!allowed) return;
+
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    try {
+      await ctx.resume();
+    } catch {
+      return;
+    }
+  }
+
+  const vol = volume ?? SOUND_VOLUMES[type];
+
+  if (audioBuffer) {
+    playFromBuffer(ctx, vol);
+  } else {
+    playBeepPattern(ctx, type);
+    if (!bufferLoadAttempted) {
+      ensureAudioBuffer();
+    }
+  }
 
   if (type === 'newOrder' || type === 'onlineOrderVoice') {
     speakNewOrder(type === 'onlineOrderVoice');
   }
-
-  buildAudioPool();
-
-  const vol = volume ?? SOUND_VOLUMES[type];
-  const repeats = SOUND_REPEAT[type];
-
-  const playOnce = async () => {
-    const el = getPoolAudio();
-    if (!el) return;
-    try {
-      el.currentTime = 0;
-      el.volume = Math.max(0.01, Math.min(1, vol));
-      await el.play();
-    } catch (err) {
-      console.warn('[SOUND] Play failed:', err);
-    }
-  };
-
-  await playOnce();
-  if (repeats > 1) {
-    await new Promise<void>(resolve => setTimeout(resolve, 600));
-    await playOnce();
-  }
 }
 
-export async function playNotificationSequence(types: NotificationSoundType[], delayMs: number = 300): Promise<void> {
+export async function playNotificationSequence(
+  types: NotificationSoundType[],
+  delayMs = 300
+): Promise<void> {
   for (const type of types) {
     await playNotificationSound(type);
     if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
