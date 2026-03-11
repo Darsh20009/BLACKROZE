@@ -471,8 +471,16 @@ export default function PosSystem() {
       const res = await apiRequest("POST", "/api/orders", orderData);
       const result = await res.json();
 
+      if (!result || result.error) {
+        throw new Error(result?.error || 'Order creation failed');
+      }
+
+      const displayOrderNumber = result.dailyNumber
+        ? String(result.dailyNumber).padStart(4, '0')
+        : (result.orderNumber || '');
+
       setLastOrder({
-        orderNumber: result.orderNumber || result.dailyNumber || '',
+        orderNumber: displayOrderNumber,
         date: new Date().toISOString(),
         items: orderItems.map(item => {
           const addonsPrice = (item.customization?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0);
@@ -496,43 +504,44 @@ export default function PosSystem() {
         tableNumber: orderType === "dine_in" ? tableNumber : undefined,
         orderType,
       });
-      if (autoPrint) {
-        try {
-          printTaxInvoice({
-            orderNumber: result.orderNumber || result.dailyNumber || '',
-            customerName: customerName || t('pos.customer_cash'),
-            customerPhone: customerPhone || '',
-            items: orderItems.map(item => {
-              const addonsPrice = (item.customization?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0);
-              const inlineNames = (item.customization?.selectedItemAddons || []).map((a: any) => a.nameAr).join('، ');
-              return {
-                coffeeItem: {
-                  nameAr: item.coffeeItem.nameAr + (inlineNames ? ` (${inlineNames})` : ''),
-                  nameEn: item.coffeeItem.nameEn,
-                  price: String(Number(item.coffeeItem.price) + addonsPrice),
-                },
-                quantity: item.quantity,
-                customization: item.customization,
-              };
-            }),
-            subtotal: subtotal.toFixed(2),
-            total: total.toFixed(2),
-            paymentMethod: PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod,
-            employeeName: employee?.fullName || t('pos.employee_fallback'),
-            tableNumber: orderType === "dine_in" ? tableNumber : undefined,
-            orderType: orderType as any,
-            date: new Date().toISOString(),
-            crNumber: businessConfig?.commercialRegistration,
-            vatNumber: businessConfig?.vatNumber,
-          }).catch(() => {});
-        } catch {}
-        toast({ title: t('pos.bill_closed'), description: t('pos.order_done_desc') });
-      }
       broadcastToDisplay("payment_success", {
-        orderNumber: result.orderNumber || result.dailyNumber || '',
+        orderNumber: displayOrderNumber,
         items: orderItems.map(i => ({ nameAr: i.coffeeItem.nameAr, price: Number(i.coffeeItem.price), quantity: i.quantity })),
         subtotal, tax, total,
       });
+
+      if (autoPrint) {
+        const printItems = orderItems.map(item => {
+          const addonsPrice = (item.customization?.selectedItemAddons || []).reduce((s: number, a: any) => s + (Number(a.price) || 0), 0);
+          const inlineNames = (item.customization?.selectedItemAddons || []).map((a: any) => a.nameAr).join('، ');
+          return {
+            coffeeItem: {
+              nameAr: item.coffeeItem.nameAr + (inlineNames ? ` (${inlineNames})` : ''),
+              nameEn: item.coffeeItem.nameEn,
+              price: String(Number(item.coffeeItem.price) + addonsPrice),
+            },
+            quantity: item.quantity,
+            customization: item.customization,
+          };
+        });
+        const printArgs = {
+          orderNumber: displayOrderNumber,
+          customerName: customerName || t('pos.customer_cash'),
+          customerPhone: customerPhone || '',
+          items: printItems,
+          subtotal: subtotal.toFixed(2),
+          total: total.toFixed(2),
+          paymentMethod: PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod,
+          employeeName: employee?.fullName || t('pos.employee_fallback'),
+          tableNumber: orderType === "dine_in" ? tableNumber : undefined,
+          orderType: orderType as any,
+          date: new Date().toISOString(),
+          crNumber: businessConfig?.commercialRegistration,
+          vatNumber: businessConfig?.vatNumber,
+        };
+        setTimeout(() => { printTaxInvoice(printArgs).catch(() => {}); }, 400);
+        toast({ title: t('pos.bill_closed'), description: t('pos.order_done_desc') });
+      }
 
       setShowReceiptDialog(true);
 
@@ -1215,7 +1224,7 @@ export default function PosSystem() {
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-black text-lg">{order.orderNumber}</span>
+                              <span className="font-black text-lg">#{order.dailyNumber ? String(order.dailyNumber).padStart(4, '0') : order.orderNumber}</span>
                               <Badge variant={order.status === 'ready' ? 'default' : 'secondary'} className="text-xs">
                                 {statusLabels[order.status] || order.status}
                               </Badge>
@@ -1879,7 +1888,7 @@ export default function PosSystem() {
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-black text-lg">{t('pos.table_number_label', { number: order.tableNumber })}</span>
-                              <Badge variant="secondary" className="text-xs">{order.orderNumber}</Badge>
+                              <Badge variant="secondary" className="text-xs">#{order.dailyNumber ? String(order.dailyNumber).padStart(4, '0') : order.orderNumber}</Badge>
                               <Badge variant="outline" className="text-xs">
                                 {statusLabels[order.status] || order.status}
                               </Badge>

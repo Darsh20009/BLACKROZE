@@ -297,7 +297,7 @@ export default function EmployeeCashier() {
  orderType === 'pickup' ? 'استلام' : 'توصيل';
  
  setLastOrder({
- orderNumber: order.orderNumber,
+ orderNumber: order.dailyNumber ? String(order.dailyNumber).padStart(4, '0') : order.orderNumber,
  customerName,
  customerPhone,
  items: orderItems,
@@ -318,7 +318,7 @@ export default function EmployeeCashier() {
  
  const whatsappData: WhatsAppMessageData = {
  phone: customerPhone,
- orderNumber: order.orderNumber,
+ orderNumber: order.dailyNumber ? String(order.dailyNumber).padStart(4, '0') : order.orderNumber,
  customerName,
  items: orderItems,
  total: order.totalAmount,
@@ -330,7 +330,7 @@ export default function EmployeeCashier() {
  
  toast({
  title: "تم إنشاء الطلب بنجاح",
- description: `رقم الطلب: ${order.orderNumber}`,
+ description: `رقم الطلب: ${order.dailyNumber ? String(order.dailyNumber).padStart(4, '0') : order.orderNumber}`,
  className: "bg-green-600 text-white",
  });
  
@@ -810,7 +810,7 @@ export default function EmployeeCashier() {
        
        // Update lastOrder state for manual printing if needed
        setLastOrder({
-         orderNumber: order.orderNumber,
+         orderNumber: order.dailyNumber ? String(order.dailyNumber).padStart(4, '0') : order.orderNumber,
          customerName,
          customerPhone,
          items: orderItems,
