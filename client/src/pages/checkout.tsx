@@ -497,6 +497,11 @@ export default function CheckoutPage() {
       toast({ variant: "destructive", title: t("checkout.enter_customer_name") });
       return;
     }
+    // Paymob card: skip confirmation dialog and go directly to payment
+    if (selectedPaymentMethod === 'paymob-card' || selectedPaymentMethod === 'paymob-apple-pay') {
+      confirmAndCreateOrder();
+      return;
+    }
     setShowConfirmation(true);
   };
 
@@ -844,15 +849,27 @@ export default function CheckoutPage() {
 
                 <Button
                   onClick={handleProceedPayment}
-                  className="w-full h-14 text-lg"
+                  className={`w-full h-14 text-lg transition-all ${
+                    (selectedPaymentMethod === 'paymob-card' || selectedPaymentMethod === 'paymob-apple-pay')
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg'
+                      : ''
+                  }`}
                   data-testid="button-proceed-payment"
                   disabled={
                     (selectedPaymentMethod === 'cash' && !!cashDistanceError) ||
-                    (selectedPaymentMethod === 'cash' && cashDistanceChecking)
+                    (selectedPaymentMethod === 'cash' && cashDistanceChecking) ||
+                    createOrderMutation.isPending
                   }
                 >
-                  {selectedPaymentMethod === 'cash' && cashDistanceChecking ? (
+                  {createOrderMutation.isPending && (selectedPaymentMethod === 'paymob-card' || selectedPaymentMethod === 'paymob-apple-pay') ? (
+                    <><Loader2 className="w-5 h-5 animate-spin ml-2" />جاري التحضير...</>
+                  ) : selectedPaymentMethod === 'cash' && cashDistanceChecking ? (
                     <><Loader2 className="w-5 h-5 animate-spin ml-2" />{t("checkout.verifying_location")}</>
+                  ) : (selectedPaymentMethod === 'paymob-card' || selectedPaymentMethod === 'paymob-apple-pay') ? (
+                    <span className="flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5" />
+                      اذهب للدفع
+                    </span>
                   ) : t("checkout.confirm_order")}
                 </Button>
 
