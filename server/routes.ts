@@ -1955,8 +1955,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           callbackUrl: pg.geidea?.callbackUrl || '',
         },
         paymob: {
-          configured: !!(pg.paymob?.apiKey && pg.paymob?.integrationId),
+          configured: !!(
+            (pg.paymob?.secretKey && pg.paymob?.publicKey && pg.paymob?.integrationId) ||
+            (pg.paymob?.apiKey && pg.paymob?.integrationId && pg.paymob?.iframeId)
+          ),
+          useIntentionApi: !!(pg.paymob?.secretKey && pg.paymob?.publicKey),
           apiKey: maskSecret(pg.paymob?.apiKey),
+          secretKey: maskSecret(pg.paymob?.secretKey),
+          publicKey: pg.paymob?.publicKey || '',
           integrationId: pg.paymob?.integrationId || '',
           iframeId: pg.paymob?.iframeId || '',
           applePayIntegrationId: pg.paymob?.applePayIntegrationId || '',
@@ -2005,6 +2011,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (body.paymobApplePayIntegrationId) updates['paymentGateway.paymob.applePayIntegrationId'] = body.paymobApplePayIntegrationId;
       if (body.paymobWalletIntegrationId) updates['paymentGateway.paymob.walletIntegrationId'] = body.paymobWalletIntegrationId;
       if (body.paymobHmacSecret) updates['paymentGateway.paymob.hmacSecret'] = body.paymobHmacSecret;
+      if (body.paymobSecretKey) updates['paymentGateway.paymob.secretKey'] = body.paymobSecretKey;
+      if (body.paymobPublicKey) updates['paymentGateway.paymob.publicKey'] = body.paymobPublicKey;
 
       updates['updatedAt'] = new Date();
 
@@ -2161,22 +2169,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (pg.provider === 'paymob') {
+        const PAYMOB_BASE = 'https://ksa.paymob.com';
+        const isApplePay = paymentMethod === 'paymob-apple-pay';
+        const cardIntegrationId = pg.paymob?.integrationId;
+        const applePayIntegrationId = pg.paymob?.applePayIntegrationId;
+        const secretKey = pg.paymob?.secretKey;
+        const publicKey = pg.paymob?.publicKey;
         const apiKey = pg.paymob?.apiKey;
-        // Determine integration ID: Apple Pay uses applePayIntegrationId, card uses integrationId
-        const isApplePay = paymentMethod === 'paymob-apple-pay' || paymentMethod === 'apple_pay';
-        const integrationId = isApplePay
-          ? (pg.paymob?.applePayIntegrationId || pg.paymob?.integrationId)
-          : pg.paymob?.integrationId;
         const iframeId = pg.paymob?.iframeId;
 
-        const PAYMOB_BASE = 'https://ksa.paymob.com';
+        // Build callback/redirect URL
+        const baseOrigin = process.env.REPLIT_DEV_DOMAIN
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+          : (req.headers['x-forwarded-proto']
+            ? `${req.headers['x-forwarded-proto']}://${req.headers['x-forwarded-host'] || req.headers.host}`
+            : `${req.protocol}://${req.get('host')}`);
+        const callbackUrl = `${baseOrigin}/api/payments/paymob/callback`;
 
-        if (!apiKey || !integrationId) {
-          return res.status(400).json({ error: "بيانات اعتماد Paymob غير مكتملة (API Key و Integration ID مطلوبان)" });
-        }
+        const amountCents = Math.round(amount * 100);
+        const billingData = {
+          apartment: 'NA', floor: 'NA', building: 'NA', shipping_method: 'NA',
+          postal_code: 'NA', city: 'Yanbu', country: 'SA', state: 'NA', street: 'NA',
+          email: customerEmail || 'customer@blackrosecafe.com',
+          first_name: customerName ? customerName.split(' ')[0] : (customerPhone ? customerPhone.slice(-4) : 'Guest'),
+          last_name: customerName && customerName.split(' ').length > 1 ? customerName.split(' ').slice(1).join(' ') : 'Customer',
+          phone_number: customerPhone ? (customerPhone.startsWith('+') ? customerPhone : `+966${customerPhone.replace(/^0/, '')}`) : '+966500000000',
+        };
 
         try {
-          // Step 1: Authentication — get auth token
+          // ── PATH A: Intention API (modern KSA flow) — requires secretKey + publicKey ──
+          if (secretKey && publicKey) {
+            const integrationIds: number[] = [];
+            if (cardIntegrationId) integrationIds.push(Number(cardIntegrationId));
+            if (isApplePay && applePayIntegrationId) integrationIds.push(Number(applePayIntegrationId));
+            const paymentMethods = integrationIds.length > 0 ? integrationIds : (cardIntegrationId ? [Number(cardIntegrationId)] : []);
+            if (paymentMethods.length === 0) {
+              return res.status(400).json({ error: "لم يتم تكوين أي Integration ID في إعدادات Paymob" });
+            }
+
+            const intentionBody: any = {
+              amount: amountCents,
+              currency: 'SAR',
+              payment_methods: isApplePay && applePayIntegrationId ? [Number(applePayIntegrationId)] : [Number(cardIntegrationId)],
+              items: [],
+              billing_data: billingData,
+              customer: {
+                email: customerEmail || 'customer@blackrosecafe.com',
+                first_name: billingData.first_name,
+                last_name: billingData.last_name,
+                phone_number: billingData.phone_number,
+              },
+              redirection_url: callbackUrl,
+              notification_url: `${baseOrigin}/api/payments/paymob/webhook`,
+              special_reference: orderId || sessionId,
+            };
+
+            const intentionRes = await fetch(`${PAYMOB_BASE}/v1/intention/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${secretKey}`,
+              },
+              body: JSON.stringify(intentionBody),
+            });
+            const intentionData = await intentionRes.json() as any;
+
+            if (!intentionRes.ok || !intentionData.client_secret) {
+              console.error('[Paymob KSA Intention] Failed:', JSON.stringify(intentionData));
+              return res.status(400).json({ error: "فشل إنشاء جلسة Paymob (Intention API)", details: intentionData.message || intentionData.detail || JSON.stringify(intentionData) });
+            }
+
+            const clientSecret = intentionData.client_secret;
+            const paymentUrl = `${PAYMOB_BASE}/unifiedcheckout/?publicKey=${publicKey}&clientSecret=${clientSecret}`;
+
+            console.log(`[Paymob KSA Intention] Session created — Ref: ${orderId || sessionId}, URL: ${paymentUrl}`);
+            return res.json({
+              success: true,
+              sessionId,
+              redirectUrl: paymentUrl,
+              paymentUrl,
+              provider: 'paymob',
+              externalId: orderId || sessionId,
+              clientSecret,
+            });
+          }
+
+          // ── PATH B: Legacy 3-step API (requires apiKey + integrationId + iframeId) ──
+          const legacyIntegrationId = isApplePay
+            ? (applePayIntegrationId || cardIntegrationId)
+            : cardIntegrationId;
+
+          if (!apiKey || !legacyIntegrationId || !iframeId) {
+            return res.status(400).json({
+              error: "إعدادات Paymob غير مكتملة",
+              details: !secretKey ? "يُوصى بإضافة Secret Key و Public Key من لوحة Paymob KSA (الإعدادات ← المطورون ← API Keys) لتفعيل Unified Checkout. بديلاً، أضف iFrame ID من لوحة Paymob." : "يلزم توفير Public Key"
+            });
+          }
+
+          // Step 1: Auth
           const authResponse = await fetch(`${PAYMOB_BASE}/api/auth/tokens`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2184,13 +2274,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           const authData = await authResponse.json() as any;
           if (!authResponse.ok || !authData.token) {
-            console.error('[Paymob] Auth failed:', authData);
+            console.error('[Paymob Legacy] Auth failed:', authData);
             return res.status(400).json({ error: "فشل مصادقة Paymob — تحقق من API Key", details: authData.detail || authData.message });
           }
           const authToken = authData.token;
 
-          // Step 2: Order Registration
-          const amountCents = Math.round(amount * 100);
+          // Step 2: Register Order
           const orderResponse = await fetch(`${PAYMOB_BASE}/api/ecommerce/orders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2205,16 +2294,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           const orderData = await orderResponse.json() as any;
           if (!orderResponse.ok || !orderData.id) {
-            console.error('[Paymob] Order registration failed:', orderData);
+            console.error('[Paymob Legacy] Order failed:', orderData);
             return res.status(400).json({ error: "فشل تسجيل الطلب في Paymob", details: orderData.message });
           }
           const paymobOrderId = orderData.id;
-
-          // Build callback URL for redirection after payment
-          const baseOrigin = process.env.REPLIT_DEV_DOMAIN
-            ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-            : (req.headers['x-forwarded-proto'] ? `${req.headers['x-forwarded-proto']}://${req.headers['x-forwarded-host'] || req.headers.host}` : `${req.protocol}://${req.get('host')}`);
-          const callbackUrl = `${baseOrigin}/api/payments/paymob/callback`;
 
           // Step 3: Payment Key
           const paymentKeyResponse = await fetch(`${PAYMOB_BASE}/api/acceptance/payment_keys`, {
@@ -2225,40 +2308,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               amount_cents: amountCents,
               expiration: 3600,
               order_id: paymobOrderId,
-              billing_data: {
-                apartment: 'NA',
-                email: customerEmail || 'customer@blackrosecafe.com',
-                floor: 'NA',
-                first_name: customerPhone ? customerPhone.replace(/\D/g, '').slice(-4) : 'Guest',
-                street: 'NA',
-                building: 'NA',
-                phone_number: customerPhone || '+966500000000',
-                shipping_method: 'NA',
-                postal_code: 'NA',
-                city: 'Yanbu',
-                country: 'SA',
-                last_name: 'NA',
-                state: 'NA',
-              },
+              billing_data: billingData,
               currency: 'SAR',
-              integration_id: integrationId,
+              integration_id: legacyIntegrationId,
               lock_order_when_paid: 'false',
               redirect_url: callbackUrl,
             }),
           });
           const paymentKeyData = await paymentKeyResponse.json() as any;
           if (!paymentKeyResponse.ok || !paymentKeyData.token) {
-            console.error('[Paymob] Payment key failed:', paymentKeyData);
+            console.error('[Paymob Legacy] Payment key failed:', paymentKeyData);
             return res.status(400).json({ error: "فشل الحصول على مفتاح الدفع من Paymob", details: paymentKeyData.message });
           }
           const paymentToken = paymentKeyData.token;
 
-          // Step 4: Build payment URL (iframe if available, else hosted redirect)
-          const paymentUrl = iframeId
-            ? `${PAYMOB_BASE}/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`
-            : `${PAYMOB_BASE}/api/acceptance/pay_with_card?payment_token=${paymentToken}`;
+          // Step 4: iFrame URL
+          const paymentUrl = `${PAYMOB_BASE}/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
 
-          console.log(`[Paymob KSA] Payment session created — Order: ${paymobOrderId}, URL: ${paymentUrl}`);
+          console.log(`[Paymob KSA Legacy] Payment session — Order: ${paymobOrderId}, URL: ${paymentUrl}`);
           return res.json({
             success: true,
             sessionId,

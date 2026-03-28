@@ -606,6 +606,8 @@ export interface IPaymentGatewayConfig {
   };
   paymob?: {
     apiKey?: string;
+    secretKey?: string;
+    publicKey?: string;
     integrationId?: string;
     iframeId?: string;
     applePayIntegrationId?: string;
@@ -700,6 +702,8 @@ const PaymentGatewayConfigSchema = new Schema({
   },
   paymob: {
     apiKey: { type: String },
+    secretKey: { type: String },
+    publicKey: { type: String },
     integrationId: { type: String },
     iframeId: { type: String },
     applePayIntegrationId: { type: String },

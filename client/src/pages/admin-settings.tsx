@@ -76,6 +76,8 @@ export default function AdminSettings() {
   const [geideaApiPassword, setGeideaApiPassword] = useState("");
   const [geideaBaseUrl, setGeideaBaseUrl] = useState("https://api.merchant.geidea.net");
   const [paymobApiKey, setPaymobApiKey] = useState("");
+  const [paymobSecretKey, setPaymobSecretKey] = useState("");
+  const [paymobPublicKey, setPaymobPublicKey] = useState("");
   const [paymobIntegrationId, setPaymobIntegrationId] = useState("");
   const [paymobIframeId, setPaymobIframeId] = useState("");
   const [paymobApplePayIntegrationId, setPaymobApplePayIntegrationId] = useState("");
@@ -106,6 +108,7 @@ export default function AdminSettings() {
       }
       if (pgConfig.paymob) {
         setPaymobIntegrationId(pgConfig.paymob.integrationId || '');
+        setPaymobPublicKey(pgConfig.paymob.publicKey || '');
         setPaymobIframeId(pgConfig.paymob.iframeId || '');
         setPaymobApplePayIntegrationId(pgConfig.paymob.applePayIntegrationId || '');
         setPaymobWalletIntegrationId(pgConfig.paymob.walletIntegrationId || '');
@@ -147,6 +150,8 @@ export default function AdminSettings() {
     if (geideaBaseUrl) updates.geideaBaseUrl = geideaBaseUrl;
 
     if (paymobApiKey && !paymobApiKey.startsWith('****')) updates.paymobApiKey = paymobApiKey;
+    if (paymobSecretKey && !paymobSecretKey.startsWith('****')) updates.paymobSecretKey = paymobSecretKey;
+    if (paymobPublicKey) updates.paymobPublicKey = paymobPublicKey;
     if (paymobIntegrationId) updates.paymobIntegrationId = paymobIntegrationId;
     if (paymobIframeId) updates.paymobIframeId = paymobIframeId;
     if (paymobApplePayIntegrationId) updates.paymobApplePayIntegrationId = paymobApplePayIntegrationId;
@@ -1371,48 +1376,61 @@ export default function AdminSettings() {
                   </Button>
                 </div>
 
+                {/* Intention API notice */}
+                {pgConfig?.paymob?.useIntentionApi ? (
+                  <div className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-2 rounded border border-green-200 dark:border-green-800">
+                    <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>يعمل بـ Unified Checkout (Intention API) — الطريقة الموصى بها لـ Paymob KSA</span>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800 text-xs space-y-1">
+                    <p className="font-bold text-amber-800 dark:text-amber-300">⚡ للتفعيل الكامل أضف Secret Key و Public Key:</p>
+                    <p className="text-amber-700 dark:text-amber-400">من لوحة Paymob KSA: الإعدادات ← المطورون ← API Keys</p>
+                    <p className="text-amber-700 dark:text-amber-400">ابحث عن Secret Key (sk_...) و Public Key (pk_...) وأضفهما أدناه</p>
+                  </div>
+                )}
+
                 <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded border border-blue-200 dark:border-blue-800 text-xs space-y-1">
                   <p className="font-bold text-blue-800 dark:text-blue-300">بيانات Paymob KSA (المملكة العربية السعودية):</p>
                   <ol className="list-decimal list-inside space-y-0.5 text-blue-700 dark:text-blue-400">
                     <li>لوحة التحكم: <span className="font-mono">ksa.paymob.com</span></li>
-                    <li>API Key: الإعدادات ← الأمان ← API Key</li>
+                    <li>Secret Key + Public Key: الإعدادات ← المطورون ← API Keys</li>
                     <li>Integration ID (بطاقة): المدفوعات ← الدمج ← MIGS-online</li>
                     <li>Apple Pay Integration ID: المدفوعات ← الدمج ← MIGS-online (APPLE PAY)</li>
-                    <li>iFrame ID (اختياري): المدفوعات ← iFrames ← رقم الـ iframe</li>
                     <li>HMAC Secret: الإعدادات ← الأمان ← HMAC Secret</li>
                   </ol>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">API Key <span className="text-destructive">*</span></Label>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs font-semibold text-primary">Secret Key (sk_...) <span className="text-destructive">*</span></Label>
                     <Input
                       type={showSecrets ? "text" : "password"}
-                      value={paymobApiKey}
-                      onChange={e => setPaymobApiKey(e.target.value)}
-                      placeholder={pgConfig?.paymob?.configured ? pgConfig.paymob.apiKey : 'أدخل API Key'}
+                      value={paymobSecretKey}
+                      onChange={e => setPaymobSecretKey(e.target.value)}
+                      placeholder={pgConfig?.paymob?.secretKey ? pgConfig.paymob.secretKey : 'sk_...'}
                       className="text-sm font-mono"
-                      data-testid="input-paymob-api-key"
+                      data-testid="input-paymob-secret-key"
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs font-semibold text-primary">Public Key (pk_...) <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={paymobPublicKey}
+                      onChange={e => setPaymobPublicKey(e.target.value)}
+                      placeholder={pgConfig?.paymob?.publicKey || 'pk_...'}
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-public-key"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Integration ID <span className="text-destructive">*</span></Label>
+                    <Label className="text-xs">Integration ID (بطاقة) <span className="text-destructive">*</span></Label>
                     <Input
                       value={paymobIntegrationId}
                       onChange={e => setPaymobIntegrationId(e.target.value)}
-                      placeholder="مثال: 123456"
+                      placeholder="مثال: 24948"
                       className="text-sm font-mono"
                       data-testid="input-paymob-integration-id"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">iFrame ID <span className="text-destructive">*</span></Label>
-                    <Input
-                      value={paymobIframeId}
-                      onChange={e => setPaymobIframeId(e.target.value)}
-                      placeholder="مثال: 789012"
-                      className="text-sm font-mono"
-                      data-testid="input-paymob-iframe-id"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -1426,13 +1444,34 @@ export default function AdminSettings() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Wallet Integration ID (اختياري — للمحافظ)</Label>
+                    <Label className="text-xs">iFrame ID (بديل — بدون Unified Checkout)</Label>
+                    <Input
+                      value={paymobIframeId}
+                      onChange={e => setPaymobIframeId(e.target.value)}
+                      placeholder="مثال: 789012"
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-iframe-id"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Wallet Integration ID (اختياري)</Label>
                     <Input
                       value={paymobWalletIntegrationId}
                       onChange={e => setPaymobWalletIntegrationId(e.target.value)}
                       placeholder="مثال: 654321"
                       className="text-sm font-mono"
                       data-testid="input-paymob-wallet-integration-id"
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs">API Key القديم (للمتوافقية — اختياري)</Label>
+                    <Input
+                      type={showSecrets ? "text" : "password"}
+                      value={paymobApiKey}
+                      onChange={e => setPaymobApiKey(e.target.value)}
+                      placeholder={pgConfig?.paymob?.apiKey ? pgConfig.paymob.apiKey : 'أدخل API Key القديم إن وجد'}
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-api-key"
                     />
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
