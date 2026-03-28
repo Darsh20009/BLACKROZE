@@ -112,7 +112,7 @@ export default function PaymentMethods({
      {paymentMethods.map((method) => {
     const isQahwaCard = (method.id as string) === 'qahwa-card';
     const isNeoLeap = (method.id as string) === 'neoleap' || (method.id as string) === 'neoleap-apple-pay' || (method.id as string) === 'apple_pay';
-    const isApplePay = (method.id as string) === 'apple_pay' || (method.id as string) === 'neoleap-apple-pay';
+    const isApplePay = (method.id as string) === 'apple_pay' || (method.id as string) === 'neoleap-apple-pay' || (method.id as string) === 'paymob-apple-pay';
     const isLoyaltyCard = (method.id as string) === 'loyalty-card';
     const isSelected = selectedMethod === method.id;
 

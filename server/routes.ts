@@ -1891,10 +1891,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allMethods.push({ id: 'apple_pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fas fa-mobile-alt', gateway: 'geidea' });
         }
       } else if (pg?.provider === 'paymob') {
-        const hasCredentials = !!(pg.paymob?.apiKey && pg.paymob?.integrationId);
+        const hasCredentials = !!(
+          (pg.paymob?.secretKey && pg.paymob?.integrationId) ||
+          (pg.paymob?.apiKey && pg.paymob?.integrationId)
+        );
         if (hasCredentials) {
-          allMethods.push({ id: 'paymob-card', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد — Paymob', icon: 'fas fa-credit-card', gateway: 'paymob' });
-          if (pg.paymob?.applePayIntegrationId) {
+          const usingUnifiedCheckout = !!(pg.paymob?.secretKey && pg.paymob?.publicKey);
+          allMethods.push({
+            id: 'paymob-card',
+            nameAr: 'بطاقة بنكية',
+            nameEn: 'Card Payment',
+            details: usingUnifiedCheckout
+              ? 'مدى، فيزا، ماستركارد — يدعم Apple Pay تلقائياً على أجهزة Apple'
+              : 'مدى، فيزا، ماستر كارد — Paymob',
+            icon: 'fas fa-credit-card',
+            gateway: 'paymob',
+          });
+          // Apple Pay is handled automatically inside Unified Checkout — no separate button needed
+          // Only show as separate option when using Legacy iFrame mode (not Unified Checkout)
+          if (!usingUnifiedCheckout && pg.paymob?.applePayIntegrationId) {
             allMethods.push({ id: 'paymob-apple-pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay — Paymob', icon: 'fas fa-mobile-alt', gateway: 'paymob' });
           }
         }

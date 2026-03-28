@@ -448,7 +448,7 @@ export default function CheckoutPage() {
 
   const isOnlinePaymentMethod = (method: string | null) => {
     if (!method) return false;
-    const onlineMethods = ['neoleap', 'geidea', 'apple_pay', 'neoleap-apple-pay', 'bank_card', 'paymob-card', 'paymob-wallet'];
+    const onlineMethods = ['neoleap', 'geidea', 'apple_pay', 'neoleap-apple-pay', 'bank_card', 'paymob-card', 'paymob-apple-pay', 'paymob-wallet'];
     return onlineMethods.includes(method);
   };
 
