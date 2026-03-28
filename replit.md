@@ -81,4 +81,10 @@ The system also includes:
 - **Mapping/Geospatial:** `turf.js`
 - **Charting:** `recharts`
 - **Delivery Platforms (Integrations):** Noon Food, Hunger Station, Keeta, Marsool, Careem.
-- **QR Code Generation:** `zatca-utils.ts` (custom utility module).
+
+## Replit Migration Notes
+
+- Dev script uses `node_modules/.bin/tsx` explicitly to ensure tsx is resolved correctly in Replit's shell environment.
+- Sensitive credentials (MONGODB_URI, VAPID_PRIVATE_KEY) are stored as Replit Secrets; non-sensitive config (VAPID_PUBLIC_KEY, VAPID_SUBJECT) are stored as shared environment variables.
+- Server listens on port 5000 which maps to external port 80.
+- Deployment build outputs to `dist/index.js` (ESM format).
