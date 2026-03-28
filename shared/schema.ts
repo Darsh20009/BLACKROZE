@@ -1192,7 +1192,7 @@ const OrderSchema = new Schema<IOrder>({
   items: { type: Schema.Types.Mixed, required: true },
   totalAmount: { type: Number, required: true },
   dailyNumber: { type: Number },
-  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada"], required: true },
+  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada", "neoleap", "neoleap-apple-pay", "geidea", "paymob-card", "paymob-apple-pay", "paymob-wallet", "loyalty-card", "bank_card"], required: true },
   paymentDetails: { type: String },
   paymentReceiptUrl: { type: String },
   isOpenTab: { type: Boolean, default: false },
@@ -1776,7 +1776,7 @@ const TaxInvoiceSchema = new Schema<ITaxInvoice>({
   taxAmount: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
 
-  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada"], required: true },
+  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada", "neoleap", "neoleap-apple-pay", "geidea", "paymob-card", "paymob-apple-pay", "paymob-wallet", "loyalty-card", "bank_card"], required: true },
   paymentMeans: { type: String },
 
   invoiceCounter: { type: Number, required: true },
@@ -1838,7 +1838,7 @@ const RevenueSchema = new Schema<IRevenue>({
   grossAmount: { type: Number, required: true },
   vatAmount: { type: Number, required: true },
   netAmount: { type: Number, required: true },
-  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada"], required: true },
+  paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada", "neoleap", "neoleap-apple-pay", "geidea", "paymob-card", "paymob-apple-pay", "paymob-wallet", "loyalty-card", "bank_card"], required: true },
   employeeId: { type: String },
   notes: { type: String },
   createdAt: { type: Date, default: Date.now },
