@@ -7,7 +7,7 @@ import {
   Coffee, Users, BarChart3, Globe, Shield, Headphones,
   Smartphone, ChefHat, Star
 } from "lucide-react";
-import qiroxLogoStaff from "@assets/qirox-logo-staff.png";
+import qiroxLogoStaff from '@assets/blackrose-logo.png';
 
 const tc = (ar: string, en: string) => ar;
 

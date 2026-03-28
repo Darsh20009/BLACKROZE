@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Bell, Download, Smartphone, Share2, PlusSquare, X, Loader2, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import qiroxLogo from "@assets/qirox-logo-customer.png";
+import qiroxLogo from "@assets/blackrose-logo.png";
 import { brand } from "@/lib/brand";
 
-const NOTIF_DISMISSED_KEY = "qirox_notif_prompted";
-const INSTALL_DISMISSED_KEY = "qirox_install_prompted";
+const NOTIF_DISMISSED_KEY = "blackrose_notif_prompted";
+const INSTALL_DISMISSED_KEY = "blackrose_install_prompted";
 
 function isIOS() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent) ||

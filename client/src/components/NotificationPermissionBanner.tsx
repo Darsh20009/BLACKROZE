@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import qiroxLogo from "@assets/qirox-logo-customer.png";
+import qiroxLogo from '@assets/blackrose-logo.png';
 
 interface NotificationPermissionBannerProps {
   onRequestPermission: () => Promise<NotificationPermission | void>;

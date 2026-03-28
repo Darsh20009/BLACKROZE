@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ShoppingCart, Plus, Minus, Trash2, CheckCircle, Coffee, ChevronRight, X, Loader2 } from "lucide-react";
-import qiroxLogo from "@assets/qirox-logo-customer.png";
+import qiroxLogo from '@assets/blackrose-logo.png';
 import { useTranslate } from "@/lib/useTranslate";
 import { useTranslation } from "react-i18next";
 

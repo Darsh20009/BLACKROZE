@@ -14,6 +14,10 @@ import { CartProvider, useCartStore } from "@/lib/cart-store";
 import { CustomerProvider } from "@/contexts/CustomerContext";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PWAUpdateNotifier } from "@/components/PWAUpdateNotifier";
+import { GlobalPrompts } from "@/components/global-prompts";
+import { PWAInstallBanner } from "@/components/pwa-install";
+import { OfflineIndicator } from "@/components/offline-indicator";
+import { AdminLayout } from "@/components/admin-layout";
 import MenuPage from "@/pages/menu"; 
 import CustomerProfile from "@/pages/customer-profile";
 import CartPage from "@/pages/cart-page";
@@ -37,6 +41,7 @@ const EmployeeOrdersDisplay = lazy(() => import("@/pages/employee-orders-display
 const UnifiedHub = lazy(() => import("@/pages/unified-hub"));
 const MyCard = lazy(() => import("@/pages/my-card"));
 const CustomerAuth = lazy(() => import("@/pages/CustomerAuth"));
+const CustomerLogin = lazy(() => import("@/pages/customer-login"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const CopyCard = lazy(() => import("@/pages/CopyCard"));
@@ -70,6 +75,7 @@ const InventoryRecipes = lazy(() => import("@/pages/inventory-recipes"));
 const InventoryStock = lazy(() => import("@/pages/inventory-stock"));
 const InventoryAlerts = lazy(() => import("@/pages/inventory-alerts"));
 const InventoryMovements = lazy(() => import("@/pages/inventory-movements"));
+const InventoryTransfers = lazy(() => import("@/pages/inventory-transfers"));
 const POSSystem = lazy(() => import("@/pages/pos-system"));
 const KitchenDisplay = lazy(() => import("@/pages/kitchen-display"));
 const AccountingDashboard = lazy(() => import("@/pages/accounting-dashboard"));
@@ -187,6 +193,7 @@ function AppRouter() {
       <Route path="/auth">
         <CustomerAuth />
       </Route>
+      <Route path="/customer-login"><CustomerLogin /></Route>
       <Route path="/forgot-password">
         <ForgotPassword />
       </Route>
@@ -290,6 +297,7 @@ function AppRouter() {
       <Route path="/manager/inventory/stock"><AuthGuard userType="manager"><InventoryStock /></AuthGuard></Route>
       <Route path="/manager/inventory/alerts"><AuthGuard userType="manager"><InventoryAlerts /></AuthGuard></Route>
       <Route path="/manager/inventory/movements"><AuthGuard userType="manager"><InventoryMovements /></AuthGuard></Route>
+      <Route path="/manager/inventory/transfers"><AuthGuard userType="manager"><InventoryTransfers /></AuthGuard></Route>
       <Route path="/manager/accounting"><AuthGuard userType="manager"><AccountingDashboard /></AuthGuard></Route>
       <Route path="/manager/inventory/smart"><AuthGuard userType="manager"><InventorySmartPage /></AuthGuard></Route>
       <Route path="/manager/accounting/smart"><AuthGuard userType="manager"><AccountingSmartPage /></AuthGuard></Route>
@@ -323,11 +331,11 @@ function AppRouter() {
 
       {/* Admin protected routes */}
       <Route path="/admin/dashboard"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminDashboard /></AuthGuard></Route>
-      <Route path="/admin/employees"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminEmployees /></AuthGuard></Route>
-      <Route path="/admin/reports"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminReports /></AuthGuard></Route>
-      <Route path="/admin/settings"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminSettings /></AuthGuard></Route>
-      <Route path="/admin/branches"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminBranches /></AuthGuard></Route>
-    <Route path="/admin/email"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminEmail /></AuthGuard></Route>
+      <Route path="/admin/employees"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminLayout><AdminEmployees /></AdminLayout></AuthGuard></Route>
+      <Route path="/admin/reports"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminLayout><AdminReports /></AdminLayout></AuthGuard></Route>
+      <Route path="/admin/settings"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminLayout><AdminSettings /></AdminLayout></AuthGuard></Route>
+      <Route path="/admin/branches"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminLayout><AdminBranches /></AdminLayout></AuthGuard></Route>
+    <Route path="/admin/email"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminLayout><AdminEmail /></AdminLayout></AuthGuard></Route>
 
       {/* Phase 5 - New Dashboard Pages */}
       <Route path="/recipes/management"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><RecipesManagement /></AuthGuard></Route>
@@ -367,8 +375,8 @@ function AppRouter() {
       <Route path="/manager/partners"><AuthGuard userType="manager"><PartnerProgram /></AuthGuard></Route>
 
       {/* Admin extra pages */}
-      <Route path="/admin/notifications"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminNotificationsPage /></AuthGuard></Route>
-      <Route path="/admin/api"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ApiManagement /></AuthGuard></Route>
+      <Route path="/admin/notifications"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminLayout><AdminNotificationsPage /></AdminLayout></AuthGuard></Route>
+      <Route path="/admin/api"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminLayout><ApiManagement /></AdminLayout></AuthGuard></Route>
 
       {/* Super Admin (System) */}
       <Route path="/qirox/dashboard"><QiroxDashboard /></Route>
@@ -450,7 +458,10 @@ function App() {
                 <WouterRouter>
                   <AppContent />
                 </WouterRouter>
+                <GlobalPrompts />
                 <PWAUpdateNotifier />
+                <PWAInstallBanner />
+                <OfflineIndicator />
               </ErrorBoundary>
             </CartProvider>
           </CustomerProvider>

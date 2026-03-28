@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Bell, Info, Share2, PlusSquare } from "lucide-react";
+import { Download, X, Smartphone, Monitor } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import blackroseLogo from "@assets/blackrose-logo.png";
 import { useTranslation } from "react-i18next";
+import { useTranslate } from "@/lib/useTranslate";
 
 export function PWAInstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -97,5 +98,84 @@ export function PWAInstallButton() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+let _deferredPromptGlobal: BeforeInstallPromptEvent | null = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _deferredPromptGlobal = e as BeforeInstallPromptEvent;
+    window.dispatchEvent(new CustomEvent('pwa-installable'));
+  });
+}
+
+export function PWAInstallBanner() {
+  const tc = useTranslate();
+  const [canInstall, setCanInstall] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone);
+  const [showIOS, setShowIOS] = useState(false);
+
+  useEffect(() => {
+    if (isIOS && !isStandalone && !sessionStorage.getItem('pwa-ios-dismissed')) setShowIOS(true);
+    if (_deferredPromptGlobal) setCanInstall(true);
+    const handler = () => setCanInstall(true);
+    window.addEventListener('pwa-installable', handler);
+    return () => window.removeEventListener('pwa-installable', handler);
+  }, []);
+
+  if (isStandalone || dismissed) return null;
+
+  if (showIOS) return (
+    <Card className="fixed bottom-20 left-3 right-3 z-50 border-primary/30 shadow-2xl bg-background/95 backdrop-blur-md md:left-auto md:right-4 md:w-80">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <p className="font-bold text-sm flex items-center gap-1">
+              <Smartphone className="w-4 h-4 text-primary" />{tc("ثبّت التطبيق على iPhone", "Install on iPhone")}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">{tc('اضغط "مشاركة" ثم "أضف إلى الشاشة الرئيسية"', 'Tap "Share" then "Add to Home Screen"')}</p>
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { sessionStorage.setItem('pwa-ios-dismissed','1'); setShowIOS(false); }}>
+            <X className="w-3 h-3" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  if (!canInstall) return null;
+
+  return (
+    <Card className="fixed bottom-20 left-3 right-3 z-50 border-primary/30 shadow-2xl bg-background/95 backdrop-blur-md md:left-auto md:right-4 md:w-80">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <p className="font-bold text-sm">{tc("ثبّت تطبيق Blackrose", "Install Blackrose App")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{tc("يعمل بدون إنترنت وبسرعة أكبر", "Works offline and faster")}</p>
+          </div>
+          <div className="flex gap-1">
+            <Button size="sm" onClick={async () => {
+              if (!_deferredPromptGlobal) return;
+              await _deferredPromptGlobal.prompt();
+              const { outcome } = await _deferredPromptGlobal.userChoice;
+              if (outcome === 'accepted') { _deferredPromptGlobal = null; setCanInstall(false); }
+              else setDismissed(true);
+            }}>
+              <Download className="w-3.5 h-3.5 ml-1" />{tc("تثبيت", "Install")}
+            </Button>
+            <Button size="sm" variant="ghost" className="px-2" onClick={() => setDismissed(true)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
