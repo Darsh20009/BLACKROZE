@@ -2031,7 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize payment session (gateway-agnostic)
   app.post("/api/payments/init", async (req, res) => {
     try {
-      const { amount, orderId, currency = 'SAR', customerEmail, customerPhone, returnUrl, paymentMethod } = req.body;
+      const { amount, orderId, currency = 'SAR', customerEmail, customerPhone, customerName, returnUrl, paymentMethod } = req.body;
 
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "المبلغ مطلوب" });
