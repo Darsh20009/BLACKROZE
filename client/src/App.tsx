@@ -127,6 +127,22 @@ const DriverLogin = lazy(() => import("@/pages/driver-login"));
 const DeliveryTracking = lazy(() => import("@/pages/delivery-tracking"));
 const WelcomePage = lazy(() => import("@/pages/welcome"));
 const EmployeeHome = lazy(() => import("@/pages/employee-home"));
+const ShiftManagement = lazy(() => import("@/pages/shift-management"));
+const PromotionsManagement = lazy(() => import("@/pages/promotions-management"));
+const KioskPage = lazy(() => import("@/pages/kiosk"));
+const ManagerDelivery = lazy(() => import("@/pages/manager-delivery"));
+const AdminNotificationsPage = lazy(() => import("@/pages/admin-notifications"));
+const BIAnalytics = lazy(() => import("@/pages/bi-analytics"));
+const ManagerAI = lazy(() => import("@/pages/manager-ai"));
+const UnifiedReports = lazy(() => import("@/pages/unified-reports"));
+const HardwareManagement = lazy(() => import("@/pages/hardware-management"));
+const B2BMarketplace = lazy(() => import("@/pages/b2b-marketplace"));
+const PartnerProgram = lazy(() => import("@/pages/partner-program"));
+const PaymentReturnPage = lazy(() => import("@/pages/payment-return"));
+const PricingPage = lazy(() => import("@/pages/pricing"));
+const QiroxLogin = lazy(() => import("@/pages/qirox-login"));
+const QiroxDashboard = lazy(() => import("@/pages/qirox-dashboard"));
+const ApiManagement = lazy(() => import("@/pages/api-management"));
 import blackroseLogoCustomer from "@assets/blackrose-logo.png";
 import blackroseLogoStaff from "@assets/blackrose-logo.png";
 
@@ -330,6 +346,34 @@ function AppRouter() {
 
       {/* Customer Delivery Tracking */}
       <Route path="/delivery/track/:orderId"><DeliveryTracking /></Route>
+
+      {/* Public pages */}
+      <Route path="/pricing"><PricingPage /></Route>
+      <Route path="/kiosk"><KioskPage /></Route>
+      <Route path="/payment-return"><PaymentReturnPage /></Route>
+
+      {/* Employee / Manager shift management */}
+      <Route path="/employee/shifts"><AuthGuard userType="employee"><ShiftManagement /></AuthGuard></Route>
+      <Route path="/manager/shifts"><AuthGuard userType="manager"><ShiftManagement /></AuthGuard></Route>
+
+      {/* Manager extra pages */}
+      <Route path="/manager/promotions"><AuthGuard userType="manager"><PromotionsManagement /></AuthGuard></Route>
+      <Route path="/manager/delivery"><AuthGuard userType="manager"><ManagerDelivery /></AuthGuard></Route>
+      <Route path="/manager/unified-reports"><AuthGuard userType="manager"><UnifiedReports /></AuthGuard></Route>
+      <Route path="/manager/bi-analytics"><AuthGuard userType="manager"><BIAnalytics /></AuthGuard></Route>
+      <Route path="/manager/ai"><AuthGuard userType="manager"><ManagerAI /></AuthGuard></Route>
+      <Route path="/manager/hardware"><AuthGuard userType="manager"><HardwareManagement /></AuthGuard></Route>
+      <Route path="/manager/b2b"><AuthGuard userType="manager"><B2BMarketplace /></AuthGuard></Route>
+      <Route path="/manager/partners"><AuthGuard userType="manager"><PartnerProgram /></AuthGuard></Route>
+
+      {/* Admin extra pages */}
+      <Route path="/admin/notifications"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><AdminNotificationsPage /></AuthGuard></Route>
+      <Route path="/admin/api"><AuthGuard userType="manager" allowedRoles={["owner", "admin", "manager"]}><ApiManagement /></AuthGuard></Route>
+
+      {/* Super Admin (System) */}
+      <Route path="/qirox/dashboard"><QiroxDashboard /></Route>
+      <Route path="/qirox"><QiroxLogin /></Route>
+
       <Route component={MenuPage} />
     </Switch>
   );

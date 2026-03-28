@@ -6,6 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { registerRoutes } from "./routes";
+import { registerQiroxRoutes } from "./qirox-admin";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import { initWebPush } from "./push-service";
@@ -424,6 +425,7 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+  registerQiroxRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

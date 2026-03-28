@@ -2797,7 +2797,7 @@ export type InsertTable = z.infer<typeof insertTableSchema>;
 export type Attendance = IAttendance;
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 
-export type PaymentMethod = 'cash' | 'qahwa-card' | 'loyalty-card' | 'pos' | 'pos-network' | 'geidea' | 'apple-pay' | 'apple_pay' | 'mada' | 'alinma' | 'rajhi' | 'ur' | 'barq' | 'neoleap' | 'neoleap-apple-pay' | 'copy-card' | 'stc-pay';
+export type PaymentMethod = 'cash' | 'qahwa-card' | 'loyalty-card' | 'pos' | 'pos-network' | 'geidea' | 'apple-pay' | 'apple_pay' | 'mada' | 'alinma' | 'rajhi' | 'ur' | 'barq' | 'neoleap' | 'neoleap-apple-pay' | 'copy-card' | 'stc-pay' | 'paymob-card' | 'paymob-apple-pay';
 
 export interface PaymentMethodInfo {
   id: PaymentMethod;
@@ -5271,3 +5271,125 @@ export const PurchaseOrderModel = mongoose.model<IPurchaseOrder>("PurchaseOrder"
 
 export type GiftCard = IGiftCard;
 export type PurchaseOrder = IPurchaseOrder;
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Payroll Snapshot — frozen monthly payroll record
+// ──────────────────────────────────────────────────────────────────────────────
+export interface IPayrollSnapshot extends Document {
+  id: string;
+  tenantId: string;
+  branchId?: string;
+  year: number;
+  month: number;
+  status: 'frozen' | 'approved';
+  employees: Array<{
+    employeeId: string;
+    name: string;
+    role: string;
+    baseSalary: number;
+    presentDays: number;
+    absentDays: number;
+    explicitAbsentDays: number;
+    implicitAbsentDays: number;
+    lateDays: number;
+    totalLateMinutes: number;
+    shiftHours: number;
+    totalWorkingDays: number;
+    deductions: number;
+    lateDeductions: number;
+    netSalary: number;
+    attendanceRate: number;
+  }>;
+  totals: {
+    totalBaseSalary: number;
+    totalDeductions: number;
+    totalNetSalary: number;
+    employeeCount: number;
+  };
+  frozenAt: Date;
+  frozenBy: string;
+  approvedAt?: Date;
+  approvedBy?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const PayrollSnapshotSchema = new Schema<IPayrollSnapshot>({
+  id: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  branchId: { type: String },
+  year: { type: Number, required: true },
+  month: { type: Number, required: true, min: 1, max: 12 },
+  status: { type: String, enum: ['frozen', 'approved'], default: 'frozen', required: true },
+  employees: [{ employeeId: String, name: String, role: String, baseSalary: { type: Number, default: 0 },
+    presentDays: { type: Number, default: 0 }, absentDays: { type: Number, default: 0 },
+    explicitAbsentDays: { type: Number, default: 0 }, implicitAbsentDays: { type: Number, default: 0 },
+    lateDays: { type: Number, default: 0 }, totalLateMinutes: { type: Number, default: 0 },
+    shiftHours: { type: Number, default: 8 }, totalWorkingDays: { type: Number, default: 0 },
+    deductions: { type: Number, default: 0 }, lateDeductions: { type: Number, default: 0 },
+    netSalary: { type: Number, default: 0 }, attendanceRate: { type: Number, default: 0 } }],
+  totals: { totalBaseSalary: { type: Number, default: 0 }, totalDeductions: { type: Number, default: 0 },
+    totalNetSalary: { type: Number, default: 0 }, employeeCount: { type: Number, default: 0 } },
+  frozenAt: { type: Date, required: true },
+  frozenBy: { type: String, required: true },
+  approvedAt: { type: Date },
+  approvedBy: { type: String },
+  notes: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+PayrollSnapshotSchema.index({ tenantId: 1, year: 1, month: 1 });
+PayrollSnapshotSchema.index({ tenantId: 1, status: 1 });
+
+export const PayrollSnapshotModel = mongoose.models['PayrollSnapshot'] || mongoose.model<IPayrollSnapshot>("PayrollSnapshot", PayrollSnapshotSchema);
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Cashier Shift — POS shift management
+// ──────────────────────────────────────────────────────────────────────────────
+export interface ICashierShift extends Document {
+  id: string; shiftNumber: string; employeeId: string; employeeName: string;
+  branchId: string; branchName?: string; status: 'open' | 'closed';
+  openedAt: Date; closedAt?: Date; openingCash: number; closingCash?: number;
+  expectedCash?: number; cashDifference?: number; totalSales: number;
+  totalOrders: number; totalCashSales: number; totalCardSales: number;
+  totalDigitalSales: number; totalRefunds: number; totalDiscounts: number;
+  totalCancelledOrders: number; totalVAT: number; netRevenue: number;
+  cashSales?: number; cardSales?: number; totalExpenses?: number;
+  paymentBreakdown: { cash: number; card: number; loyalty: number };
+  orderTypeBreakdown: { dine_in: number; takeaway: number; car_pickup: number; delivery: number; online: number };
+  cashMovements: Array<{ id?: string; type: string; amount: number; reason: string; timestamp?: Date; createdAt?: Date; performedBy?: string }>;
+  ordersServed?: string[]; orderIds?: string[]; notes?: string; closingNotes?: string;
+  tenantId: string; createdAt: Date; updatedAt: Date;
+}
+
+const CashierShiftSchema = new Schema<ICashierShift>({
+  id: { type: String }, shiftNumber: { type: String },
+  employeeId: { type: String, required: true }, employeeName: { type: String, default: '' },
+  branchId: { type: String, default: 'main' }, branchName: { type: String },
+  status: { type: String, enum: ['open', 'closed'], default: 'open' },
+  openedAt: { type: Date, default: Date.now }, closedAt: { type: Date },
+  openingCash: { type: Number, default: 0 }, closingCash: { type: Number },
+  expectedCash: { type: Number, default: 0 }, cashDifference: { type: Number, default: 0 },
+  totalSales: { type: Number, default: 0 }, totalOrders: { type: Number, default: 0 },
+  totalCashSales: { type: Number, default: 0 }, totalCardSales: { type: Number, default: 0 },
+  totalDigitalSales: { type: Number, default: 0 }, totalRefunds: { type: Number, default: 0 },
+  totalDiscounts: { type: Number, default: 0 }, totalCancelledOrders: { type: Number, default: 0 },
+  totalVAT: { type: Number, default: 0 }, netRevenue: { type: Number, default: 0 },
+  cashSales: { type: Number, default: 0 }, cardSales: { type: Number, default: 0 },
+  totalExpenses: { type: Number, default: 0 },
+  paymentBreakdown: { cash: { type: Number, default: 0 }, card: { type: Number, default: 0 }, loyalty: { type: Number, default: 0 } },
+  orderTypeBreakdown: { dine_in: { type: Number, default: 0 }, takeaway: { type: Number, default: 0 }, car_pickup: { type: Number, default: 0 }, delivery: { type: Number, default: 0 }, online: { type: Number, default: 0 } },
+  cashMovements: [{ id: String, type: String, amount: Number, reason: String, timestamp: Date, createdAt: { type: Date, default: Date.now }, performedBy: String }],
+  ordersServed: [{ type: String }], orderIds: [{ type: String }],
+  notes: { type: String }, closingNotes: { type: String },
+  tenantId: { type: String, default: 'default' },
+}, { timestamps: true });
+
+CashierShiftSchema.index({ employeeId: 1, status: 1 });
+CashierShiftSchema.index({ branchId: 1, status: 1 });
+CashierShiftSchema.index({ openedAt: -1 });
+CashierShiftSchema.index({ tenantId: 1 });
+
+export const CashierShiftModel = mongoose.models['CashierShift'] || mongoose.model<ICashierShift>("CashierShift", CashierShiftSchema);

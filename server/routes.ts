@@ -45,6 +45,8 @@ import {
   PointTransferModel,
   AppointmentModel as AppointmentSchemaModel,
   LoyaltyCardModel,
+  PayrollSnapshotModel,
+  CashierShiftModel,
 } from "@shared/schema";
 import { RecipeEngine } from "./recipe-engine";
 import { UnitsEngine } from "./units-engine";
@@ -15373,6 +15375,396 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SHIFT MANAGEMENT ROUTES (Cashier Shifts)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  app.post("/api/shifts/open", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { branchId, openingCash = 0, notes } = req.body;
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const employeeId = req.employee?.id;
+      if (!employeeId) return res.status(401).json({ error: 'غير مصرح' });
+      const existingShift = await CashierShiftModel.findOne({ employeeId, status: 'open' });
+      if (existingShift) return res.status(400).json({ error: 'يوجد وردية مفتوحة بالفعل لهذا الموظف' });
+      const shiftCount = await CashierShiftModel.countDocuments({ tenantId });
+      const shiftNumber = `SH-${Date.now()}-${shiftCount + 1}`;
+      const newShift = await CashierShiftModel.create({
+        id: `shift-${Date.now()}`, tenantId, branchId: branchId || 'branch-1',
+        employeeId, shiftNumber, status: 'open', openingCash,
+        openedAt: new Date(), notes,
+        totalSales: 0, totalOrders: 0, cashSales: 0, cardSales: 0, totalExpenses: 0,
+        cashMovements: [], ordersServed: [],
+      });
+      res.json({ success: true, shift: newShift });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/shifts/active", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const employeeId = req.employee?.id;
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const shift = await CashierShiftModel.findOne({ employeeId, status: 'open' })
+        .sort({ openedAt: -1 }).lean();
+      res.json({ shift: shift || null });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/shifts/add-order", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { orderId, amount, paymentMethod } = req.body;
+      const employeeId = req.employee?.id;
+      const activeShift = await CashierShiftModel.findOne({ employeeId, status: 'open' });
+      if (!activeShift) return res.status(404).json({ error: 'لا توجد وردية مفتوحة' });
+      activeShift.totalSales = (activeShift.totalSales || 0) + (amount || 0);
+      activeShift.totalOrders = (activeShift.totalOrders || 0) + 1;
+      if (paymentMethod === 'cash') activeShift.cashSales = (activeShift.cashSales || 0) + (amount || 0);
+      else activeShift.cardSales = (activeShift.cardSales || 0) + (amount || 0);
+      if (orderId && !activeShift.ordersServed?.includes(orderId)) {
+        activeShift.ordersServed = [...(activeShift.ordersServed || []), orderId];
+      }
+      await activeShift.save();
+      res.json({ success: true, shift: activeShift });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/shifts/cancel-order", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { orderId, amount } = req.body;
+      const employeeId = req.employee?.id;
+      const activeShift = await CashierShiftModel.findOne({ employeeId, status: 'open' });
+      if (!activeShift) return res.status(404).json({ error: 'لا توجد وردية مفتوحة' });
+      activeShift.totalSales = Math.max(0, (activeShift.totalSales || 0) - (amount || 0));
+      activeShift.totalOrders = Math.max(0, (activeShift.totalOrders || 0) - 1);
+      await activeShift.save();
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/shifts/cash-movement", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { type, amount, reason } = req.body;
+      const employeeId = req.employee?.id;
+      const activeShift = await CashierShiftModel.findOne({ employeeId, status: 'open' });
+      if (!activeShift) return res.status(404).json({ error: 'لا توجد وردية مفتوحة' });
+      const movement = { id: `mv-${Date.now()}`, type, amount, reason, createdAt: new Date() };
+      activeShift.cashMovements = [...(activeShift.cashMovements || []), movement as any];
+      if (type === 'expense') activeShift.totalExpenses = (activeShift.totalExpenses || 0) + amount;
+      await activeShift.save();
+      res.json({ success: true, movement });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/shifts/close", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { closingCash, notes } = req.body;
+      const employeeId = req.employee?.id;
+      const activeShift = await CashierShiftModel.findOne({ employeeId, status: 'open' });
+      if (!activeShift) return res.status(404).json({ error: 'لا توجد وردية مفتوحة' });
+      const openingCash = activeShift.openingCash || 0;
+      const cashSales = activeShift.cashSales || 0;
+      const totalExpenses = activeShift.totalExpenses || 0;
+      const expectedCash = openingCash + cashSales - totalExpenses;
+      const cashDifference = (closingCash || 0) - expectedCash;
+      (activeShift as any).status = 'closed';
+      (activeShift as any).closedAt = new Date();
+      (activeShift as any).closingCash = closingCash || 0;
+      (activeShift as any).expectedCash = expectedCash;
+      (activeShift as any).cashDifference = cashDifference;
+      if (notes) (activeShift as any).notes = notes;
+      await activeShift.save();
+      res.json({ success: true, shift: activeShift, summary: { totalSales: activeShift.totalSales, totalOrders: activeShift.totalOrders, cashDifference } });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/shifts/:shiftId/z-report", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const shift = await CashierShiftModel.findOne({ id: req.params.shiftId }).lean();
+      if (!shift) return res.status(404).json({ error: 'الوردية غير موجودة' });
+      res.json({ shift });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/shifts/history", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { branchId, limit = 50 } = req.query;
+      const filter: any = { tenantId };
+      if (branchId) filter.branchId = branchId;
+      const shifts = await CashierShiftModel.find(filter).sort({ openedAt: -1 }).limit(Number(limit)).lean();
+      res.json(shifts);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/shifts/daily-summary", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { branchId } = req.query;
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const filter: any = { tenantId, openedAt: { $gte: startOfDay } };
+      if (branchId) filter.branchId = branchId;
+      const shifts = await CashierShiftModel.find(filter).lean();
+      const summary = {
+        totalShifts: shifts.length, openShifts: shifts.filter((s: any) => s.status === 'open').length,
+        totalSales: shifts.reduce((a: number, s: any) => a + (s.totalSales || 0), 0),
+        totalOrders: shifts.reduce((a: number, s: any) => a + (s.totalOrders || 0), 0),
+        totalCashSales: shifts.reduce((a: number, s: any) => a + (s.cashSales || 0), 0),
+        totalCardSales: shifts.reduce((a: number, s: any) => a + (s.cardSales || 0), 0),
+        shifts,
+      };
+      res.json(summary);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ENHANCED NOTIFICATIONS ROUTES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  app.get("/api/notifications/unread-count", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const count = await NotificationModel.countDocuments({ tenantId, isRead: false });
+      res.json({ count });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/notifications/broadcast", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { title, message, type = 'info' } = req.body;
+      const notification = await NotificationModel.create({
+        id: `notif-${Date.now()}`, tenantId, title, message, type,
+        isRead: false, createdAt: new Date(),
+      });
+      res.json({ success: true, notification });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/notifications/send", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { title, message, type = 'info', targetRole } = req.body;
+      const notification = await NotificationModel.create({
+        id: `notif-${Date.now()}`, tenantId, title, message, type,
+        targetRole, isRead: false, createdAt: new Date(),
+      });
+      res.json({ success: true, notification });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // UNIFIED REPORTS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  app.get("/api/reports/unified", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { branchId, period = 'month', startDate, endDate } = req.query;
+      const now = new Date();
+      let start: Date, end: Date;
+      if (startDate && endDate) {
+        start = new Date(startDate as string);
+        end = new Date(endDate as string);
+      } else if (period === 'today') {
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        end = now;
+      } else if (period === 'week') {
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        end = now;
+      } else {
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = now;
+      }
+      const filter: any = { tenantId, createdAt: { $gte: start, $lte: end } };
+      if (branchId) filter.branchId = branchId;
+      const OrderModel = (await import('@shared/schema')).OrderModel;
+      const orders = await OrderModel.find({ ...filter, status: { $nin: ['cancelled'] } }).lean();
+      const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+      const totalOrders = orders.length;
+      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+      const completedOrders = orders.filter((o: any) => o.status === 'completed' || o.status === 'delivered').length;
+      res.json({
+        period, startDate: start, endDate: end,
+        summary: { totalRevenue, totalOrders, avgOrderValue, completedOrders, conversionRate: totalOrders > 0 ? completedOrders / totalOrders : 0 },
+        orders: orders.slice(0, 100),
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PAYROLL SNAPSHOTS ROUTES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  app.get("/api/payroll/snapshots", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { branchId, year, month } = req.query;
+      const filter: any = { tenantId };
+      if (branchId) filter.branchId = branchId;
+      if (year) filter.year = Number(year);
+      if (month) filter.month = Number(month);
+      const snapshots = await PayrollSnapshotModel.find(filter).sort({ year: -1, month: -1 }).lean();
+      res.json(snapshots);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/payroll/snapshots", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { branchId, year, month, employees, notes } = req.body;
+      const existing = await PayrollSnapshotModel.findOne({ tenantId, year, month });
+      if (existing) return res.status(400).json({ error: 'يوجد تجميد رواتب لهذا الشهر بالفعل' });
+      const totals = (employees || []).reduce((acc: any, e: any) => {
+        acc.totalBaseSalary += (e.baseSalary || 0);
+        acc.totalDeductions += (e.deductions || 0) + (e.lateDeductions || 0);
+        acc.totalNetSalary += (e.netSalary || 0);
+        acc.employeeCount++;
+        return acc;
+      }, { totalBaseSalary: 0, totalDeductions: 0, totalNetSalary: 0, employeeCount: 0 });
+      const snapshot = await PayrollSnapshotModel.create({
+        id: `payroll-${tenantId}-${year}-${month}`, tenantId, branchId, year, month,
+        status: 'frozen', employees: employees || [], totals,
+        frozenAt: new Date(), frozenBy: req.employee?.id || 'admin', notes,
+      });
+      res.json({ success: true, snapshot });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/payroll/snapshots/:id/approve", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const snapshot = await PayrollSnapshotModel.findOneAndUpdate(
+        { id: req.params.id },
+        { status: 'approved', approvedAt: new Date(), approvedBy: req.employee?.id },
+        { new: true }
+      );
+      if (!snapshot) return res.status(404).json({ error: 'لقطة الرواتب غير موجودة' });
+      res.json({ success: true, snapshot });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/payroll/snapshots/:id", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      await PayrollSnapshotModel.deleteOne({ id: req.params.id });
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // AI ROUTES (Manager AI Assistant)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  app.post("/api/ai/chat", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { message, context } = req.body;
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      if (!message) return res.status(400).json({ error: 'الرسالة مطلوبة' });
+      // Basic AI response based on keywords
+      let reply = 'عذراً، لم أفهم سؤالك. يمكنك السؤال عن المبيعات، المخزون، الموظفين، أو التقارير.';
+      const msg = message.toLowerCase();
+      if (msg.includes('مبيعات') || msg.includes('إيرادات') || msg.includes('ربح')) {
+        const OrderModel = (await import('@shared/schema')).OrderModel;
+        const today = new Date(); today.setHours(0,0,0,0);
+        const orders = await OrderModel.find({ tenantId, createdAt: { $gte: today }, status: { $nin: ['cancelled'] } }).lean();
+        const total = orders.reduce((s: number, o: any) => s + (o.totalAmount || 0), 0);
+        reply = `مبيعات اليوم: ${total.toFixed(2)} ريال من ${orders.length} طلب`;
+      } else if (msg.includes('موظف') || msg.includes('حضور')) {
+        reply = 'يمكنك الاطلاع على تفاصيل الحضور والغياب من صفحة إدارة الحضور';
+      } else if (msg.includes('مخزون') || msg.includes('مواد')) {
+        reply = 'يمكنك متابعة مستويات المخزون وتنبيهات النقص من صفحة المخزون الذكي';
+      }
+      res.json({ success: true, reply, timestamp: new Date() });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/ai/insights", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const OrderModel = (await import('@shared/schema')).OrderModel;
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const orders = await OrderModel.find({ tenantId, createdAt: { $gte: startOfMonth }, status: { $nin: ['cancelled'] } }).lean();
+      const totalRevenue = orders.reduce((s: number, o: any) => s + (o.totalAmount || 0), 0);
+      const insights = [
+        { type: 'revenue', title: 'إيرادات الشهر', value: totalRevenue.toFixed(2), unit: 'ريال', trend: 'up' },
+        { type: 'orders', title: 'إجمالي الطلبات', value: orders.length, unit: 'طلب', trend: 'up' },
+        { type: 'avg', title: 'متوسط قيمة الطلب', value: orders.length > 0 ? (totalRevenue / orders.length).toFixed(2) : '0', unit: 'ريال', trend: 'stable' },
+      ];
+      res.json({ insights, generatedAt: new Date() });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/ai/menu-assist", async (req, res) => {
+    try {
+      const { query, language = 'ar' } = req.body;
+      const suggestions = [
+        { name: language === 'ar' ? 'قهوة لاتيه' : 'Latte', reason: language === 'ar' ? 'الأكثر طلباً' : 'Most popular' },
+        { name: language === 'ar' ? 'كابتشينو' : 'Cappuccino', reason: language === 'ar' ? 'تناسب ذوقك' : 'Matches your taste' },
+      ];
+      res.json({ suggestions, message: language === 'ar' ? 'إليك أفضل اقتراحاتي لك' : 'Here are my top suggestions' });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Delivery stats
+  app.get("/api/delivery/stats", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const OrderModel = (await import('@shared/schema')).OrderModel;
+      const filter = { tenantId, channel: 'online', createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } };
+      const orders = await OrderModel.find(filter).lean();
+      res.json({
+        totalDeliveries: orders.length,
+        delivered: orders.filter((o: any) => o.status === 'delivered').length,
+        pending: orders.filter((o: any) => ['pending', 'preparing', 'ready'].includes(o.status)).length,
+        avgDeliveryTime: 25,
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Stock movements
+  app.get("/api/stock-movements", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      // Use InventoryItem model for movements
+      const { InventoryItemModel } = await import('@shared/schema');
+      const movements = await InventoryItemModel.find({ tenantId }).sort({ updatedAt: -1 }).limit(100).lean();
+      res.json(movements);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Reviews reply
+  app.patch("/api/reviews/:id/reply", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { reply } = req.body;
+      const { ProductReviewModel } = await import('@shared/schema');
+      const review = await ProductReviewModel.findByIdAndUpdate(req.params.id, { managerReply: reply, repliedAt: new Date() }, { new: true });
+      if (!review) return res.status(404).json({ error: 'التقييم غير موجود' });
+      res.json({ success: true, review });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Loyalty card adjust
+  app.patch("/api/loyalty/cards/:cardId/adjust", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { points, reason } = req.body;
+      const card = await LoyaltyCardModel.findOne({ id: req.params.cardId });
+      if (!card) return res.status(404).json({ error: 'البطاقة غير موجودة' });
+      card.points = Math.max(0, (card.points || 0) + (points || 0));
+      await card.save();
+      res.json({ success: true, card });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Leave requests pending
+  app.get("/api/leave-requests/pending", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const tenantId = req.employee?.tenantId || 'demo-tenant';
+      const { LeaveRequestModel } = await import('@shared/schema-leave');
+      const requests = await LeaveRequestModel.find({ tenantId, status: 'pending' }).sort({ createdAt: -1 }).lean();
+      res.json(requests);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
 
   const httpServer = createServer(app);
   

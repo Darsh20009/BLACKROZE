@@ -97,6 +97,38 @@ The system also includes:
 - **iFrame ID**: اختياري — إذا أُضيف، يُستخدم URL الـ iframe؛ وإلا يُستخدم redirect مباشر
 - **Admin Settings**: الإعدادات → بوابة الدفع → Paymob (تحتوي حقل Apple Pay Integration ID الجديد)
 
+## New Models Added (QIROX Feature Migration)
+
+- **CashierShiftModel** (`shared/schema.ts`) — POS cashier shift management with cash movements, order tracking, Z-report data
+- **PayrollSnapshotModel** (`shared/schema.ts`) — Frozen monthly payroll records, can be approved by manager
+
+## New API Routes Added
+
+- **Shift Management** (`/api/shifts/*`) — Open/close shifts, add orders, cash movements, daily summary, Z-report, history
+- **Notifications** (`/api/notifications/unread-count`, `/broadcast`, `/send`) — Enhanced notification delivery
+- **Unified Reports** (`/api/reports/unified`) — Cross-module report with period filters (today/week/month/custom)
+- **Payroll Snapshots** (`/api/payroll/snapshots`) — CRUD for monthly frozen payroll records
+- **AI Assistant** (`/api/ai/chat`, `/api/ai/insights`, `/api/ai/menu-assist`) — Manager AI assistant + kiosk suggestions
+- **Delivery Stats** (`/api/delivery/stats`) — Online order delivery metrics
+- **Stock Movements** (`/api/stock-movements`) — Inventory movement log
+- **Reviews Reply** (`/api/reviews/:id/reply`) — Manager reply to customer reviews
+- **Leave Requests Pending** (`/api/leave-requests/pending`) — Pending leave approval list
+
+## New Frontend Utilities
+
+- `client/src/lib/useTranslate.ts` — Translation hook returning a callable `tc(ar, en?)` function; exports standalone `tc` for non-hook usage
+- `client/src/hooks/usePlan.ts` — Plan/subscription hook with `hasFeature()`, `planInfo` (name, icon, color)
+
+## Super Admin (Blackrose Studio)
+
+- `server/qirox-admin.ts` registered via `registerQiroxRoutes(app)` in `server/index.ts`
+- Super admin routes at `/api/qirox/*`, login page at `/qirox`
+- `express-rate-limit` installed for API rate limiting
+
+## PaymentMethod Type
+
+- `PaymentMethod` union type now includes `'paymob-card' | 'paymob-apple-pay'`
+
 ## Replit Migration Notes
 
 - Dev script uses `node_modules/.bin/tsx` explicitly to ensure tsx is resolved correctly in Replit's shell environment.

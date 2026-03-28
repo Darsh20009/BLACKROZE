@@ -171,3 +171,15 @@ export async function sendPushToAll(tenantId: string, payload: PushPayload) {
   });
   await sendPushToSubscriptions(subscriptions, payload);
 }
+
+export async function sendPushBySubscriptions(subscriptions: any[], payload: PushPayload) {
+  const { sendNotification } = await import("web-push").catch(() => ({ sendNotification: null }));
+  if (!sendNotification) return;
+  for (const sub of subscriptions) {
+    try {
+      await sendNotification(sub, JSON.stringify(payload));
+    } catch (err) {
+      // ignore individual failures
+    }
+  }
+}

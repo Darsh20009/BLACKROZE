@@ -205,3 +205,36 @@ export async function playNotificationSequence(
     if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
   }
 }
+
+let _soundEnabled = true;
+let _audioUnlocked = false;
+
+export function isAudioUnlocked(): boolean {
+  return _audioUnlocked;
+}
+
+export async function initAudioUnlock(): Promise<void> {
+  const ctx = getAudioContext();
+  if (ctx) {
+    try {
+      if (ctx.state === 'suspended') await ctx.resume();
+      _audioUnlocked = true;
+    } catch { _audioUnlocked = false; }
+  }
+}
+
+export function getSoundEnabled(): boolean {
+  return _soundEnabled;
+}
+
+export function setSoundEnabled(keyOrEnabled: string | boolean, value?: boolean): void {
+  if (typeof keyOrEnabled === 'boolean') {
+    _soundEnabled = keyOrEnabled;
+  } else if (typeof value === 'boolean') {
+    _soundEnabled = value;
+  }
+}
+
+export async function testSound(type: NotificationSoundType = 'success', volume?: number): Promise<void> {
+  await playNotificationSound(type, volume);
+}
