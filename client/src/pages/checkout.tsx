@@ -16,7 +16,7 @@ import { customerStorage } from "@/lib/customer-storage";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { useLoyaltyCard } from "@/hooks/useLoyaltyCard";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { User, Gift, CheckCircle, Sparkles, Loader2, Ticket, Tag, Wrench, Coffee, Award } from "lucide-react";
+import { User, Gift, CheckCircle, Sparkles, Loader2, Ticket, Tag, Wrench, Coffee, Award, X, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { PaymentMethodInfo, PaymentMethod } from "@shared/schema";
 
@@ -169,6 +169,8 @@ export default function CheckoutPage() {
   }, [customer]);
 
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [paymentEmbedUrl, setPaymentEmbedUrl] = useState<string | null>(null);
+  const [paymentEmbedLoading, setPaymentEmbedLoading] = useState(true);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -274,6 +276,58 @@ export default function CheckoutPage() {
       }
       window.history.replaceState({}, '', '/checkout');
     }
+  }, []);
+
+  // Listen for postMessage from Paymob embedded iframe
+  useEffect(() => {
+    const handlePaymobMessage = async (event: MessageEvent) => {
+      if (!event.data || event.data.type !== 'PAYMOB_PAYMENT_RESULT') return;
+      const { success, transactionId } = event.data;
+
+      setPaymentEmbedUrl(null);
+
+      const storedOrderData = sessionStorage.getItem('pendingOrderData');
+      const storedSessionId = sessionStorage.getItem('paymentSessionId');
+      const storedProvider = sessionStorage.getItem('paymentProvider');
+      sessionStorage.removeItem('pendingOrderData');
+      sessionStorage.removeItem('paymentSessionId');
+      sessionStorage.removeItem('paymentProvider');
+
+      if (!success) {
+        toast({ variant: "destructive", title: "فشل الدفع", description: "لم تتم عملية الدفع بنجاح. يرجى المحاولة مجدداً." });
+        return;
+      }
+      if (!storedOrderData) {
+        toast({ variant: "destructive", title: "خطأ", description: "بيانات الطلب غير موجودة." });
+        return;
+      }
+
+      setIsVerifyingPayment(true);
+      try {
+        const verifyRes = await apiRequest("POST", "/api/payments/verify", {
+          sessionId: storedSessionId,
+          provider: storedProvider || 'paymob',
+          paymobSuccess: 'true',
+          transactionId,
+          paymobTransactionId: transactionId,
+        });
+        const verifyData = await verifyRes.json();
+        if (verifyData.verified) {
+          const orderData = JSON.parse(storedOrderData);
+          orderData.paymentStatus = 'paid';
+          orderData.transactionId = verifyData.transactionId || transactionId;
+          createOrderMutation.mutate(orderData);
+        } else {
+          toast({ variant: "destructive", title: "فشل التحقق من الدفع", description: verifyData.error || "يرجى التواصل مع الدعم." });
+        }
+      } catch {
+        toast({ variant: "destructive", title: "خطأ في التحقق", description: "يرجى التواصل مع الدعم." });
+      } finally {
+        setIsVerifyingPayment(false);
+      }
+    };
+    window.addEventListener('message', handlePaymobMessage);
+    return () => window.removeEventListener('message', handlePaymobMessage);
   }, []);
 
   useEffect(() => {
@@ -518,6 +572,7 @@ export default function CheckoutPage() {
     };
 
     if (isOnlinePaymentMethod(selectedPaymentMethod)) {
+      const isPaymobMethod = selectedPaymentMethod === 'paymob-card' || selectedPaymentMethod === 'paymob-apple-pay';
       try {
         const initRes = await apiRequest("POST", "/api/payments/init", {
           amount: finalTotal,
@@ -528,16 +583,22 @@ export default function CheckoutPage() {
           customerPhone: customerPhone || undefined,
           paymentMethod: selectedPaymentMethod,
           returnUrl: `${window.location.origin}/checkout?payment=callback`,
+          embeddedMode: isPaymobMethod,
         });
         const initData = await initRes.json();
         if (initData.redirectUrl) {
           sessionStorage.setItem('pendingOrderData', JSON.stringify(orderData));
-          // For Paymob, store the Paymob order ID (externalId) as sessionId for verification
           const sessionIdToStore = (initData.provider === 'paymob' && initData.externalId)
             ? initData.externalId
             : (initData.sessionId || '');
           sessionStorage.setItem('paymentSessionId', sessionIdToStore);
           sessionStorage.setItem('paymentProvider', initData.provider || '');
+          // Paymob: show embedded iframe instead of redirecting
+          if (isPaymobMethod && initData.provider === 'paymob') {
+            setPaymentEmbedUrl(initData.redirectUrl);
+            setPaymentEmbedLoading(true);
+            return;
+          }
           window.location.href = initData.redirectUrl;
           return;
         } else {
@@ -819,6 +880,60 @@ export default function CheckoutPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Paymob Embedded Payment Overlay */}
+      {paymentEmbedUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/60" dir="rtl">
+          <div className="flex-1 flex flex-col bg-white rounded-t-2xl mt-8 overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
+              <button
+                onClick={() => {
+                  setPaymentEmbedUrl(null);
+                  sessionStorage.removeItem('pendingOrderData');
+                  sessionStorage.removeItem('paymentSessionId');
+                  sessionStorage.removeItem('paymentProvider');
+                }}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg px-2 py-1 hover:bg-gray-100"
+                data-testid="button-close-payment-embed"
+              >
+                <X className="w-4 h-4" />
+                <span>إلغاء</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-bold text-foreground">الدفع الآمن</span>
+              </div>
+
+              <div className="text-xs text-muted-foreground font-medium px-2">
+                Paymob
+              </div>
+            </div>
+
+            {/* Loading state */}
+            {paymentEmbedLoading && (
+              <div className="absolute inset-0 mt-14 flex items-center justify-center bg-gray-50">
+                <div className="text-center space-y-3">
+                  <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+                  <p className="text-sm text-muted-foreground">جاري تحميل نموذج الدفع...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Payment iframe */}
+            <iframe
+              key={paymentEmbedUrl}
+              src={paymentEmbedUrl}
+              className="flex-1 w-full border-0 bg-white"
+              onLoad={() => setPaymentEmbedLoading(false)}
+              allow="payment *; camera *"
+              title="نموذج الدفع"
+              data-testid="iframe-payment-embed"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

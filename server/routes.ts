@@ -2046,7 +2046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize payment session (gateway-agnostic)
   app.post("/api/payments/init", async (req, res) => {
     try {
-      const { amount, orderId, currency = 'SAR', customerEmail, customerPhone, customerName, returnUrl, paymentMethod } = req.body;
+      const { amount, orderId, currency = 'SAR', customerEmail, customerPhone, customerName, returnUrl, paymentMethod, embeddedMode } = req.body;
 
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "المبلغ مطلوب" });
@@ -2199,7 +2199,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : (req.headers['x-forwarded-proto']
             ? `${req.headers['x-forwarded-proto']}://${req.headers['x-forwarded-host'] || req.headers.host}`
             : `${req.protocol}://${req.get('host')}`);
-        const callbackUrl = `${baseOrigin}/api/payments/paymob/callback`;
+        const callbackUrl = embeddedMode
+          ? `${baseOrigin}/api/payments/paymob/embedded-callback`
+          : `${baseOrigin}/api/payments/paymob/callback`;
 
         const amountCents = Math.round(amount * 100);
         const billingData = {
@@ -2665,6 +2667,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[Paymob Callback] Error:', error);
       res.redirect('/checkout?payment=error');
+    }
+  });
+
+  // Paymob Embedded Callback — renders HTML page that postMessages result to parent
+  app.get("/api/payments/paymob/embedded-callback", async (req, res) => {
+    try {
+      const query = req.query as Record<string, string>;
+      const { success, id: transactionId, hmac } = query;
+
+      const tenantId = 'demo-tenant';
+      let isPaid = success === 'true';
+
+      try {
+        const config = await BusinessConfigModel.findOne({ tenantId });
+        const hmacSecret = config?.paymentGateway?.paymob?.hmacSecret;
+        if (hmacSecret && hmac) {
+          const { createHmac } = await import('crypto');
+          const fields = [
+            'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
+            'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
+            'is_standalone_payment', 'is_voided', 'order', 'owner', 'pending',
+            'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success',
+          ];
+          const concatenated = fields.map(f => query[f] || '').join('');
+          const expectedHmac = createHmac('sha512', hmacSecret).update(concatenated).digest('hex');
+          if (expectedHmac !== hmac) {
+            console.warn('[Paymob Embedded Callback] HMAC mismatch');
+            isPaid = false;
+          }
+        }
+      } catch {}
+
+      const safeTransactionId = (transactionId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+      const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${isPaid ? 'تم الدفع بنجاح' : 'لم يتم الدفع'}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+       background:${isPaid ? '#f0fdf4' : '#fef2f2'};font-family:system-ui,-apple-system,sans-serif;gap:12px}
+  .icon{font-size:56px}
+  .msg{font-size:18px;font-weight:700;color:${isPaid ? '#166534' : '#991b1b'}}
+  .sub{font-size:13px;color:#666}
+</style>
+</head>
+<body>
+<script>
+(function(){
+  var result={type:'PAYMOB_PAYMENT_RESULT',success:${isPaid},transactionId:'${safeTransactionId}'};
+  try{
+    if(window.parent&&window.parent!==window){window.parent.postMessage(result,'*');}
+    else if(window.opener){window.opener.postMessage(result,'*');}
+  }catch(e){}
+})();
+</script>
+<div class="icon">${isPaid ? '✅' : '❌'}</div>
+<p class="msg">${isPaid ? 'تم الدفع بنجاح' : 'فشل الدفع'}</p>
+<p class="sub">${isPaid ? 'جاري إتمام طلبك...' : 'يرجى إغلاق هذه النافذة والمحاولة مجدداً'}</p>
+</body></html>`;
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (error) {
+      console.error('[Paymob Embedded Callback] Error:', error);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(`<script>window.parent&&window.parent!==window&&window.parent.postMessage({type:'PAYMOB_PAYMENT_RESULT',success:false},'*')</script>`);
     }
   });
 
