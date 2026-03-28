@@ -608,6 +608,7 @@ export interface IPaymentGatewayConfig {
     apiKey?: string;
     integrationId?: string;
     iframeId?: string;
+    applePayIntegrationId?: string;
     walletIntegrationId?: string;
     hmacSecret?: string;
   };
@@ -701,6 +702,7 @@ const PaymentGatewayConfigSchema = new Schema({
     apiKey: { type: String },
     integrationId: { type: String },
     iframeId: { type: String },
+    applePayIntegrationId: { type: String },
     walletIntegrationId: { type: String },
     hmacSecret: { type: String },
   },

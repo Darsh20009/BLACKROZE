@@ -78,6 +78,7 @@ export default function AdminSettings() {
   const [paymobApiKey, setPaymobApiKey] = useState("");
   const [paymobIntegrationId, setPaymobIntegrationId] = useState("");
   const [paymobIframeId, setPaymobIframeId] = useState("");
+  const [paymobApplePayIntegrationId, setPaymobApplePayIntegrationId] = useState("");
   const [paymobWalletIntegrationId, setPaymobWalletIntegrationId] = useState("");
   const [paymobHmacSecret, setPaymobHmacSecret] = useState("");
   const [showSecrets, setShowSecrets] = useState(false);
@@ -106,6 +107,7 @@ export default function AdminSettings() {
       if (pgConfig.paymob) {
         setPaymobIntegrationId(pgConfig.paymob.integrationId || '');
         setPaymobIframeId(pgConfig.paymob.iframeId || '');
+        setPaymobApplePayIntegrationId(pgConfig.paymob.applePayIntegrationId || '');
         setPaymobWalletIntegrationId(pgConfig.paymob.walletIntegrationId || '');
       }
     }
@@ -147,6 +149,7 @@ export default function AdminSettings() {
     if (paymobApiKey && !paymobApiKey.startsWith('****')) updates.paymobApiKey = paymobApiKey;
     if (paymobIntegrationId) updates.paymobIntegrationId = paymobIntegrationId;
     if (paymobIframeId) updates.paymobIframeId = paymobIframeId;
+    if (paymobApplePayIntegrationId) updates.paymobApplePayIntegrationId = paymobApplePayIntegrationId;
     if (paymobWalletIntegrationId) updates.paymobWalletIntegrationId = paymobWalletIntegrationId;
     if (paymobHmacSecret && !paymobHmacSecret.startsWith('****')) updates.paymobHmacSecret = paymobHmacSecret;
 
@@ -1360,21 +1363,22 @@ export default function AdminSettings() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => window.open('https://my.paymob.com', '_blank')}
+                    onClick={() => window.open('https://ksa.paymob.com', '_blank')}
                     data-testid="link-paymob-portal"
                   >
                     <ExternalLink className="w-3 h-3 ml-1" />
-                    لوحة تحكم Paymob
+                    لوحة تحكم Paymob KSA
                   </Button>
                 </div>
 
                 <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded border border-blue-200 dark:border-blue-800 text-xs space-y-1">
-                  <p className="font-bold text-blue-800 dark:text-blue-300">كيف تحصل على بيانات Paymob:</p>
+                  <p className="font-bold text-blue-800 dark:text-blue-300">بيانات Paymob KSA (المملكة العربية السعودية):</p>
                   <ol className="list-decimal list-inside space-y-0.5 text-blue-700 dark:text-blue-400">
-                    <li>سجّل في <span className="font-mono">my.paymob.com</span> وفعّل حسابك</li>
-                    <li>API Key: الإعدادات ← الأمان</li>
-                    <li>Integration ID: المدفوعات ← الدمج ← رقم الدمج</li>
-                    <li>iFrame ID: المدفوعات ← iFrames ← رقم الـ iframe</li>
+                    <li>لوحة التحكم: <span className="font-mono">ksa.paymob.com</span></li>
+                    <li>API Key: الإعدادات ← الأمان ← API Key</li>
+                    <li>Integration ID (بطاقة): المدفوعات ← الدمج ← MIGS-online</li>
+                    <li>Apple Pay Integration ID: المدفوعات ← الدمج ← MIGS-online (APPLE PAY)</li>
+                    <li>iFrame ID (اختياري): المدفوعات ← iFrames ← رقم الـ iframe</li>
                     <li>HMAC Secret: الإعدادات ← الأمان ← HMAC Secret</li>
                   </ol>
                 </div>
@@ -1409,6 +1413,16 @@ export default function AdminSettings() {
                       placeholder="مثال: 789012"
                       className="text-sm font-mono"
                       data-testid="input-paymob-iframe-id"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Apple Pay Integration ID (اختياري)</Label>
+                    <Input
+                      value={paymobApplePayIntegrationId}
+                      onChange={e => setPaymobApplePayIntegrationId(e.target.value)}
+                      placeholder="مثال: 24947"
+                      className="text-sm font-mono"
+                      data-testid="input-paymob-apple-pay-integration-id"
                     />
                   </div>
                   <div className="space-y-1.5">

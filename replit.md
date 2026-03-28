@@ -82,6 +82,21 @@ The system also includes:
 - **Charting:** `recharts`
 - **Delivery Platforms (Integrations):** Noon Food, Hunger Station, Keeta, Marsool, Careem.
 
+## Payment Gateway — Paymob KSA
+
+- **Provider**: Paymob KSA (`ksa.paymob.com`) — تم الضبط مباشرةً في قاعدة البيانات
+- **Card Integration ID**: 24948 (MIGS-online)
+- **Apple Pay Integration ID**: 24947 (MIGS-online APPLE PAY)
+- **Currency**: SAR (ريال سعودي)
+- **HMAC Secret**: محفوظ في MongoDB BusinessConfig
+- **API Key**: محفوظ في MongoDB BusinessConfig
+- **Enabled Methods**: paymob-card, paymob-apple-pay, cash
+- **Callback URL**: `/api/payments/paymob/callback` (GET) — يستقبل redirect من Paymob، يتحقق من HMAC، ويعيد التوجيه لـ `/checkout?payment=success|failed&provider=paymob&txId=…`
+- **Webhook URL**: `/api/payments/paymob/webhook` (POST) — للإشعارات الفورية من الخادم
+- **Flow**: Auth Token → Order Registration → Payment Key (SAR) → Redirect to iframe or `/api/acceptance/pay_with_card`
+- **iFrame ID**: اختياري — إذا أُضيف، يُستخدم URL الـ iframe؛ وإلا يُستخدم redirect مباشر
+- **Admin Settings**: الإعدادات → بوابة الدفع → Paymob (تحتوي حقل Apple Pay Integration ID الجديد)
+
 ## Replit Migration Notes
 
 - Dev script uses `node_modules/.bin/tsx` explicitly to ensure tsx is resolved correctly in Replit's shell environment.

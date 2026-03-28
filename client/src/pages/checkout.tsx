@@ -172,7 +172,8 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const isPaymentCallback = urlParams.get('payment') === 'callback';
+    const paymentParam = urlParams.get('payment');
+    const isPaymentCallback = paymentParam === 'callback';
 
     // Also detect Geidea's own callback params (they redirect directly with these params)
     const geideaResponseCode = urlParams.get('responseCode') || urlParams.get('Response') || urlParams.get('response_code');
@@ -185,12 +186,23 @@ export default function CheckoutPage() {
 
     const hasGeideaParams = !!(geideaResponseCode || geideaOrderId || geideaStatus);
 
-    // Detect Paymob callback params
+    // Detect Paymob callback params (from both direct redirect and our server-side callback handler)
     const paymobProvider = urlParams.get('provider');
     const paymobSuccess = urlParams.get('success');
-    const paymobTransactionId = urlParams.get('id');
+    const paymobTransactionId = urlParams.get('id') || urlParams.get('txId');
     const paymobPending = urlParams.get('pending');
-    const hasPaymobParams = paymobProvider === 'paymob' && paymobSuccess !== null;
+    const isPaymobServerCallback = (paymentParam === 'success' || paymentParam === 'failed') && paymobProvider === 'paymob';
+    const hasPaymobParams = (paymobProvider === 'paymob' && paymobSuccess !== null) || isPaymobServerCallback;
+
+    // Handle Paymob payment failure redirect
+    if (paymentParam === 'failed' && paymobProvider === 'paymob') {
+      sessionStorage.removeItem('pendingOrderData');
+      sessionStorage.removeItem('paymentSessionId');
+      sessionStorage.removeItem('paymentProvider');
+      window.history.replaceState({}, '', '/checkout');
+      setTimeout(() => toast({ variant: "destructive", title: "فشل الدفع", description: "لم تتم عملية الدفع بنجاح. يرجى المحاولة مجدداً." }), 100);
+      return;
+    }
 
     if (isPaymentCallback || hasGeideaParams || hasPaymobParams) {
       const storedOrderData = sessionStorage.getItem('pendingOrderData');
@@ -219,9 +231,16 @@ export default function CheckoutPage() {
 
             // Pass Paymob callback parameters
             if (hasPaymobParams) {
-              verifyPayload.paymobSuccess = paymobSuccess;
-              verifyPayload.paymobTransactionId = paymobTransactionId;
-              verifyPayload.paymobPending = paymobPending;
+              if (paymobSuccess) verifyPayload.paymobSuccess = paymobSuccess;
+              if (paymobTransactionId) {
+                verifyPayload.paymobTransactionId = paymobTransactionId;
+                verifyPayload.transactionId = paymobTransactionId;
+              }
+              if (paymobPending) verifyPayload.paymobPending = paymobPending;
+              // If server-side callback already verified HMAC, trust the result
+              if (isPaymobServerCallback && paymentParam === 'success') {
+                verifyPayload.paymobSuccess = 'true';
+              }
             }
 
             const verifyRes = await apiRequest("POST", "/api/payments/verify", verifyPayload);
@@ -513,7 +532,11 @@ export default function CheckoutPage() {
         const initData = await initRes.json();
         if (initData.redirectUrl) {
           sessionStorage.setItem('pendingOrderData', JSON.stringify(orderData));
-          sessionStorage.setItem('paymentSessionId', initData.sessionId || '');
+          // For Paymob, store the Paymob order ID (externalId) as sessionId for verification
+          const sessionIdToStore = (initData.provider === 'paymob' && initData.externalId)
+            ? initData.externalId
+            : (initData.sessionId || '');
+          sessionStorage.setItem('paymentSessionId', sessionIdToStore);
           sessionStorage.setItem('paymentProvider', initData.provider || '');
           window.location.href = initData.redirectUrl;
           return;

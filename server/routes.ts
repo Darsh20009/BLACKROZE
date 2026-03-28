@@ -1890,6 +1890,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allMethods.push({ id: 'geidea', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد عبر جيديا', icon: 'fas fa-credit-card', gateway: 'geidea' });
           allMethods.push({ id: 'apple_pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay', icon: 'fas fa-mobile-alt', gateway: 'geidea' });
         }
+      } else if (pg?.provider === 'paymob') {
+        const hasCredentials = !!(pg.paymob?.apiKey && pg.paymob?.integrationId);
+        if (hasCredentials) {
+          allMethods.push({ id: 'paymob-card', nameAr: 'بطاقة بنكية', nameEn: 'Card Payment', details: 'مدى، فيزا، ماستر كارد — Paymob', icon: 'fas fa-credit-card', gateway: 'paymob' });
+          if (pg.paymob?.applePayIntegrationId) {
+            allMethods.push({ id: 'paymob-apple-pay', nameAr: 'Apple Pay', nameEn: 'Apple Pay', details: 'الدفع السريع عبر Apple Pay — Paymob', icon: 'fas fa-mobile-alt', gateway: 'paymob' });
+          }
+        }
       }
 
       allMethods.push({ id: 'loyalty-card', nameAr: 'بطاقة كوبي (رقم العميل)', nameEn: 'Loyalty Card', details: 'خصم تلقائي ودفع بالنقاط', icon: 'fas fa-gift' });
@@ -1947,10 +1955,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           callbackUrl: pg.geidea?.callbackUrl || '',
         },
         paymob: {
-          configured: !!(pg.paymob?.apiKey && pg.paymob?.integrationId && pg.paymob?.iframeId),
+          configured: !!(pg.paymob?.apiKey && pg.paymob?.integrationId),
           apiKey: maskSecret(pg.paymob?.apiKey),
           integrationId: pg.paymob?.integrationId || '',
           iframeId: pg.paymob?.iframeId || '',
+          applePayIntegrationId: pg.paymob?.applePayIntegrationId || '',
           walletIntegrationId: pg.paymob?.walletIntegrationId || '',
           hmacSecret: maskSecret(pg.paymob?.hmacSecret),
         },
@@ -1993,6 +2002,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (body.paymobApiKey) updates['paymentGateway.paymob.apiKey'] = body.paymobApiKey;
       if (body.paymobIntegrationId) updates['paymentGateway.paymob.integrationId'] = body.paymobIntegrationId;
       if (body.paymobIframeId) updates['paymentGateway.paymob.iframeId'] = body.paymobIframeId;
+      if (body.paymobApplePayIntegrationId) updates['paymentGateway.paymob.applePayIntegrationId'] = body.paymobApplePayIntegrationId;
       if (body.paymobWalletIntegrationId) updates['paymentGateway.paymob.walletIntegrationId'] = body.paymobWalletIntegrationId;
       if (body.paymobHmacSecret) updates['paymentGateway.paymob.hmacSecret'] = body.paymobHmacSecret;
 
@@ -2013,7 +2023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize payment session (gateway-agnostic)
   app.post("/api/payments/init", async (req, res) => {
     try {
-      const { amount, orderId, currency = 'SAR', customerEmail, customerPhone, returnUrl } = req.body;
+      const { amount, orderId, currency = 'SAR', customerEmail, customerPhone, returnUrl, paymentMethod } = req.body;
 
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "المبلغ مطلوب" });
@@ -2152,16 +2162,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (pg.provider === 'paymob') {
         const apiKey = pg.paymob?.apiKey;
-        const integrationId = pg.paymob?.integrationId;
+        // Determine integration ID: Apple Pay uses applePayIntegrationId, card uses integrationId
+        const isApplePay = paymentMethod === 'paymob-apple-pay' || paymentMethod === 'apple_pay';
+        const integrationId = isApplePay
+          ? (pg.paymob?.applePayIntegrationId || pg.paymob?.integrationId)
+          : pg.paymob?.integrationId;
         const iframeId = pg.paymob?.iframeId;
 
-        if (!apiKey || !integrationId || !iframeId) {
-          return res.status(400).json({ error: "بيانات اعتماد Paymob غير مكتملة (API Key، Integration ID، iFrame ID مطلوبة)" });
+        const PAYMOB_BASE = 'https://ksa.paymob.com';
+
+        if (!apiKey || !integrationId) {
+          return res.status(400).json({ error: "بيانات اعتماد Paymob غير مكتملة (API Key و Integration ID مطلوبان)" });
         }
 
         try {
           // Step 1: Authentication — get auth token
-          const authResponse = await fetch('https://accept.paymob.com/api/auth/tokens', {
+          const authResponse = await fetch(`${PAYMOB_BASE}/api/auth/tokens`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: apiKey }),
@@ -2175,14 +2191,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Step 2: Order Registration
           const amountCents = Math.round(amount * 100);
-          const orderResponse = await fetch('https://accept.paymob.com/api/ecommerce/orders', {
+          const orderResponse = await fetch(`${PAYMOB_BASE}/api/ecommerce/orders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               auth_token: authToken,
               delivery_needed: 'false',
               amount_cents: amountCents,
-              currency: currency || 'EGP',
+              currency: 'SAR',
               merchant_order_id: orderId || sessionId,
               items: [],
             }),
@@ -2194,8 +2210,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           const paymobOrderId = orderData.id;
 
+          // Build callback URL for redirection after payment
+          const baseOrigin = process.env.REPLIT_DEV_DOMAIN
+            ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+            : (req.headers['x-forwarded-proto'] ? `${req.headers['x-forwarded-proto']}://${req.headers['x-forwarded-host'] || req.headers.host}` : `${req.protocol}://${req.get('host')}`);
+          const callbackUrl = `${baseOrigin}/api/payments/paymob/callback`;
+
           // Step 3: Payment Key
-          const paymentKeyResponse = await fetch('https://accept.paymob.com/api/acceptance/payment_keys', {
+          const paymentKeyResponse = await fetch(`${PAYMOB_BASE}/api/acceptance/payment_keys`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2205,22 +2227,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               order_id: paymobOrderId,
               billing_data: {
                 apartment: 'NA',
-                email: customerEmail || 'customer@example.com',
+                email: customerEmail || 'customer@blackrosecafe.com',
                 floor: 'NA',
-                first_name: 'Customer',
+                first_name: customerPhone ? customerPhone.replace(/\D/g, '').slice(-4) : 'Guest',
                 street: 'NA',
                 building: 'NA',
-                phone_number: customerPhone || '+00000000000',
+                phone_number: customerPhone || '+966500000000',
                 shipping_method: 'NA',
                 postal_code: 'NA',
-                city: 'NA',
-                country: 'NA',
+                city: 'Yanbu',
+                country: 'SA',
                 last_name: 'NA',
                 state: 'NA',
               },
-              currency: currency || 'EGP',
+              currency: 'SAR',
               integration_id: integrationId,
               lock_order_when_paid: 'false',
+              redirect_url: callbackUrl,
             }),
           });
           const paymentKeyData = await paymentKeyResponse.json() as any;
@@ -2230,15 +2253,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           const paymentToken = paymentKeyData.token;
 
-          // Step 4: Build iFrame URL
-          const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
+          // Step 4: Build payment URL (iframe if available, else hosted redirect)
+          const paymentUrl = iframeId
+            ? `${PAYMOB_BASE}/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`
+            : `${PAYMOB_BASE}/api/acceptance/pay_with_card?payment_token=${paymentToken}`;
 
-          console.log(`[Paymob] Payment session created — Order: ${paymobOrderId}, iFrame: ${iframeUrl}`);
+          console.log(`[Paymob KSA] Payment session created — Order: ${paymobOrderId}, URL: ${paymentUrl}`);
           return res.json({
             success: true,
             sessionId,
-            redirectUrl: iframeUrl,
-            paymentUrl: iframeUrl,
+            redirectUrl: paymentUrl,
+            paymentUrl,
             provider: 'paymob',
             externalId: String(paymobOrderId),
             paymentToken,
@@ -2360,7 +2385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // API fallback: get auth token then query transaction
-          const authRes = await fetch('https://accept.paymob.com/api/auth/tokens', {
+          const authRes = await fetch('https://ksa.paymob.com/api/auth/tokens', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: apiKey }),
@@ -2371,7 +2396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // sessionId is the Paymob order ID in this context
-          const txRes = await fetch(`https://accept.paymob.com/api/acceptance/transactions?order=${sessionId}`, {
+          const txRes = await fetch(`https://ksa.paymob.com/api/acceptance/transactions?order=${sessionId}`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${authData.token}`,
@@ -2499,14 +2524,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json({ success: false, message: "API Key لـ Paymob غير مدخل" });
         }
         try {
-          const authRes = await fetch('https://accept.paymob.com/api/auth/tokens', {
+          const authRes = await fetch('https://ksa.paymob.com/api/auth/tokens', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: apiKey }),
           });
           const authData = await authRes.json() as any;
           if (authRes.ok && authData.token) {
-            return res.json({ success: true, message: "اتصال Paymob ناجح — تم الحصول على Auth Token", provider: 'paymob' });
+            return res.json({ success: true, message: "اتصال Paymob KSA ناجح — تم الحصول على Auth Token", provider: 'paymob' });
           } else {
             return res.json({ success: false, message: "فشل مصادقة Paymob — تحقق من API Key", details: authData.detail || authData.message });
           }
