@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
-import { playNotificationSound, unlockAudio } from "@/lib/notification-sounds";
+import { playNotificationSound, unlockAudio, isAudioUnlocked, testSound } from "@/lib/notification-sounds";
 import { useOrderWebSocket } from "@/lib/websocket";
 import { OrderCard } from "@/components/ui/order-card";
 import { 
@@ -25,6 +25,7 @@ import {
   ArrowLeft,
   Volume2,
   VolumeX,
+  PlayCircle,
   Wifi,
   WifiOff,
   Store,
@@ -106,7 +107,15 @@ export default function KitchenDisplay() {
   const [activeTab, setActiveTab] = useState("all");
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [audioUnlocked, setAudioUnlocked] = useState(isAudioUnlocked());
+  const [testingSound, setTestingSound] = useState(false);
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState<string>("all");
+
+  useEffect(() => {
+    const timer = setInterval(() => setAudioUnlocked(isAudioUnlocked()), 1500);
+    return () => clearInterval(timer);
+  }, []);
+
   const previousOrderCountRef = useRef<number>(0);
   const previousReadyCountRef = useRef<number>(0);
   const alertedPrepNowIds = useRef<Set<string>>(new Set());
@@ -422,16 +431,48 @@ export default function KitchenDisplay() {
                 </SelectContent>
               </Select>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
-                className={soundEnabled ? "border-primary text-primary" : "border-muted text-muted-foreground"}
-                data-testid="button-toggle-sound"
-              >
-                {soundEnabled ? <Volume2 className="h-4 w-4 ml-1" /> : <VolumeX className="h-4 w-4 ml-1" />}
-                {soundEnabled ? "الصوت" : "صامت"}
-              </Button>
+              {!audioUnlocked && soundEnabled ? (
+                <button
+                  onClick={async () => {
+                    await unlockAudio();
+                    setAudioUnlocked(isAudioUnlocked());
+                    setTestingSound(true);
+                    await testSound('success', 0.6);
+                    setTestingSound(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-xs font-medium animate-pulse transition-colors"
+                  data-testid="button-unlock-audio"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  اضغط لتفعيل الصوت
+                </button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => { await unlockAudio(); setSoundEnabled(!soundEnabled); setAudioUnlocked(isAudioUnlocked()); }}
+                    className={soundEnabled ? "border-primary text-primary" : "border-muted text-muted-foreground"}
+                    data-testid="button-toggle-sound"
+                  >
+                    {soundEnabled ? <Volume2 className="h-4 w-4 ml-1" /> : <VolumeX className="h-4 w-4 ml-1" />}
+                    {soundEnabled ? "الصوت" : "صامت"}
+                  </Button>
+                  {soundEnabled && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => { setTestingSound(true); await testSound('newOrder', 0.8); setTestingSound(false); }}
+                      disabled={testingSound}
+                      className="px-2 text-muted-foreground hover:text-primary"
+                      title="اختبار الصوت"
+                      data-testid="button-test-sound"
+                    >
+                      <PlayCircle className={`h-4 w-4 ${testingSound ? 'animate-pulse text-primary' : ''}`} />
+                    </Button>
+                  )}
+                </div>
+              )}
               
               <Button
                 variant="outline"

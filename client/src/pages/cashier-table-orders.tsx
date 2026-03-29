@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, CheckCircle, ChefHat, Truck, XCircle, User, MapPin, Volume2, VolumeX } from "lucide-react";
+import { Clock, CheckCircle, ChefHat, Truck, XCircle, User, MapPin, Volume2, VolumeX, PlayCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { playNotificationSound, unlockAudio } from "@/lib/notification-sounds";
+import { playNotificationSound, unlockAudio, isAudioUnlocked, testSound } from "@/lib/notification-sounds";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface Employee {
@@ -56,6 +56,12 @@ export default function CashierTableOrders() {
   const [, setLocation] = useLocation();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [audioUnlocked, setAudioUnlocked] = useState(isAudioUnlocked());
+  const [testingSound, setTestingSound] = useState(false);
+  useEffect(() => {
+    const t = setInterval(() => setAudioUnlocked(isAudioUnlocked()), 1500);
+    return () => clearInterval(t);
+  }, []);
   const previousOrderIdsRef = useRef<Set<string>>(new Set());
   const { toast } = useToast();
 
@@ -311,16 +317,34 @@ export default function CashierTableOrders() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
-              className={soundEnabled ? "border-green-500 text-green-500" : "border-muted text-muted-foreground"}
-              data-testid="button-toggle-sound"
-              aria-label={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
-            >
-              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
+            {!audioUnlocked && soundEnabled ? (
+              <button
+                onClick={async () => { await unlockAudio(); setAudioUnlocked(isAudioUnlocked()); setTestingSound(true); await testSound('success', 0.6); setTestingSound(false); }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-xs font-medium animate-pulse"
+                data-testid="button-unlock-audio"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                اضغط لتفعيل الصوت
+              </button>
+            ) : (
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={async () => { await unlockAudio(); setSoundEnabled(!soundEnabled); setAudioUnlocked(isAudioUnlocked()); }}
+                  className={soundEnabled ? "border-green-500 text-green-500" : "border-muted text-muted-foreground"}
+                  data-testid="button-toggle-sound"
+                  aria-label={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
+                >
+                  {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                </Button>
+                {soundEnabled && (
+                  <Button variant="ghost" size="icon" onClick={async () => { setTestingSound(true); await testSound('newOrder', 0.8); setTestingSound(false); }} disabled={testingSound} className="text-muted-foreground hover:text-primary" title="اختبار الصوت" data-testid="button-test-sound">
+                    <PlayCircle className={`h-4 w-4 ${testingSound ? 'animate-pulse text-primary' : ''}`} />
+                  </Button>
+                )}
+              </div>
+            )}
             <Button variant="outline" className="bg-[#944219]" onClick={() => setLocation("/employee/dashboard")}>
               العودة للوحة التحكم
             </Button>

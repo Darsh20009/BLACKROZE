@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Coffee, BellRing, RefreshCw, ArrowRight, Search, DollarSign, XCircle, Undo2, Clock, User, Phone, CreditCard, Banknote, CheckCircle, PlayCircle, Loader2, MapPin, Printer, Volume2, VolumeX } from "lucide-react";
-import { playNotificationSound, unlockAudio } from "@/lib/notification-sounds";
+import { playNotificationSound, unlockAudio, isAudioUnlocked, testSound } from "@/lib/notification-sounds";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,12 @@ export default function EmployeeOrders() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [audioUnlocked, setAudioUnlocked] = useState(isAudioUnlocked());
+  const [testingSound, setTestingSound] = useState(false);
+  useEffect(() => {
+    const t = setInterval(() => setAudioUnlocked(isAudioUnlocked()), 1500);
+    return () => clearInterval(t);
+  }, []);
   const seenOrderIdsRef = useRef<Set<string>>(new Set());
 
   const [showCashDialog, setShowCashDialog] = useState(false);
@@ -240,16 +246,34 @@ export default function EmployeeOrders() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
-                title={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
-                data-testid="button-sound-toggle"
-                className={soundEnabled ? "border-green-500 text-green-600" : "text-muted-foreground"}
-              >
-                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              </Button>
+              {!audioUnlocked && soundEnabled ? (
+                <button
+                  onClick={async () => { await unlockAudio(); setAudioUnlocked(isAudioUnlocked()); setTestingSound(true); await testSound('success', 0.6); setTestingSound(false); }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-xs font-medium animate-pulse"
+                  data-testid="button-unlock-audio"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  اضغط لتفعيل الصوت
+                </button>
+              ) : (
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={async () => { await unlockAudio(); setSoundEnabled(!soundEnabled); setAudioUnlocked(isAudioUnlocked()); }}
+                    title={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
+                    data-testid="button-sound-toggle"
+                    className={soundEnabled ? "border-green-500 text-green-600" : "text-muted-foreground"}
+                  >
+                    {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </Button>
+                  {soundEnabled && (
+                    <Button variant="ghost" size="icon" onClick={async () => { setTestingSound(true); await testSound('newOrder', 0.8); setTestingSound(false); }} disabled={testingSound} className="text-muted-foreground hover:text-primary" title="اختبار الصوت" data-testid="button-test-sound">
+                      <PlayCircle className={`w-4 h-4 ${testingSound ? 'animate-pulse text-primary' : ''}`} />
+                    </Button>
+                  )}
+                </div>
+              )}
               <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh">
                 <RefreshCw className={`w-4 h-4 ml-2 ${isLoading ? 'animate-spin' : ''}`} />
                 تحديث

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useOrderWebSocket } from "@/lib/websocket";
-import { unlockAudio } from "@/lib/notification-sounds";
+import { unlockAudio, isAudioUnlocked, testSound } from "@/lib/notification-sounds";
 import { 
   Coffee, ShoppingBag, Trash2, Plus, Minus, Search, 
   CreditCard, ChevronLeft, ChevronRight, ChevronDown, 
@@ -13,7 +13,7 @@ import {
   Archive, RefreshCw, Wifi, WifiOff, Loader2,
   Navigation, SplitSquareVertical, Banknote,
   Lock, Bell, BellOff, ScanLine,
-  PauseCircle, Receipt, Settings, User
+  PauseCircle, Receipt, Settings, User, PlayCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +97,12 @@ export default function PosSystem() {
   const [splitViewMode, setSplitViewMode] = useState(false);
   const [mobilePanelView, setMobilePanelView] = useState<'products' | 'cart'>('products');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [audioUnlocked, setAudioUnlocked] = useState(isAudioUnlocked());
+  const [testingSound, setTestingSound] = useState(false);
+  useEffect(() => {
+    const t = setInterval(() => setAudioUnlocked(isAudioUnlocked()), 1500);
+    return () => clearInterval(t);
+  }, []);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncing, setSyncing] = useState(false);
   const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
@@ -780,15 +786,33 @@ export default function PosSystem() {
             <Settings className="w-4 h-4" />
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { unlockAudio(); setSoundEnabled(!soundEnabled); }}
-            className="hidden sm:flex"
-            data-testid="button-sound-toggle"
-          >
-            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          </Button>
+          {!audioUnlocked && soundEnabled ? (
+            <button
+              onClick={async () => { await unlockAudio(); setAudioUnlocked(isAudioUnlocked()); setTestingSound(true); await testSound('success', 0.6); setTestingSound(false); }}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-xs font-medium animate-pulse"
+              data-testid="button-unlock-audio"
+            >
+              <Volume2 className="w-3 h-3" />
+              تفعيل الصوت
+            </button>
+          ) : (
+            <div className="hidden sm:flex gap-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => { await unlockAudio(); setSoundEnabled(!soundEnabled); setAudioUnlocked(isAudioUnlocked()); }}
+                className={soundEnabled ? "text-primary" : "text-muted-foreground"}
+                data-testid="button-sound-toggle"
+              >
+                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </Button>
+              {soundEnabled && (
+                <Button variant="ghost" size="sm" onClick={async () => { setTestingSound(true); await testSound('cashierOrder', 0.9); setTestingSound(false); }} disabled={testingSound} className="px-1.5 text-muted-foreground hover:text-primary" title="اختبار الصوت" data-testid="button-test-sound">
+                  <PlayCircle className={`w-3.5 h-3.5 ${testingSound ? 'animate-pulse text-primary' : ''}`} />
+                </Button>
+              )}
+            </div>
+          )}
 
           <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} title={wsConnected ? t('pos.connected_status') : t('pos.disconnected_status')} />
 
