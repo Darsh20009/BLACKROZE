@@ -37,7 +37,11 @@ The system also includes:
 - **Customer Favorites**: Customers can favorite menu items (POST/DELETE `/api/customers/favorites`).
 - **Loyalty Free Drink Claim**: `/api/loyalty/claim-free-drink` endpoint.
 - **Bulk Order Delete**: Manager can bulk delete orders via `/api/orders/bulk`.
-- **Advanced Analytics**: `/api/analytics/advanced` and `/api/analytics/cogs` endpoints.
+- **Advanced Analytics**: `/api/analytics/advanced` and `/api/analytics/cogs` endpoints. Frontend now fully connected (no mock data).
+- **Admin Dashboard Charts**: Revenue trend AreaChart, Top Products BarChart, and Payment Methods breakdown using recharts, all driven by `/api/analytics/advanced`.
+- **Supplier Management Real API**: `supplier-management.tsx` fully connected to `/api/inventory/suppliers` and `/api/inventory/purchases`; real add/edit/delete mutations with proper field mapping (nameAr, isActive, code).
+- **Loyalty Cards Manager API**: New `GET /api/loyalty/cards` (paginated, searchable) and `GET /api/loyalty/stats` endpoints for managers. `loyalty-program.tsx` members tab now loads real card data from MongoDB.
+- **Loyalty Program Real Data**: Members tab shows real LoyaltyCard data with stamps, points, tier, totalSpent; stats cards use real counts from `/api/loyalty/stats`.
 - **Cashier Layouts**: Three layout options (Classic, POS, Split) for employee cashier page via `cashier-layouts.tsx`.
 - **Menu Layouts**: Three layout options (Classic, Cards, List) for customer menu via `menu-layouts.tsx`.
 - **Public Loyalty Settings**: `/api/public/loyalty-settings` for frontend loyalty config display.

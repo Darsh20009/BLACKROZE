@@ -161,12 +161,46 @@ export default function AdvancedAnalyticsPage() {
   const [period, setPeriod] = useState("week");
   const [activeTab, setActiveTab] = useState("overview");
 
-  const { data: analyticsData = mockAnalyticsData, isLoading } = useQuery<AnalyticsData>({
+  const { data: rawData, isLoading } = useQuery<any>({
     queryKey: ["/api/analytics/advanced", period],
-    enabled: false,
   });
 
-  const data = analyticsData;
+  // Transform real API response to match the AnalyticsData interface
+  const data: AnalyticsData = rawData ? {
+    kpis: {
+      totalRevenue: rawData.summary?.totalRevenue ?? 0,
+      revenueChange: rawData.summary?.revenueChange ?? 0,
+      totalOrders: rawData.summary?.totalOrders ?? 0,
+      ordersChange: rawData.summary?.ordersChange ?? 0,
+      averageOrderValue: rawData.summary?.avgOrderValue ?? 0,
+      aovChange: rawData.summary?.avgOrderChange ?? 0,
+      newCustomers: rawData.summary?.uniqueCustomers ?? 0,
+      customersChange: rawData.summary?.customersChange ?? 0,
+      repeatRate: 0,
+      repeatChange: 0,
+      averagePrepTime: 0,
+      prepTimeChange: 0,
+    },
+    topProducts: (rawData.topProducts || []).map((p: any) => ({
+      id: p.id,
+      name: p.nameAr || p.name || '—',
+      sales: p.qty || 0,
+      revenue: p.revenue || 0,
+      trend: 0,
+    })),
+    hourlyData: rawData.hourlyData || [],
+    categoryBreakdown: [],
+    paymentMethods: (rawData.paymentBreakdown || []).map((p: any) => ({
+      method: p.method,
+      amount: p.amount,
+      count: 0,
+    })),
+    revenueByDay: (rawData.revenueTrend || []).map((d: any) => ({
+      date: d.date,
+      revenue: d.current,
+      orders: d.orders,
+    })),
+  } : mockAnalyticsData;
 
   const kpiCards: KPICard[] = [
     {

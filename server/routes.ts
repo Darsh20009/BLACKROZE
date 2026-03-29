@@ -7283,6 +7283,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manager: Get ALL loyalty cards (paginated)
+  app.get("/api/loyalty/cards", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { LoyaltyCardModel } = await import("@shared/schema");
+      const { search, status, page = '1', limit: limitStr = '50' } = req.query;
+      const pageNum = Math.max(1, parseInt(page as string, 10));
+      const limitNum = Math.min(100, Math.max(1, parseInt(limitStr as string, 10)));
+
+      const query: any = {};
+      if (status === 'active') query.isActive = true;
+      else if (status === 'inactive') query.isActive = false;
+      if (search) {
+        query.$or = [
+          { customerName: { $regex: search, $options: 'i' } },
+          { phoneNumber: { $regex: search, $options: 'i' } },
+          { cardNumber: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      const [cards, total] = await Promise.all([
+        LoyaltyCardModel.find(query)
+          .sort({ createdAt: -1 })
+          .skip((pageNum - 1) * limitNum)
+          .limit(limitNum)
+          .lean(),
+        LoyaltyCardModel.countDocuments(query),
+      ]);
+
+      res.json({ cards, total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) });
+    } catch (error) {
+      console.error("[LOYALTY] cards list error:", error);
+      res.status(500).json({ error: "فشل في جلب بطاقات الولاء" });
+    }
+  });
+
+  // Manager: Get loyalty stats summary
+  app.get("/api/loyalty/stats", requireAuth, requireManager, async (req: AuthRequest, res) => {
+    try {
+      const { LoyaltyCardModel } = await import("@shared/schema");
+      const [total, active, tiers] = await Promise.all([
+        LoyaltyCardModel.countDocuments({}),
+        LoyaltyCardModel.countDocuments({ isActive: true }),
+        LoyaltyCardModel.aggregate([
+          { $group: { _id: '$tier', count: { $sum: 1 }, totalPoints: { $sum: '$points' }, totalSpent: { $sum: '$totalSpent' } } }
+        ]),
+      ]);
+      res.json({ total, active, inactive: total - active, tiers });
+    } catch (error) {
+      res.status(500).json({ error: "فشل في جلب إحصائيات الولاء" });
+    }
+  });
+
   // Get loyalty tier information
   app.get("/api/loyalty/tiers", async (req, res) => {
     try {

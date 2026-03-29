@@ -82,18 +82,22 @@ interface LoyaltyTier {
 }
 
 interface LoyaltyMember {
-  id: string;
+  _id: string;
+  id?: string;
   customerId: string;
-  customerName: string;
-  phone: string;
-  email?: string;
+  customerName?: string;
+  phoneNumber: string;
+  cardNumber: string;
   points: number;
-  lifetimePoints: number;
+  stamps: number;
+  freeCupsEarned: number;
+  freeCupsRedeemed: number;
   tier: string;
-  joinedAt: string;
-  lastActivity?: string;
-  totalOrders: number;
   totalSpent: number;
+  status: string;
+  isActive: boolean;
+  lastUsedAt?: string;
+  createdAt: string;
 }
 
 interface Reward {
@@ -167,19 +171,35 @@ export default function LoyaltyProgramPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<LoyaltyMember | null>(null);
 
-  const members = mockMembers;
+  const { data: cardsData, isLoading: cardsLoading } = useQuery<{ cards: LoyaltyMember[]; total: number }>({
+    queryKey: ['/api/loyalty/cards', searchQuery],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('search', searchQuery);
+      params.set('limit', '100');
+      const res = await fetch(`/api/loyalty/cards?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+  });
+
+  const { data: statsData } = useQuery<{ total: number; active: number; inactive: number; tiers: any[] }>({
+    queryKey: ['/api/loyalty/stats'],
+  });
+
+  const members = cardsData?.cards || [];
   const rewards = mockRewards;
   const transactions = mockTransactions;
 
-  const totalMembers = members.length;
-  const totalPoints = members.reduce((sum, m) => sum + m.points, 0);
+  const totalMembers = statsData?.total ?? members.length;
+  const totalPoints = members.reduce((sum, m) => sum + (m.points || 0), 0);
   const activeRewards = rewards.filter(r => r.isActive).length;
   const totalRedemptions = rewards.reduce((sum, r) => sum + r.redemptions, 0);
 
   const getTierInfo = (tierId: string) => loyaltyTiers.find(t => t.id === tierId) || loyaltyTiers[0];
 
   const filteredMembers = members.filter(m =>
-    m.customerName.includes(searchQuery) || m.phone.includes(searchQuery)
+    (m.customerName || '').includes(searchQuery) || m.phoneNumber.includes(searchQuery)
   );
 
   return (
@@ -348,27 +368,27 @@ export default function LoyaltyProgramPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {members.slice(0, 5).sort((a, b) => b.lifetimePoints - a.lifetimePoints).map((member, idx) => {
+                    {members.slice(0, 5).sort((a, b) => b.points - a.points).map((member, idx) => {
                       const tier = getTierInfo(member.tier);
                       return (
-                        <div key={member.id} className="flex items-center gap-3 p-3 bg-purple-900/30 rounded-lg">
+                        <div key={member._id} className="flex items-center gap-3 p-3 bg-purple-900/30 rounded-lg">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                            idx === 0 ? 'bg-background0 text-white' :
+                            idx === 0 ? 'bg-yellow-500 text-white' :
                             idx === 1 ? 'bg-slate-400 text-white' :
-                            idx === 2 ? 'bg-primary text-white' :
+                            idx === 2 ? 'bg-amber-600 text-white' :
                             'bg-purple-700 text-purple-300'
                           }`}>
                             {idx + 1}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-white font-medium">{member.customerName}</span>
+                              <span className="text-white font-medium">{member.customerName || member.phoneNumber}</span>
                               <span className="text-lg">{tier.icon}</span>
                             </div>
-                            <p className="text-purple-400 text-sm">{member.lifetimePoints.toLocaleString()} {t("loyalty.total_points_label")}</p>
+                            <p className="text-purple-400 text-sm" dir="ltr">{member.phoneNumber}</p>
                           </div>
                           <div className="text-left">
-                            <p className="text-accent font-bold">{member.points.toLocaleString()}</p>
+                            <p className="text-accent font-bold">{(member.points || 0).toLocaleString()}</p>
                             <p className="text-purple-400 text-xs">{t("loyalty.available_points_label")}</p>
                           </div>
                         </div>
@@ -449,14 +469,26 @@ export default function LoyaltyProgramPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredMembers.map((member) => {
+                    {cardsLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-purple-300" />
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredMembers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-purple-400">
+                          لا توجد بطاقات ولاء مسجلة
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredMembers.map((member) => {
                       const tier = getTierInfo(member.tier);
                       return (
-                        <TableRow key={member.id} className="border-purple-700">
+                        <TableRow key={member._id} className="border-purple-700">
                           <TableCell>
                             <div>
-                              <p className="text-white font-medium">{member.customerName}</p>
-                              <p className="text-purple-400 text-sm" dir="ltr">{member.phone}</p>
+                              <p className="text-white font-medium">{member.customerName || '—'}</p>
+                              <p className="text-purple-400 text-sm" dir="ltr">{member.phoneNumber}</p>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -464,11 +496,13 @@ export default function LoyaltyProgramPage() {
                               {tier.icon} {tier.name}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-accent font-bold">{member.points.toLocaleString()}</TableCell>
-                          <TableCell className="text-purple-300">{member.lifetimePoints.toLocaleString()}</TableCell>
-                          <TableCell className="text-purple-300">{member.totalOrders}</TableCell>
+                          <TableCell className="text-accent font-bold">{(member.points || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-purple-300">{(member.stamps || 0)} طابع</TableCell>
+                          <TableCell className="text-purple-300">{(member.totalSpent || 0).toLocaleString()} ر.س</TableCell>
                           <TableCell className="text-purple-400 text-sm">
-                            {member.lastActivity && format(new Date(member.lastActivity), "dd/MM/yyyy", { locale: ar })}
+                            {member.lastUsedAt
+                              ? format(new Date(member.lastUsedAt), "dd/MM/yyyy", { locale: ar })
+                              : format(new Date(member.createdAt), "dd/MM/yyyy", { locale: ar })}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
