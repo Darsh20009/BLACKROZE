@@ -132,8 +132,9 @@ export default function InventoryPurchasesPage() {
     unitCost: 0,
   });
 
-  const { data: invoices = [], isLoading } = useQuery<PurchaseInvoice[]>({
+  const { data: invoices = [], isLoading, refetch } = useQuery<PurchaseInvoice[]>({
     queryKey: ["/api/inventory/purchases"],
+    refetchInterval: 30000,
   });
 
   const { data: rawItems = [] } = useQuery<RawItem[]>({

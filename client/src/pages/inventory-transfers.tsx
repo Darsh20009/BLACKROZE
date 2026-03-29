@@ -108,8 +108,9 @@ export default function InventoryTransfersPage() {
     quantity: 1,
   });
 
-  const { data: transfers = [], isLoading } = useQuery<StockTransfer[]>({
+  const { data: transfers = [], isLoading, refetch } = useQuery<StockTransfer[]>({
     queryKey: ["/api/inventory/transfers"],
+    refetchInterval: 30000,
   });
 
   const { data: rawItems = [] } = useQuery<RawItem[]>({

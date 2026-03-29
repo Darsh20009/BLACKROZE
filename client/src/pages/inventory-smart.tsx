@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { LoadingState, EmptyState } from "@/components/ui/states";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 import {
   Select,
   SelectContent,
@@ -52,6 +54,11 @@ import {
   Bell,
   BookOpen,
   ChevronLeft,
+  Activity,
+  RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  History,
 } from "lucide-react";
 
 const categoryLabels: Record<string, { label: string; icon: any; color: string; bgColor: string }> = {
@@ -145,21 +152,32 @@ export default function InventorySmartPage() {
 
   const { data: rawItems = [], isLoading: loadingItems } = useQuery<RawItem[]>({
     queryKey: ["/api/inventory/raw-items"],
+    refetchInterval: 60000,
   });
 
-  const { data: branchStocks = [], isLoading: loadingStocks, refetch: refetchStocks } = useQuery<BranchStock[]>({
+  const { data: branchStocks = [], isLoading: loadingStocks, refetch: refetchStocks, dataUpdatedAt } = useQuery<BranchStock[]>({
     queryKey: ["/api/inventory/branch-stocks", selectedBranch],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedBranch && selectedBranch !== 'all') {
         params.append('branchId', selectedBranch);
-      } else if (selectedBranch === 'all') {
-        // Fetch from all branches by not providing branchId
       }
       const response = await fetch(`/api/inventory/branch-stocks?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch stocks');
       return response.json();
     },
+    refetchInterval: 20000,
+  });
+
+  const { data: recentMovements = [] } = useQuery<any[]>({
+    queryKey: ["/api/inventory/movements", "recent"],
+    queryFn: async () => {
+      const res = await fetch("/api/inventory/movements?limit=10&period=week");
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data.slice(0, 10) : [];
+    },
+    refetchInterval: 30000,
   });
 
   const { data: branches = [] } = useQuery<Branch[]>({
@@ -292,20 +310,28 @@ export default function InventorySmartPage() {
             <p className="text-muted-foreground">إدارة مبسطة وذكية للمخزون</p>
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 dark:bg-green-950/30 px-2.5 py-1.5 rounded-full border border-green-200 dark:border-green-800">
+            <Activity className="w-3 h-3 animate-pulse" />
+            <span>تحديث تلقائي</span>
+          </div>
           <Select value={selectedBranch} onValueChange={setSelectedBranch}>
             <SelectTrigger className="w-[180px]" data-testid="select-branch">
               <SelectValue placeholder="اختر الفرع" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الفروع</SelectItem>
-              {branches.map((branch) => (
-                <SelectItem key={branch.id} value={branch.id || ""}>
+              {branches.map((branch: any) => (
+                <SelectItem key={branch.id || branch._id} value={branch.id || branch._id?.toString() || ""}>
                   {branch.nameAr}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={() => refetchStocks()} data-testid="button-refresh-stocks">
+            <RefreshCw className="h-4 w-4 ml-1" />
+            تحديث
+          </Button>
           <Button 
             onClick={() => setIsAddStockOpen(true)} 
             data-testid="button-add-stock-batch"
@@ -470,6 +496,81 @@ export default function InventorySmartPage() {
           </Card>
         </Link>
       </div>
+
+      {/* Live Activity Feed */}
+      {(lowStockItems > 0 || recentMovements.length > 0) && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Low Stock Alerts */}
+          {lowStockItems > 0 && (
+            <Card className="border border-orange-200 dark:border-orange-800 shadow-md bg-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base text-orange-700 dark:text-orange-400">
+                  <AlertTriangle className="h-5 w-5" />
+                  مخزون منخفض — تحديث فوري
+                  <Badge variant="destructive" className="mr-auto text-xs">{lowStockItems}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 max-h-48 overflow-auto">
+                {rawItems
+                  .filter(item => {
+                    const stock = getStockForItem(item.id);
+                    return (stock?.currentQuantity || 0) <= item.minStockLevel && item.minStockLevel > 0;
+                  })
+                  .slice(0, 8)
+                  .map(item => {
+                    const stock = getStockForItem(item.id);
+                    const currentQty = stock?.currentQuantity || 0;
+                    return (
+                      <div key={item.id} className="flex items-center justify-between py-1.5 border-b last:border-0">
+                        <span className="text-sm font-medium">{item.nameAr}</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className={currentQty <= 0 ? "text-red-600 font-bold" : "text-orange-600"}>
+                            {currentQty} {unitLabels[item.unit] || item.unit}
+                          </span>
+                          <span className="text-muted-foreground">/ {item.minStockLevel}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recent Movements */}
+          {recentMovements.length > 0 && (
+            <Card className="border border-blue-200 dark:border-blue-800 shadow-md bg-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base text-blue-700 dark:text-blue-400">
+                  <History className="h-5 w-5" />
+                  آخر حركات المخزون
+                  <span className="mr-auto text-xs text-muted-foreground font-normal">
+                    {dataUpdatedAt ? format(new Date(dataUpdatedAt), "HH:mm", { locale: ar }) : ""}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5 max-h-48 overflow-auto">
+                {recentMovements.map((mv: any, idx: number) => {
+                  const isIn = ["purchase", "transfer_in", "stock_in", "return", "initial"].includes(mv.movementType);
+                  return (
+                    <div key={mv.id || idx} className="flex items-center gap-2 py-1 text-sm border-b last:border-0">
+                      <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${isIn ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"}`}>
+                        {isIn ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                      </span>
+                      <span className="flex-1 truncate font-medium">{mv.rawItem?.nameAr || mv.rawItemId}</span>
+                      <span className={`font-bold ${isIn ? "text-green-600" : "text-red-600"}`}>
+                        {isIn ? "+" : "−"}{mv.quantity}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {mv.createdAt ? format(new Date(mv.createdAt), "HH:mm", { locale: ar }) : ""}
+                      </span>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       <Card className="border-0 shadow-lg bg-card">
         <CardHeader className="bg-muted/50 border-b">

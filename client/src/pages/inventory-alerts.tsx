@@ -117,8 +117,9 @@ export default function InventoryAlertsPage() {
     };
   }, [toast]);
 
-  const { data: alerts = [], isLoading } = useQuery<StockAlert[]>({
+  const { data: alerts = [], isLoading, dataUpdatedAt, refetch } = useQuery<StockAlert[]>({
     queryKey: ["/api/inventory/alerts"],
+    refetchInterval: 30000,
   });
 
   const { data: branches = [] } = useQuery<Branch[]>({

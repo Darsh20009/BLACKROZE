@@ -121,6 +121,7 @@ export default function InventoryRawItemsPage() {
 
   const { data: rawItems = [], isLoading } = useQuery<RawItem[]>({
     queryKey: ["/api/inventory/raw-items"],
+    refetchInterval: 60000,
   });
 
   const createMutation = useMutation({

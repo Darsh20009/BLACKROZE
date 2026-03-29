@@ -1759,9 +1759,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(movement);
   });
 
-  app.get("/api/inventory/movements", requireAuth, async (req: AuthRequest, res) => {
-    const branchId = (req.query.branchId as string) || 'default';
-    const movements = await StockMovementModel.find({ branchId }).sort({ createdAt: -1 }).limit(50);
+  app.get("/api/inventory/movements-legacy", requireAuth, async (req: AuthRequest, res) => {
+    // Legacy endpoint — kept for backward compat. Prefer /api/inventory/stock-movements
+    const tenantId = getTenantIdFromRequest(req) || 'demo-tenant';
+    const { branchId, limit } = req.query;
+    const query: any = {};
+    if (branchId) query.branchId = branchId as string;
+    const movements = await StockMovementModel.find(query).sort({ createdAt: -1 }).limit(Number(limit) || 100).lean();
     res.json(movements);
   });
 
@@ -11882,18 +11886,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stock Movements Routes
   app.get("/api/inventory/movements", requireAuth, requireManager, async (req: AuthRequest, res) => {
     try {
-      const { branchId, rawItemId, limit } = req.query;
+      const { branchId, rawItemId, limit, period } = req.query;
+      const lim = limit ? parseInt(limit as string) : 200;
       
-      if (!branchId) {
-        return res.status(400).json({ error: "معرف الفرع مطلوب" });
+      if (branchId && branchId !== 'all') {
+        const movements = await storage.getStockMovements(
+          branchId as string,
+          rawItemId as string | undefined,
+          lim
+        );
+        return res.json(movements);
       }
       
-      const movements = await storage.getStockMovements(
-        branchId as string,
-        rawItemId as string | undefined,
-        limit ? parseInt(limit as string) : 100
-      );
-      res.json(movements);
+      // No branchId — fetch all movements with optional filters
+      const query: any = {};
+      if (rawItemId) query.rawItemId = rawItemId as string;
+      if (period) {
+        const days = period === "week" ? 7 : period === "month" ? 30 : 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        query.createdAt = { $gte: startDate };
+      }
+      const movements = await StockMovementModel.find(query)
+        .sort({ createdAt: -1 }).limit(lim).lean();
+      res.json(movements.map((m: any) => ({ ...m, id: m._id?.toString(), _id: undefined })));
     } catch (error) {
       res.status(500).json({ error: "فشل في جلب حركات المخزون" });
     }

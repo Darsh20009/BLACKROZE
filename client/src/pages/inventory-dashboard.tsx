@@ -135,6 +135,7 @@ export default function InventoryDashboardPage() {
 
   const { data: rawItems = [], isLoading: loadingItems } = useQuery<RawItem[]>({
     queryKey: ["/api/inventory/raw-items"],
+    refetchInterval: 60000,
   });
 
   const { data: branchStocks = [], isLoading: loadingStocks } = useQuery<BranchStock[]>({
@@ -149,6 +150,7 @@ export default function InventoryDashboardPage() {
       if (!res.ok) throw new Error("Failed to fetch branch stocks");
       return res.json();
     },
+    refetchInterval: 20000,
   });
 
   const { data: branches = [] } = useQuery<Branch[]>({

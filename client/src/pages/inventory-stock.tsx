@@ -50,6 +50,7 @@ import {
   Filter,
   ArrowUpDown,
   Sparkles,
+  Activity,
   Target,
   CheckCircle2
 } from "lucide-react";
@@ -153,8 +154,9 @@ export default function InventoryStockPage() {
     notes: "",
   });
 
-  const { data: stockData = [], isLoading } = useQuery<BranchStock[]>({
+  const { data: stockData = [], isLoading, refetch, dataUpdatedAt } = useQuery<BranchStock[]>({
     queryKey: ["/api/inventory/stock"],
+    refetchInterval: 20000,
   });
 
   const { data: branches = [] } = useQuery<Branch[]>({
@@ -399,6 +401,10 @@ export default function InventoryStockPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 dark:bg-green-950/30 px-2.5 py-1.5 rounded-full border border-green-200 dark:border-green-800">
+              <Activity className="w-3 h-3 animate-pulse" />
+              {dataUpdatedAt ? `آخر تحديث: ${new Date(dataUpdatedAt).toLocaleTimeString("ar-SA")}` : "تحديث تلقائي"}
+            </div>
             <Button
               onClick={() => setIsNewBatchOpen(true)}
               className="bg-gradient-to-r from-amber-500 to-background0 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/20"
@@ -409,11 +415,11 @@ export default function InventoryStockPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/inventory/stock"] })}
+              onClick={() => refetch()}
               data-testid="button-refresh"
             >
               <RefreshCw className="h-4 w-4 ml-2" />
-              تحديث
+              تحديث الآن
             </Button>
           </div>
         </div>

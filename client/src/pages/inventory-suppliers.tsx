@@ -73,6 +73,7 @@ export default function InventorySuppliersPage() {
 
   const { data: suppliers = [], isLoading } = useQuery<Supplier[]>({
     queryKey: ["/api/inventory/suppliers"],
+    refetchInterval: 60000,
   });
 
   const createMutation = useMutation({
