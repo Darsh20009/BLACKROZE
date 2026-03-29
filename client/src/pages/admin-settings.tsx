@@ -51,13 +51,6 @@ export default function AdminSettings() {
   const drinkCategories = menuCategories.filter(c => c.department === 'drinks' || !c.department);
   const foodCategories = menuCategories.filter(c => c.department === 'food');
 
-  // Debug for Admin Category Logic
-  console.log('Admin Categories:', {
-    total: menuCategories.length,
-    drinks: drinkCategories.map(c => c.nameAr),
-    food: foodCategories.map(c => c.nameAr)
-  });
-
   const { data: pgConfig, isLoading: pgLoading } = useQuery<any>({
     queryKey: ["/api/payment-gateway/config"],
   });
@@ -990,18 +983,23 @@ export default function AdminSettings() {
                 {drinkCategories.map(cat => {
                   const IconComp = getIconComponent(cat.icon || 'Coffee');
                   return (
-                    <div key={cat.id} className="flex items-center justify-between p-2.5 bg-card border rounded-lg group" data-testid={`category-item-${cat.id}`}>
+                    <div key={cat.id} className={`flex items-center justify-between p-2.5 border rounded-lg group ${cat.isSystem ? 'bg-teal-50/40 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800' : 'bg-card'}`} data-testid={`category-item-${cat.id}`}>
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center">
                           <IconComp className="w-4 h-4 text-teal-600" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium">{cat.nameAr}</span>
-                          {cat.nameEn && <span className="text-xs text-muted-foreground mr-2">({cat.nameEn})</span>}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium">{cat.nameAr}</span>
+                            {cat.isSystem && (
+                              <Badge className="text-[9px] px-1 py-0 h-4 bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300 border-0">نظام</Badge>
+                            )}
+                          </div>
+                          {cat.nameEn && <span className="text-xs text-muted-foreground">({cat.nameEn})</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {editingCategoryId === cat.id ? (
+                        {!cat.isSystem && editingCategoryId === cat.id ? (
                           <Select
                             value={editDepartment}
                             onValueChange={(v) => {
@@ -1017,7 +1015,7 @@ export default function AdminSettings() {
                               <SelectItem value="food">المأكولات</SelectItem>
                             </SelectContent>
                           </Select>
-                        ) : (
+                        ) : !cat.isSystem ? (
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1029,18 +1027,20 @@ export default function AdminSettings() {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                        )}
+                        ) : null}
                         <Button
                           size="icon"
                           variant="ghost"
+                          disabled={!!cat.isSystem}
+                          title={cat.isSystem ? "لا يمكن حذف الأقسام الأساسية" : "حذف القسم"}
                           onClick={() => {
-                            if (confirm("هل أنت متأكد من حذف هذا القسم؟")) {
+                            if (!cat.isSystem && confirm("هل أنت متأكد من حذف هذا القسم؟")) {
                               deleteCategoryMutation.mutate(cat.id);
                             }
                           }}
                           data-testid={`button-delete-category-${cat.id}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          <Trash2 className={`w-3.5 h-3.5 ${cat.isSystem ? 'text-muted-foreground/30' : 'text-destructive'}`} />
                         </Button>
                       </div>
                     </div>
@@ -1060,18 +1060,23 @@ export default function AdminSettings() {
                 {foodCategories.map(cat => {
                   const IconComp = getIconComponent(cat.icon || 'Utensils');
                   return (
-                    <div key={cat.id} className="flex items-center justify-between p-2.5 bg-card border rounded-lg group" data-testid={`category-item-${cat.id}`}>
+                    <div key={cat.id} className={`flex items-center justify-between p-2.5 border rounded-lg group ${cat.isSystem ? 'bg-orange-50/40 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800' : 'bg-card'}`} data-testid={`category-item-${cat.id}`}>
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
                           <IconComp className="w-4 h-4 text-orange-600" />
                         </div>
                         <div>
-                          <span className="text-sm font-medium">{cat.nameAr}</span>
-                          {cat.nameEn && <span className="text-xs text-muted-foreground mr-2">({cat.nameEn})</span>}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium">{cat.nameAr}</span>
+                            {cat.isSystem && (
+                              <Badge className="text-[9px] px-1 py-0 h-4 bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 border-0">نظام</Badge>
+                            )}
+                          </div>
+                          {cat.nameEn && <span className="text-xs text-muted-foreground">({cat.nameEn})</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {editingCategoryId === cat.id ? (
+                        {!cat.isSystem && editingCategoryId === cat.id ? (
                           <Select
                             value={editDepartment}
                             onValueChange={(v) => {
@@ -1087,7 +1092,7 @@ export default function AdminSettings() {
                               <SelectItem value="food">المأكولات</SelectItem>
                             </SelectContent>
                           </Select>
-                        ) : (
+                        ) : !cat.isSystem ? (
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1099,18 +1104,20 @@ export default function AdminSettings() {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                        )}
+                        ) : null}
                         <Button
                           size="icon"
                           variant="ghost"
+                          disabled={!!cat.isSystem}
+                          title={cat.isSystem ? "لا يمكن حذف الأقسام الأساسية" : "حذف القسم"}
                           onClick={() => {
-                            if (confirm("هل أنت متأكد من حذف هذا القسم؟")) {
+                            if (!cat.isSystem && confirm("هل أنت متأكد من حذف هذا القسم؟")) {
                               deleteCategoryMutation.mutate(cat.id);
                             }
                           }}
                           data-testid={`button-delete-category-${cat.id}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          <Trash2 className={`w-3.5 h-3.5 ${cat.isSystem ? 'text-muted-foreground/30' : 'text-destructive'}`} />
                         </Button>
                       </div>
                     </div>

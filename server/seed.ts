@@ -1,8 +1,26 @@
 import { storage } from "./storage";
 import { TenantModel } from "@shared/tenant-schema";
-import { EmployeeModel } from "@shared/schema";
+import { EmployeeModel, MenuCategoryModel } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
+
+const SYSTEM_CATEGORIES = [
+  // Drink categories
+  { id: "sys-hot",               nameAr: "قهوة ساخنة",      nameEn: "Hot Coffee",         department: "drinks", icon: "Flame",     orderIndex: 1  },
+  { id: "sys-cold",              nameAr: "قهوة باردة",       nameEn: "Iced Coffee",         department: "drinks", icon: "Snowflake", orderIndex: 2  },
+  { id: "sys-specialty",        nameAr: "مشروبات مميزة",    nameEn: "Specialty Drinks",    department: "drinks", icon: "Star",      orderIndex: 3  },
+  { id: "sys-basic",            nameAr: "قهوة كلاسيك",      nameEn: "Classic Coffee",      department: "drinks", icon: "Coffee",    orderIndex: 4  },
+  { id: "sys-drinks",           nameAr: "المشروبات",         nameEn: "Drinks",              department: "drinks", icon: "Coffee",    orderIndex: 5  },
+  { id: "sys-additional",       nameAr: "مشروبات إضافية",   nameEn: "Additional Drinks",   department: "drinks", icon: "Coffee",    orderIndex: 6  },
+  { id: "sys-desserts-drinks",  nameAr: "حلويات",            nameEn: "Desserts",            department: "drinks", icon: "Cake",      orderIndex: 7  },
+  // Food categories
+  { id: "sys-food",             nameAr: "المأكولات",         nameEn: "Food",                department: "food",   icon: "Utensils",  orderIndex: 10 },
+  { id: "sys-sandwiches",       nameAr: "السندوتشات",        nameEn: "Sandwiches",          department: "food",   icon: "Utensils",  orderIndex: 11 },
+  { id: "sys-bakery",           nameAr: "المخبوزات",          nameEn: "Bakery",              department: "food",   icon: "Cake",      orderIndex: 12 },
+  { id: "sys-croissant",        nameAr: "الكرواسون",          nameEn: "Croissant",           department: "food",   icon: "Cake",      orderIndex: 13 },
+  { id: "sys-cake",             nameAr: "الكيك",              nameEn: "Cake",                department: "food",   icon: "Cake",      orderIndex: 14 },
+  { id: "sys-desserts-food",    nameAr: "الحلويات والتحلية", nameEn: "Sweets & Desserts",   department: "food",   icon: "Star",      orderIndex: 15 },
+];
 
 export async function runSeeds() {
   console.log("🌱 Starting clean re-initialization...");
@@ -70,6 +88,32 @@ export async function runSeeds() {
       if (Object.keys(updates).length > 0) {
         await EmployeeModel.updateOne({ username: "admin" }, { $set: updates });
       }
+    }
+
+    // 3. Seed system menu categories (idempotent — uses upsert)
+    const tenantId = "demo-tenant";
+    let seededCount = 0;
+    for (const cat of SYSTEM_CATEGORIES) {
+      const existing = await MenuCategoryModel.findOne({ id: cat.id });
+      if (!existing) {
+        await MenuCategoryModel.create({
+          ...cat,
+          tenantId,
+          isSystem: true,
+          isActive: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        seededCount++;
+      } else {
+        // Ensure isSystem flag is always set
+        await MenuCategoryModel.updateOne({ id: cat.id }, { $set: { isSystem: true, tenantId } });
+      }
+    }
+    if (seededCount > 0) {
+      console.log(`✅ Seeded ${seededCount} system menu categories`);
+    } else {
+      console.log("✅ System menu categories already present");
     }
 
     console.log("✅ System re-initialized successfully with clean state.");
