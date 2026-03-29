@@ -13,7 +13,8 @@ import {
   Archive, RefreshCw, Wifi, WifiOff, Loader2,
   Navigation, SplitSquareVertical, Banknote,
   Lock, Bell, BellOff, ScanLine,
-  PauseCircle, Receipt, Settings, User, PlayCircle
+  PauseCircle, Receipt, Settings, User, PlayCircle,
+  Flame, Snowflake, Star, Cake, Utensils
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -431,9 +432,43 @@ export default function PosSystem() {
   }, [productsData, selectedCategory, searchQuery, groupedItemsMap]);
 
   const visibleCategories = useMemo(() => {
-    const cats = Array.from(new Set(productsData?.map(p => p.category) || []));
-    return cats.map(c => ({ id: c, name: c, icon: Tag, color: "text-primary" }));
-  }, [productsData]);
+    const cats = Array.from(new Set(productsData?.map(p => p.category).filter(Boolean) || []));
+    const catTranslations: Record<string, string> = {
+      hot:               t('menu.categories.hot'),
+      cold:              t('menu.categories.cold'),
+      specialty:         t('menu.categories.specialty'),
+      desserts:          t('menu.categories.desserts'),
+      food:              t('menu.categories.food'),
+      sandwiches:        t('menu.categories.sandwiches'),
+      bakery:            t('menu.categories.bakery'),
+      croissant:         t('menu.categories.croissant'),
+      cake:              t('menu.categories.cake'),
+      basic:             t('menu.categories.basic'),
+      drinks:            t('menu.categories.drinks'),
+      additional_drinks: t('menu.categories.additional_drinks'),
+    };
+    const catIcons: Record<string, any> = {
+      hot:               Flame,
+      cold:              Snowflake,
+      specialty:         Star,
+      desserts:          Cake,
+      food:              Utensils,
+      sandwiches:        Utensils,
+      bakery:            Cake,
+      croissant:         Cake,
+      cake:              Cake,
+      basic:             Coffee,
+      drinks:            Coffee,
+      additional_drinks: Coffee,
+    };
+    return cats.map(c => ({
+      id:    c,
+      name:  catTranslations[c] || c,
+      icon:  catIcons[c] || Tag,
+      color: "text-primary",
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productsData, t, i18n.language]);
 
   const calculateTotal = useMemo(() => {
     return orderItems.reduce((sum, item) => {

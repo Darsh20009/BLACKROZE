@@ -413,8 +413,8 @@ export default function MenuPage() {
     return group[0];
   });
 
-  const drinkCategoryIds = ['basic', 'hot', 'cold', 'specialty', 'drinks'];
-  const foodCategoryIds = ['food', 'bakery', 'desserts'];
+  const drinkCategoryIds = ['basic', 'hot', 'cold', 'specialty', 'drinks', 'additional_drinks'];
+  const foodCategoryIds = ['food', 'bakery', 'desserts', 'sandwiches', 'croissant', 'cake'];
 
   const filteredItems = representativeItems.filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
@@ -426,7 +426,9 @@ export default function MenuPage() {
 
     const matchesMode = !isBothModes || (
       selectedCategory !== "all" 
-        ? (activeMode === "drinks" ? drinkIds.includes(item.category) : foodIds.includes(item.category))
+        ? (activeMode === "drinks" 
+            ? drinkIds.includes(item.category) || drinkCategoryIds.includes(selectedCategory)
+            : foodIds.includes(item.category) || foodCategoryIds.includes(selectedCategory))
         : true
     );
 
