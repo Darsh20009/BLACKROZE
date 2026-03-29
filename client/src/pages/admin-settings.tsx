@@ -999,7 +999,7 @@ export default function AdminSettings() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {!cat.isSystem && editingCategoryId === cat.id ? (
+                        {editingCategoryId === cat.id ? (
                           <Select
                             value={editDepartment}
                             onValueChange={(v) => {
@@ -1015,7 +1015,7 @@ export default function AdminSettings() {
                               <SelectItem value="food">المأكولات</SelectItem>
                             </SelectContent>
                           </Select>
-                        ) : !cat.isSystem ? (
+                        ) : (
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1027,20 +1027,19 @@ export default function AdminSettings() {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                        ) : null}
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"
-                          disabled={!!cat.isSystem}
-                          title={cat.isSystem ? "لا يمكن حذف الأقسام الأساسية" : "حذف القسم"}
+                          title="حذف القسم"
                           onClick={() => {
-                            if (!cat.isSystem && confirm("هل أنت متأكد من حذف هذا القسم؟")) {
+                            if (confirm("هل أنت متأكد من حذف هذا القسم؟")) {
                               deleteCategoryMutation.mutate(cat.id);
                             }
                           }}
                           data-testid={`button-delete-category-${cat.id}`}
                         >
-                          <Trash2 className={`w-3.5 h-3.5 ${cat.isSystem ? 'text-muted-foreground/30' : 'text-destructive'}`} />
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
                         </Button>
                       </div>
                     </div>
@@ -1076,7 +1075,7 @@ export default function AdminSettings() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {!cat.isSystem && editingCategoryId === cat.id ? (
+                        {editingCategoryId === cat.id ? (
                           <Select
                             value={editDepartment}
                             onValueChange={(v) => {
@@ -1092,7 +1091,7 @@ export default function AdminSettings() {
                               <SelectItem value="food">المأكولات</SelectItem>
                             </SelectContent>
                           </Select>
-                        ) : !cat.isSystem ? (
+                        ) : (
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1104,20 +1103,19 @@ export default function AdminSettings() {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                        ) : null}
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"
-                          disabled={!!cat.isSystem}
-                          title={cat.isSystem ? "لا يمكن حذف الأقسام الأساسية" : "حذف القسم"}
+                          title="حذف القسم"
                           onClick={() => {
-                            if (!cat.isSystem && confirm("هل أنت متأكد من حذف هذا القسم؟")) {
+                            if (confirm("هل أنت متأكد من حذف هذا القسم؟")) {
                               deleteCategoryMutation.mutate(cat.id);
                             }
                           }}
                           data-testid={`button-delete-category-${cat.id}`}
                         >
-                          <Trash2 className={`w-3.5 h-3.5 ${cat.isSystem ? 'text-muted-foreground/30' : 'text-destructive'}`} />
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
                         </Button>
                       </div>
                     </div>
